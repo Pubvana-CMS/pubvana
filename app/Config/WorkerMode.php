@@ -47,4 +47,14 @@ class WorkerMode
      * Helps prevent memory leaks at a small performance cost.
      */
     public bool $forceGarbageCollection = true;
+
+    /**
+     * Reset Event Listeners
+     *
+     * List of event names whose listeners should be reset after each request.
+     * This prevents duplicate listener registration in worker mode.
+     *
+     * @var list<string>
+     */
+    public array $resetEventListeners = [];
 }
