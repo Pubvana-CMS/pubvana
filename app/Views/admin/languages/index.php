@@ -13,9 +13,9 @@
             <thead class="bg-light">
                 <tr>
                     <th><?= lang('Admin.languageName') ?></th>
-                    <th style="width:100px"><?= lang('Admin.languageDefault') ?></th>
-                    <th style="width:90px"><?= lang('Admin.languageEnabled') ?></th>
-                    <th style="width:160px"><?= lang('Admin.actions') ?></th>
+                    <th><?= lang('Admin.languageDefault') ?></th>
+                    <th><?= lang('Admin.languageEnabled') ?></th>
+                    <th><?= lang('Admin.actions') ?></th>
                 </tr>
             </thead>
             <tbody>
