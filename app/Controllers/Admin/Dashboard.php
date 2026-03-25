@@ -6,6 +6,7 @@ use App\Models\CategoryModel;
 use App\Models\CommentModel;
 use App\Models\PageModel;
 use App\Models\PostModel;
+use App\Models\AdminNotificationModel;
 use App\Services\UpdateService;
 
 class Dashboard extends BaseAdminController
@@ -38,11 +39,15 @@ class Dashboard extends BaseAdminController
 
         $update = (new UpdateService())->checkForUpdate();
 
+        $notificationModel = new AdminNotificationModel();
+        $notifications     = $notificationModel->getActive();
+
         return $this->adminView('dashboard/index', array_merge($this->baseData('Dashboard', 'dashboard'), [
-            'stats'           => $stats,
-            'recent_posts'    => $recentPosts,
-            'pending_comments'=> $pendingComments,
-            'update'          => $update,
+            'stats'            => $stats,
+            'recent_posts'     => $recentPosts,
+            'pending_comments' => $pendingComments,
+            'update'           => $update,
+            'notifications'    => $notifications,
         ]));
     }
 }
