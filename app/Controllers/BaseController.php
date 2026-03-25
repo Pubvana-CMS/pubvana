@@ -2,6 +2,8 @@
 
 namespace App\Controllers;
 
+use App\Libraries\LanguageSwitcher;
+use App\Models\LanguageModel;
 use App\Models\NavigationModel;
 use App\Models\SocialModel;
 use App\Services\PluginManager;
@@ -26,6 +28,20 @@ abstract class BaseController extends Controller
         $this->data['site_name']    = site_name();
         $this->data['site_tagline'] = site_tagline();
         $this->data['settings']     = [];
+
+        // Locale detection — CI4 automatically calls $request->setLocale() when
+        // a {locale} route segment is matched, so getLocale() returns the correct
+        // locale (or the app defaultLocale when no locale prefix was used).
+        $locale = $this->request->getLocale();
+        if (empty($locale)) {
+            $locale = config('App')->defaultLocale;
+        }
+        service('language')->setLocale($locale);
+        $this->data['current_locale'] = $locale;
+
+        // Default: empty lang switcher; public controllers will populate it
+        // via buildLangSwitcher() when they have a concrete URI to work with.
+        $this->data['langSwitcher'] = [];
 
         try {
             $navModel = new NavigationModel();
@@ -52,6 +68,40 @@ abstract class BaseController extends Controller
             (new \App\Services\MarketplaceService())->checkAndRevalidateIfDue();
         } catch (\Throwable $e) {
             log_message('error', 'BaseController: license revalidation error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Build the language switcher data and merge it into $this->data.
+     *
+     * Call this from public controller methods (Blog, Pages, Contact, etc.)
+     * AFTER the locale is resolved so the current URI is known.
+     * Admin controllers should NOT call this.
+     */
+    protected function buildLangSwitcher(): void
+    {
+        try {
+            $cache     = service('cache');
+            $languages = $cache->get('active_languages_objects');
+
+            if ($languages === null) {
+                $model     = new LanguageModel();
+                $languages = $model->getActive();
+                $cache->save('active_languages_objects', $languages, 3600);
+            }
+
+            if (empty($languages)) {
+                return;
+            }
+
+            $currentUri    = '/' . ltrim($this->request->getUri()->getPath(), '/');
+            $currentLocale = $this->data['current_locale'] ?? config('App')->defaultLocale;
+
+            $switcher = new LanguageSwitcher($languages, $currentUri, $currentLocale);
+            $this->data['langSwitcher'] = $switcher->build();
+        } catch (\Throwable $e) {
+            log_message('error', 'buildLangSwitcher failed: ' . $e->getMessage());
+            $this->data['langSwitcher'] = [];
         }
     }
 }

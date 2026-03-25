@@ -6,8 +6,16 @@ use CodeIgniter\Router\RouteCollection;
  * @var RouteCollection $routes
  */
 
+// Enforce that {locale} route segments are validated against
+// Config\App::$supportedLocales (populated by the pre_system event).
+// With this enabled, {locale} only matches known locale codes (e.g. 'en', 'fr'),
+// so the locale group cannot steal segments like 'blog', 'contact', etc.
+$routes->useSupportedLocalesOnly(true);
+
 // ===================================================
-// PUBLIC ROUTES
+// PUBLIC ROUTES — non-prefixed (default locale / no locale prefix)
+// These must be defined BEFORE the {locale} group so that the router
+// matches them first when no locale prefix is present.
 // ===================================================
 $routes->get('/',                           'Blog::index');
 $routes->get('blog',                        'Blog::index');
@@ -220,6 +228,32 @@ foreach (glob(ROOTPATH . 'plugins/*/Config/Routes.php') as $pluginRoutes) {
 }
 
 // ===================================================
-// CATCH-ALL: Static pages (must be last)
+// PUBLIC ROUTES — locale-prefixed group (e.g. /fr/blog, /en/about)
+// With useSupportedLocalesOnly(true), the {locale} segment ONLY matches
+// codes in Config\App::$supportedLocales (e.g. 'en', 'fr'), so it cannot
+// ambiguously match 'blog', 'contact', etc. — those are handled above.
+// This group must come BEFORE the non-prefixed (:segment) catch-all so
+// that /fr hits Blog::index instead of Pages::show('fr').
+// ===================================================
+$routes->group('{locale}', static function ($routes): void {
+    $routes->get('/',                        'Blog::index');
+    $routes->get('blog',                     'Blog::index');
+    $routes->get('blog/(:segment)',          'Blog::post/$1');
+    $routes->post('blog/(:segment)',         'Blog::post/$1');
+    $routes->get('category/(:segment)',      'Blog::category/$1');
+    $routes->get('tag/(:segment)',           'Blog::tag/$1');
+    $routes->get('archive/(:num)/(:num)',    'Blog::archive/$1/$2');
+    $routes->get('search',                   'Search::index');
+    $routes->get('feed',                     'Feed::index');
+    $routes->get('contact',                  'Contact::index');
+    $routes->post('contact',                 'Contact::send');
+    $routes->get('preview/(:segment)',       'Blog::preview/$1');
+    $routes->get('go/(:segment)',            'AffiliateRedirect::go/$1');
+    // Catch-all for locale-prefixed static pages — must be last inside the group
+    $routes->get('(:segment)',               'Pages::show/$1');
+});
+
+// ===================================================
+// CATCH-ALL: Static pages — non-prefixed, must be very last
 // ===================================================
 $routes->get('(:segment)', 'Pages::show/$1');

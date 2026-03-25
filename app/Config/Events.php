@@ -52,4 +52,35 @@ Events::on('pre_system', static function (): void {
             });
         }
     }
+
+    /*
+     * --------------------------------------------------------------------
+     * Locale bootstrap — populate Config\App::$supportedLocales from the
+     * languages table BEFORE route matching so the {locale} route segment
+     * validation works correctly.
+     * --------------------------------------------------------------------
+     */
+    try {
+        $cache  = \Config\Services::cache();
+        $codes  = $cache->get('active_languages');
+
+        if ($codes === null) {
+            $model = new \App\Models\LanguageModel();
+            $langs = $model->getActive();
+            $codes = array_map(static fn (object $l): string => $l->code, $langs);
+            // Ensure default locale is always included
+            if (! in_array('en', $codes, true)) {
+                $codes[] = 'en';
+            }
+            $cache->save('active_languages', $codes, 3600);
+        }
+
+        if (! empty($codes)) {
+            config('App')->supportedLocales = $codes;
+        }
+    } catch (\Throwable $e) {
+        // DB may not be available (e.g. CLI spark commands during install)
+        // Leave supportedLocales at its default value.
+        log_message('debug', 'pre_system locale bootstrap skipped: ' . $e->getMessage());
+    }
 });
