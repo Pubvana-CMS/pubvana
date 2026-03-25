@@ -63,8 +63,7 @@ class LanguageSwitcher
             $active    = ($code === $this->currentLocale);
             $url       = $this->buildUrl($code);
 
-            $dirModifier    = ($direction === 'rtl') ? '--rtl' : '--ltr';
-            $activeModifier = $active ? " pv-lang-btn--active" : '';
+            $dirModifier = ($direction === 'rtl') ? '--rtl' : '--ltr';
 
             // buttons format
             $btnClasses = trim(
