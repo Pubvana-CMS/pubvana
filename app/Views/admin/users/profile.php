@@ -2,7 +2,7 @@
 
 <div class="d-flex align-items-center justify-content-between mb-4">
     <h1 class="h3 mb-0 text-gray-800">Author Profile — <?= esc($subject_user->username) ?></h1>
-    <a href="<?= base_url('admin/users') ?>" class="btn btn-sm btn-outline-secondary">Back to Users</a>
+    <a href="<?= base_url('admin/users') ?>" class="btn btn-sm btn-outline-secondary"><?= lang('Admin.usersTitle') ?></a>
 </div>
 
 <?php if (session()->getFlashdata('success')): ?>
@@ -23,7 +23,7 @@
                     <?= csrf_field() ?>
 
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label font-weight-bold">Display Name</label>
+                        <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.userDisplayName') ?></label>
                         <div class="col-sm-9">
                             <input type="text" name="display_name" class="form-control"
                                    value="<?= esc($profile->display_name ?? '') ?>"
@@ -33,7 +33,7 @@
                     </div>
 
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label font-weight-bold">Bio</label>
+                        <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.userBio') ?></label>
                         <div class="col-sm-9">
                             <textarea name="bio" class="form-control" rows="4"
                                       placeholder="A short bio about the author..."><?= esc($profile->bio ?? '') ?></textarea>
@@ -41,7 +41,7 @@
                     </div>
 
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label font-weight-bold">Avatar</label>
+                        <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.userAvatar') ?></label>
                         <div class="col-sm-9">
                             <?php if (!empty($profile->avatar)): ?>
                                 <div class="mb-2">
@@ -56,7 +56,7 @@
                     </div>
 
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label font-weight-bold">Website</label>
+                        <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.userWebsite') ?></label>
                         <div class="col-sm-9">
                             <input type="url" name="website" class="form-control"
                                    value="<?= esc($profile->website ?? '') ?>"
@@ -68,7 +68,7 @@
                     <h6 class="font-weight-bold text-gray-700 mb-3">Social Handles</h6>
 
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label"><i class="fab fa-twitter text-info"></i> Twitter / X</label>
+                        <label class="col-sm-3 col-form-label"><i class="fab fa-twitter text-info"></i> <?= lang('Admin.userTwitter') ?></label>
                         <div class="col-sm-9">
                             <div class="input-group">
                                 <div class="input-group-prepend"><span class="input-group-text">@</span></div>
@@ -80,7 +80,7 @@
                     </div>
 
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label"><i class="fab fa-facebook text-primary"></i> Facebook</label>
+                        <label class="col-sm-3 col-form-label"><i class="fab fa-facebook text-primary"></i> <?= lang('Admin.userFacebook') ?></label>
                         <div class="col-sm-9">
                             <input type="text" name="facebook" class="form-control"
                                    value="<?= esc($profile->facebook ?? '') ?>"
@@ -89,7 +89,7 @@
                     </div>
 
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label"><i class="fab fa-linkedin text-primary"></i> LinkedIn</label>
+                        <label class="col-sm-3 col-form-label"><i class="fab fa-linkedin text-primary"></i> <?= lang('Admin.userLinkedin') ?></label>
                         <div class="col-sm-9">
                             <input type="text" name="linkedin" class="form-control"
                                    value="<?= esc($profile->linkedin ?? '') ?>"
@@ -98,7 +98,7 @@
                     </div>
 
                     <div class="text-right">
-                        <button type="submit" class="btn btn-primary">Save Profile</button>
+                        <button type="submit" class="btn btn-primary"><?= lang('Admin.userSaveProfile') ?></button>
                     </div>
                 </form>
             </div>

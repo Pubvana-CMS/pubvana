@@ -1,9 +1,9 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Users</h1>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.usersTitle') ?></h1>
     <a href="<?= base_url('admin/users/create') ?>" class="btn btn-sm btn-primary">
-        <i class="fas fa-plus fa-sm"></i> Create User
+        <i class="fas fa-plus fa-sm"></i> <?= lang('Admin.createUserTitle') ?>
     </a>
 </div>
 
@@ -13,12 +13,12 @@
             <table class="table table-hover mb-0">
                 <thead class="bg-light">
                     <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Joined</th>
-                        <th>Status</th>
-                        <th>Actions</th>
+                        <th><?= lang('Admin.name') ?></th>
+                        <th><?= lang('Admin.email') ?></th>
+                        <th><?= lang('Admin.role') ?></th>
+                        <th><?= lang('Admin.date') ?></th>
+                        <th><?= lang('Admin.status') ?></th>
+                        <th><?= lang('Admin.actions') ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -38,19 +38,19 @@
                         <td class="text-muted small"><?= date('M j, Y', strtotime($user->created_at)) ?></td>
                         <td>
                             <?php if ($user->active ?? true): ?>
-                                <span class="badge badge-success">Active</span>
+                                <span class="badge badge-success"><?= lang('Admin.active') ?></span>
                             <?php else: ?>
-                                <span class="badge badge-secondary">Inactive</span>
+                                <span class="badge badge-secondary"><?= lang('Admin.inactive') ?></span>
                             <?php endif; ?>
                         </td>
                         <td>
-                            <a href="<?= base_url('admin/users/' . $user->id . '/profile') ?>" class="btn btn-sm btn-outline-secondary">Profile</a>
+                            <a href="<?= base_url('admin/users/' . $user->id . '/profile') ?>" class="btn btn-sm btn-outline-secondary"><?= lang('Admin.authorProfileTitle') ?></a>
                             <?php if ($user->id !== auth()->id()): ?>
-                            <a href="<?= base_url('admin/users/' . $user->id . '/edit') ?>" class="btn btn-sm btn-outline-primary">Edit</a>
+                            <a href="<?= base_url('admin/users/' . $user->id . '/edit') ?>" class="btn btn-sm btn-outline-primary"><?= lang('Admin.edit') ?></a>
                             <form method="POST" action="<?= base_url('admin/users/' . $user->id . '/delete') ?>" class="d-inline"
-                                  onsubmit="return confirm('Delete this user permanently?')">
+                                  onsubmit="return confirm('<?= lang('Admin.confirmDeleteUser') ?>')">
                                 <?= csrf_field() ?>
-                                <button class="btn btn-sm btn-outline-danger">Delete</button>
+                                <button class="btn btn-sm btn-outline-danger"><?= lang('Admin.delete') ?></button>
                             </form>
                             <?php else: ?>
                             <span class="text-muted small">(you)</span>
