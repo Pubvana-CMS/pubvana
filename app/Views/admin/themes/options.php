@@ -1,9 +1,9 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Theme Options — <?= esc($theme->name) ?></h1>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.themeOptions') ?> — <?= esc($theme->name) ?></h1>
     <a href="<?= base_url('admin/themes') ?>" class="btn btn-sm btn-outline-secondary">
-        <i class="fas fa-arrow-left fa-sm"></i> Back to Themes
+        <i class="fas fa-arrow-left fa-sm"></i> <?= lang('Admin.themesTitle') ?>
     </a>
 </div>
 
@@ -59,7 +59,7 @@
             <?php else: ?>
                 <hr>
                 <div class="text-right">
-                    <button type="submit" class="btn btn-primary">Save Options</button>
+                    <button type="submit" class="btn btn-primary"><?= lang('Admin.themeSaveOptions') ?></button>
                 </div>
             <?php endif; ?>
         </form>

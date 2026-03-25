@@ -1,7 +1,7 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Widget Areas</h1>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.widgetsTitle') ?></h1>
 </div>
 
 <?php if (empty($areas)): ?>
@@ -49,10 +49,10 @@
                                 <?php endif; ?>
                             </span>
                             <span>
-                                <a href="<?= base_url('admin/widgets/' . $wi->id . '/configure') ?>" class="btn btn-xs btn-outline-primary">Configure</a>
+                                <a href="<?= base_url('admin/widgets/' . $wi->id . '/configure') ?>" class="btn btn-xs btn-outline-primary"><?= lang('Admin.widgetSaveConfig') ?></a>
                                 <form method="POST" action="<?= base_url('admin/widgets/' . $wi->id . '/remove') ?>" class="d-inline">
                                     <?= csrf_field() ?>
-                                    <button class="btn btn-xs btn-outline-danger" onclick="return confirm('Remove widget?')">Remove</button>
+                                    <button class="btn btn-xs btn-outline-danger" onclick="return confirm('<?= lang('Admin.confirmDelete') ?>')"><?= lang('Admin.delete') ?></button>
                                 </form>
                             </span>
                         </li>
@@ -66,7 +66,7 @@
         <div class="col-md-5">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Available Widgets</h6>
+                    <h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.widgetAvailable') ?></h6>
                 </div>
                 <div class="card-body p-2">
                     <?php foreach ($available as $w):
@@ -81,11 +81,11 @@
                             <div>
                                 <strong><?= esc($w->name) ?></strong>
                                 <?php if (!empty($wInfo['premium'])): ?>
-                                    <span class="badge badge-warning text-dark" style="font-size:0.6rem">Premium</span>
+                                    <span class="badge badge-warning text-dark" style="font-size:0.6rem"><?= lang('Admin.premium') ?></span>
                                 <?php endif; ?><br>
                                 <small class="text-muted"><?= esc($w->description) ?></small>
                             </div>
-                            <button class="btn btn-sm btn-outline-primary ml-2">Add</button>
+                            <button class="btn btn-sm btn-outline-primary ml-2"><?= lang('Admin.widgetAddToArea') ?></button>
                         </div>
                     </form>
                     <?php endforeach; ?>

@@ -1,6 +1,6 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
-<h1 class="h3 mb-4 text-gray-800">Themes</h1>
+<h1 class="h3 mb-4 text-gray-800"><?= lang('Admin.themesTitle') ?></h1>
 
 <div class="row">
 <?php foreach ($themes as $theme): ?>
@@ -18,25 +18,25 @@
                     <h5 class="card-title">
                         <?= esc($theme->name) ?>
                         <?php if (!empty($info['premium'])): ?>
-                            <span class="badge badge-warning text-dark" style="font-size:0.65rem">Premium</span>
+                            <span class="badge badge-warning text-dark" style="font-size:0.65rem"><?= lang('Admin.premium') ?></span>
                         <?php endif; ?>
                     </h5>
                     <?php if ($theme->is_active): ?>
-                        <span class="badge badge-primary">Active</span>
+                        <span class="badge badge-primary"><?= lang('Admin.themeActive') ?></span>
                     <?php endif; ?>
                 </div>
                 <p class="card-text text-muted small"><?= esc($info['description'] ?? '') ?></p>
-                <p class="text-muted" style="font-size:0.8rem">By <?= esc($info['author'] ?? 'Unknown') ?> &middot; v<?= esc($theme->version ?? '?') ?></p>
+                <p class="text-muted" style="font-size:0.8rem"><?= lang('Admin.themeBy') ?> <?= esc($info['author'] ?? 'Unknown') ?> &middot; v<?= esc($theme->version ?? '?') ?></p>
             </div>
             <div class="card-footer bg-white d-flex gap-2">
                 <?php if (! $theme->is_active): ?>
                 <form method="POST" action="<?= base_url('admin/themes/' . $theme->id . '/activate') ?>">
                     <?= csrf_field() ?>
-                    <button class="btn btn-sm btn-primary">Activate</button>
+                    <button class="btn btn-sm btn-primary"><?= lang('Admin.themeActivate') ?></button>
                 </form>
                 <?php endif; ?>
                 <?php if (!empty($info['options'])): ?>
-                <a href="<?= base_url('admin/themes/' . $theme->id . '/options') ?>" class="btn btn-sm btn-outline-secondary">Options</a>
+                <a href="<?= base_url('admin/themes/' . $theme->id . '/options') ?>" class="btn btn-sm btn-outline-secondary"><?= lang('Admin.themeOptionsBtn') ?></a>
                 <?php endif; ?>
             </div>
         </div>
