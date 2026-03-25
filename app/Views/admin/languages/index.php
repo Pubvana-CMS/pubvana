@@ -15,7 +15,7 @@
                     <th><?= lang('Admin.languageName') ?></th>
                     <th><?= lang('Admin.languageDefault') ?></th>
                     <th><?= lang('Admin.languageEnabled') ?></th>
-                    <th><?= lang('Admin.actions') ?></th>
+                    <th class="text-right text-nowrap"><?= lang('Admin.actions') ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -36,7 +36,7 @@
                             <span class="badge badge-secondary"><?= lang('Admin.inactive') ?></span>
                         <?php endif; ?>
                     </td>
-                    <td>
+                    <td class="text-right text-nowrap">
                         <?php if ($lang->is_active): ?>
                             <form method="POST" action="<?= base_url('admin/languages/disable/' . $lang->id) ?>" class="d-inline">
                                 <?= csrf_field() ?>
