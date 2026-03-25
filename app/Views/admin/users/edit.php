@@ -1,9 +1,9 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Edit User</h1>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.editUserTitle') ?></h1>
     <a href="<?= base_url('admin/users') ?>" class="btn btn-sm btn-outline-secondary">
-        <i class="fas fa-arrow-left fa-sm"></i> Back to Users
+        <i class="fas fa-arrow-left fa-sm"></i> <?= lang('Admin.usersTitle') ?>
     </a>
 </div>
 
@@ -13,17 +13,17 @@
             <?= csrf_field() ?>
             <div class="form-row">
                 <div class="form-group col-md-6">
-                    <label>Username</label>
+                    <label><?= lang('Admin.username') ?></label>
                     <p class="form-control-plaintext"><?= esc($subject_user->username ?? '') ?></p>
                 </div>
                 <div class="form-group col-md-6">
-                    <label>Email</label>
+                    <label><?= lang('Admin.email') ?></label>
                     <p class="form-control-plaintext"><?= esc($subject_user->email) ?></p>
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group col-md-6">
-                    <label>Role</label>
+                    <label><?= lang('Admin.userRoleLabel') ?></label>
                     <select name="role" class="form-control">
                         <?php foreach (['subscriber', 'author', 'editor', 'admin', 'superadmin'] as $r): ?>
                         <option value="<?= $r ?>" <?= ($current_group ?? '') === $r ? 'selected' : '' ?>><?= ucfirst($r) ?></option>
@@ -31,7 +31,7 @@
                     </select>
                 </div>
                 <div class="form-group col-md-6">
-                    <label>New Password <small class="text-muted">(leave blank to keep current)</small></label>
+                    <label><?= lang('Admin.userPasswordLabel') ?> <small class="text-muted"><?= lang('Admin.userPasswordOptional') ?></small></label>
                     <input type="password" name="password" class="form-control" autocomplete="new-password">
                 </div>
             </div>
@@ -45,8 +45,8 @@
             </div>
             <hr>
             <div class="d-flex justify-content-end">
-                <a href="<?= base_url('admin/users') ?>" class="btn btn-secondary mr-2">Cancel</a>
-                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <a href="<?= base_url('admin/users') ?>" class="btn btn-secondary mr-2"><?= lang('Admin.cancel') ?></a>
+                <button type="submit" class="btn btn-primary"><?= lang('Admin.userSaveChanges') ?></button>
             </div>
         </form>
     </div>

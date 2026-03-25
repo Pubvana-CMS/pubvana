@@ -1,9 +1,9 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Create User</h1>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.createUserTitle') ?></h1>
     <a href="<?= base_url('admin/users') ?>" class="btn btn-sm btn-outline-secondary">
-        <i class="fas fa-arrow-left fa-sm"></i> Back to Users
+        <i class="fas fa-arrow-left fa-sm"></i> <?= lang('Admin.usersTitle') ?>
     </a>
 </div>
 
@@ -23,24 +23,24 @@
             <?= csrf_field() ?>
             <div class="form-row">
                 <div class="form-group col-md-6">
-                    <label>Username</label>
+                    <label><?= lang('Admin.username') ?></label>
                     <input type="text" name="username" class="form-control" required
                            value="<?= esc(old('username')) ?>" minlength="3" maxlength="30">
                 </div>
                 <div class="form-group col-md-6">
-                    <label>Email</label>
+                    <label><?= lang('Admin.email') ?></label>
                     <input type="email" name="email" class="form-control" required
                            value="<?= esc(old('email')) ?>">
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group col-md-6">
-                    <label>Password</label>
+                    <label><?= lang('Admin.userPasswordLabel') ?></label>
                     <input type="password" name="password" class="form-control" required
                            autocomplete="new-password" minlength="8">
                 </div>
                 <div class="form-group col-md-6">
-                    <label>Role</label>
+                    <label><?= lang('Admin.userRoleLabel') ?></label>
                     <select name="role" class="form-control">
                         <?php foreach (['subscriber', 'author', 'editor', 'admin', 'superadmin'] as $r): ?>
                         <option value="<?= $r ?>" <?= old('role') === $r ? 'selected' : '' ?>><?= ucfirst($r) ?></option>
@@ -50,8 +50,8 @@
             </div>
             <hr>
             <div class="d-flex justify-content-end">
-                <a href="<?= base_url('admin/users') ?>" class="btn btn-secondary mr-2">Cancel</a>
-                <button type="submit" class="btn btn-primary">Create User</button>
+                <a href="<?= base_url('admin/users') ?>" class="btn btn-secondary mr-2"><?= lang('Admin.cancel') ?></a>
+                <button type="submit" class="btn btn-primary"><?= lang('Admin.create') ?></button>
             </div>
         </form>
     </div>
