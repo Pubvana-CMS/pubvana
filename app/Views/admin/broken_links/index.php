@@ -62,16 +62,16 @@
                 <thead class="thead-light">
                     <tr>
                         <th><?= lang('Admin.brokenLinkUrl') ?></th>
-                        <th style="width:90px" class="text-center"><?= lang('Admin.brokenLinkStatus') ?></th>
+                        <th class="text-center"><?= lang('Admin.brokenLinkStatus') ?></th>
                         <th><?= lang('Admin.brokenLinkError') ?></th>
-                        <th style="width:120px" class="text-muted small"><?= lang('Admin.date') ?></th>
-                        <th style="width:140px" class="text-right"><?= lang('Admin.actions') ?></th>
+                        <th class="text-muted small"><?= lang('Admin.date') ?></th>
+                        <th class="text-right"><?= lang('Admin.actions') ?></th>
                     </tr>
                 </thead>
                 <tbody>
                 <?php foreach ($group['links'] as $link): ?>
                     <tr class="<?= $link->dismissed ? 'text-muted' : '' ?>">
-                        <td class="small" style="max-width:320px">
+                        <td class="small text-truncate">
                             <a href="<?= esc($link->url) ?>" target="_blank" rel="noopener"
                                class="text-truncate d-block" title="<?= esc($link->url) ?>">
                                 <?= esc($link->url) ?>
@@ -86,7 +86,7 @@
                                 <span class="badge badge-secondary">Timeout</span>
                             <?php endif; ?>
                         </td>
-                        <td class="small text-muted" style="max-width:200px">
+                        <td class="small text-muted text-truncate">
                             <span class="text-truncate d-block" title="<?= esc($link->error_message ?? '') ?>">
                                 <?= esc($link->error_message ?? '—') ?>
                             </span>

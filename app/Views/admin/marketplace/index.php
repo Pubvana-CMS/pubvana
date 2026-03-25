@@ -53,7 +53,7 @@
                     <?php endif; ?>
                 </div>
                 <p class="text-muted small mb-2"><?= esc($item->description) ?></p>
-                <p class="text-muted" style="font-size:0.8rem">
+                <p class="text-muted small">
                     By <?= esc($item->author ?? 'Unknown') ?> &middot; v<?= esc($item->version) ?>
                     &middot; <span class="badge badge-<?= $item->item_type === 'theme' ? 'primary' : 'secondary' ?>"><?= ucfirst($item->item_type) ?></span>
                 </p>

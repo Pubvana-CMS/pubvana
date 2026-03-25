@@ -18,7 +18,7 @@
                     <h5 class="card-title">
                         <?= esc($theme->name) ?>
                         <?php if (!empty($info['premium'])): ?>
-                            <span class="badge badge-warning text-dark" style="font-size:0.65rem"><?= lang('Admin.premium') ?></span>
+                            <span class="badge badge-warning text-dark small"><?= lang('Admin.premium') ?></span>
                         <?php endif; ?>
                     </h5>
                     <?php if ($theme->is_active): ?>
@@ -26,7 +26,7 @@
                     <?php endif; ?>
                 </div>
                 <p class="card-text text-muted small"><?= esc($info['description'] ?? '') ?></p>
-                <p class="text-muted" style="font-size:0.8rem"><?= lang('Admin.themeBy') ?> <?= esc($info['author'] ?? 'Unknown') ?> &middot; v<?= esc($theme->version ?? '?') ?></p>
+                <p class="text-muted small"><?= lang('Admin.themeBy') ?> <?= esc($info['author'] ?? 'Unknown') ?> &middot; v<?= esc($theme->version ?? '?') ?></p>
             </div>
             <div class="card-footer bg-white d-flex gap-2">
                 <?php if (! $theme->is_active): ?>

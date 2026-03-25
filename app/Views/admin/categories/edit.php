@@ -4,7 +4,7 @@
     <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.editCategoryTitle') ?></h1>
     <a href="<?= base_url('admin/categories') ?>" class="btn btn-sm btn-outline-secondary"><?= lang('Admin.back') ?></a>
 </div>
-<div class="card shadow mb-4" style="max-width:600px">
+<div class="card shadow mb-4">
     <div class="card-body">
         <form method="POST" action="<?= base_url('admin/categories/' . $category->id . '/edit') ?>">
             <?= csrf_field() ?>
