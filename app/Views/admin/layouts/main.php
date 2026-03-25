@@ -48,7 +48,7 @@
         $nav = $active_nav ?? '';
         $contentOpen     = in_array($nav, ['posts','pages','categories','tags','comments','media','schedule','import'], true);
         $appearanceOpen  = in_array($nav, ['themes','widgets','navigation'], true);
-        $siteOpen        = in_array($nav, ['users','social','redirects','settings'], true);
+        $siteOpen        = in_array($nav, ['users','social','redirects','settings','languages'], true);
         $toolsOpen       = in_array($nav, ['affiliates','broken_links','analytics','activity_log','backup'], true);
         $marketplaceOpen = in_array($nav, ['marketplace'], true);
         $pluginsOpen     = false; // plugins set their own nav key; default closed
@@ -127,6 +127,7 @@
                     <?php if (auth()->user()->can('admin.settings')): ?>
                     <a class="collapse-item <?= $nav === 'social'       ? 'active' : '' ?>" href="<?= base_url('admin/social') ?>">Social Links</a>
                     <a class="collapse-item <?= $nav === 'redirects'    ? 'active' : '' ?>" href="<?= base_url('admin/redirects') ?>">Redirects</a>
+                    <a class="collapse-item <?= $nav === 'languages'    ? 'active' : '' ?>" href="<?= base_url('admin/languages') ?>">Languages</a>
                     <a class="collapse-item <?= $nav === 'settings'     ? 'active' : '' ?>" href="<?= base_url('admin/settings') ?>">Settings</a>
                     <?php endif; ?>
                 </div>
