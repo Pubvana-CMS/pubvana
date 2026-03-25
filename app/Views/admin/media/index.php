@@ -26,7 +26,7 @@
     <?php foreach ($media as $item): ?>
     <div class="col-6 col-md-3 col-lg-2 mb-3 media-item" id="media-<?= $item->id ?>">
         <div class="card h-100 border shadow-sm">
-            <img src="<?= esc(base_url('writable/' . $item->path)) ?>" class="card-img-top" style="height:100px;object-fit:cover" alt="<?= esc($item->filename) ?>">
+            <img src="<?= esc(base_url('writable/' . $item->path)) ?>" class="card-img-top card-thumb-sm obj-cover" alt="<?= esc($item->filename) ?>">
             <div class="card-body p-1 text-center">
                 <p class="text-truncate small mb-1" title="<?= esc($item->filename) ?>"><?= esc($item->filename) ?></p>
                 <p class="text-muted small"><?= round($item->size/1024, 1) ?> KB</p>

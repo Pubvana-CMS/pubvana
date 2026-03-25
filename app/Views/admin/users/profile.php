@@ -46,8 +46,7 @@
                             <?php if (!empty($profile->avatar)): ?>
                                 <div class="mb-2">
                                     <img src="<?= esc(base_url('writable/' . $profile->avatar)) ?>"
-                                         alt="Current avatar" class="rounded-circle" width="80" height="80"
-                                         style="object-fit:cover">
+                                         alt="Current avatar" class="rounded-circle obj-cover" width="80" height="80">
                                 </div>
                             <?php endif; ?>
                             <input type="file" name="avatar" class="form-control-file" accept="image/*">
@@ -116,7 +115,7 @@
                     ? base_url('writable/' . $profile->avatar)
                     : 'https://www.gravatar.com/avatar/' . md5(strtolower($subject_user->email ?? '')) . '?s=80&d=mp';
                 ?>
-                <img src="<?= esc($avatarUrl) ?>" class="rounded-circle mb-3" width="80" height="80" style="object-fit:cover" alt="">
+                <img src="<?= esc($avatarUrl) ?>" class="rounded-circle mb-3 obj-cover" width="80" height="80" alt="">
                 <h6 class="font-weight-bold"><?= esc($profile->display_name ?? $subject_user->username) ?></h6>
                 <?php if (!empty($profile->bio)): ?>
                     <p class="text-muted small"><?= nl2br(esc($profile->bio)) ?></p>
@@ -159,10 +158,9 @@ $totpEnabled = $totpRow ? (bool) $totpRow->totp_enabled : false;
                 <div class="form-group row align-items-center mb-2">
                     <label class="col-sm-4 col-form-label font-weight-bold">Current Code</label>
                     <div class="col-sm-5">
-                        <input type="text" name="totp_code" class="form-control text-center font-monospace"
+                        <input type="text" name="totp_code" class="form-control text-center font-monospace tracking-wide"
                                inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
-                               placeholder="000000" autocomplete="one-time-code"
-                               style="letter-spacing:0.3em">
+                               placeholder="000000" autocomplete="one-time-code">
                     </div>
                     <div class="col-sm-3">
                         <button type="submit" class="btn btn-danger btn-block">Disable</button>

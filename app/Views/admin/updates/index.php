@@ -47,7 +47,7 @@
                     <h6 class="m-0 font-weight-bold text-primary">Release Notes</h6>
                 </div>
                 <div class="card-body">
-                    <pre style="white-space:pre-wrap;font-family:inherit;margin:0"><?= esc($update['release_notes']) ?></pre>
+                    <pre class="ws-pre-wrap" style="font-family:inherit;margin:0"><?= esc($update['release_notes']) ?></pre>
                 </div>
             </div>
             <?php endif; ?>
@@ -72,7 +72,7 @@
                 <p class="small text-muted mb-3">Web-based auto-apply is not available for safety reasons. Use one of these methods:</p>
 
                 <h6 class="font-weight-bold">Option 1 — CLI (recommended)</h6>
-                <pre class="bg-light p-2 rounded small" style="white-space:pre-wrap">php spark pubvana:update</pre>
+                <pre class="bg-light p-2 rounded small ws-pre-wrap">php spark pubvana:update</pre>
                 <p class="small text-muted mb-3">Downloads, extracts, copies <code>app/</code> + <code>public/</code>, then runs migrations. Your <code>.env</code> and config files are preserved.</p>
 
                 <h6 class="font-weight-bold">Option 2 — Manual</h6>

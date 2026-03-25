@@ -18,7 +18,7 @@
             <div class="card-header"><h6 class="m-0 font-weight-bold text-primary">Content</h6></div>
             <div class="card-body">
                 <?php if ($revision->content_type === 'markdown'): ?>
-                    <pre class="border p-3 rounded bg-light" style="white-space:pre-wrap"><?= esc($revision->content) ?></pre>
+                    <pre class="border p-3 rounded bg-light ws-pre-wrap"><?= esc($revision->content) ?></pre>
                 <?php else: ?>
                     <div class="border p-3 rounded"><?= $revision->content ?></div>
                 <?php endif; ?>

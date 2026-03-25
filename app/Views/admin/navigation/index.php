@@ -70,7 +70,7 @@
                     <?php foreach ($items as $item): ?>
                     <li class="list-group-item d-flex justify-content-between align-items-center" data-id="<?= $item->id ?>">
                         <span>
-                            <i class="fas fa-grip-vertical text-muted mr-2" style="cursor:grab"></i>
+                            <i class="fas fa-grip-vertical text-muted mr-2 cursor-grab"></i>
                             <?= $item->parent_id ? '<span class="ml-3 text-muted">↳ </span>' : '' ?>
                             <strong><?= esc($item->label) ?></strong>
                             <small class="text-muted ml-2"><?= esc($item->url) ?></small>
