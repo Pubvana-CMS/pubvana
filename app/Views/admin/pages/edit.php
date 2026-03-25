@@ -1,8 +1,8 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Edit: <?= esc($page->title) ?></h1>
-    <a href="<?= base_url('admin/pages') ?>" class="btn btn-sm btn-outline-secondary">Back</a>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.editPageTitle') ?>: <?= esc($page->title) ?></h1>
+    <a href="<?= base_url('admin/pages') ?>" class="btn btn-sm btn-outline-secondary"><?= lang('Admin.back') ?></a>
 </div>
 
 <form method="POST" action="<?= base_url('admin/pages/' . $page->id . '/edit') ?>">
@@ -13,7 +13,7 @@
         <div class="card shadow mb-4">
             <div class="card-body">
                 <div class="form-group">
-                    <label class="font-weight-bold">Title *</label>
+                    <label class="font-weight-bold"><?= lang('Admin.postTitleField') ?></label>
                     <input type="text" name="title" class="form-control form-control-lg" required value="<?= esc($page->title) ?>">
                 </div>
                 <div class="form-group">
@@ -40,16 +40,16 @@
     </div>
     <div class="col-lg-4">
         <div class="card shadow mb-4">
-            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary">Publish</h6></div>
+            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.postPublishSection') ?></h6></div>
             <div class="card-body">
                 <div class="form-group">
-                    <label>Status</label>
+                    <label><?= lang('Admin.postStatus') ?></label>
                     <select name="status" class="form-control">
-                        <option value="draft" <?= $page->status === 'draft' ? 'selected' : '' ?>>Draft</option>
-                        <option value="published" <?= $page->status === 'published' ? 'selected' : '' ?>>Published</option>
+                        <option value="draft" <?= $page->status === 'draft' ? 'selected' : '' ?>><?= lang('Admin.postStatusDraft') ?></option>
+                        <option value="published" <?= $page->status === 'published' ? 'selected' : '' ?>><?= lang('Admin.postStatusPublished') ?></option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block">Update Page</button>
+                <button type="submit" class="btn btn-primary btn-block"><?= lang('Admin.update') ?></button>
             </div>
         </div>
     </div>

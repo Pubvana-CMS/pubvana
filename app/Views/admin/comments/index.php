@@ -1,6 +1,6 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
-<h1 class="h3 mb-4 text-gray-800">Comments</h1>
+<h1 class="h3 mb-4 text-gray-800"><?= lang('Admin.commentsTitle') ?></h1>
 
 <ul class="nav nav-tabs mb-3">
     <?php foreach (['pending', 'approved', 'spam', 'trash'] as $s): ?>
@@ -13,7 +13,7 @@
 <div class="card shadow mb-4">
     <div class="card-body p-0">
         <table class="table table-hover mb-0">
-            <thead class="bg-light"><tr><th>Author</th><th>Content</th><th>Date</th><th>Actions</th></tr></thead>
+            <thead class="bg-light"><tr><th><?= lang('Admin.commentAuthor') ?></th><th><?= lang('Admin.commentContent') ?></th><th><?= lang('Admin.commentDate') ?></th><th><?= lang('Admin.actions') ?></th></tr></thead>
             <tbody>
             <?php foreach ($comments as $c): ?>
                 <tr>
@@ -25,12 +25,12 @@
                     <td class="text-muted small"><?= date('M j, Y', strtotime($c->created_at)) ?></td>
                     <td>
                         <?php if ($c->status !== 'approved'): ?>
-                        <form method="POST" action="<?= base_url('admin/comments/' . $c->id . '/approve') ?>" class="d-inline"><?= csrf_field() ?><button class="btn btn-xs btn-success">Approve</button></form>
+                        <form method="POST" action="<?= base_url('admin/comments/' . $c->id . '/approve') ?>" class="d-inline"><?= csrf_field() ?><button class="btn btn-xs btn-success"><?= lang('Admin.approve') ?></button></form>
                         <?php endif; ?>
                         <?php if ($c->status !== 'spam'): ?>
-                        <form method="POST" action="<?= base_url('admin/comments/' . $c->id . '/spam') ?>" class="d-inline"><?= csrf_field() ?><button class="btn btn-xs btn-warning">Spam</button></form>
+                        <form method="POST" action="<?= base_url('admin/comments/' . $c->id . '/spam') ?>" class="d-inline"><?= csrf_field() ?><button class="btn btn-xs btn-warning"><?= lang('Admin.spam') ?></button></form>
                         <?php endif; ?>
-                        <form method="POST" action="<?= base_url('admin/comments/' . $c->id . '/delete') ?>" class="d-inline" onsubmit="return confirm('Delete permanently?')"><?= csrf_field() ?><button class="btn btn-xs btn-danger">Delete</button></form>
+                        <form method="POST" action="<?= base_url('admin/comments/' . $c->id . '/delete') ?>" class="d-inline" onsubmit="return confirm('<?= lang('Admin.confirmDeleteComment') ?>')"><?= csrf_field() ?><button class="btn btn-xs btn-danger"><?= lang('Admin.delete') ?></button></form>
                     </td>
                 </tr>
             <?php endforeach; ?>
