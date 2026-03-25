@@ -16,18 +16,20 @@
                     <?= csrf_field() ?>
                     <div class="form-group">
                         <label><?= lang('Admin.socialPlatform') ?></label>
-                        <input type="text" name="platform" class="form-control" required placeholder="e.g. Twitter">
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" id="icon-preview"><i class="fas fa-icons fa-fw"></i></span>
+                            </div>
+                            <input type="text" id="icon-search" class="form-control" placeholder="Search platforms..." autocomplete="off">
+                        </div>
+                        <input type="hidden" name="platform" id="platform-value">
+                        <input type="hidden" name="icon" id="icon-value">
+                        <div id="icon-dropdown" class="border rounded mt-1 bg-white" style="display:none; max-height:200px; overflow-y:auto">
+                        </div>
                     </div>
                     <div class="form-group">
                         <label><?= lang('Admin.socialUrl') ?></label>
                         <input type="url" name="url" class="form-control" required placeholder="https://twitter.com/yourhandle">
-                    </div>
-                    <div class="form-group">
-                        <label><?= lang('Admin.socialIcon') ?></label>
-                        <input type="text" id="icon-search" class="form-control" placeholder="Search icons..." autocomplete="off">
-                        <input type="hidden" name="icon" id="icon-value">
-                        <div id="icon-dropdown" class="border rounded mt-1 bg-white" style="display:none; max-height:200px; overflow-y:auto">
-                        </div>
                     </div>
                     <button type="submit" class="btn btn-primary btn-block"><?= lang('Admin.add') ?></button>
                 </form>
@@ -45,35 +47,30 @@
                 <table class="table table-hover mb-0">
                     <thead class="bg-light">
                         <tr>
-                            <th class="w-20"><?= lang('Admin.socialPlatform') ?></th>
+                            <th><?= lang('Admin.socialPlatform') ?></th>
                             <th><?= lang('Admin.socialUrl') ?></th>
-                            <th class="w-15"><?= lang('Admin.socialIcon') ?></th>
-                            <th class="w-10"><?= lang('Admin.status') ?></th>
-                            <th class="w-10"><?= lang('Admin.actions') ?></th>
+                            <th class="text-right text-nowrap"><?= lang('Admin.actions') ?></th>
                         </tr>
                     </thead>
                     <tbody>
                     <?php foreach ($links as $link): ?>
                         <tr>
                             <td>
-                                <i class="<?= esc($link->icon) ?> fa-fw fa-lg me-2 text-primary"></i><?= esc($link->platform) ?>
+                                <i class="<?= esc($link->icon) ?> fa-fw fa-lg text-primary"></i>
                             </td>
                             <td>
                                 <a href="#" class="copy-url" data-url="<?= esc($link->url) ?>" data-toggle="tooltip" title="<?= esc($link->url) ?>">
                                     <i class="far fa-hand-pointer fa-fw"></i> <?= lang('Admin.clickToCopy') ?>
                                 </a>
                             </td>
-                            <td><small class="text-muted"><?= esc($link->icon) ?></small></td>
-                            <td>
+                            <td class="text-right text-nowrap">
                                 <form method="POST" action="<?= base_url('admin/social/' . $link->id . '/toggle') ?>" class="d-inline">
                                     <?= csrf_field() ?>
-                                    <button class="btn btn-xs <?= $link->is_active ? 'btn-success' : 'btn-outline-secondary' ?>">
-                                        <?= $link->is_active ? lang('Admin.active') : lang('Admin.inactive') ?>
+                                    <button class="btn btn-xs <?= $link->is_active ? 'btn-outline-secondary' : 'btn-success' ?>">
+                                        <?= $link->is_active ? lang('Admin.deactivate') : lang('Admin.activate') ?>
                                     </button>
                                 </form>
-                            </td>
-                            <td>
-                                <form method="POST" action="<?= base_url('admin/social/' . $link->id . '/delete') ?>" class="d-inline" onsubmit="return confirm('<?= lang('Admin.confirmDelete') ?>')">
+                                <form method="POST" action="<?= base_url('admin/social/' . $link->id . '/delete') ?>" class="d-inline ml-1" onsubmit="return confirm('<?= lang('Admin.confirmDelete') ?>')">
                                     <?= csrf_field() ?>
                                     <button class="btn btn-xs btn-outline-danger"><?= lang('Admin.delete') ?></button>
                                 </form>
@@ -81,7 +78,7 @@
                         </tr>
                     <?php endforeach; ?>
                     <?php if (empty($links)): ?>
-                        <tr><td colspan="5" class="text-center text-muted py-4"><?= lang('Admin.noResultsFound') ?></td></tr>
+                        <tr><td colspan="3" class="text-center text-muted py-4"><?= lang('Admin.noResultsFound') ?></td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
@@ -164,6 +161,7 @@ $(function(){
     var $search   = $('#icon-search');
     var $dropdown = $('#icon-dropdown');
     var $hidden   = $('#icon-value');
+    var $platform = $('#platform-value');
 
     function renderList(filter) {
         var html = '';
@@ -191,9 +189,11 @@ $(function(){
     $(document).on('click', '.icon-option', function(e){
         e.preventDefault();
         var cls = $(this).data('cls');
-        var label = $(this).find('span').text();
+        var label = $(this).text().trim();
         $search.val(label);
         $hidden.val(cls);
+        $platform.val(label);
+        $('#icon-preview').html('<i class="' + cls + ' fa-fw"></i>');
         $dropdown.hide();
     });
 
