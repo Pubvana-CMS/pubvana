@@ -10,7 +10,7 @@ class Media extends BaseAdminController
     public function index(): string
     {
         if (! auth()->user()->can('media.upload')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         $model  = new MediaModel();
         $media  = $model->orderBy('created_at', 'DESC')->paginate(24);
@@ -41,9 +41,9 @@ class Media extends BaseAdminController
     public function delete(int $id)
     {
         if (! auth()->user()->can('media.upload')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         (new MediaService())->delete($id);
-        return redirect()->to('/admin/media')->with('success', 'Media deleted.');
+        return redirect()->to('/admin/media')->with('success', lang('Admin.mediaDeleted'));
     }
 }

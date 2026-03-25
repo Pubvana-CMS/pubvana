@@ -20,7 +20,7 @@ class Categories extends BaseAdminController
     public function index(): string
     {
         if (! auth()->user()->can('posts.edit.any')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         return $this->adminView('categories/index', array_merge($this->baseData('Categories', 'categories'), [
             'categories' => $this->model->getWithPostCount(),
@@ -30,7 +30,7 @@ class Categories extends BaseAdminController
     public function create(): string
     {
         if (! auth()->user()->can('posts.edit.any')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         return $this->adminView('categories/create', $this->baseData('New Category', 'categories'));
     }
@@ -38,7 +38,7 @@ class Categories extends BaseAdminController
     public function store()
     {
         if (! auth()->user()->can('posts.edit.any')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         if (! $this->validate(['name' => 'required|max_length[255]'])) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
@@ -49,13 +49,13 @@ class Categories extends BaseAdminController
             'slug'        => $slug,
             'description' => $this->request->getPost('description'),
         ]);
-        return redirect()->to('/admin/categories')->with('success', 'Category created.');
+        return redirect()->to('/admin/categories')->with('success', lang('Admin.categoryCreated'));
     }
 
     public function edit(int $id): string
     {
         if (! auth()->user()->can('posts.edit.any')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         $cat = $this->model->find($id);
         if (! $cat) {
@@ -67,7 +67,7 @@ class Categories extends BaseAdminController
     public function update(int $id)
     {
         if (! auth()->user()->can('posts.edit.any')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         if (! $this->validate(['name' => 'required|max_length[255]'])) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
@@ -77,15 +77,15 @@ class Categories extends BaseAdminController
             'slug'        => slug_from_title($this->request->getPost('name')),
             'description' => $this->request->getPost('description'),
         ]);
-        return redirect()->to('/admin/categories')->with('success', 'Category updated.');
+        return redirect()->to('/admin/categories')->with('success', lang('Admin.categoryUpdated'));
     }
 
     public function delete(int $id)
     {
         if (! auth()->user()->can('posts.edit.any')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         $this->model->delete($id);
-        return redirect()->to('/admin/categories')->with('success', 'Category deleted.');
+        return redirect()->to('/admin/categories')->with('success', lang('Admin.categoryDeleted'));
     }
 }

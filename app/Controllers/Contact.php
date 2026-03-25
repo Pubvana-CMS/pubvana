@@ -8,6 +8,8 @@ class Contact extends BaseController
 {
     public function index(): string
     {
+        $this->buildLangSwitcher();
+
         return $this->themeService->view('page', array_merge($this->data, [
             'page' => (object) [
                 'title'        => 'Contact',
@@ -28,7 +30,7 @@ class Contact extends BaseController
     {
         $captcha = new HCaptchaService();
         if (! $captcha->verify($this->request->getPost('h-captcha-response') ?? '')) {
-            return redirect()->back()->withInput()->with('error', 'Captcha verification failed. Please try again.');
+            return redirect()->back()->withInput()->with('error', lang('Blog.contactCaptchaFail'));
         }
 
         if (! $this->validate([
@@ -51,6 +53,6 @@ class Contact extends BaseController
         );
         $email->send();
 
-        return redirect()->to('/contact')->with('success', 'Your message has been sent!');
+        return redirect()->to('/contact')->with('success', lang('Blog.contactSent'));
     }
 }

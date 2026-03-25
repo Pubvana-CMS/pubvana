@@ -21,7 +21,7 @@ class Pages extends BaseAdminController
     public function index(): string
     {
         if (! auth()->user()->can('pages.manage')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         $pages = $this->pageModel->orderBy('sort_order')->findAll();
         return $this->adminView('pages/index', array_merge($this->baseData('Pages', 'pages'), ['pages' => $pages]));
@@ -30,7 +30,7 @@ class Pages extends BaseAdminController
     public function create(): string
     {
         if (! auth()->user()->can('pages.manage')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         return $this->adminView('pages/create', $this->baseData('New Page', 'pages'));
     }
@@ -38,14 +38,14 @@ class Pages extends BaseAdminController
     public function store()
     {
         if (! auth()->user()->can('pages.manage')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         if (! $this->validate(['title' => 'required|max_length[255]', 'slug' => 'permit_empty|max_length[255]'])) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
         $slug = slug_from_title($this->request->getPost('slug') ?: $this->request->getPost('title'));
         if ($this->pageModel->findBySlug($slug)) {
-            return redirect()->back()->withInput()->with('error', "Slug '{$slug}' already in use.");
+            return redirect()->back()->withInput()->with('error', lang('Admin.pageSlugInUse', [$slug]));
         }
         $contentType = $this->request->getPost('content_type') ?? 'html';
         $content     = $contentType === 'markdown'
@@ -63,13 +63,13 @@ class Pages extends BaseAdminController
         ]);
         $newId = $this->pageModel->getInsertID();
         ActivityLogger::log('page.created', 'page', $newId ?: null, 'Created page: ' . $this->request->getPost('title'));
-        return redirect()->to('/admin/pages')->with('success', 'Page created.');
+        return redirect()->to('/admin/pages')->with('success', lang('Admin.pageCreated'));
     }
 
     public function edit(int $id): string
     {
         if (! auth()->user()->can('pages.manage')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         $page = $this->pageModel->find($id);
         if (! $page) {
@@ -81,7 +81,7 @@ class Pages extends BaseAdminController
     public function update(int $id)
     {
         if (! auth()->user()->can('pages.manage')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         $page = $this->pageModel->find($id);
         if (! $page) {
@@ -103,20 +103,20 @@ class Pages extends BaseAdminController
             'meta_description' => $this->request->getPost('meta_description'),
         ]);
         ActivityLogger::log('page.updated', 'page', $id, 'Updated page: ' . $this->request->getPost('title'));
-        return redirect()->to('/admin/pages')->with('success', 'Page updated.');
+        return redirect()->to('/admin/pages')->with('success', lang('Admin.pageUpdated'));
     }
 
     public function delete(int $id)
     {
         if (! auth()->user()->can('pages.manage')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         $page = $this->pageModel->find($id);
         if (! $page || $page->is_system) {
-            return redirect()->to('/admin/pages')->with('error', 'Cannot delete this page.');
+            return redirect()->to('/admin/pages')->with('error', lang('Admin.pageCannotDelete'));
         }
         $this->pageModel->delete($id);
         ActivityLogger::log('page.deleted', 'page', $id, 'Deleted page: ' . $page->title);
-        return redirect()->to('/admin/pages')->with('success', 'Page deleted.');
+        return redirect()->to('/admin/pages')->with('success', lang('Admin.pageDeleted'));
     }
 }

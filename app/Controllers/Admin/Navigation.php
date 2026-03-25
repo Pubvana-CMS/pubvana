@@ -9,7 +9,7 @@ class Navigation extends BaseAdminController
     public function index(): string
     {
         if (! auth()->user()->can('admin.navigation')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         $model = new NavigationModel();
         $group = $this->request->getGet('group') ?? 'primary';
@@ -25,7 +25,7 @@ class Navigation extends BaseAdminController
     public function store()
     {
         if (! auth()->user()->can('admin.navigation')) {
-            return redirect()->to('/admin/navigation')->with('error', 'Permission denied.');
+            return redirect()->to('/admin/navigation')->with('error', lang('Admin.permissionDenied'));
         }
         if (! $this->validate(['label' => 'required', 'url' => 'required'])) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
@@ -38,16 +38,16 @@ class Navigation extends BaseAdminController
             'sort_order'=> (int) $this->request->getPost('sort_order'),
             'parent_id' => $this->request->getPost('parent_id') ?: null,
         ]);
-        return redirect()->to('/admin/navigation')->with('success', 'Nav item added.');
+        return redirect()->to('/admin/navigation')->with('success', lang('Admin.navItemAdded'));
     }
 
     public function delete(int $id)
     {
         if (! auth()->user()->can('admin.navigation')) {
-            return redirect()->to('/admin/navigation')->with('error', 'Permission denied.');
+            return redirect()->to('/admin/navigation')->with('error', lang('Admin.permissionDenied'));
         }
         (new NavigationModel())->delete($id);
-        return redirect()->to('/admin/navigation')->with('success', 'Nav item removed.');
+        return redirect()->to('/admin/navigation')->with('success', lang('Admin.navItemRemoved'));
     }
 
     public function reorder()

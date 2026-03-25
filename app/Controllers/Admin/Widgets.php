@@ -12,7 +12,7 @@ class Widgets extends BaseAdminController
     public function areas(): string
     {
         if (! auth()->user()->can('admin.widgets')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         (new WidgetService())->sync();
 
@@ -38,7 +38,7 @@ class Widgets extends BaseAdminController
     public function addToArea()
     {
         if (! auth()->user()->can('admin.widgets')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         $areaId   = (int) $this->request->getPost('widget_area_id');
         $widgetId = (int) $this->request->getPost('widget_id');
@@ -49,22 +49,22 @@ class Widgets extends BaseAdminController
             'sort_order'     => 999,
             'options_json'   => null,
         ]);
-        return redirect()->to('/admin/widgets')->with('success', 'Widget added.');
+        return redirect()->to('/admin/widgets')->with('success', lang('Admin.widgetAdded'));
     }
 
     public function removeFromArea(int $instanceId)
     {
         if (! auth()->user()->can('admin.widgets')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         (new WidgetInstanceModel())->delete($instanceId);
-        return redirect()->to('/admin/widgets')->with('success', 'Widget removed.');
+        return redirect()->to('/admin/widgets')->with('success', lang('Admin.widgetRemoved'));
     }
 
     public function configure(int $instanceId): string
     {
         if (! auth()->user()->can('admin.widgets')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         $db = db_connect();
         $instance = $db->table('widget_instances wi')
@@ -90,11 +90,11 @@ class Widgets extends BaseAdminController
     public function saveConfig(int $instanceId)
     {
         if (! auth()->user()->can('admin.widgets')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         $options = $this->request->getPost('options') ?? [];
         (new WidgetInstanceModel())->update($instanceId, ['options_json' => json_encode($options)]);
-        return redirect()->to('/admin/widgets')->with('success', 'Widget configured.');
+        return redirect()->to('/admin/widgets')->with('success', lang('Admin.widgetConfigured'));
     }
 
     public function reorder()

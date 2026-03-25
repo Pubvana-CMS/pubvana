@@ -11,7 +11,7 @@ class BrokenLinks extends BaseAdminController
         $this->requirePremium();
 
         if (! auth()->user()->can('admin.settings')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
 
         $model        = new BrokenLinkModel();
@@ -51,7 +51,7 @@ class BrokenLinks extends BaseAdminController
         $row   = $model->find($id);
 
         if (! $row) {
-            return redirect()->to('/admin/broken-links')->with('error', 'Record not found.');
+            return redirect()->to('/admin/broken-links')->with('error', lang('Admin.notFound'));
         }
 
         $result = $this->fetchUrl($row->url);
@@ -68,11 +68,11 @@ class BrokenLinks extends BaseAdminController
         // If it resolved OK, remove the record
         if ($model->isOk($result['status'])) {
             $model->delete($id);
-            return redirect()->to('/admin/broken-links')->with('success', 'Link is now reachable — removed from results.');
+            return redirect()->to('/admin/broken-links')->with('success', lang('Admin.brokenLinkNowReachable'));
         }
 
         $label = $result['status'] ?? 'unreachable';
-        return redirect()->to('/admin/broken-links')->with('error', "Link still broken ({$label}).");
+        return redirect()->to('/admin/broken-links')->with('error', lang('Admin.brokenLinkStillBroken', [$label]));
     }
 
     public function dismiss(int $id)
@@ -83,12 +83,12 @@ class BrokenLinks extends BaseAdminController
         $row   = $model->find($id);
 
         if (! $row) {
-            return redirect()->to('/admin/broken-links')->with('error', 'Record not found.');
+            return redirect()->to('/admin/broken-links')->with('error', lang('Admin.notFound'));
         }
 
         $model->update($id, ['dismissed' => 1]);
 
-        return redirect()->to('/admin/broken-links')->with('success', 'Link dismissed.');
+        return redirect()->to('/admin/broken-links')->with('success', lang('Admin.brokenLinkDismissed'));
     }
 
     // -------------------------------------------------------------------------

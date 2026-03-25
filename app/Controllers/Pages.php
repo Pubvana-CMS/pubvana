@@ -9,6 +9,8 @@ class Pages extends BaseController
 {
     public function show(string $slug): string
     {
+        $this->buildLangSwitcher();
+
         $pageModel = new PageModel();
         $page      = $pageModel->findBySlug($slug);
 

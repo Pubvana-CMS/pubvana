@@ -12,7 +12,7 @@ class Revisions extends BaseAdminController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
         if (! auth()->user()->can('posts.edit.any') && (int) $post->author_id !== auth()->id()) {
-            return redirect()->to('/admin/posts')->with('error', 'Permission denied.');
+            return redirect()->to('/admin/posts')->with('error', lang('Admin.permissionDenied'));
         }
 
         $revisions = $db->table('post_revisions pr')
@@ -43,7 +43,7 @@ class Revisions extends BaseAdminController
 
         $post = $db->table('posts')->where('id', $revision->post_id)->get()->getRowObject();
         if ($post && ! auth()->user()->can('posts.edit.any') && (int) $post->author_id !== auth()->id()) {
-            return redirect()->to('/admin/posts')->with('error', 'Permission denied.');
+            return redirect()->to('/admin/posts')->with('error', lang('Admin.permissionDenied'));
         }
 
         return $this->adminView('posts/revision_show', array_merge($this->baseData('Revision — ' . $revision->title, 'posts'), [
@@ -61,7 +61,7 @@ class Revisions extends BaseAdminController
         }
         $post = $db->table('posts')->where('id', $revision->post_id)->get()->getRowObject();
         if ($post && ! auth()->user()->can('posts.edit.any') && (int) $post->author_id !== auth()->id()) {
-            return redirect()->to('/admin/posts')->with('error', 'Permission denied.');
+            return redirect()->to('/admin/posts')->with('error', lang('Admin.permissionDenied'));
         }
 
         $db->table('posts')->where('id', $revision->post_id)->update([
@@ -76,6 +76,6 @@ class Revisions extends BaseAdminController
         ]);
 
         return redirect()->to('/admin/posts/' . $revision->post_id . '/revisions')
-                         ->with('success', 'Post restored to revision from ' . $revision->created_at . '.');
+                         ->with('success', lang('Admin.revisionRestored', [$revision->created_at]));
     }
 }

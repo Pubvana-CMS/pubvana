@@ -30,6 +30,6 @@ class Updates extends BaseAdminController
     public function check()
     {
         $this->updateService->clearCache();
-        return redirect()->to(base_url('admin/updates'))->with('success', 'Update cache cleared — re-checking now.');
+        return redirect()->to(base_url('admin/updates'))->with('success', lang('Admin.updatesCacheCleared'));
     }
 }

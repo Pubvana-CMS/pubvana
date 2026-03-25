@@ -12,7 +12,7 @@ class Backup extends BaseAdminController
         $this->requirePremium();
 
         if (! auth()->user()->can('admin.settings')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
 
         $service = new BackupService();
@@ -28,7 +28,7 @@ class Backup extends BaseAdminController
         $this->requirePremium();
 
         if (! auth()->user()->can('admin.settings')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
 
         try {
@@ -36,7 +36,7 @@ class Backup extends BaseAdminController
             $zipPath = $service->createBackup();
         } catch (\Throwable $e) {
             log_message('error', 'Backup failed: ' . $e->getMessage());
-            return redirect()->to('/admin/backup')->with('error', 'Backup failed: ' . $e->getMessage());
+            return redirect()->to('/admin/backup')->with('error', lang('Admin.backupFailed', [$e->getMessage()]));
         }
 
         ActivityLogger::log('settings.updated', 'setting', null, 'Created site backup');
@@ -61,16 +61,16 @@ class Backup extends BaseAdminController
         $this->requirePremium();
 
         if (! auth()->user()->can('admin.settings')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
 
         $filename = $this->request->getPost('filename') ?? '';
         $service  = new BackupService();
 
         if ($service->deleteBackup($filename)) {
-            return redirect()->to('/admin/backup')->with('success', 'Backup deleted.');
+            return redirect()->to('/admin/backup')->with('success', lang('Admin.backupDeleted'));
         }
 
-        return redirect()->to('/admin/backup')->with('error', 'Could not delete backup.');
+        return redirect()->to('/admin/backup')->with('error', lang('Admin.backupCannotDelete'));
     }
 }

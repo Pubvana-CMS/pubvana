@@ -9,7 +9,7 @@ class Import extends BaseAdminController
     public function index(): string
     {
         if (! auth()->user()->can('admin.settings')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         return $this->adminView('import/index', $this->baseData('Import', 'import'));
     }
@@ -17,21 +17,21 @@ class Import extends BaseAdminController
     public function upload()
     {
         if (! auth()->user()->can('admin.settings')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
 
         $file = $this->request->getFile('wxr_file');
         if (! $file || ! $file->isValid() || $file->hasMoved()) {
-            return redirect()->back()->with('error', 'Please upload a valid WordPress WXR export file.');
+            return redirect()->back()->with('error', lang('Admin.importNoValidFile'));
         }
 
         $ext = strtolower($file->getClientExtension());
         if (! in_array($ext, ['xml'], true)) {
-            return redirect()->back()->with('error', 'Only .xml files are accepted.');
+            return redirect()->back()->with('error', lang('Admin.importOnlyXml'));
         }
 
         if ($file->getSize() > 50 * 1024 * 1024) {
-            return redirect()->back()->with('error', 'Import file too large. Maximum size is 50 MB.');
+            return redirect()->back()->with('error', lang('Admin.importFileTooLarge'));
         }
 
         $tmpDir = WRITEPATH . 'tmp/';

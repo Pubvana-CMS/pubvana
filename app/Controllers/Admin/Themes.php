@@ -22,22 +22,22 @@ class Themes extends BaseAdminController
     public function activate(int $id)
     {
         if (! auth()->user()->can('admin.themes')) {
-            return redirect()->to('/admin/themes')->with('error', 'Permission denied.');
+            return redirect()->to('/admin/themes')->with('error', lang('Admin.permissionDenied'));
         }
         $service = new ThemeService();
         $ok      = $service->activate($id);
         if (! $ok) {
-            return redirect()->to('/admin/themes')->with('error', 'Cannot activate theme — license is invalid. Re-install or contact support.');
+            return redirect()->to('/admin/themes')->with('error', lang('Admin.themeInvalidLicense'));
         }
         $theme = (new ThemeModel())->find($id);
         ActivityLogger::log('theme.activated', 'theme', $id, 'Activated theme: ' . ($theme->name ?? $id));
-        return redirect()->to('/admin/themes')->with('success', 'Theme activated.');
+        return redirect()->to('/admin/themes')->with('success', lang('Admin.themeActivated'));
     }
 
     public function options(int $id): string
     {
         if (! auth()->user()->can('admin.themes')) {
-            return redirect()->to('/admin/themes')->with('error', 'Permission denied.');
+            return redirect()->to('/admin/themes')->with('error', lang('Admin.permissionDenied'));
         }
 
         $theme = (new ThemeModel())->find($id);
@@ -64,7 +64,7 @@ class Themes extends BaseAdminController
     public function saveOptions(int $id)
     {
         if (! auth()->user()->can('admin.themes')) {
-            return redirect()->to('/admin/themes')->with('error', 'Permission denied.');
+            return redirect()->to('/admin/themes')->with('error', lang('Admin.permissionDenied'));
         }
 
         $theme = (new ThemeModel())->find($id);
@@ -81,6 +81,6 @@ class Themes extends BaseAdminController
             $service->saveThemeOption($id, $key, $value);
         }
 
-        return redirect()->to("/admin/themes/{$id}/options")->with('success', 'Options saved.');
+        return redirect()->to("/admin/themes/{$id}/options")->with('success', lang('Admin.themeOptionsSaved'));
     }
 }

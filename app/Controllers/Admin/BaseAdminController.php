@@ -14,7 +14,7 @@ abstract class BaseAdminController extends BaseController
         parent::initController($request, $response, $logger);
 
         if (! auth()->loggedIn() || ! auth()->user()->can('admin.access')) {
-            redirect()->to('/login')->with('error', 'You must be logged in to access the admin panel.')->send();
+            redirect()->to('/login')->with('error', lang('Admin.adminLoginRequired'))->send();
             exit;
         }
     }
@@ -44,7 +44,7 @@ abstract class BaseAdminController extends BaseController
         if (! $premium->isLicensed()) {
             redirect()
                 ->to('/admin/settings#premium')
-                ->with('error', 'This feature requires a Pubvana Premium Core licence. Please add your licence key below.')
+                ->with('error', lang('Admin.premiumRequired'))
                 ->send();
             exit;
         }

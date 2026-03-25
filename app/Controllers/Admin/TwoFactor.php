@@ -45,7 +45,7 @@ class TwoFactor extends BaseAdminController
 
         if (! $secret) {
             return redirect()->to('/admin/users/2fa/setup')
-                ->with('error', 'Setup session expired — please start again.');
+                ->with('error', lang('Admin.tfaSessionExpired'));
         }
 
         $code = trim($this->request->getPost('totp_code') ?? '');
@@ -53,7 +53,7 @@ class TwoFactor extends BaseAdminController
 
         if (! $totp->verify($code, null, 1)) {
             return redirect()->to('/admin/users/2fa/setup')
-                ->with('error', 'Invalid code — please scan the QR code and try once more.');
+                ->with('error', lang('Admin.tfaInvalidCode'));
         }
 
         db_connect()->table('users')
@@ -65,7 +65,7 @@ class TwoFactor extends BaseAdminController
         session()->set('totp_2fa_verified', true);
 
         return redirect()->to('/admin/users/' . $userId . '/profile')
-            ->with('success', 'Two-factor authentication enabled.');
+            ->with('success', lang('Admin.tfaEnabled'));
     }
 
     /**
@@ -82,7 +82,7 @@ class TwoFactor extends BaseAdminController
 
         if (! $row || ! $row->totp_enabled) {
             return redirect()->to('/admin/users/' . $userId . '/profile')
-                ->with('error', '2FA is not currently enabled.');
+                ->with('error', lang('Admin.tfaNotEnabled'));
         }
 
         $code = trim($this->request->getPost('totp_code') ?? '');
@@ -90,7 +90,7 @@ class TwoFactor extends BaseAdminController
 
         if (! $totp->verify($code, null, 1)) {
             return redirect()->to('/admin/users/' . $userId . '/profile')
-                ->with('error', 'Invalid code — 2FA was not disabled.');
+                ->with('error', lang('Admin.tfaInvalidDisable'));
         }
 
         db_connect()->table('users')
@@ -100,6 +100,6 @@ class TwoFactor extends BaseAdminController
         session()->remove('totp_2fa_verified');
 
         return redirect()->to('/admin/users/' . $userId . '/profile')
-            ->with('success', 'Two-factor authentication disabled.');
+            ->with('success', lang('Admin.tfaDisabled'));
     }
 }
