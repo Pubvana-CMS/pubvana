@@ -9,7 +9,7 @@ class Redirects extends BaseAdminController
     public function index(): string
     {
         if (! auth()->user()->can('admin.settings')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         $model     = new RedirectModel();
         $redirects = $model->orderBy('created_at', 'DESC')->paginate(20);
@@ -22,7 +22,7 @@ class Redirects extends BaseAdminController
     public function store()
     {
         if (! auth()->user()->can('admin.settings')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         if (! $this->validate([
             'from_url' => 'required|string|max_length[500]',
@@ -36,7 +36,7 @@ class Redirects extends BaseAdminController
 
         // Block javascript: and data: URI schemes which could be used for phishing/XSS
         if (preg_match('/^\s*(javascript|data|vbscript):/i', $toUrl)) {
-            return redirect()->back()->withInput()->with('error', 'Invalid redirect destination URL.');
+            return redirect()->back()->withInput()->with('error', lang('Admin.redirectInvalidDest'));
         }
 
         (new RedirectModel())->insert([
@@ -44,15 +44,15 @@ class Redirects extends BaseAdminController
             'to_url'   => $toUrl,
             'type'     => $this->request->getPost('type') ?: '301',
         ]);
-        return redirect()->to('/admin/redirects')->with('success', 'Redirect added.');
+        return redirect()->to('/admin/redirects')->with('success', lang('Admin.redirectAdded'));
     }
 
     public function delete(int $id)
     {
         if (! auth()->user()->can('admin.settings')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         (new RedirectModel())->delete($id);
-        return redirect()->to('/admin/redirects')->with('success', 'Redirect deleted.');
+        return redirect()->to('/admin/redirects')->with('success', lang('Admin.redirectDeleted'));
     }
 }

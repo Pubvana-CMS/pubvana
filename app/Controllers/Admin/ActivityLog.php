@@ -11,7 +11,7 @@ class ActivityLog extends BaseAdminController
         $this->requirePremium();
 
         if (! auth()->user()->can('admin.settings')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
 
         $type  = $this->request->getGet('type') ?? '';

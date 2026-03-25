@@ -25,7 +25,7 @@ class Store extends BaseAdminController
         $itemType   = trim($this->request->getPost('item_type') ?? '');
 
         if (! $slug || ! $itemType) {
-            return redirect()->back()->with('error', 'Item slug and item type are required.');
+            return redirect()->back()->with('error', lang('Admin.storeSlugTypeRequired'));
         }
 
         $service = new MarketplaceService();
@@ -38,7 +38,7 @@ class Store extends BaseAdminController
                 if ($i->slug === $slug) { $item = $i; break; }
             }
             if (! $item || ! $item->is_free || empty($item->download_url)) {
-                return redirect()->back()->with('error', 'Item not found or not a free item.');
+                return redirect()->back()->with('error', lang('Admin.storeItemNotFound'));
             }
             $ok = $service->installFree($item->download_url, $itemType, $slug);
         } else {
@@ -46,9 +46,9 @@ class Store extends BaseAdminController
         }
 
         if ($ok) {
-            return redirect()->back()->with('success', ucfirst($itemType) . ' "' . $slug . '" installed successfully.');
+            return redirect()->back()->with('success', lang('Admin.storeInstallSuccess', [ucfirst($itemType), $slug]));
         }
 
-        return redirect()->back()->with('error', 'Installation failed. Please check your license key and try again. See application logs for details.');
+        return redirect()->back()->with('error', lang('Admin.storeInstallFail'));
     }
 }

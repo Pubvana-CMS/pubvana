@@ -30,6 +30,8 @@ class Blog extends BaseController
 
     public function index(): string
     {
+        $this->buildLangSwitcher();
+
         // Configurable front page
         $frontPageType = setting('App.frontPageType') ?? 'blog';
         if ($frontPageType === 'page') {
@@ -59,6 +61,8 @@ class Blog extends BaseController
 
     public function post(string $slug)
     {
+        $this->buildLangSwitcher();
+
         $post = $this->postModel->published()->findBySlug($slug);
         if (! $post) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
@@ -74,7 +78,7 @@ class Blog extends BaseController
         $commentSaved = false;
         if (strtolower($this->request->getMethod()) === 'post' && setting('App.commentsEnabled')) {
             if (! auth()->loggedIn()) {
-                return redirect()->to('/login')->with('error', 'You must be logged in to comment.');
+                return redirect()->to('/login')->with('error', lang('Blog.commentLoginToComment'));
             }
 
             $throttler = \Config\Services::throttler();
@@ -86,8 +90,8 @@ class Blog extends BaseController
             $commentSaved = $this->handleComment($post);
             if ($commentSaved) {
                 $msg = setting('App.commentModeration')
-                    ? 'Your comment is awaiting moderation.'
-                    : 'Your comment has been posted.';
+                    ? lang('Blog.commentAwaitModeration')
+                    : lang('Blog.commentPosted');
                 return redirect()->to(post_url($slug) . '#comments')->with('success', $msg);
             }
         }
@@ -130,6 +134,8 @@ class Blog extends BaseController
 
     public function preview(string $token)
     {
+        $this->buildLangSwitcher();
+
         $post = $this->postModel->findByPreviewToken($token);
         if (! $post) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
@@ -245,6 +251,8 @@ class Blog extends BaseController
 
     public function category(string $slug): string
     {
+        $this->buildLangSwitcher();
+
         $catModel = new CategoryModel();
         $category = $catModel->findBySlug($slug);
         if (! $category) {
@@ -273,6 +281,8 @@ class Blog extends BaseController
 
     public function tag(string $slug): string
     {
+        $this->buildLangSwitcher();
+
         $tagModel = new TagModel();
         $tag      = $tagModel->findBySlug($slug);
         if (! $tag) {
@@ -301,6 +311,8 @@ class Blog extends BaseController
 
     public function archive(int $year, int $month): string
     {
+        $this->buildLangSwitcher();
+
         $perPage = (int) (setting('App.postsPerPage') ?? 10);
         $posts   = $this->postModel->published()
             ->where("YEAR(published_at)", $year)

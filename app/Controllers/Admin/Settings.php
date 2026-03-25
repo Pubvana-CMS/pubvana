@@ -10,7 +10,7 @@ class Settings extends BaseAdminController
     public function index(): string
     {
         if (! auth()->user()->can('admin.settings')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
 
         $pages = (new PageModel())->where('status', 'published')->findAll();
@@ -23,7 +23,7 @@ class Settings extends BaseAdminController
     public function premiumPage(): string
     {
         if (! auth()->user()->can('admin.settings')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
 
         $pages = (new PageModel())->where('status', 'published')->findAll();
@@ -37,7 +37,7 @@ class Settings extends BaseAdminController
     public function saveGeneral()
     {
         if (! auth()->user()->can('admin.settings')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         setting()->set('App.siteName',      $this->request->getPost('site_name'));
         setting()->set('App.siteTagline',   $this->request->getPost('site_tagline'));
@@ -56,35 +56,35 @@ class Settings extends BaseAdminController
         setting()->set('App.frontPageId',   ($fpType === 'page' && $fpId) ? (int) $fpId : null);
 
         ActivityLogger::log('settings.updated', 'setting', null, 'Updated general settings');
-        return redirect()->to('/admin/settings')->with('success', 'General settings saved.');
+        return redirect()->to('/admin/settings')->with('success', lang('Admin.generalSettingsSaved'));
     }
 
     public function saveSeo()
     {
         if (! auth()->user()->can('admin.settings')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         setting()->set('Seo.metaDescription',    $this->request->getPost('meta_description'));
         setting()->set('Seo.googleAnalytics',    $this->request->getPost('google_analytics'));
         setting()->set('Seo.sitemapEnabled',     (bool) $this->request->getPost('sitemap_enabled'));
         setting()->set('Seo.newsSitemapEnabled', (bool) $this->request->getPost('news_sitemap_enabled'));
-        return redirect()->to('/admin/settings#seo')->with('success', 'SEO settings saved.');
+        return redirect()->to('/admin/settings#seo')->with('success', lang('Admin.seoSettingsSaved'));
     }
 
     public function saveEmail()
     {
         if (! auth()->user()->can('admin.settings')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         setting()->set('Email.fromName',  $this->request->getPost('from_name'));
         setting()->set('Email.fromEmail', $this->request->getPost('from_email'));
-        return redirect()->to('/admin/settings#email')->with('success', 'Email settings saved.');
+        return redirect()->to('/admin/settings#email')->with('success', lang('Admin.emailSettingsSaved'));
     }
 
     public function savePremium()
     {
         if (! auth()->user()->can('admin.settings')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
 
         $key     = trim($this->request->getPost('license_key') ?? '');
@@ -93,10 +93,10 @@ class Settings extends BaseAdminController
 
         if ($result['valid']) {
             ActivityLogger::log('settings.updated', 'setting', null, 'Premium Core licence activated');
-            return redirect()->to('/admin/settings#premium')->with('success', 'Licence key is valid. Pubvana Premium Core is active.');
+            return redirect()->to('/admin/settings#premium')->with('success', lang('Admin.premiumActivated'));
         }
 
-        $msg = 'Licence key is invalid or could not be verified.';
+        $msg = lang('Admin.premiumInvalidKey');
         if (! empty($result['error'])) {
             $msg .= ' ' . $result['error'];
         }
@@ -106,7 +106,7 @@ class Settings extends BaseAdminController
     public function saveSocial()
     {
         if (! auth()->user()->can('admin.settings')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
 
         // OAuth login credentials
@@ -115,13 +115,13 @@ class Settings extends BaseAdminController
         $this->writeEnvKey('oauth.facebook.clientId',       $this->request->getPost('facebook_client_id') ?? '');
         $this->writeEnvKey('oauth.facebook.clientSecret',   $this->request->getPost('facebook_client_secret') ?? '');
 
-        return redirect()->to('/admin/settings#social')->with('success', 'Social login settings saved.');
+        return redirect()->to('/admin/settings#social')->with('success', lang('Admin.socialLoginSettingsSaved'));
     }
 
     public function saveSocialSharing()
     {
         if (! auth()->user()->can('admin.settings')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
 
         // Twitter / X sharing credentials
@@ -134,7 +134,7 @@ class Settings extends BaseAdminController
         $this->writeEnvKey('sharing.facebook.pageId',       $this->request->getPost('fb_page_id') ?? '');
         $this->writeEnvKey('sharing.facebook.pageToken',    $this->request->getPost('fb_page_token') ?? '');
 
-        return redirect()->to('/admin/settings#sharing')->with('success', 'Social sharing settings saved.');
+        return redirect()->to('/admin/settings#sharing')->with('success', lang('Admin.socialSharingSettingsSaved'));
     }
 
     /**

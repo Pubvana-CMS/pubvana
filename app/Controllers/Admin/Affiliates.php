@@ -60,7 +60,7 @@ class Affiliates extends BaseAdminController
 
         ActivityLogger::log('affiliate.created', 'setting', $id, 'Created affiliate link: ' . $this->request->getPost('slug'));
 
-        return redirect()->to('/admin/affiliates')->with('success', 'Affiliate link created.');
+        return redirect()->to('/admin/affiliates')->with('success', lang('Admin.affiliateCreated'));
     }
 
     public function edit(int $id): string
@@ -104,7 +104,7 @@ class Affiliates extends BaseAdminController
 
         ActivityLogger::log('affiliate.updated', 'setting', $id, 'Updated affiliate link: ' . $this->request->getPost('slug'));
 
-        return redirect()->to('/admin/affiliates')->with('success', 'Affiliate link updated.');
+        return redirect()->to('/admin/affiliates')->with('success', lang('Admin.affiliateUpdated'));
     }
 
     public function delete(int $id)
@@ -122,7 +122,7 @@ class Affiliates extends BaseAdminController
 
         ActivityLogger::log('affiliate.deleted', 'setting', $id, 'Deleted affiliate link: ' . $link->slug);
 
-        return redirect()->to('/admin/affiliates')->with('success', 'Affiliate link deleted.');
+        return redirect()->to('/admin/affiliates')->with('success', lang('Admin.affiliateDeleted'));
     }
 
     public function clicks(int $id): string

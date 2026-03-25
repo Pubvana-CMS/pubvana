@@ -45,7 +45,7 @@ class Posts extends BaseAdminController
     public function create(): string
     {
         if (! auth()->user()->can('posts.create')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         return $this->adminView('posts/create', array_merge($this->baseData('New Post', 'posts'), [
             'categories' => (new CategoryModel())->findAll(),
@@ -56,7 +56,7 @@ class Posts extends BaseAdminController
     public function store()
     {
         if (! auth()->user()->can('posts.create')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         if (! $this->validate([
             'title'   => 'required|max_length[255]',
@@ -118,7 +118,7 @@ class Posts extends BaseAdminController
             : 'Created post: ' . $this->request->getPost('title')
         );
 
-        return redirect()->to('/admin/posts')->with('success', 'Post created successfully.');
+        return redirect()->to('/admin/posts')->with('success', lang('Admin.postCreated'));
     }
 
     public function edit(int $id): string
@@ -164,7 +164,7 @@ class Posts extends BaseAdminController
         }
 
         if (! auth()->user()->can('posts.edit.any') && $post->author_id !== auth()->id()) {
-            return redirect()->to('/admin/posts')->with('error', 'You can only edit your own posts.');
+            return redirect()->to('/admin/posts')->with('error', lang('Admin.postPermission'));
         }
 
         if (! $this->validate([
@@ -213,7 +213,7 @@ class Posts extends BaseAdminController
         $action = (! $wasPublished && $newStatus === 'published') ? 'post.published' : 'post.updated';
         ActivityLogger::log($action, 'post', $id, ucfirst(str_replace('.', ' ', $action)) . ': ' . $this->request->getPost('title'));
 
-        return redirect()->to('/admin/posts')->with('success', 'Post updated.');
+        return redirect()->to('/admin/posts')->with('success', lang('Admin.postUpdated'));
     }
 
     public function bulk()
@@ -222,7 +222,7 @@ class Posts extends BaseAdminController
         $ids    = $this->request->getPost('ids') ?? [];
 
         if (empty($ids) || ! in_array($action, ['publish', 'unpublish', 'delete'], true)) {
-            return redirect()->back()->with('error', 'Invalid bulk action.');
+            return redirect()->back()->with('error', lang('Admin.postBulkInvalid'));
         }
 
         foreach ($ids as $id) {
@@ -233,7 +233,7 @@ class Posts extends BaseAdminController
             };
         }
 
-        return redirect()->to('/admin/posts')->with('success', count($ids) . ' post(s) updated.');
+        return redirect()->to('/admin/posts')->with('success', lang('Admin.postBulkUpdated', [count($ids)]));
     }
 
     public function delete(int $id)
@@ -243,11 +243,11 @@ class Posts extends BaseAdminController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
         if (! auth()->user()->can('posts.delete') && $post->author_id !== auth()->id()) {
-            return redirect()->to('/admin/posts')->with('error', 'Permission denied.');
+            return redirect()->to('/admin/posts')->with('error', lang('Admin.permissionDenied'));
         }
         $this->postModel->delete($id);
         ActivityLogger::log('post.deleted', 'post', $id, 'Deleted post: ' . $post->title);
-        return redirect()->to('/admin/posts')->with('success', 'Post deleted.');
+        return redirect()->to('/admin/posts')->with('success', lang('Admin.postDeleted'));
     }
 
     private function saveRevision(int $postId): void

@@ -12,7 +12,7 @@ class Users extends BaseAdminController
     public function index(): string
     {
         if (! auth()->user()->can('users.manage')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
 
         $db    = db_connect();
@@ -49,13 +49,13 @@ class Users extends BaseAdminController
     public function update(int $id)
     {
         if (! auth()->user()->can('users.manage')) {
-            return redirect()->to('/admin/users')->with('error', 'Permission denied.');
+            return redirect()->to('/admin/users')->with('error', lang('Admin.permissionDenied'));
         }
 
         // Protect site owner (lowest ID)
         $ownerId = (int) db_connect()->table('users')->selectMin('id')->get()->getRowObject()->id;
         if ($id === $ownerId && auth()->id() !== $ownerId) {
-            return redirect()->to('/admin/users')->with('error', 'The site owner account cannot be modified.');
+            return redirect()->to('/admin/users')->with('error', lang('Admin.userOwnerCannotModify'));
         }
 
         $userModel = new UserModel();
@@ -92,27 +92,27 @@ class Users extends BaseAdminController
         }
 
         ActivityLogger::log('user.updated', 'user', $id, 'Updated user: ' . ($user->username ?? $id));
-        return redirect()->to('/admin/users')->with('success', 'User updated.');
+        return redirect()->to('/admin/users')->with('success', lang('Admin.userUpdated'));
     }
 
     public function delete(int $id)
     {
         if ($id === auth()->id()) {
-            return redirect()->to('/admin/users')->with('error', 'Cannot delete yourself.');
+            return redirect()->to('/admin/users')->with('error', lang('Admin.userCannotDeleteSelf'));
         }
         $ownerId = (int) db_connect()->table('users')->selectMin('id')->get()->getRowObject()->id;
         if ($id === $ownerId) {
-            return redirect()->to('/admin/users')->with('error', 'The site owner account cannot be deleted.');
+            return redirect()->to('/admin/users')->with('error', lang('Admin.userCannotDeleteOwner'));
         }
         (new UserModel())->delete($id, true);
         ActivityLogger::log('user.deleted', 'user', $id, 'Deleted user ID: ' . $id);
-        return redirect()->to('/admin/users')->with('success', 'User deleted.');
+        return redirect()->to('/admin/users')->with('success', lang('Admin.userDeleted'));
     }
 
     public function create(): string
     {
         if (! auth()->user()->can('users.manage')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         return $this->adminView('users/create', $this->baseData('Create User', 'users'));
     }
@@ -120,7 +120,7 @@ class Users extends BaseAdminController
     public function store()
     {
         if (! auth()->user()->can('users.manage')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         if (! $this->validate([
             'username' => 'required|min_length[3]|max_length[30]|is_unique[users.username]',
@@ -146,13 +146,13 @@ class Users extends BaseAdminController
         }
 
         ActivityLogger::log('user.created', 'user', null, 'Created user: ' . $this->request->getPost('username'));
-        return redirect()->to('/admin/users')->with('success', 'User created.');
+        return redirect()->to('/admin/users')->with('success', lang('Admin.userCreated'));
     }
 
     public function profile(int $id): string
     {
         if ($id !== auth()->id() && ! auth()->user()->can('users.manage')) {
-            return redirect()->to('/admin')->with('error', 'Permission denied.');
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
 
         $userModel = new UserModel();
@@ -173,7 +173,7 @@ class Users extends BaseAdminController
     public function saveProfile(int $id)
     {
         if ($id !== auth()->id() && ! auth()->user()->can('users.manage')) {
-            return redirect()->to('/admin/users/' . $id . '/profile')->with('error', 'Permission denied.');
+            return redirect()->to('/admin/users/' . $id . '/profile')->with('error', lang('Admin.permissionDenied'));
         }
 
         $userModel = new UserModel();
@@ -199,13 +199,13 @@ class Users extends BaseAdminController
                 $result        = $mediaService->upload($avatar, auth()->id());
                 $data['avatar'] = $result['path'];
             } catch (\RuntimeException $e) {
-                return redirect()->back()->with('error', 'Avatar upload failed: ' . $e->getMessage());
+                return redirect()->back()->with('error', lang('Admin.userAvatarUploadFail', [$e->getMessage()]));
             }
         }
 
         $profileModel = new AuthorProfileModel();
         $profileModel->upsert($id, $data);
 
-        return redirect()->to('/admin/users/' . $id . '/profile')->with('success', 'Profile saved.');
+        return redirect()->to('/admin/users/' . $id . '/profile')->with('success', lang('Admin.userProfileSaved'));
     }
 }

@@ -9,6 +9,8 @@ class Search extends BaseController
 {
     public function index(): string
     {
+        $this->buildLangSwitcher();
+
         $q       = trim($this->request->getGet('q') ?? '');
         $perPage = (int) (setting('App.postsPerPage') ?? 10);
         $posts   = [];
