@@ -55,7 +55,7 @@
                     <thead class="thead-light">
                         <tr>
                             <th><?= lang('Admin.title') ?></th>
-                            <th style="width:80px" class="text-right"><?= lang('Admin.views') ?></th>
+                            <th class="text-right"><?= lang('Admin.views') ?></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -90,7 +90,7 @@
                     <thead class="thead-light">
                         <tr>
                             <th>Domain</th>
-                            <th style="width:80px" class="text-right"><?= lang('Admin.views') ?></th>
+                            <th class="text-right"><?= lang('Admin.views') ?></th>
                         </tr>
                     </thead>
                     <tbody>

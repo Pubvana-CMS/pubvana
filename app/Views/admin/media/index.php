@@ -29,7 +29,7 @@
             <img src="<?= esc(base_url('writable/' . $item->path)) ?>" class="card-img-top" style="height:100px;object-fit:cover" alt="<?= esc($item->filename) ?>">
             <div class="card-body p-1 text-center">
                 <p class="text-truncate small mb-1" title="<?= esc($item->filename) ?>"><?= esc($item->filename) ?></p>
-                <p class="text-muted" style="font-size:0.7rem"><?= round($item->size/1024, 1) ?> KB</p>
+                <p class="text-muted small"><?= round($item->size/1024, 1) ?> KB</p>
                 <form method="POST" action="<?= base_url('admin/media/' . $item->id . '/delete') ?>" onsubmit="return confirm('<?= lang('Admin.confirmDeleteMedia') ?>')">
                     <?= csrf_field() ?>
                     <button class="btn btn-xs btn-outline-danger btn-block"><?= lang('Admin.delete') ?></button>

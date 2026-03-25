@@ -81,7 +81,7 @@
                             <div>
                                 <strong><?= esc($w->name) ?></strong>
                                 <?php if (!empty($wInfo['premium'])): ?>
-                                    <span class="badge badge-warning text-dark" style="font-size:0.6rem"><?= lang('Admin.premium') ?></span>
+                                    <span class="badge badge-warning text-dark small"><?= lang('Admin.premium') ?></span>
                                 <?php endif; ?><br>
                                 <small class="text-muted"><?= esc($w->description) ?></small>
                             </div>

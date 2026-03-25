@@ -28,7 +28,7 @@
             <table class="table table-hover mb-0">
                 <thead class="thead-light">
                     <tr>
-                        <th style="width:160px"><?= lang('Admin.date') ?></th>
+                        <th><?= lang('Admin.date') ?></th>
                         <th><?= lang('Admin.activityLogUser') ?></th>
                         <th><?= lang('Admin.activityLogAction') ?></th>
                         <th><?= lang('Admin.activityLogNote') ?></th>

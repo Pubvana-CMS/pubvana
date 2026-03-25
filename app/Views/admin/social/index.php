@@ -43,11 +43,11 @@
                 <table class="table table-hover mb-0">
                     <thead class="bg-light">
                         <tr>
-                            <th style="width:20%"><?= lang('Admin.socialPlatform') ?></th>
+                            <th><?= lang('Admin.socialPlatform') ?></th>
                             <th><?= lang('Admin.socialUrl') ?></th>
-                            <th style="width:18%"><?= lang('Admin.socialIcon') ?></th>
-                            <th style="width:10%"><?= lang('Admin.status') ?></th>
-                            <th style="width:10%"><?= lang('Admin.actions') ?></th>
+                            <th><?= lang('Admin.socialIcon') ?></th>
+                            <th><?= lang('Admin.status') ?></th>
+                            <th><?= lang('Admin.actions') ?></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -58,7 +58,7 @@
                             </td>
                             <td>
                                 <a href="<?= esc($link->url) ?>" target="_blank" rel="noopener"
-                                   class="text-truncate d-inline-block" style="max-width:220px">
+                                   class="text-truncate d-inline-block">
                                     <?= esc($link->url) ?>
                                 </a>
                             </td>

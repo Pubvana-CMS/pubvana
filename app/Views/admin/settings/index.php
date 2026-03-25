@@ -85,7 +85,7 @@
                                 <label class="form-check-label" for="fp_page"><?= lang('Admin.generalFrontPageStatic') ?></label>
                             </div>
                             <div class="mt-2 ml-4">
-                                <select name="front_page_id" class="form-control" id="front_page_id" style="max-width:300px">
+                                <select name="front_page_id" class="form-control w-50" id="front_page_id">
                                     <option value=""><?= lang('Admin.generalSelectPage') ?></option>
                                     <?php foreach ($pages as $p): ?>
                                     <option value="<?= $p->id ?>" <?= setting('App.frontPageId') == $p->id ? 'selected' : '' ?>>

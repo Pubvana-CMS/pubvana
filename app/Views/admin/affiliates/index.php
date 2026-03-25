@@ -42,7 +42,7 @@
                                 /go/<?= esc($link->slug) ?>
                             </a>
                         </td>
-                        <td class="text-truncate" style="max-width:260px">
+                        <td class="text-truncate">
                             <span class="text-muted small" title="<?= esc($link->destination_url) ?>">
                                 <?= esc($link->destination_url) ?>
                             </span>

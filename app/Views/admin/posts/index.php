@@ -25,7 +25,7 @@
 <div id="bulk-toolbar" class="mb-3 d-none">
     <div class="d-flex align-items-center gap-2">
         <span id="bulk-count" class="text-muted small me-2"></span>
-        <select name="action" class="form-control form-control-sm" style="width:auto">
+        <select name="action" class="form-control form-control-sm w-auto">
             <option value=""><?= lang('Admin.postBulkAction') ?></option>
             <option value="publish"><?= lang('Admin.postBulkPublish') ?></option>
             <option value="unpublish"><?= lang('Admin.postBulkUnpublish') ?></option>
@@ -44,7 +44,7 @@
             <table class="table table-hover mb-0">
                 <thead class="bg-light">
                     <tr>
-                        <th style="width:40px">
+                        <th>
                             <input type="checkbox" id="select-all" title="Select all">
                         </th>
                         <th><?= lang('Admin.title') ?></th>
