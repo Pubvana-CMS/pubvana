@@ -56,6 +56,9 @@ $routes->group('admin', ['filter' => ['admin_auth', 'totp'], 'namespace' => 'App
     // Dashboard
     $routes->get('',                         'Dashboard::index');
 
+    // Notifications
+    $routes->post('notifications/dismiss/(:num)', 'Notifications::dismiss/$1');
+
     // Posts
     $routes->get('posts',                    'Posts::index');
     $routes->get('posts/create',             'Posts::create');
