@@ -1,15 +1,15 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Broken Links</h1>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.brokenLinksTitle') ?></h1>
     <div>
         <?php if ($showDismissed): ?>
             <a href="<?= base_url('admin/broken-links') ?>" class="btn btn-sm btn-outline-secondary mr-2">
-                Hide Dismissed
+                <?= lang('Admin.brokenLinkHideDismissed') ?>
             </a>
         <?php else: ?>
             <a href="<?= base_url('admin/broken-links?dismissed=1') ?>" class="btn btn-sm btn-outline-secondary mr-2">
-                Show Dismissed
+                <?= lang('Admin.brokenLinkShowDismissed') ?>
             </a>
         <?php endif; ?>
     </div>
@@ -33,7 +33,7 @@
     <div class="card shadow mb-4">
         <div class="card-body text-center text-muted py-5">
             <i class="fas fa-check-circle fa-3x text-success mb-3 d-block"></i>
-            <?= $showDismissed ? 'No dismissed links.' : 'No broken links found. Run a scan to check.' ?>
+            <?= lang('Admin.brokenLinkNone') ?>
         </div>
     </div>
 <?php else: ?>
@@ -61,11 +61,11 @@
             <table class="table table-sm table-hover mb-0">
                 <thead class="thead-light">
                     <tr>
-                        <th>URL</th>
-                        <th style="width:90px" class="text-center">Status</th>
-                        <th>Error</th>
-                        <th style="width:120px" class="text-muted small">Last Checked</th>
-                        <th style="width:140px" class="text-right">Actions</th>
+                        <th><?= lang('Admin.brokenLinkUrl') ?></th>
+                        <th style="width:90px" class="text-center"><?= lang('Admin.brokenLinkStatus') ?></th>
+                        <th><?= lang('Admin.brokenLinkError') ?></th>
+                        <th style="width:120px" class="text-muted small"><?= lang('Admin.date') ?></th>
+                        <th style="width:140px" class="text-right"><?= lang('Admin.actions') ?></th>
                     </tr>
                 </thead>
                 <tbody>

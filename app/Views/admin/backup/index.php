@@ -1,7 +1,7 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Backup &amp; Export</h1>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.backupTitle') ?></h1>
 </div>
 
 <div class="row">
@@ -10,7 +10,7 @@
     <div class="col-lg-5 mb-4">
         <div class="card shadow h-100">
             <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Create Backup</h6>
+                <h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.backupTitle') ?></h6>
             </div>
             <div class="card-body">
                 <p class="text-muted small">
@@ -28,7 +28,7 @@
                       id="backupForm">
                     <?= csrf_field() ?>
                     <button type="submit" class="btn btn-primary btn-block" id="backupBtn">
-                        <i class="fas fa-download mr-1"></i> Create &amp; Download Backup
+                        <i class="fas fa-download mr-1"></i> <?= lang('Admin.backupDownload') ?>
                     </button>
                 </form>
             </div>
@@ -65,7 +65,7 @@
 <?php if (! empty($backups)): ?>
 <div class="card shadow mb-4">
     <div class="card-header py-3 d-flex align-items-center justify-content-between">
-        <h6 class="m-0 font-weight-bold text-primary">Existing Backups in <code>writable/tmp/</code></h6>
+        <h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.backupFiles') ?></h6>
         <small class="text-muted">These are temporary — download and delete once saved elsewhere.</small>
     </div>
     <div class="card-body p-0">
@@ -73,10 +73,10 @@
             <table class="table table-hover mb-0">
                 <thead class="thead-light">
                     <tr>
-                        <th>Filename</th>
-                        <th>Size</th>
-                        <th>Created</th>
-                        <th class="text-right">Action</th>
+                        <th><?= lang('Admin.backupFilename') ?></th>
+                        <th><?= lang('Admin.backupSize') ?></th>
+                        <th><?= lang('Admin.backupDate') ?></th>
+                        <th class="text-right"><?= lang('Admin.actions') ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -88,11 +88,11 @@
                         <td class="text-right">
                             <form method="POST" action="<?= base_url('admin/backup/delete') ?>"
                                   class="d-inline"
-                                  onsubmit="return confirm('Delete this backup file?')">
+                                  onsubmit="return confirm('<?= lang('Admin.confirmDelete') ?>')">
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="filename" value="<?= esc($backup['filename']) ?>">
                                 <button type="submit" class="btn btn-sm btn-outline-danger">
-                                    <i class="fas fa-trash"></i> Delete
+                                    <i class="fas fa-trash"></i> <?= lang('Admin.delete') ?>
                                 </button>
                             </form>
                         </td>

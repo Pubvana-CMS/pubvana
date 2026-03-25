@@ -1,37 +1,37 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Activity Log</h1>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.activityLogTitle') ?></h1>
 </div>
 
 <div class="card shadow mb-4">
     <div class="card-header py-3 d-flex align-items-center justify-content-between">
-        <h6 class="m-0 font-weight-bold text-primary">Admin Actions</h6>
+        <h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.activityLogTitle') ?></h6>
         <form method="GET" action="<?= base_url('admin/activity-log') ?>" class="form-inline">
-            <label class="mr-2 text-muted small">Filter:</label>
+            <label class="mr-2 text-muted small"><?= lang('Admin.activityLogType') ?>:</label>
             <select name="type" class="form-control form-control-sm" onchange="this.form.submit()">
-                <option value="" <?= $type === '' ? 'selected' : '' ?>>All actions</option>
-                <option value="post"        <?= $type === 'post'        ? 'selected' : '' ?>>Posts</option>
-                <option value="page"        <?= $type === 'page'        ? 'selected' : '' ?>>Pages</option>
-                <option value="user"        <?= $type === 'user'        ? 'selected' : '' ?>>Users</option>
-                <option value="theme"       <?= $type === 'theme'       ? 'selected' : '' ?>>Themes</option>
-                <option value="setting"     <?= $type === 'setting'     ? 'selected' : '' ?>>Settings</option>
-                <option value="marketplace" <?= $type === 'marketplace' ? 'selected' : '' ?>>Marketplace</option>
+                <option value="" <?= $type === '' ? 'selected' : '' ?>><?= lang('Admin.activityLogFilterAll') ?></option>
+                <option value="post"        <?= $type === 'post'        ? 'selected' : '' ?>><?= lang('Admin.postsTitle') ?></option>
+                <option value="page"        <?= $type === 'page'        ? 'selected' : '' ?>><?= lang('Admin.pagesTitle') ?></option>
+                <option value="user"        <?= $type === 'user'        ? 'selected' : '' ?>><?= lang('Admin.usersTitle') ?></option>
+                <option value="theme"       <?= $type === 'theme'       ? 'selected' : '' ?>><?= lang('Admin.themesTitle') ?></option>
+                <option value="setting"     <?= $type === 'setting'     ? 'selected' : '' ?>><?= lang('Admin.settingsTitle') ?></option>
+                <option value="marketplace" <?= $type === 'marketplace' ? 'selected' : '' ?>><?= lang('Admin.marketplaceTitle') ?></option>
             </select>
         </form>
     </div>
     <div class="card-body p-0">
         <?php if (empty($entries)): ?>
-            <div class="p-4 text-muted text-center">No activity recorded yet.</div>
+            <div class="p-4 text-muted text-center"><?= lang('Admin.activityLogEmpty') ?></div>
         <?php else: ?>
         <div class="table-responsive">
             <table class="table table-hover mb-0">
                 <thead class="thead-light">
                     <tr>
-                        <th style="width:160px">Time</th>
-                        <th>User</th>
-                        <th>Action</th>
-                        <th>Description</th>
+                        <th style="width:160px"><?= lang('Admin.date') ?></th>
+                        <th><?= lang('Admin.activityLogUser') ?></th>
+                        <th><?= lang('Admin.activityLogAction') ?></th>
+                        <th><?= lang('Admin.activityLogNote') ?></th>
                         <th>IP</th>
                     </tr>
                 </thead>

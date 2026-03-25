@@ -1,9 +1,9 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Post Schedule</h1>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.scheduleTitle') ?></h1>
     <a href="<?= base_url('admin/posts/create') ?>" class="btn btn-sm btn-primary">
-        <i class="fas fa-plus fa-sm"></i> New Post
+        <i class="fas fa-plus fa-sm"></i> <?= lang('Admin.newPost') ?>
     </a>
 </div>
 

@@ -1,11 +1,11 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Analytics</h1>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.analyticsTitle') ?></h1>
     <div class="btn-group btn-group-sm" role="group" id="dayFilter">
-        <button type="button" class="btn btn-outline-primary <?= $days === 7  ? 'active' : '' ?>" data-days="7">7 days</button>
-        <button type="button" class="btn btn-outline-primary <?= $days === 30 ? 'active' : '' ?>" data-days="30">30 days</button>
-        <button type="button" class="btn btn-outline-primary <?= $days === 90 ? 'active' : '' ?>" data-days="90">90 days</button>
+        <button type="button" class="btn btn-outline-primary <?= $days === 7  ? 'active' : '' ?>" data-days="7"><?= lang('Admin.analyticsLast7') ?></button>
+        <button type="button" class="btn btn-outline-primary <?= $days === 30 ? 'active' : '' ?>" data-days="30"><?= lang('Admin.analyticsLast30') ?></button>
+        <button type="button" class="btn btn-outline-primary <?= $days === 90 ? 'active' : '' ?>" data-days="90"><?= lang('Admin.analyticsLast90') ?></button>
     </div>
 </div>
 
@@ -17,7 +17,7 @@
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
                         <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                            Page Views (last <?= $days ?> days)
+                            <?= lang('Admin.analyticsChartTitle') ?>
                         </div>
                         <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalViews">
                             <?= number_format($totalViews) ?>
@@ -35,7 +35,7 @@
 <!-- Views per day chart -->
 <div class="card shadow mb-4">
     <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">Views Per Day</h6>
+        <h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.analyticsChartTitle') ?></h6>
     </div>
     <div class="card-body">
         <canvas id="viewsChart" height="80"></canvas>
@@ -48,19 +48,19 @@
     <div class="col-lg-7">
         <div class="card shadow mb-4">
             <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Top Posts</h6>
+                <h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.analyticsTopPosts') ?></h6>
             </div>
             <div class="card-body p-0">
                 <table class="table table-sm table-hover mb-0" id="topPostsTable">
                     <thead class="thead-light">
                         <tr>
-                            <th>Post</th>
-                            <th style="width:80px" class="text-right">Views</th>
+                            <th><?= lang('Admin.title') ?></th>
+                            <th style="width:80px" class="text-right"><?= lang('Admin.views') ?></th>
                         </tr>
                     </thead>
                     <tbody>
                     <?php if (empty($topPosts)): ?>
-                        <tr><td colspan="2" class="text-center text-muted py-4">No data yet.</td></tr>
+                        <tr><td colspan="2" class="text-center text-muted py-4"><?= lang('Admin.analyticsNoData') ?></td></tr>
                     <?php else: ?>
                         <?php foreach ($topPosts as $row): ?>
                         <tr>
@@ -83,19 +83,19 @@
     <div class="col-lg-5">
         <div class="card shadow mb-4">
             <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Top Referrers</h6>
+                <h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.analyticsReferrers') ?></h6>
             </div>
             <div class="card-body p-0">
                 <table class="table table-sm table-hover mb-0" id="referrersTable">
                     <thead class="thead-light">
                         <tr>
                             <th>Domain</th>
-                            <th style="width:80px" class="text-right">Views</th>
+                            <th style="width:80px" class="text-right"><?= lang('Admin.views') ?></th>
                         </tr>
                     </thead>
                     <tbody>
                     <?php if (empty($referrers)): ?>
-                        <tr><td colspan="2" class="text-center text-muted py-4">No referrer data yet.</td></tr>
+                        <tr><td colspan="2" class="text-center text-muted py-4"><?= lang('Admin.analyticsNoData') ?></td></tr>
                     <?php else: ?>
                         <?php foreach ($referrers as $row): ?>
                         <tr>

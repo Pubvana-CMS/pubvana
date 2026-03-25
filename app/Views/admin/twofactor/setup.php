@@ -1,8 +1,8 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Enable Two-Factor Authentication</h1>
-    <a href="<?= base_url('admin/users/' . $user_id . '/profile') ?>" class="btn btn-sm btn-outline-secondary">Cancel</a>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.tfaSetupHeading') ?></h1>
+    <a href="<?= base_url('admin/users/' . $user_id . '/profile') ?>" class="btn btn-sm btn-outline-secondary"><?= lang('Admin.cancel') ?></a>
 </div>
 
 <?php if (session()->getFlashdata('error')): ?>
@@ -13,7 +13,7 @@
     <div class="col-lg-7">
         <div class="card shadow mb-4">
             <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Step 1 — Scan the QR Code</h6>
+                <h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.tfaScanQr') ?></h6>
             </div>
             <div class="card-body text-center">
                 <p class="text-muted small mb-3">
@@ -36,7 +36,7 @@
     <div class="col-lg-5">
         <div class="card shadow mb-4">
             <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Step 2 — Confirm Setup</h6>
+                <h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.tfaConfirmBtn') ?></h6>
             </div>
             <div class="card-body">
                 <p class="text-muted small mb-3">
@@ -45,7 +45,7 @@
                 <form method="POST" action="<?= base_url('admin/users/2fa/confirm') ?>">
                     <?= csrf_field() ?>
                     <div class="form-group">
-                        <label class="font-weight-bold">Verification Code</label>
+                        <label class="font-weight-bold"><?= lang('Admin.tfaCodeLabel') ?></label>
                         <input type="text" name="totp_code"
                                class="form-control text-center font-monospace"
                                inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
@@ -53,7 +53,7 @@
                                style="font-size:1.4rem; letter-spacing:0.4em">
                     </div>
                     <button type="submit" class="btn btn-success btn-block">
-                        <i class="fas fa-check mr-1"></i> Enable 2FA
+                        <i class="fas fa-check mr-1"></i> <?= lang('Admin.tfaConfirmBtn') ?>
                     </button>
                 </form>
             </div>
