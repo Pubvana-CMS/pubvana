@@ -29,6 +29,7 @@ $routes->get('sitemap.xml',                 'Sitemap::index');
 $routes->get('news-sitemap.xml',            'NewsSitemap::index');
 $routes->get('robots.txt',                  'Sitemap::robots');
 $routes->get('feed',                        'Feed::index');
+$routes->get('atom',                        'AtomFeed::index');
 $routes->get('contact',                     'Contact::index');
 $routes->post('contact',                    'Contact::send');
 $routes->get('preview/(:segment)',          'Blog::preview/$1');
@@ -245,6 +246,7 @@ $routes->group('{locale}', static function ($routes): void {
     $routes->get('archive/(:num)/(:num)',    'Blog::archive/$1/$2');
     $routes->get('search',                   'Search::index');
     $routes->get('feed',                     'Feed::index');
+    $routes->get('atom',                     'AtomFeed::index');
     $routes->get('contact',                  'Contact::index');
     $routes->post('contact',                 'Contact::send');
     $routes->get('preview/(:segment)',       'Blog::preview/$1');

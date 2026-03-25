@@ -15,6 +15,7 @@
     <?php endif; ?>
     <?php endif; ?>
     <link rel="alternate" type="application/rss+xml" title="<?= esc(site_name()) ?> RSS Feed" href="<?= base_url('feed') ?>">
+    <link rel="alternate" type="application/atom+xml" title="<?= esc(site_name()) ?> Atom Feed" href="<?= base_url('atom') ?>">
     <?php if (!empty($langSwitcher['buttons'])): ?>
     <?php foreach ($langSwitcher['buttons'] as $btn): ?>
     <link rel="alternate" hreflang="<?= esc($btn['code']) ?>" href="<?= esc(base_url(ltrim($btn['url'], '/'))) ?>">
