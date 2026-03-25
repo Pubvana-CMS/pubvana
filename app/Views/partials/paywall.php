@@ -5,7 +5,7 @@
         <h4 class="font-weight-bold mb-2">Members Only</h4>
         <p class="text-muted mb-4">This post is available to registered members. Sign in or create a free account to continue reading.</p>
         <a href="<?= base_url('login?redirect=' . urlencode(current_url())) ?>" class="btn btn-primary mr-2">
-            <i class="fas fa-sign-in-alt mr-1"></i> Sign In
+            <i class="fas fa-right-to-bracket mr-1"></i> Sign In
         </a>
         <a href="<?= base_url('register') ?>" class="btn btn-outline-secondary">
             Create Account

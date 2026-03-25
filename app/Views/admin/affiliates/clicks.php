@@ -19,7 +19,7 @@
                         <div class="text-xs font-weight-bold text-primary text-uppercase mb-1"><?= lang('Admin.affiliateClicks') ?></div>
                         <div class="h5 mb-0 font-weight-bold text-gray-800"><?= number_format($total) ?></div>
                     </div>
-                    <div class="col-auto"><i class="fas fa-mouse-pointer fa-2x text-gray-300"></i></div>
+                    <div class="col-auto"><i class="fas fa-arrow-pointer fa-2x text-gray-300"></i></div>
                 </div>
             </div>
         </div>
@@ -36,7 +36,7 @@
                             </a>
                         </div>
                     </div>
-                    <div class="col-auto"><i class="fas fa-external-link-alt fa-2x text-gray-300"></i></div>
+                    <div class="col-auto"><i class="fas fa-arrow-up-right-from-square fa-2x text-gray-300"></i></div>
                 </div>
             </div>
         </div>

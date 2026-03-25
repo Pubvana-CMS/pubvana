@@ -18,7 +18,7 @@
                     <div class="p-5">
 
                         <div class="text-center mb-4">
-                            <i class="fas fa-shield-alt fa-3x text-primary mb-3"></i>
+                            <i class="fas fa-shield-halved fa-3x text-primary mb-3"></i>
                             <h1 class="h4 text-gray-900 font-weight-bold">Two-Factor Authentication</h1>
                             <p class="text-muted small">
                                 Enter the 6-digit code from your authenticator app.
@@ -47,7 +47,7 @@
                         <hr>
                         <div class="text-center">
                             <a href="<?= base_url('logout') ?>" class="small text-muted">
-                                <i class="fas fa-sign-out-alt mr-1"></i>Sign in as a different user
+                                <i class="fas fa-right-from-bracket mr-1"></i>Sign in as a different user
                             </a>
                         </div>
 

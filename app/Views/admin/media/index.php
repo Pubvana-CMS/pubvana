@@ -9,7 +9,7 @@
     <div class="card-header"><h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.mediaUpload') ?></h6></div>
     <div class="card-body">
         <div id="upload-zone" class="border border-dashed rounded p-4 text-center bg-light">
-            <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+            <i class="fas fa-cloud-arrow-up fa-3x text-muted mb-3"></i>
             <p class="mb-2"><?= lang('Admin.mediaDragDrop') ?></p>
             <input type="file" id="file-input" accept="image/*" multiple class="d-none">
             <button class="btn btn-primary" onclick="document.getElementById('file-input').click()"><?= lang('Admin.mediaChooseFiles') ?></button>

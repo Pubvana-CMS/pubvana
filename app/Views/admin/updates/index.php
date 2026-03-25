@@ -6,7 +6,7 @@
     <form method="POST" action="<?= base_url('admin/updates/check') ?>">
         <?= csrf_field() ?>
         <button class="btn btn-sm btn-outline-secondary">
-            <i class="fas fa-sync-alt fa-sm"></i> <?= lang('Admin.updatesCheckBtn') ?>
+            <i class="fas fa-arrows-rotate fa-sm"></i> <?= lang('Admin.updatesCheckBtn') ?>
         </button>
     </form>
 </div>
@@ -17,13 +17,13 @@
 
         <?php if (!empty($update['error'])): ?>
             <div class="alert alert-warning">
-                <i class="fas fa-exclamation-triangle mr-1"></i>
+                <i class="fas fa-triangle-exclamation mr-1"></i>
                 <strong>Could not contact GitHub:</strong> <?= esc($update['error']) ?>
             </div>
 
         <?php elseif (!empty($update['available'])): ?>
             <div class="alert alert-warning">
-                <i class="fas fa-arrow-circle-up mr-1"></i>
+                <i class="fas fa-circle-arrow-up mr-1"></i>
                 <strong>Pubvana <?= esc($update['latest_version']) ?> is available!</strong>
                 You are running <?= esc($update['current_version']) ?>.
             </div>
@@ -54,7 +54,7 @@
 
         <?php else: ?>
             <div class="alert alert-success">
-                <i class="fas fa-check-circle mr-1"></i>
+                <i class="fas fa-circle-check mr-1"></i>
                 <strong>Pubvana is up to date.</strong>
                 You are running version <?= esc($update['current_version']) ?>.
             </div>

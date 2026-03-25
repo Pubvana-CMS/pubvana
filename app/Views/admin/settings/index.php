@@ -341,11 +341,11 @@ HCAPTCHA_SECRET_KEY = your-secret-key</code></pre>
                 <?php if ($isDev): ?>
                     <span class="badge badge-info px-3 py-2"><?= lang('Admin.premiumDevMode') ?></span>
                 <?php elseif ($premiumStatus === 'valid'): ?>
-                    <span class="badge badge-success px-3 py-2"><i class="fas fa-check-circle mr-1"></i> <?= lang('Admin.premiumStatusValid') ?></span>
+                    <span class="badge badge-success px-3 py-2"><i class="fas fa-circle-check mr-1"></i> <?= lang('Admin.premiumStatusValid') ?></span>
                 <?php elseif ($premiumStatus === 'invalid'): ?>
-                    <span class="badge badge-danger px-3 py-2"><i class="fas fa-times-circle mr-1"></i> <?= lang('Admin.premiumStatusInvalid') ?></span>
+                    <span class="badge badge-danger px-3 py-2"><i class="fas fa-circle-xmark mr-1"></i> <?= lang('Admin.premiumStatusInvalid') ?></span>
                 <?php elseif ($premiumStatus === 'unreachable'): ?>
-                    <span class="badge badge-warning px-3 py-2"><i class="fas fa-exclamation-triangle mr-1"></i> <?= lang('Admin.premiumStatusUnreachable') ?></span>
+                    <span class="badge badge-warning px-3 py-2"><i class="fas fa-triangle-exclamation mr-1"></i> <?= lang('Admin.premiumStatusUnreachable') ?></span>
                 <?php else: ?>
                     <span class="badge badge-secondary px-3 py-2"><?= lang('Admin.premiumStatusUnchecked') ?></span>
                 <?php endif; ?>
@@ -353,7 +353,7 @@ HCAPTCHA_SECRET_KEY = your-secret-key</code></pre>
             <div class="card-body">
                 <?php if ($isDev): ?>
                     <div class="alert alert-info">
-                        <i class="fas fa-info-circle mr-1"></i>
+                        <i class="fas fa-circle-info mr-1"></i>
                         <?= lang('Admin.premiumDevInfo') ?>
                     </div>
                 <?php else: ?>
@@ -367,11 +367,11 @@ HCAPTCHA_SECRET_KEY = your-secret-key</code></pre>
                                        placeholder="<?= lang('Admin.premiumLicenceKeyPlaceholder') ?>"
                                        value="<?= esc(setting('Premium.licenseKey') ?? '') ?>">
                                 <?php if ($premiumStatus === 'valid'): ?>
-                                    <small class="text-success"><i class="fas fa-check-circle"></i> <?= lang('Admin.premiumKeyValid') ?></small>
+                                    <small class="text-success"><i class="fas fa-circle-check"></i> <?= lang('Admin.premiumKeyValid') ?></small>
                                 <?php elseif ($premiumStatus === 'invalid'): ?>
-                                    <small class="text-danger"><i class="fas fa-times-circle"></i> <?= lang('Admin.premiumKeyInvalid') ?></small>
+                                    <small class="text-danger"><i class="fas fa-circle-xmark"></i> <?= lang('Admin.premiumKeyInvalid') ?></small>
                                 <?php elseif ($premiumStatus === 'unreachable'): ?>
-                                    <small class="text-warning"><i class="fas fa-exclamation-triangle"></i> <?= lang('Admin.premiumKeyUnreachable') ?></small>
+                                    <small class="text-warning"><i class="fas fa-triangle-exclamation"></i> <?= lang('Admin.premiumKeyUnreachable') ?></small>
                                 <?php endif; ?>
                             </div>
                         </div>

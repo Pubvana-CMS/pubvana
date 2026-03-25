@@ -24,8 +24,10 @@
                     </div>
                     <div class="form-group">
                         <label><?= lang('Admin.socialIcon') ?></label>
-                        <input type="text" name="icon" class="form-control" placeholder="fab fa-twitter">
-                        <small class="form-text text-muted">Use FA5 class e.g. <code>fab fa-facebook</code></small>
+                        <input type="text" id="icon-search" class="form-control" placeholder="Search icons..." autocomplete="off">
+                        <input type="hidden" name="icon" id="icon-value">
+                        <div id="icon-dropdown" class="border rounded mt-1 bg-white" style="display:none; max-height:200px; overflow-y:auto">
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-primary btn-block"><?= lang('Admin.add') ?></button>
                 </form>
@@ -57,9 +59,8 @@
                                 <i class="<?= esc($link->icon) ?> fa-fw fa-lg me-2 text-primary"></i><?= esc($link->platform) ?>
                             </td>
                             <td>
-                                <a href="<?= esc($link->url) ?>" target="_blank" rel="noopener"
-                                   class="text-truncate d-inline-block">
-                                    <?= esc($link->url) ?>
+                                <a href="#" class="copy-url" data-url="<?= esc($link->url) ?>" data-toggle="tooltip" title="<?= esc($link->url) ?>">
+                                    <i class="far fa-hand-pointer fa-fw"></i> <?= lang('Admin.clickToCopy') ?>
                                 </a>
                             </td>
                             <td><small class="text-muted"><?= esc($link->icon) ?></small></td>
@@ -90,4 +91,122 @@
 </div>
 
 <?php $content = ob_get_clean(); ?>
-<?= view($layout, array_merge(get_defined_vars(), ['content' => $content])) ?>
+<?php $extra_scripts = <<<'SCRIPT'
+<script>
+$(function(){
+    // Tooltip + copy-to-clipboard
+    $('[data-toggle="tooltip"]').tooltip();
+    $('.copy-url').on('click', function(e){
+        e.preventDefault();
+        var $el = $(this);
+        var url = $el.data('url');
+        var tmp = $('<textarea>').val(url).appendTo('body').select();
+        document.execCommand('copy');
+        tmp.remove();
+        var orig = $el.html();
+        $el.html('<i class="fas fa-check fa-fw"></i> Copied!');
+        setTimeout(function(){ $el.html(orig); }, 1500);
+    });
+
+    // Icon picker
+    var icons = [
+        {label:'Facebook',    cls:'fab fa-facebook'},
+        {label:'Facebook',    cls:'fab fa-facebook-f'},
+        {label:'Facebook',    cls:'fab fa-square-facebook'},
+        {label:'Messenger',   cls:'fab fa-facebook-messenger'},
+        {label:'Twitter / X', cls:'fab fa-twitter'},
+        {label:'Twitter / X', cls:'fab fa-square-twitter'},
+        {label:'X',           cls:'fab fa-x-twitter'},
+        {label:'Instagram',   cls:'fab fa-instagram'},
+        {label:'YouTube',     cls:'fab fa-youtube'},
+        {label:'YouTube',     cls:'fab fa-square-youtube'},
+        {label:'LinkedIn',    cls:'fab fa-linkedin'},
+        {label:'LinkedIn',    cls:'fab fa-linkedin-in'},
+        {label:'Pinterest',   cls:'fab fa-pinterest'},
+        {label:'Pinterest',   cls:'fab fa-pinterest-p'},
+        {label:'Pinterest',   cls:'fab fa-square-pinterest'},
+        {label:'TikTok',      cls:'fab fa-tiktok'},
+        {label:'Snapchat',    cls:'fab fa-snapchat'},
+        {label:'Snapchat',    cls:'fab fa-square-snapchat'},
+        {label:'Reddit',      cls:'fab fa-reddit'},
+        {label:'Reddit',      cls:'fab fa-reddit-alien'},
+        {label:'Reddit',      cls:'fab fa-square-reddit'},
+        {label:'Discord',     cls:'fab fa-discord'},
+        {label:'Twitch',      cls:'fab fa-twitch'},
+        {label:'GitHub',      cls:'fab fa-github'},
+        {label:'GitHub',      cls:'fab fa-github-alt'},
+        {label:'GitHub',      cls:'fab fa-square-github'},
+        {label:'WhatsApp',    cls:'fab fa-whatsapp'},
+        {label:'WhatsApp',    cls:'fab fa-square-whatsapp'},
+        {label:'Telegram',    cls:'fab fa-telegram'},
+        {label:'Mastodon',    cls:'fab fa-mastodon'},
+        {label:'Tumblr',      cls:'fab fa-tumblr'},
+        {label:'Tumblr',      cls:'fab fa-square-tumblr'},
+        {label:'Vimeo',       cls:'fab fa-vimeo'},
+        {label:'Vimeo',       cls:'fab fa-vimeo-v'},
+        {label:'Vimeo',       cls:'fab fa-square-vimeo'},
+        {label:'Flickr',      cls:'fab fa-flickr'},
+        {label:'Dribbble',    cls:'fab fa-dribbble'},
+        {label:'Dribbble',    cls:'fab fa-square-dribbble'},
+        {label:'Behance',     cls:'fab fa-behance'},
+        {label:'Behance',     cls:'fab fa-square-behance'},
+        {label:'Medium',      cls:'fab fa-medium'},
+        {label:'Spotify',     cls:'fab fa-spotify'},
+        {label:'SoundCloud',  cls:'fab fa-soundcloud'},
+        {label:'Slack',       cls:'fab fa-slack'},
+        {label:'Skype',       cls:'fab fa-skype'},
+        {label:'Steam',       cls:'fab fa-steam'},
+        {label:'Steam',       cls:'fab fa-square-steam'},
+        {label:'Patreon',     cls:'fab fa-patreon'},
+        {label:'PayPal',      cls:'fab fa-paypal'}
+    ];
+
+    var $search   = $('#icon-search');
+    var $dropdown = $('#icon-dropdown');
+    var $hidden   = $('#icon-value');
+
+    function renderList(filter) {
+        var html = '';
+        var q = (filter || '').toLowerCase();
+        icons.forEach(function(ic){
+            if (q && ic.label.toLowerCase().indexOf(q) === -1 && ic.cls.toLowerCase().indexOf(q) === -1) return;
+            html += '<a href="#" class="d-flex align-items-center px-3 py-2 text-dark icon-option" data-cls="' + ic.cls + '">'
+                  + '<i class="' + ic.cls + ' fa-fw fa-lg mr-2"></i> '
+                  + ic.label
+                  + '</a>';
+        });
+        $dropdown.html(html || '<div class="px-3 py-2 text-muted">No matches</div>');
+    }
+
+    $search.on('focus', function(){
+        renderList($search.val());
+        $dropdown.show();
+    });
+
+    $search.on('input', function(){
+        renderList($search.val());
+        $dropdown.show();
+    });
+
+    $(document).on('click', '.icon-option', function(e){
+        e.preventDefault();
+        var cls = $(this).data('cls');
+        var label = $(this).find('span').text();
+        $search.val(label);
+        $hidden.val(cls);
+        $dropdown.hide();
+    });
+
+    $(document).on('click', function(e){
+        if (!$(e.target).closest('#icon-search, #icon-dropdown').length) {
+            $dropdown.hide();
+        }
+    });
+
+    // Show all on initial focus
+    renderList('');
+});
+</script>
+SCRIPT;
+?>
+<?= view($layout, array_merge(get_defined_vars(), ['content' => $content, 'extra_scripts' => $extra_scripts])) ?>

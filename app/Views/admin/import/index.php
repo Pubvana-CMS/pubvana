@@ -93,7 +93,7 @@
                     <li><i class="fas fa-check text-success mr-1"></i> Tags</li>
                     <li><i class="fas fa-check text-success mr-1"></i> Authors (created as subscriber accounts)</li>
                     <li><i class="fas fa-check text-success mr-1"></i> Comments</li>
-                    <li><i class="fas fa-times text-muted mr-1"></i> Media files (URLs preserved in content)</li>
+                    <li><i class="fas fa-xmark text-muted mr-1"></i> Media files (URLs preserved in content)</li>
                 </ul>
             </div>
         </div>

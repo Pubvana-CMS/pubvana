@@ -203,7 +203,7 @@
         <hr class="sidebar-divider">
         <li class="nav-item <?= $nav === 'updates' ? 'active' : '' ?>">
             <a class="nav-link" href="<?= base_url('admin/updates') ?>">
-                <i class="fas fa-fw fa-arrow-circle-up text-warning"></i>
+                <i class="fas fa-fw fa-circle-arrow-up text-warning"></i>
                 <span><?= lang('Admin.navUpdateAvailable') ?>
                     <span class="badge badge-warning ml-1"><?= esc($update['latest_version'] ?? '') ?></span>
                 </span>
@@ -225,7 +225,7 @@
 
         <li class="nav-item">
             <a class="nav-link" href="https://pubvana.net" target="_blank" rel="noopener">
-                <i class="fas fa-fw fa-shopping-cart"></i>
+                <i class="fas fa-fw fa-cart-shopping"></i>
                 <span><?= lang('Admin.navPubvanaStore') ?></span>
             </a>
         </li>
@@ -256,7 +256,7 @@
 
                 <!-- View Site -->
                 <a href="<?= base_url() ?>" target="_blank" class="btn btn-sm btn-outline-secondary ml-2">
-                    <i class="fas fa-external-link-alt"></i> <?= lang('Admin.viewSite') ?>
+                    <i class="fas fa-arrow-up-right-from-square"></i> <?= lang('Admin.viewSite') ?>
                 </a>
 
                 <ul class="navbar-nav ml-auto">
@@ -264,7 +264,7 @@
                     <li class="nav-item">
                         <a class="nav-link" href="<?= base_url('admin/updates') ?>"
                            title="Pubvana <?= esc($update['latest_version'] ?? '') ?> available">
-                            <i class="fas fa-arrow-circle-up text-warning"></i>
+                            <i class="fas fa-circle-arrow-up text-warning"></i>
                             <span class="badge badge-warning badge-counter">!</span>
                         </a>
                     </li>
@@ -277,15 +277,15 @@
                             <span class="mr-2 d-none d-lg-inline text-gray-600 small">
                                 <?= esc(auth()->user()->username ?? 'Admin') ?>
                             </span>
-                            <i class="fas fa-user-circle fa-fw fa-lg text-gray-400"></i>
+                            <i class="fas fa-circle-user fa-fw fa-lg text-gray-400"></i>
                         </a>
                         <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
                             <a class="dropdown-item" href="<?= base_url() ?>">
-                                <i class="fas fa-home fa-sm fa-fw mr-2 text-gray-400"></i> <?= lang('Admin.viewSite') ?>
+                                <i class="fas fa-house fa-sm fa-fw mr-2 text-gray-400"></i> <?= lang('Admin.viewSite') ?>
                             </a>
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
-                                <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i> <?= lang('Admin.logout') ?>
+                                <i class="fas fa-right-from-bracket fa-sm fa-fw mr-2 text-gray-400"></i> <?= lang('Admin.logout') ?>
                             </a>
                         </div>
                     </li>

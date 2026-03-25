@@ -17,7 +17,7 @@ ob_start();
             <h1><?= esc($post->title) ?></h1>
 
             <div class="text-muted small mb-4">
-                <i class="fas fa-calendar-alt"></i> <?= date('F j, Y', strtotime($post->published_at)) ?>
+                <i class="fas fa-calendar-days"></i> <?= date('F j, Y', strtotime($post->published_at)) ?>
                 &nbsp;&middot;&nbsp;
                 <i class="fas fa-eye"></i> <?= lang('Blog.views', [number_format($post->views)]) ?>
             </div>

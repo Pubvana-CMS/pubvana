@@ -75,7 +75,7 @@
                             <strong><?= esc($item->label) ?></strong>
                             <small class="text-muted ml-2"><?= esc($item->url) ?></small>
                             <?php if ($item->target === '_blank'): ?>
-                            <i class="fas fa-external-link-alt fa-xs text-muted ml-1"></i>
+                            <i class="fas fa-arrow-up-right-from-square fa-xs text-muted ml-1"></i>
                             <?php endif; ?>
                         </span>
                         <form method="POST" action="<?= base_url('admin/navigation/' . $item->id . '/delete') ?>" class="d-inline">

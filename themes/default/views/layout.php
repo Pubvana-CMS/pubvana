@@ -69,7 +69,7 @@
             </ul>
             <form class="d-flex" action="<?= base_url('search') ?>" method="GET">
                 <input class="form-control form-control-sm me-2" type="search" name="q" placeholder="<?= lang('Blog.searchPlaceholder') ?>" aria-label="<?= lang('Blog.search') ?>">
-                <button class="btn btn-outline-light btn-sm" type="submit"><i class="fas fa-search"></i></button>
+                <button class="btn btn-outline-light btn-sm" type="submit"><i class="fas fa-magnifying-glass"></i></button>
             </form>
         </div>
     </div>

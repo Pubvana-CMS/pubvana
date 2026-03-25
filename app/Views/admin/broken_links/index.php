@@ -19,7 +19,7 @@
 <div class="card shadow mb-4">
     <div class="card-body py-3 d-flex align-items-center justify-content-between flex-wrap">
         <div class="text-muted small mr-3">
-            <i class="fas fa-info-circle mr-1"></i>
+            <i class="fas fa-circle-info mr-1"></i>
             Run a full scan from the command line to populate this report:
             <code class="ml-1">php spark links:check</code>
         </div>
@@ -32,7 +32,7 @@
 <?php if (empty($grouped)): ?>
     <div class="card shadow mb-4">
         <div class="card-body text-center text-muted py-5">
-            <i class="fas fa-check-circle fa-3x text-success mb-3 d-block"></i>
+            <i class="fas fa-circle-check fa-3x text-success mb-3 d-block"></i>
             <?= lang('Admin.brokenLinkNone') ?>
         </div>
     </div>
@@ -103,7 +103,7 @@
                                 <?= csrf_field() ?>
                                 <button type="submit" class="btn btn-xs btn-outline-primary"
                                         title="Re-check this URL">
-                                    <i class="fas fa-sync-alt"></i>
+                                    <i class="fas fa-arrows-rotate"></i>
                                 </button>
                             </form>
                             <?php if (! $link->dismissed): ?>

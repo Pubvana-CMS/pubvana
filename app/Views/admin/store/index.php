@@ -4,7 +4,7 @@
     <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.storeTitle') ?></h1>
     <div>
         <a href="<?= esc($storeUrl) ?>" target="_blank" class="btn btn-sm btn-outline-primary mr-2">
-            <i class="fas fa-external-link-alt fa-sm mr-1"></i> Browse Full Store
+            <i class="fas fa-arrow-up-right-from-square fa-sm mr-1"></i> Browse Full Store
         </a>
         <a href="<?= base_url('admin/marketplace') ?>" class="btn btn-sm btn-outline-secondary">
             <i class="fas fa-arrow-left fa-sm"></i> Back to Marketplace
@@ -26,7 +26,7 @@
             <h4 class="text-muted">No products available</h4>
             <p class="text-muted">Could not load products from the store. Please check back later.</p>
             <a href="<?= esc($storeUrl) ?>" target="_blank" class="btn btn-primary">
-                <i class="fas fa-external-link-alt mr-1"></i> Visit Pubvana Store
+                <i class="fas fa-arrow-up-right-from-square mr-1"></i> Visit Pubvana Store
             </a>
         </div>
     </div>
@@ -81,7 +81,7 @@
                 <?php if (! empty($item->store_url)): ?>
                 <div class="card-footer text-right">
                     <a href="<?= esc($item->store_url) ?>" target="_blank" class="small text-primary">
-                        View in store <i class="fas fa-external-link-alt fa-xs"></i>
+                        View in store <i class="fas fa-arrow-up-right-from-square fa-xs"></i>
                     </a>
                 </div>
                 <?php endif; ?>
