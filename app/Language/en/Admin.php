@@ -410,6 +410,10 @@ return [
     'storeSlugTypeRequired' => 'Item slug and item type are required.',
     'storeInstallFail'      => 'Installation failed. Please check your license key and try again. See application logs for details.',
     'storeInstallSuccess'   => '{0} "{1}" installed successfully.',
+    'storeBrowseFull'       => 'Browse Full Store',
+    'storeBackToMarketplace'=> 'Back to Marketplace',
+    'storeNoProducts'       => 'No products available.',
+    'storeViewInStore'      => 'View in store',
 
     // =========================================================================
     // Users
@@ -462,6 +466,8 @@ return [
     'tfaInvalidDisable'     => 'Invalid code — 2FA was not disabled.',
     'tfaSessionExpired'     => 'Setup session expired — please start again.',
     'tfaNotEnabled'         => '2FA is not currently enabled.',
+    'tfaCantScan'           => "Can't scan? Enter this code manually:",
+    'tfaWarning'            => 'Store this secret key in a safe place. You will need it to recover access if you lose your authenticator device.',
 
     // =========================================================================
     // Social Links
@@ -640,6 +646,8 @@ return [
     'languageDisabled_msg'      => '{0} disabled.',
     'languageNotFound'          => 'Language not found.',
     'languageCannotDisable'     => 'Cannot disable the default language.',
+    'languageDirection'         => 'Direction',
+    'languageNativeName'        => 'Native Name',
 
     // =========================================================================
     // Analytics
@@ -654,6 +662,7 @@ return [
     'analyticsLast90'           => 'Last 90 days',
     'analyticsChartTitle'       => 'Page Views',
     'analyticsNoData'           => 'No analytics data for this period.',
+    'analyticsDomain'           => 'Domain',
 
     // =========================================================================
     // Affiliate Links
@@ -687,6 +696,8 @@ return [
     'brokenLinkSource'          => 'Source',
     'brokenLinkShowDismissed'   => 'Show dismissed',
     'brokenLinkHideDismissed'   => 'Hide dismissed',
+    'brokenLinkTimeout'         => 'Timeout',
+    'brokenLinkBroken'          => 'broken',
     'brokenLinkNone'            => 'No broken links detected.',
     'brokenLinkNowReachable'    => 'Link is now reachable — removed from results.',
     'brokenLinkStillBroken'     => 'Link still broken ({0}).',
@@ -715,6 +726,7 @@ return [
     'backupFilename'            => 'Filename',
     'backupSize'                => 'Size',
     'backupDate'                => 'Created',
+    'backupGenerating'          => 'Generating backup…',
     'backupNoFiles'             => 'No saved backups.',
     'backupFailed'              => 'Backup failed: {0}',
     'backupDeleted'             => 'Backup deleted.',
@@ -746,6 +758,8 @@ return [
     'updatesUpToDate'           => 'Pubvana is up to date.',
     'updatesAvailable'          => 'Update available: {0}',
     'updatesCheckBtn'           => 'Check for Updates',
+    'updatesReleaseNotes'       => 'Release Notes',
+    'updatesHowToApply'         => 'How to Apply an Update',
     'updatesCacheCleared'       => 'Update cache cleared — re-checking now.',
 
     // =========================================================================
