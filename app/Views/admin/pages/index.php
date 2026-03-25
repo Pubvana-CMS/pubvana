@@ -1,8 +1,8 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Pages</h1>
-    <a href="<?= base_url('admin/pages/create') ?>" class="btn btn-sm btn-primary shadow-sm"><i class="fas fa-plus fa-sm"></i> New Page</a>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.pagesTitle') ?></h1>
+    <a href="<?= base_url('admin/pages/create') ?>" class="btn btn-sm btn-primary shadow-sm"><i class="fas fa-plus fa-sm"></i> <?= lang('Admin.newPageTitle') ?></a>
 </div>
 
 <div class="card shadow mb-4">
@@ -10,7 +10,7 @@
         <div class="table-responsive">
             <table class="table table-hover mb-0">
                 <thead class="bg-light">
-                    <tr><th>Title</th><th>Slug</th><th>Status</th><th>System</th><th>Actions</th></tr>
+                    <tr><th><?= lang('Admin.title') ?></th><th><?= lang('Admin.slug') ?></th><th><?= lang('Admin.status') ?></th><th>System</th><th><?= lang('Admin.actions') ?></th></tr>
                 </thead>
                 <tbody>
                 <?php foreach ($pages as $page): ?>
@@ -20,18 +20,18 @@
                     <td><span class="badge badge-<?= $page->status === 'published' ? 'success' : 'secondary' ?>"><?= esc($page->status) ?></span></td>
                     <td><?= $page->is_system ? '<span class="badge badge-info">System</span>' : '—' ?></td>
                     <td>
-                        <a href="<?= base_url('admin/pages/' . $page->id . '/edit') ?>" class="btn btn-sm btn-outline-primary">Edit</a>
+                        <a href="<?= base_url('admin/pages/' . $page->id . '/edit') ?>" class="btn btn-sm btn-outline-primary"><?= lang('Admin.edit') ?></a>
                         <?php if (! $page->is_system): ?>
-                        <form method="POST" action="<?= base_url('admin/pages/' . $page->id . '/delete') ?>" class="d-inline" onsubmit="return confirm('Delete?')">
+                        <form method="POST" action="<?= base_url('admin/pages/' . $page->id . '/delete') ?>" class="d-inline" onsubmit="return confirm('<?= lang('Admin.confirmDeletePage') ?>')">
                             <?= csrf_field() ?>
-                            <button class="btn btn-sm btn-outline-danger">Delete</button>
+                            <button class="btn btn-sm btn-outline-danger"><?= lang('Admin.delete') ?></button>
                         </form>
                         <?php endif; ?>
                     </td>
                 </tr>
                 <?php endforeach; ?>
                 <?php if (empty($pages)): ?>
-                    <tr><td colspan="5" class="text-center text-muted py-4">No pages yet.</td></tr>
+                    <tr><td colspan="5" class="text-center text-muted py-4"><?= lang('Admin.noResultsFound') ?></td></tr>
                 <?php endif; ?>
                 </tbody>
             </table>

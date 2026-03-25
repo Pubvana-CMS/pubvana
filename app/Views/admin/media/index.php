@@ -1,22 +1,22 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Media Library</h1>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.mediaTitle') ?></h1>
 </div>
 
 <!-- Upload area -->
 <div class="card shadow mb-4">
-    <div class="card-header"><h6 class="m-0 font-weight-bold text-primary">Upload Media</h6></div>
+    <div class="card-header"><h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.mediaUpload') ?></h6></div>
     <div class="card-body">
         <div id="upload-zone" class="border border-dashed rounded p-4 text-center bg-light">
             <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
-            <p class="mb-2">Drag &amp; drop files here, or</p>
+            <p class="mb-2"><?= lang('Admin.mediaDragDrop') ?></p>
             <input type="file" id="file-input" accept="image/*" multiple class="d-none">
-            <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">Choose Files</button>
+            <button class="btn btn-primary" onclick="document.getElementById('file-input').click()"><?= lang('Admin.mediaChooseFiles') ?></button>
         </div>
         <div id="upload-progress" class="mt-2 d-none">
             <div class="progress"><div class="progress-bar progress-bar-striped progress-bar-animated" style="width:100%"></div></div>
-            <p class="text-muted small mt-1">Uploading…</p>
+            <p class="text-muted small mt-1"><?= lang('Admin.mediaUploading') ?></p>
         </div>
     </div>
 </div>
@@ -30,15 +30,15 @@
             <div class="card-body p-1 text-center">
                 <p class="text-truncate small mb-1" title="<?= esc($item->filename) ?>"><?= esc($item->filename) ?></p>
                 <p class="text-muted" style="font-size:0.7rem"><?= round($item->size/1024, 1) ?> KB</p>
-                <form method="POST" action="<?= base_url('admin/media/' . $item->id . '/delete') ?>" onsubmit="return confirm('Delete?')">
+                <form method="POST" action="<?= base_url('admin/media/' . $item->id . '/delete') ?>" onsubmit="return confirm('<?= lang('Admin.confirmDeleteMedia') ?>')">
                     <?= csrf_field() ?>
-                    <button class="btn btn-xs btn-outline-danger btn-block">Delete</button>
+                    <button class="btn btn-xs btn-outline-danger btn-block"><?= lang('Admin.delete') ?></button>
                 </form>
             </div>
         </div>
     </div>
     <?php endforeach; ?>
-    <?php if (empty($media)): ?><div class="col-12"><p class="text-muted text-center py-4">No media yet.</p></div><?php endif; ?>
+    <?php if (empty($media)): ?><div class="col-12"><p class="text-muted text-center py-4"><?= lang('Admin.noMediaYet') ?></p></div><?php endif; ?>
 </div>
 
 <?php $content = ob_get_clean(); ?>

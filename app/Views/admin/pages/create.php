@@ -1,8 +1,8 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">New Page</h1>
-    <a href="<?= base_url('admin/pages') ?>" class="btn btn-sm btn-outline-secondary">Back</a>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.newPageTitle') ?></h1>
+    <a href="<?= base_url('admin/pages') ?>" class="btn btn-sm btn-outline-secondary"><?= lang('Admin.back') ?></a>
 </div>
 
 <form method="POST" action="<?= base_url('admin/pages/create') ?>">
@@ -13,11 +13,11 @@
         <div class="card shadow mb-4">
             <div class="card-body">
                 <div class="form-group">
-                    <label class="font-weight-bold">Title *</label>
+                    <label class="font-weight-bold"><?= lang('Admin.postTitleField') ?></label>
                     <input type="text" name="title" class="form-control form-control-lg" required value="<?= esc(old('title')) ?>">
                 </div>
                 <div class="form-group">
-                    <label class="font-weight-bold">Slug *</label>
+                    <label class="font-weight-bold"><?= lang('Admin.slug') ?> *</label>
                     <input type="text" name="slug" class="form-control" value="<?= esc(old('slug')) ?>" placeholder="auto-generated from title if left blank">
                 </div>
                 <div class="form-group">
@@ -38,25 +38,25 @@
             </div>
         </div>
         <div class="card shadow mb-4">
-            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary">SEO</h6></div>
+            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.postSeoSection') ?></h6></div>
             <div class="card-body">
-                <div class="form-group"><label>Meta Title</label><input type="text" name="meta_title" class="form-control" value="<?= esc(old('meta_title')) ?>"></div>
-                <div class="form-group mb-0"><label>Meta Description</label><textarea name="meta_description" class="form-control" rows="2"><?= esc(old('meta_description')) ?></textarea></div>
+                <div class="form-group"><label><?= lang('Admin.postMetaTitle') ?></label><input type="text" name="meta_title" class="form-control" value="<?= esc(old('meta_title')) ?>"></div>
+                <div class="form-group mb-0"><label><?= lang('Admin.postMetaDescription') ?></label><textarea name="meta_description" class="form-control" rows="2"><?= esc(old('meta_description')) ?></textarea></div>
             </div>
         </div>
     </div>
     <div class="col-lg-4">
         <div class="card shadow mb-4">
-            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary">Publish</h6></div>
+            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.postPublishSection') ?></h6></div>
             <div class="card-body">
                 <div class="form-group">
-                    <label>Status</label>
+                    <label><?= lang('Admin.postStatus') ?></label>
                     <select name="status" class="form-control">
-                        <option value="draft" <?= old('status','draft')==='draft' ? 'selected' : '' ?>>Draft</option>
-                        <option value="published" <?= old('status','draft')==='published' ? 'selected' : '' ?>>Published</option>
+                        <option value="draft" <?= old('status','draft')==='draft' ? 'selected' : '' ?>><?= lang('Admin.postStatusDraft') ?></option>
+                        <option value="published" <?= old('status','draft')==='published' ? 'selected' : '' ?>><?= lang('Admin.postStatusPublished') ?></option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block">Save Page</button>
+                <button type="submit" class="btn btn-primary btn-block"><?= lang('Admin.save') ?></button>
             </div>
         </div>
     </div>
