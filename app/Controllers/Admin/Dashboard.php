@@ -39,8 +39,12 @@ class Dashboard extends BaseAdminController
 
         $update = (new UpdateService())->checkForUpdate();
 
-        $notificationModel = new AdminNotificationModel();
-        $notifications     = $notificationModel->getActive();
+        try {
+            $notificationModel = new AdminNotificationModel();
+            $notifications     = $notificationModel->getActive();
+        } catch (\Throwable $e) {
+            $notifications = [];
+        }
 
         return $this->adminView('dashboard/index', array_merge($this->baseData('Dashboard', 'dashboard'), [
             'stats'            => $stats,
