@@ -19,7 +19,7 @@ ob_start();
             <div class="text-muted small mb-4">
                 <i class="fas fa-calendar-alt"></i> <?= date('F j, Y', strtotime($post->published_at)) ?>
                 &nbsp;&middot;&nbsp;
-                <i class="fas fa-eye"></i> <?= number_format($post->views) ?> views
+                <i class="fas fa-eye"></i> <?= lang('Blog.views', [number_format($post->views)]) ?>
             </div>
 
             <?php if (!empty($paywall)): ?>
@@ -47,7 +47,7 @@ ob_start();
 
         <!-- Comments -->
         <div id="comments">
-            <h3 class="mb-4">Comments (<?= count($comments) ?>)</h3>
+            <h3 class="mb-4"><?= lang('Blog.commentsHeading', [count($comments)]) ?></h3>
 
             <?php if (! empty($comments)): ?>
                 <?= theme_view(THEMES_PATH . 'default/views/partials/comments-list.php', ['comments' => $comments]) ?>

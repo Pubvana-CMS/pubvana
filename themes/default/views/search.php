@@ -2,14 +2,14 @@
 
 <div class="row">
     <div class="col-lg-8">
-        <h1 class="mb-2">Search Results</h1>
+        <h1 class="mb-2"><?= lang('Blog.searchResultsHeading') ?></h1>
         <?php if ($query): ?>
-            <p class="text-muted mb-4">Showing results for: <strong><?= esc($query) ?></strong></p>
+            <p class="text-muted mb-4"><?= lang('Blog.searchShowingFor', [esc($query)]) ?></p>
         <?php endif; ?>
 
         <form action="<?= base_url('search') ?>" method="GET" class="mb-4">
             <div class="input-group">
-                <input type="text" class="form-control" name="q" value="<?= esc($query) ?>" placeholder="Search posts…">
+                <input type="text" class="form-control" name="q" value="<?= esc($query) ?>" placeholder="<?= lang('Blog.searchPostsPlaceholder') ?>">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i></button>
             </div>
         </form>
@@ -18,7 +18,7 @@
             <?= theme_view(THEMES_PATH . 'default/views/partials/post-card.php', ['post' => $post]) ?>
         <?php endforeach; ?>
         <?php if (empty($posts) && $query): ?>
-            <p class="text-muted">No posts found for "<?= esc($query) ?>".</p>
+            <p class="text-muted"><?= lang('Blog.searchNoResults', [esc($query)]) ?></p>
         <?php endif; ?>
 
         <?php if (isset($pager)): ?>

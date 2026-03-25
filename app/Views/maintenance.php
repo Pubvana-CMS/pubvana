@@ -28,8 +28,8 @@
     <div class="container">
         <div class="icon">🔧</div>
         <div class="site-name"><?= esc(setting('App.siteName') ?? 'Site') ?></div>
-        <h1>Under Maintenance</h1>
-        <p>We're performing scheduled maintenance. We'll be back soon — thanks for your patience!</p>
+        <h1><?= lang('Blog.maintenanceTitle') ?></h1>
+        <p><?= lang('Blog.maintenanceBody') ?></p>
     </div>
 </body>
 </html>
