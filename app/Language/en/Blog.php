@@ -148,7 +148,7 @@ return [
     // Maintenance mode
     // =========================================================================
 
-    'maintenanceTitle'  => "We'll Be Back Soon",
-    'maintenanceBody'   => 'Our site is temporarily undergoing scheduled maintenance. We will be back very shortly. Thank you for your patience.',
+    'maintenanceTitle'  => 'Under Maintenance',
+    'maintenanceBody'   => "We're performing scheduled maintenance. We'll be back soon — thanks for your patience!",
 
 ];
