@@ -147,6 +147,12 @@ $routes->group('admin', ['filter' => ['admin_auth', 'totp'], 'namespace' => 'App
     $routes->post('redirects/store',         'Redirects::store');
     $routes->post('redirects/(:num)/delete', 'Redirects::delete/$1');
 
+    // Languages
+    $routes->get('languages',                        'Languages::index');
+    $routes->post('languages/enable/(:num)',          'Languages::enable/$1');
+    $routes->post('languages/disable/(:num)',         'Languages::disable/$1');
+    $routes->post('languages/make-default/(:num)',    'Languages::makeDefault/$1');
+
     // Marketplace
     $routes->get('marketplace',              'Marketplace::index');
     $routes->get('marketplace/themes',       'Marketplace::themes');
