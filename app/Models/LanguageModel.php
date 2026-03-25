@@ -80,7 +80,7 @@ class LanguageModel extends Model
     }
 
     /**
-     * Return a keyed array suitable for locale negotiation: code => name.
+     * Return a flat array of active language codes for Config\App::$supportedLocales.
      */
     public function getSupportedLocales(): array
     {
@@ -88,7 +88,7 @@ class LanguageModel extends Model
         $locales = [];
 
         foreach ($langs as $lang) {
-            $locales[$lang->code] = $lang->name;
+            $locales[] = $lang->code;
         }
 
         return $locales;
