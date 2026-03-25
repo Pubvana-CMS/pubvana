@@ -1,11 +1,11 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Navigation</h1>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.navigationTitle') ?></h1>
 </div>
 
 <ul class="nav nav-tabs mb-3">
-    <?php foreach (['primary' => 'Primary Menu', 'footer' => 'Footer Menu'] as $grp => $label): ?>
+    <?php foreach (['primary' => lang('Admin.navGroupPrimary'), 'footer' => lang('Admin.navGroupFooter')] as $grp => $label): ?>
     <li class="nav-item">
         <a class="nav-link <?= $group === $grp ? 'active' : '' ?>" href="<?= base_url('admin/navigation?group=' . $grp) ?>"><?= $label ?></a>
     </li>
@@ -17,18 +17,18 @@
     <div class="col-md-4">
         <div class="card shadow mb-4">
             <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Add Menu Item</h6>
+                <h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.navItemLabel') ?></h6>
             </div>
             <div class="card-body">
                 <form method="POST" action="<?= base_url('admin/navigation') ?>">
                     <?= csrf_field() ?>
                     <input type="hidden" name="nav_group" value="<?= esc($group) ?>">
                     <div class="form-group">
-                        <label>Label</label>
+                        <label><?= lang('Admin.navItemLabel') ?></label>
                         <input type="text" name="label" class="form-control" required placeholder="e.g. About Us">
                     </div>
                     <div class="form-group">
-                        <label>URL</label>
+                        <label><?= lang('Admin.navItemUrl') ?></label>
                         <input type="text" name="url" class="form-control" required placeholder="/about">
                     </div>
                     <div class="form-group">
@@ -43,13 +43,13 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Target</label>
+                        <label><?= lang('Admin.navItemTarget') ?></label>
                         <select name="target" class="form-control">
                             <option value="_self">Same window</option>
                             <option value="_blank">New window</option>
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-block">Add Item</button>
+                    <button type="submit" class="btn btn-primary btn-block"><?= lang('Admin.add') ?></button>
                 </form>
             </div>
         </div>
@@ -80,7 +80,7 @@
                         </span>
                         <form method="POST" action="<?= base_url('admin/navigation/' . $item->id . '/delete') ?>" class="d-inline">
                             <?= csrf_field() ?>
-                            <button class="btn btn-xs btn-outline-danger" onclick="return confirm('Remove this item?')">Remove</button>
+                            <button class="btn btn-xs btn-outline-danger" onclick="return confirm('<?= lang('Admin.confirmDelete') ?>')"><?= lang('Admin.delete') ?></button>
                         </form>
                     </li>
                     <?php endforeach; ?>
