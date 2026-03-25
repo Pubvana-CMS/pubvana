@@ -28,6 +28,11 @@
 .card-thumb        { height: 160px; }
 .card-thumb-lg     { height: 180px; }
 
+/* Extended width utilities (Bootstrap 4 only ships w-25/50/75/100) */
+.w-10 { width: 10% !important; }
+.w-15 { width: 15% !important; }
+.w-20 { width: 20% !important; }
+
 /* Table tweaks */
 .table-hover tbody tr:hover { background-color: rgba(78,115,223,.04); }
 
