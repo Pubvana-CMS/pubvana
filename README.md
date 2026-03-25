@@ -196,22 +196,22 @@ _Translators Wanted!_
 
 If you would like to help translate files, please fork this repo and send a PR.
 
-* French, Indonesian, and Portuguese need updates.
+v2 ships with 6 languages: English (source), French, Indonesian, Portuguese, Slovak, and Spanish (Latin American). All non-English translations were AI-generated and need verification from native speakers. 16 additional languages are seeded in the admin panel but ship without translation files — CI4 falls back to English.
 
 Please include a README.md update under 'Translators' with your name and a link to your site/GitHub (optional).
 
-* French
-  - [Paul DUBOT](https://github.com/keeganpa)
-  - [Léonard GAURIAU](https://github.com/leoDisjonct)
-  - [Clément TRASSOUDAINE](https://github.com/intv0id)
-  - [Jean-Baptiste VALLADEAU](https://github.com/ignamarte)
-  - [Rhagngahr](https://github.com/Rhagngahr)
+* French — AI translated, needs native speaker verification
+  - v1 contributors: [Paul DUBOT](https://github.com/keeganpa), [Léonard GAURIAU](https://github.com/leoDisjonct), [Clément TRASSOUDAINE](https://github.com/intv0id), [Jean-Baptiste VALLADEAU](https://github.com/ignamarte), [Rhagngahr](https://github.com/Rhagngahr)
 
-* Indonesian
-  - [Suhindra](https://github.com/suhindra)
+* Indonesian — AI translated, needs native speaker verification
+  - v1 contributor: [Suhindra](https://github.com/suhindra)
 
-* Portuguese
-  - [Samuel Fontebasso](https://github.com/fontebasso)
+* Portuguese — AI translated, needs native speaker verification
+  - v1 contributor: [Samuel Fontebasso](https://github.com/fontebasso)
+
+* Slovak — AI translated, needs native speaker verification
+
+* Spanish (Latin American) — AI translated, needs native speaker verification
 
 ## Roadmap / Todo
 
@@ -242,6 +242,11 @@ Please include a README.md update under 'Translators' with your name and a link 
 - [x] Bulk Post Actions (publish / unpublish / delete many)
 - [x] Schema.org Markup (Article, BreadcrumbList, Author JSON-LD)
 - [x] Image WebP Auto-Convert on Upload
+- [x] Multi-language Support (22 languages, admin enable/disable, `{locale}` URL routing, `lang()` throughout views)
+- [x] Honeypot Spam Protection (CI4 built-in filter on comment + contact forms)
+- [x] Atom 1.0 Feed (`/atom` alongside existing RSS)
+- [ ] Email Notifications / Subscriptions (subscribe to new posts, email verification, unsubscribe)
+- [ ] Links Manager / Blogroll (display a curated list of external links via widget)
 
 ---
 
