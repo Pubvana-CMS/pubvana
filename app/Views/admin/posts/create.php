@@ -1,8 +1,8 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">New Post</h1>
-    <a href="<?= base_url('admin/posts') ?>" class="btn btn-sm btn-outline-secondary">Back to Posts</a>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.newPostTitle') ?></h1>
+    <a href="<?= base_url('admin/posts') ?>" class="btn btn-sm btn-outline-secondary"><?= lang('Admin.backToPosts') ?></a>
 </div>
 
 <form method="POST" action="<?= base_url('admin/posts/create') ?>">
@@ -16,18 +16,18 @@
         <div class="card shadow mb-4">
             <div class="card-body">
                 <div class="form-group">
-                    <label class="font-weight-bold">Title *</label>
+                    <label class="font-weight-bold"><?= lang('Admin.postTitleField') ?></label>
                     <input type="text" name="title" class="form-control form-control-lg" value="<?= esc(old('title')) ?>" required>
                 </div>
 
                 <!-- Editor Toggle -->
                 <div class="form-group">
-                    <label class="font-weight-bold d-block">Editor</label>
+                    <label class="font-weight-bold d-block"><?= lang('Admin.postEditor') ?></label>
                     <div class="btn-group btn-group-sm" role="group">
                         <input type="radio" class="btn-check" name="editor_type" id="et_html" value="html" checked autocomplete="off">
-                        <label class="btn btn-outline-primary" for="et_html"><i class="fas fa-code"></i> HTML Editor</label>
+                        <label class="btn btn-outline-primary" for="et_html"><i class="fas fa-code"></i> <?= lang('Admin.postHtmlEditor') ?></label>
                         <input type="radio" class="btn-check" name="editor_type" id="et_md" value="markdown" autocomplete="off">
-                        <label class="btn btn-outline-secondary" for="et_md"><i class="fab fa-markdown"></i> Markdown</label>
+                        <label class="btn btn-outline-secondary" for="et_md"><i class="fab fa-markdown"></i> <?= lang('Admin.postMarkdown') ?></label>
                     </div>
                 </div>
 
@@ -44,22 +44,22 @@
 
         <!-- Excerpt -->
         <div class="card shadow mb-4">
-            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary">Excerpt</h6></div>
+            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.postExcerpt') ?></h6></div>
             <div class="card-body">
-                <textarea name="excerpt" class="form-control" rows="3" placeholder="Optional short summary..."><?= esc(old('excerpt')) ?></textarea>
+                <textarea name="excerpt" class="form-control" rows="3" placeholder="<?= lang('Admin.postExcerptPlaceholder') ?>"><?= esc(old('excerpt')) ?></textarea>
             </div>
         </div>
 
         <!-- SEO -->
         <div class="card shadow mb-4">
-            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary">SEO</h6></div>
+            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.postSeoSection') ?></h6></div>
             <div class="card-body">
                 <div class="form-group">
-                    <label>Meta Title</label>
+                    <label><?= lang('Admin.postMetaTitle') ?></label>
                     <input type="text" name="meta_title" class="form-control" value="<?= esc(old('meta_title')) ?>">
                 </div>
                 <div class="form-group">
-                    <label>Meta Description</label>
+                    <label><?= lang('Admin.postMetaDescription') ?></label>
                     <textarea name="meta_description" class="form-control" rows="2"><?= esc(old('meta_description')) ?></textarea>
                 </div>
             </div>
@@ -71,47 +71,47 @@
 
         <!-- Publish Settings -->
         <div class="card shadow mb-4">
-            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary">Publish</h6></div>
+            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.postPublishSection') ?></h6></div>
             <div class="card-body">
                 <div class="form-group">
-                    <label>Status</label>
+                    <label><?= lang('Admin.postStatus') ?></label>
                     <select name="status" class="form-control">
-                        <option value="draft" <?= old('status') === 'draft' ? 'selected' : '' ?>>Draft</option>
-                        <option value="published" <?= old('status') === 'published' ? 'selected' : '' ?>>Published</option>
-                        <option value="scheduled" <?= old('status') === 'scheduled' ? 'selected' : '' ?>>Scheduled</option>
+                        <option value="draft" <?= old('status') === 'draft' ? 'selected' : '' ?>><?= lang('Admin.postStatusDraft') ?></option>
+                        <option value="published" <?= old('status') === 'published' ? 'selected' : '' ?>><?= lang('Admin.postStatusPublished') ?></option>
+                        <option value="scheduled" <?= old('status') === 'scheduled' ? 'selected' : '' ?>><?= lang('Admin.postStatusScheduled') ?></option>
                     </select>
                 </div>
                 <div class="form-group" id="published-at-group" style="display:none">
-                    <label>Scheduled Date &amp; Time</label>
+                    <label><?= lang('Admin.postScheduledAt') ?></label>
                     <input type="datetime-local" name="published_at" class="form-control" value="<?= esc(old('published_at')) ?>">
                 </div>
                 <div class="form-check mb-2">
                     <input type="checkbox" name="is_featured" id="is_featured" class="form-check-input" value="1">
-                    <label class="form-check-label" for="is_featured">Featured Post</label>
+                    <label class="form-check-label" for="is_featured"><?= lang('Admin.postFeatured') ?></label>
                 </div>
                 <div class="form-check mb-2">
                     <input type="checkbox" name="is_premium" id="is_premium" class="form-check-input" value="1">
-                    <label class="form-check-label" for="is_premium"><i class="fas fa-lock fa-xs text-warning mr-1"></i>Members Only</label>
+                    <label class="form-check-label" for="is_premium"><i class="fas fa-lock fa-xs text-warning mr-1"></i><?= lang('Admin.postMembersOnly') ?></label>
                 </div>
                 <div class="form-check mb-2">
                     <input type="checkbox" name="share_on_publish" id="share_on_publish" class="form-check-input" value="1" checked>
-                    <label class="form-check-label" for="share_on_publish">Share to social on publish</label>
+                    <label class="form-check-label" for="share_on_publish"><?= lang('Admin.postShareOnPublish') ?></label>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block mt-3">Save Post</button>
+                <button type="submit" class="btn btn-primary btn-block mt-3"><?= lang('Admin.postSaveBtn') ?></button>
             </div>
         </div>
 
         <!-- Featured Image -->
         <div class="card shadow mb-4">
-            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary">Featured Image</h6></div>
+            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.postFeaturedImage') ?></h6></div>
             <div class="card-body">
-                <input type="text" name="featured_image" class="form-control" placeholder="URL or upload path…" value="<?= esc(old('featured_image')) ?>">
+                <input type="text" name="featured_image" class="form-control" placeholder="<?= lang('Admin.postFeaturedImagePlaceholder') ?>" value="<?= esc(old('featured_image')) ?>">
             </div>
         </div>
 
         <!-- Categories -->
         <div class="card shadow mb-4">
-            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary">Categories</h6></div>
+            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.postCategories') ?></h6></div>
             <div class="card-body" style="max-height:200px;overflow-y:auto">
                 <?php foreach ($categories as $cat): ?>
                 <div class="form-check">
@@ -120,17 +120,17 @@
                 </div>
                 <?php endforeach; ?>
                 <?php if (empty($categories)): ?>
-                    <p class="text-muted small mb-0">No categories yet.</p>
+                    <p class="text-muted small mb-0"><?= lang('Admin.noCategoriesYet') ?></p>
                 <?php endif; ?>
             </div>
         </div>
 
         <!-- Tags -->
         <div class="card shadow mb-4">
-            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary">Tags</h6></div>
+            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.postTags') ?></h6></div>
             <div class="card-body">
-                <input type="text" name="tags_raw" class="form-control" placeholder="tag1, tag2, tag3" value="<?= esc(old('tags_raw')) ?>">
-                <small class="text-muted">Comma-separated</small>
+                <input type="text" name="tags_raw" class="form-control" placeholder="<?= lang('Admin.postTagsPlaceholder') ?>" value="<?= esc(old('tags_raw')) ?>">
+                <small class="text-muted"><?= lang('Admin.commasSeparated') ?></small>
             </div>
         </div>
 

@@ -3,11 +3,11 @@
 <div class="d-flex align-items-center justify-content-between mb-4">
     <h1 class="h3 mb-0 text-gray-800">Revision — <?= esc($revision->title) ?></h1>
     <div>
-        <a href="<?= base_url('admin/posts/' . $post->id . '/revisions') ?>" class="btn btn-sm btn-outline-secondary">All Revisions</a>
+        <a href="<?= base_url('admin/posts/' . $post->id . '/revisions') ?>" class="btn btn-sm btn-outline-secondary"><?= lang('Admin.revisionsBackToList') ?></a>
         <form method="POST" action="<?= base_url('admin/posts/revisions/' . $revision->id . '/restore') ?>" class="d-inline"
-              onsubmit="return confirm('Restore this revision?')">
+              onsubmit="return confirm('<?= lang('Admin.revisionRestoreBtn') ?>')">
             <?= csrf_field() ?>
-            <button type="submit" class="btn btn-sm btn-warning ml-1">Restore This Revision</button>
+            <button type="submit" class="btn btn-sm btn-warning ml-1"><?= lang('Admin.revisionRestoreBtn') ?></button>
         </form>
     </div>
 </div>

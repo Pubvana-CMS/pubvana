@@ -39,7 +39,7 @@
         <li class="nav-item <?= ($active_nav ?? '') === 'dashboard' ? 'active' : '' ?>">
             <a class="nav-link" href="<?= base_url('admin') ?>">
                 <i class="fas fa-fw fa-tachometer-alt"></i>
-                <span>Dashboard</span>
+                <span><?= lang('Admin.navDashboard') ?></span>
             </a>
         </li>
 
@@ -62,21 +62,21 @@
                href="#collapseContent" data-toggle="collapse" data-target="#collapseContent"
                aria-expanded="<?= $contentOpen ? 'true' : 'false' ?>">
                 <i class="fas fa-fw fa-newspaper"></i>
-                <span>Content</span>
+                <span><?= lang('Admin.navContent') ?></span>
             </a>
             <div id="collapseContent"
                  class="collapse <?= $contentOpen ? 'show' : '' ?>"
                  data-parent="#accordionSidebar">
                 <div class="bg-white py-2 collapse-inner rounded">
-                    <a class="collapse-item <?= $nav === 'posts'      ? 'active' : '' ?>" href="<?= base_url('admin/posts') ?>">Posts</a>
-                    <a class="collapse-item <?= $nav === 'schedule'   ? 'active' : '' ?>" href="<?= base_url('admin/schedule') ?>"><i class="fas fa-star fa-xs text-warning mr-1"></i>Schedule</a>
-                    <a class="collapse-item <?= $nav === 'pages'      ? 'active' : '' ?>" href="<?= base_url('admin/pages') ?>">Pages</a>
-                    <a class="collapse-item <?= $nav === 'categories' ? 'active' : '' ?>" href="<?= base_url('admin/categories') ?>">Categories</a>
-                    <a class="collapse-item <?= $nav === 'tags'       ? 'active' : '' ?>" href="<?= base_url('admin/tags') ?>">Tags</a>
-                    <a class="collapse-item <?= $nav === 'comments'   ? 'active' : '' ?>" href="<?= base_url('admin/comments') ?>">Comments</a>
-                    <a class="collapse-item <?= $nav === 'media'      ? 'active' : '' ?>" href="<?= base_url('admin/media') ?>">Media</a>
+                    <a class="collapse-item <?= $nav === 'posts'      ? 'active' : '' ?>" href="<?= base_url('admin/posts') ?>"><?= lang('Admin.navPosts') ?></a>
+                    <a class="collapse-item <?= $nav === 'schedule'   ? 'active' : '' ?>" href="<?= base_url('admin/schedule') ?>"><i class="fas fa-star fa-xs text-warning mr-1"></i><?= lang('Admin.navSchedule') ?></a>
+                    <a class="collapse-item <?= $nav === 'pages'      ? 'active' : '' ?>" href="<?= base_url('admin/pages') ?>"><?= lang('Admin.navPages') ?></a>
+                    <a class="collapse-item <?= $nav === 'categories' ? 'active' : '' ?>" href="<?= base_url('admin/categories') ?>"><?= lang('Admin.navCategories') ?></a>
+                    <a class="collapse-item <?= $nav === 'tags'       ? 'active' : '' ?>" href="<?= base_url('admin/tags') ?>"><?= lang('Admin.navTags') ?></a>
+                    <a class="collapse-item <?= $nav === 'comments'   ? 'active' : '' ?>" href="<?= base_url('admin/comments') ?>"><?= lang('Admin.navComments') ?></a>
+                    <a class="collapse-item <?= $nav === 'media'      ? 'active' : '' ?>" href="<?= base_url('admin/media') ?>"><?= lang('Admin.navMedia') ?></a>
                     <?php if (auth()->user()->can('admin.settings')): ?>
-                    <a class="collapse-item <?= $nav === 'import'     ? 'active' : '' ?>" href="<?= base_url('admin/import') ?>">Import</a>
+                    <a class="collapse-item <?= $nav === 'import'     ? 'active' : '' ?>" href="<?= base_url('admin/import') ?>"><?= lang('Admin.navImport') ?></a>
                     <?php endif; ?>
                 </div>
             </div>
@@ -89,20 +89,20 @@
                href="#collapseAppearance" data-toggle="collapse" data-target="#collapseAppearance"
                aria-expanded="<?= $appearanceOpen ? 'true' : 'false' ?>">
                 <i class="fas fa-fw fa-palette"></i>
-                <span>Appearance</span>
+                <span><?= lang('Admin.navAppearance') ?></span>
             </a>
             <div id="collapseAppearance"
                  class="collapse <?= $appearanceOpen ? 'show' : '' ?>"
                  data-parent="#accordionSidebar">
                 <div class="bg-white py-2 collapse-inner rounded">
                     <?php if (auth()->user()->can('admin.themes')): ?>
-                    <a class="collapse-item <?= $nav === 'themes'     ? 'active' : '' ?>" href="<?= base_url('admin/themes') ?>">Themes</a>
+                    <a class="collapse-item <?= $nav === 'themes'     ? 'active' : '' ?>" href="<?= base_url('admin/themes') ?>"><?= lang('Admin.navThemes') ?></a>
                     <?php endif; ?>
                     <?php if (auth()->user()->can('admin.widgets')): ?>
-                    <a class="collapse-item <?= $nav === 'widgets'    ? 'active' : '' ?>" href="<?= base_url('admin/widgets') ?>">Widgets</a>
+                    <a class="collapse-item <?= $nav === 'widgets'    ? 'active' : '' ?>" href="<?= base_url('admin/widgets') ?>"><?= lang('Admin.navWidgets') ?></a>
                     <?php endif; ?>
                     <?php if (auth()->user()->can('admin.navigation')): ?>
-                    <a class="collapse-item <?= $nav === 'navigation' ? 'active' : '' ?>" href="<?= base_url('admin/navigation') ?>">Navigation</a>
+                    <a class="collapse-item <?= $nav === 'navigation' ? 'active' : '' ?>" href="<?= base_url('admin/navigation') ?>"><?= lang('Admin.navNavigation') ?></a>
                     <?php endif; ?>
                 </div>
             </div>
@@ -115,20 +115,20 @@
                href="#collapseSite" data-toggle="collapse" data-target="#collapseSite"
                aria-expanded="<?= $siteOpen ? 'true' : 'false' ?>">
                 <i class="fas fa-fw fa-cog"></i>
-                <span>Users &amp; Site</span>
+                <span><?= lang('Admin.navUsersAndSite') ?></span>
             </a>
             <div id="collapseSite"
                  class="collapse <?= $siteOpen ? 'show' : '' ?>"
                  data-parent="#accordionSidebar">
                 <div class="bg-white py-2 collapse-inner rounded">
                     <?php if (auth()->user()->can('users.manage')): ?>
-                    <a class="collapse-item <?= $nav === 'users'        ? 'active' : '' ?>" href="<?= base_url('admin/users') ?>">Users</a>
+                    <a class="collapse-item <?= $nav === 'users'        ? 'active' : '' ?>" href="<?= base_url('admin/users') ?>"><?= lang('Admin.navUsers') ?></a>
                     <?php endif; ?>
                     <?php if (auth()->user()->can('admin.settings')): ?>
-                    <a class="collapse-item <?= $nav === 'social'       ? 'active' : '' ?>" href="<?= base_url('admin/social') ?>">Social Links</a>
-                    <a class="collapse-item <?= $nav === 'redirects'    ? 'active' : '' ?>" href="<?= base_url('admin/redirects') ?>">Redirects</a>
-                    <a class="collapse-item <?= $nav === 'languages'    ? 'active' : '' ?>" href="<?= base_url('admin/languages') ?>">Languages</a>
-                    <a class="collapse-item <?= $nav === 'settings'     ? 'active' : '' ?>" href="<?= base_url('admin/settings') ?>">Settings</a>
+                    <a class="collapse-item <?= $nav === 'social'       ? 'active' : '' ?>" href="<?= base_url('admin/social') ?>"><?= lang('Admin.navSocialLinks') ?></a>
+                    <a class="collapse-item <?= $nav === 'redirects'    ? 'active' : '' ?>" href="<?= base_url('admin/redirects') ?>"><?= lang('Admin.navRedirects') ?></a>
+                    <a class="collapse-item <?= $nav === 'languages'    ? 'active' : '' ?>" href="<?= base_url('admin/languages') ?>"><?= lang('Admin.navLanguages') ?></a>
+                    <a class="collapse-item <?= $nav === 'settings'     ? 'active' : '' ?>" href="<?= base_url('admin/settings') ?>"><?= lang('Admin.navSettings') ?></a>
                     <?php endif; ?>
                 </div>
             </div>
@@ -141,17 +141,17 @@
                href="#collapseTools" data-toggle="collapse" data-target="#collapseTools"
                aria-expanded="<?= $toolsOpen ? 'true' : 'false' ?>">
                 <i class="fas fa-fw fa-tools"></i>
-                <span>Tools</span>
+                <span><?= lang('Admin.navTools') ?></span>
             </a>
             <div id="collapseTools"
                  class="collapse <?= $toolsOpen ? 'show' : '' ?>"
                  data-parent="#accordionSidebar">
                 <div class="bg-white py-2 collapse-inner rounded">
-                    <a class="collapse-item <?= $nav === 'analytics'    ? 'active' : '' ?>" href="<?= base_url('admin/analytics') ?>"><i class="fas fa-star fa-xs text-warning mr-1"></i>Analytics</a>
-                    <a class="collapse-item <?= $nav === 'affiliates'   ? 'active' : '' ?>" href="<?= base_url('admin/affiliates') ?>"><i class="fas fa-star fa-xs text-warning mr-1"></i>Affiliate Links</a>
-                    <a class="collapse-item <?= $nav === 'broken_links' ? 'active' : '' ?>" href="<?= base_url('admin/broken-links') ?>"><i class="fas fa-star fa-xs text-warning mr-1"></i>Broken Links</a>
-                    <a class="collapse-item <?= $nav === 'activity_log' ? 'active' : '' ?>" href="<?= base_url('admin/activity-log') ?>"><i class="fas fa-star fa-xs text-warning mr-1"></i>Activity Log</a>
-                    <a class="collapse-item <?= $nav === 'backup'       ? 'active' : '' ?>" href="<?= base_url('admin/backup') ?>"><i class="fas fa-star fa-xs text-warning mr-1"></i>Backup &amp; Export</a>
+                    <a class="collapse-item <?= $nav === 'analytics'    ? 'active' : '' ?>" href="<?= base_url('admin/analytics') ?>"><i class="fas fa-star fa-xs text-warning mr-1"></i><?= lang('Admin.navAnalytics') ?></a>
+                    <a class="collapse-item <?= $nav === 'affiliates'   ? 'active' : '' ?>" href="<?= base_url('admin/affiliates') ?>"><i class="fas fa-star fa-xs text-warning mr-1"></i><?= lang('Admin.navAffiliates') ?></a>
+                    <a class="collapse-item <?= $nav === 'broken_links' ? 'active' : '' ?>" href="<?= base_url('admin/broken-links') ?>"><i class="fas fa-star fa-xs text-warning mr-1"></i><?= lang('Admin.navBrokenLinks') ?></a>
+                    <a class="collapse-item <?= $nav === 'activity_log' ? 'active' : '' ?>" href="<?= base_url('admin/activity-log') ?>"><i class="fas fa-star fa-xs text-warning mr-1"></i><?= lang('Admin.navActivityLog') ?></a>
+                    <a class="collapse-item <?= $nav === 'backup'       ? 'active' : '' ?>" href="<?= base_url('admin/backup') ?>"><i class="fas fa-star fa-xs text-warning mr-1"></i><?= lang('Admin.navBackup') ?></a>
                 </div>
             </div>
         </li>
@@ -164,13 +164,13 @@
                href="#collapseMarketplace" data-toggle="collapse" data-target="#collapseMarketplace"
                aria-expanded="<?= $marketplaceOpen ? 'true' : 'false' ?>">
                 <i class="fas fa-fw fa-store"></i>
-                <span>Marketplace</span>
+                <span><?= lang('Admin.navMarketplace') ?></span>
             </a>
             <div id="collapseMarketplace"
                  class="collapse <?= $marketplaceOpen ? 'show' : '' ?>"
                  data-parent="#accordionSidebar">
                 <div class="bg-white py-2 collapse-inner rounded">
-                    <a class="collapse-item <?= $nav === 'marketplace' ? 'active' : '' ?>" href="<?= base_url('admin/marketplace') ?>">Browse</a>
+                    <a class="collapse-item <?= $nav === 'marketplace' ? 'active' : '' ?>" href="<?= base_url('admin/marketplace') ?>"><?= lang('Admin.navBrowse') ?></a>
                 </div>
             </div>
         </li>
@@ -184,7 +184,7 @@
                href="#collapsePlugins" data-toggle="collapse" data-target="#collapsePlugins"
                aria-expanded="<?= $pluginsOpen ? 'true' : 'false' ?>">
                 <i class="fas fa-fw fa-plug"></i>
-                <span>Plugins</span>
+                <span><?= lang('Admin.navPlugins') ?></span>
             </a>
             <div id="collapsePlugins"
                  class="collapse <?= $pluginsOpen ? 'show' : '' ?>"
@@ -204,7 +204,7 @@
         <li class="nav-item <?= $nav === 'updates' ? 'active' : '' ?>">
             <a class="nav-link" href="<?= base_url('admin/updates') ?>">
                 <i class="fas fa-fw fa-arrow-circle-up text-warning"></i>
-                <span>Update Available
+                <span><?= lang('Admin.navUpdateAvailable') ?>
                     <span class="badge badge-warning ml-1"><?= esc($update['latest_version'] ?? '') ?></span>
                 </span>
             </a>
@@ -218,7 +218,7 @@
         <li class="nav-item <?= $nav === 'premium' ? 'active' : '' ?>">
             <a class="nav-link" href="<?= base_url('admin/premium') ?>">
                 <i class="fas fa-fw fa-star text-warning"></i>
-                <span>Premium</span>
+                <span><?= lang('Admin.navPremium') ?></span>
             </a>
         </li>
         <?php endif; ?>
@@ -226,7 +226,7 @@
         <li class="nav-item">
             <a class="nav-link" href="https://pubvana.net" target="_blank" rel="noopener">
                 <i class="fas fa-fw fa-shopping-cart"></i>
-                <span>Pubvana Store</span>
+                <span><?= lang('Admin.navPubvanaStore') ?></span>
             </a>
         </li>
 
@@ -256,7 +256,7 @@
 
                 <!-- View Site -->
                 <a href="<?= base_url() ?>" target="_blank" class="btn btn-sm btn-outline-secondary ml-2">
-                    <i class="fas fa-external-link-alt"></i> View Site
+                    <i class="fas fa-external-link-alt"></i> <?= lang('Admin.viewSite') ?>
                 </a>
 
                 <ul class="navbar-nav ml-auto">
@@ -281,11 +281,11 @@
                         </a>
                         <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
                             <a class="dropdown-item" href="<?= base_url() ?>">
-                                <i class="fas fa-home fa-sm fa-fw mr-2 text-gray-400"></i> View Site
+                                <i class="fas fa-home fa-sm fa-fw mr-2 text-gray-400"></i> <?= lang('Admin.viewSite') ?>
                             </a>
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
-                                <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i> Logout
+                                <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i> <?= lang('Admin.logout') ?>
                             </a>
                         </div>
                     </li>
@@ -334,7 +334,7 @@
         <footer class="sticky-footer bg-white">
             <div class="container my-auto">
                 <div class="copyright text-center my-auto">
-                    <span>Pubvana CMS &copy; <?= date('Y') ?></span>
+                    <span><?= lang('Admin.footerCopyright') ?> &copy; <?= date('Y') ?></span>
                 </div>
             </div>
         </footer>
@@ -354,15 +354,15 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Ready to Leave?</h5>
+                <h5 class="modal-title"><?= lang('Admin.logoutModalTitle') ?></h5>
                 <button class="close" data-dismiss="modal"><span>&times;</span></button>
             </div>
-            <div class="modal-body">Select "Logout" below to end your session.</div>
+            <div class="modal-body"><?= lang('Admin.logoutModalBody') ?></div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button class="btn btn-secondary" data-dismiss="modal"><?= lang('Admin.cancel') ?></button>
                 <form action="<?= base_url('logout') ?>" method="POST">
                     <?= csrf_field() ?>
-                    <button type="submit" class="btn btn-primary">Logout</button>
+                    <button type="submit" class="btn btn-primary"><?= lang('Admin.logout') ?></button>
                 </form>
             </div>
         </div>

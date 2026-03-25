@@ -3,7 +3,7 @@
 <div class="d-flex align-items-center justify-content-between mb-4">
     <h1 class="h3 mb-0 text-gray-800">Edit Post: <?= esc($post->title) ?></h1>
     <div>
-        <a href="<?= post_url($post->slug) ?>" class="btn btn-sm btn-outline-secondary" target="_blank">View Post</a>
+        <a href="<?= post_url($post->slug) ?>" class="btn btn-sm btn-outline-secondary" target="_blank"><?= lang('Admin.postPreview') ?></a>
         <?php if (!empty($preview_url)): ?>
         <button type="button" class="btn btn-sm btn-outline-warning ml-1"
                 id="copyPreviewBtn"
@@ -35,7 +35,7 @@
         });
         </script>
         <?php endif; ?>
-        <a href="<?= base_url('admin/posts') ?>" class="btn btn-sm btn-outline-secondary ml-1">Back</a>
+        <a href="<?= base_url('admin/posts') ?>" class="btn btn-sm btn-outline-secondary ml-1"><?= lang('Admin.back') ?></a>
     </div>
 </div>
 
@@ -48,17 +48,17 @@
         <div class="card shadow mb-4">
             <div class="card-body">
                 <div class="form-group">
-                    <label class="font-weight-bold">Title *</label>
+                    <label class="font-weight-bold"><?= lang('Admin.postTitleField') ?></label>
                     <input type="text" name="title" class="form-control form-control-lg" value="<?= esc(old('title', $post->title)) ?>" required>
                 </div>
 
                 <div class="form-group">
-                    <label class="font-weight-bold d-block">Editor</label>
+                    <label class="font-weight-bold d-block"><?= lang('Admin.postEditor') ?></label>
                     <div class="btn-group btn-group-sm">
                         <input type="radio" class="btn-check" name="editor_type" id="et_html" value="html" <?= ($post->content_type ?? 'html') === 'html' ? 'checked' : '' ?>>
-                        <label class="btn btn-outline-primary" for="et_html"><i class="fas fa-code"></i> HTML Editor</label>
+                        <label class="btn btn-outline-primary" for="et_html"><i class="fas fa-code"></i> <?= lang('Admin.postHtmlEditor') ?></label>
                         <input type="radio" class="btn-check" name="editor_type" id="et_md" value="markdown" <?= ($post->content_type ?? '') === 'markdown' ? 'checked' : '' ?>>
-                        <label class="btn btn-outline-secondary" for="et_md"><i class="fab fa-markdown"></i> Markdown</label>
+                        <label class="btn btn-outline-secondary" for="et_md"><i class="fab fa-markdown"></i> <?= lang('Admin.postMarkdown') ?></label>
                     </div>
                 </div>
 
@@ -72,21 +72,21 @@
         </div>
 
         <div class="card shadow mb-4">
-            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary">Excerpt</h6></div>
+            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.postExcerpt') ?></h6></div>
             <div class="card-body">
                 <textarea name="excerpt" class="form-control" rows="3"><?= esc($post->excerpt) ?></textarea>
             </div>
         </div>
 
         <div class="card shadow mb-4">
-            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary">SEO</h6></div>
+            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.postSeoSection') ?></h6></div>
             <div class="card-body">
                 <div class="form-group">
-                    <label>Meta Title</label>
+                    <label><?= lang('Admin.postMetaTitle') ?></label>
                     <input type="text" name="meta_title" class="form-control" value="<?= esc($post->meta_title) ?>">
                 </div>
                 <div class="form-group mb-0">
-                    <label>Meta Description</label>
+                    <label><?= lang('Admin.postMetaDescription') ?></label>
                     <textarea name="meta_description" class="form-control" rows="2"><?= esc($post->meta_description) ?></textarea>
                 </div>
             </div>
@@ -95,46 +95,46 @@
 
     <div class="col-lg-4">
         <div class="card shadow mb-4">
-            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary">Publish</h6></div>
+            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.postPublishSection') ?></h6></div>
             <div class="card-body">
                 <div class="form-group">
-                    <label>Status</label>
+                    <label><?= lang('Admin.postStatus') ?></label>
                     <select name="status" class="form-control">
-                        <option value="draft"     <?= $post->status === 'draft'     ? 'selected' : '' ?>>Draft</option>
-                        <option value="published" <?= $post->status === 'published' ? 'selected' : '' ?>>Published</option>
-                        <option value="scheduled" <?= $post->status === 'scheduled' ? 'selected' : '' ?>>Scheduled</option>
+                        <option value="draft"     <?= $post->status === 'draft'     ? 'selected' : '' ?>><?= lang('Admin.postStatusDraft') ?></option>
+                        <option value="published" <?= $post->status === 'published' ? 'selected' : '' ?>><?= lang('Admin.postStatusPublished') ?></option>
+                        <option value="scheduled" <?= $post->status === 'scheduled' ? 'selected' : '' ?>><?= lang('Admin.postStatusScheduled') ?></option>
                     </select>
                 </div>
                 <div class="form-group" id="published-at-group">
-                    <label>Scheduled Date &amp; Time</label>
+                    <label><?= lang('Admin.postScheduledAt') ?></label>
                     <input type="datetime-local" name="published_at" class="form-control" value="<?= $post->published_at ? date('Y-m-d\TH:i', strtotime($post->published_at)) : '' ?>">
                 </div>
                 <div class="form-check mb-2">
                     <input type="checkbox" name="is_featured" id="is_featured" class="form-check-input" value="1" <?= $post->is_featured ? 'checked' : '' ?>>
-                    <label class="form-check-label" for="is_featured">Featured Post</label>
+                    <label class="form-check-label" for="is_featured"><?= lang('Admin.postFeatured') ?></label>
                 </div>
                 <div class="form-check mb-2">
                     <input type="checkbox" name="is_premium" id="is_premium" class="form-check-input" value="1" <?= !empty($post->is_premium) ? 'checked' : '' ?>>
-                    <label class="form-check-label" for="is_premium"><i class="fas fa-lock fa-xs text-warning mr-1"></i>Members Only</label>
+                    <label class="form-check-label" for="is_premium"><i class="fas fa-lock fa-xs text-warning mr-1"></i><?= lang('Admin.postMembersOnly') ?></label>
                 </div>
                 <?php if ($post->status !== 'published'): ?>
                 <div class="form-check mb-2">
                     <input type="checkbox" name="share_on_publish" id="share_on_publish" class="form-check-input" value="1"
                            <?= ($post->share_on_publish ?? 1) ? 'checked' : '' ?>>
-                    <label class="form-check-label" for="share_on_publish">Share to social on publish</label>
+                    <label class="form-check-label" for="share_on_publish"><?= lang('Admin.postShareOnPublish') ?></label>
                 </div>
                 <?php endif; ?>
-                <button type="submit" class="btn btn-primary btn-block mt-3">Update Post</button>
+                <button type="submit" class="btn btn-primary btn-block mt-3"><?= lang('Admin.update') ?></button>
                 <?php if (!empty($revision_count)): ?>
                 <a href="<?= base_url('admin/posts/' . $post->id . '/revisions') ?>" class="btn btn-outline-secondary btn-block mt-1 btn-sm">
-                    Revisions (<?= (int) $revision_count ?>)
+                    <?= lang('Admin.postRevisionCount', [(int) $revision_count]) ?>
                 </a>
                 <?php endif; ?>
             </div>
         </div>
 
         <div class="card shadow mb-4">
-            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary">Featured Image</h6></div>
+            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.postFeaturedImage') ?></h6></div>
             <div class="card-body">
                 <?php if ($post->featured_image): ?>
                     <img src="<?= esc(base_url($post->featured_image)) ?>" class="img-fluid rounded mb-2" alt="">
@@ -144,7 +144,7 @@
         </div>
 
         <div class="card shadow mb-4">
-            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary">Categories</h6></div>
+            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.postCategories') ?></h6></div>
             <div class="card-body" style="max-height:200px;overflow-y:auto">
                 <?php foreach ($categories as $cat): ?>
                 <div class="form-check">
@@ -157,9 +157,9 @@
         </div>
 
         <div class="card shadow mb-4">
-            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary">Tags</h6></div>
+            <div class="card-header"><h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.postTags') ?></h6></div>
             <div class="card-body">
-                <input type="text" name="tags_raw" class="form-control" value="<?= esc($tags_raw ?? '') ?>" placeholder="tag1, tag2">
+                <input type="text" name="tags_raw" class="form-control" value="<?= esc($tags_raw ?? '') ?>" placeholder="<?= lang('Admin.postTagsPlaceholder') ?>">
             </div>
         </div>
     </div>
