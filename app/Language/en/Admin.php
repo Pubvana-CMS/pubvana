@@ -39,6 +39,7 @@ return [
     'restore'           => 'Restore',
     'dismiss'           => 'Dismiss',
     'recheck'           => 'Recheck',
+    'clickToCopy'       => 'Click to Copy',
     'download'          => 'Download',
     'upload'            => 'Upload',
     'import'            => 'Import',
@@ -476,7 +477,7 @@ return [
     'socialTitle'           => 'Social Links',
     'socialPlatform'        => 'Platform',
     'socialUrl'             => 'URL',
-    'socialIcon'            => 'Icon (Font Awesome class)',
+    'socialIcon'            => 'Icon',
     'socialSortOrder'       => 'Sort Order',
 
     // Social flash messages
