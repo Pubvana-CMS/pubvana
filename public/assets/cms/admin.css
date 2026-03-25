@@ -17,6 +17,17 @@
 .media-grid .media-card img { width: 100%; height: 140px; object-fit: cover; }
 .media-grid .media-card .media-actions { position: absolute; top: 4px; right: 4px; }
 
+/* Utility classes (no Bootstrap 4 equivalents) */
+.obj-cover         { object-fit: cover; }
+.cursor-grab       { cursor: grab; }
+.cursor-grab:active { cursor: grabbing; }
+.ws-pre-wrap       { white-space: pre-wrap; }
+.tracking-wide     { letter-spacing: 0.3em; }
+.tracking-wider    { letter-spacing: 0.4em; }
+.card-thumb-sm     { height: 100px; }
+.card-thumb        { height: 160px; }
+.card-thumb-lg     { height: 180px; }
+
 /* Table tweaks */
 .table-hover tbody tr:hover { background-color: rgba(78,115,223,.04); }
 
