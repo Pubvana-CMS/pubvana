@@ -74,5 +74,13 @@ class Filters extends BaseFilters
     /**
      * @var array<string, array<string, list<string>>>
      */
-    public array $filters = [];
+    public array $filters = [
+        // Apply honeypot to public POST routes (comment submission and contact form).
+        // Patterns cover both non-prefixed (blog/slug, contact) and locale-prefixed
+        // (en/blog/slug, fr/contact, etc.) variants produced by the locale route group.
+        'honeypot' => [
+            'before' => ['blog/*', 'contact', '*/blog/*', '*/contact'],
+            'after'  => ['blog/*', 'contact', '*/blog/*', '*/contact'],
+        ],
+    ];
 }
