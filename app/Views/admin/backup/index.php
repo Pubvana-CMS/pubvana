@@ -82,7 +82,7 @@
                 <tbody>
                 <?php foreach ($backups as $backup): ?>
                     <tr>
-                        <td><i class="fas fa-file-archive text-secondary mr-1"></i> <?= esc($backup['filename']) ?></td>
+                        <td><i class="fas fa-file-zipper text-secondary mr-1"></i> <?= esc($backup['filename']) ?></td>
                         <td><?= esc($backup['size']) ?></td>
                         <td><?= esc($backup['created']) ?></td>
                         <td class="text-right">

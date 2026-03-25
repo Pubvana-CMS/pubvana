@@ -60,7 +60,7 @@
         </div>
 
         <div class="alert alert-warning small">
-            <i class="fas fa-exclamation-triangle mr-1"></i>
+            <i class="fas fa-triangle-exclamation mr-1"></i>
             <strong>Store your recovery codes.</strong> If you lose access to your authenticator app,
             you will not be able to log in. Contact your site administrator to reset 2FA.
         </div>

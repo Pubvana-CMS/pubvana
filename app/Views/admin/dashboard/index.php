@@ -24,7 +24,7 @@
                         <div class="h5 mb-0 font-weight-bold text-gray-800"><?= $stats['posts'] ?></div>
                         <div class="text-xs text-muted"><?= lang('Admin.published_count', [$stats['published_posts']]) ?></div>
                     </div>
-                    <div class="col-auto"><i class="fas fa-edit fa-2x text-gray-300"></i></div>
+                    <div class="col-auto"><i class="fas fa-pen-to-square fa-2x text-gray-300"></i></div>
                 </div>
             </div>
         </div>
@@ -37,7 +37,7 @@
                         <div class="text-xs font-weight-bold text-success text-uppercase mb-1"><?= lang('Admin.dashPages') ?></div>
                         <div class="h5 mb-0 font-weight-bold text-gray-800"><?= $stats['pages'] ?></div>
                     </div>
-                    <div class="col-auto"><i class="fas fa-file-alt fa-2x text-gray-300"></i></div>
+                    <div class="col-auto"><i class="fas fa-file-lines fa-2x text-gray-300"></i></div>
                 </div>
             </div>
         </div>

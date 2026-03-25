@@ -63,7 +63,7 @@
                         <td class="text-right">
                             <a href="<?= base_url('admin/affiliates/' . $link->id . '/edit') ?>"
                                class="btn btn-sm btn-outline-primary mr-1">
-                                <i class="fas fa-edit"></i>
+                                <i class="fas fa-pen-to-square"></i>
                             </a>
                             <form method="POST"
                                   action="<?= base_url('admin/affiliates/' . $link->id . '/delete') ?>"

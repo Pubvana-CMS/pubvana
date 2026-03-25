@@ -9,7 +9,7 @@
             <a href="<?= post_url($post->slug) ?>" class="text-decoration-none text-dark"><?= esc($post->title) ?></a>
         </h2>
         <div class="text-muted small mb-2">
-            <i class="fas fa-calendar-alt"></i>
+            <i class="fas fa-calendar-days"></i>
             <?= date('F j, Y', strtotime($post->published_at ?? $post->created_at)) ?>
             <?php if ($post->views): ?>
                 &nbsp;&middot;&nbsp;<i class="fas fa-eye"></i> <?= number_format($post->views) ?>

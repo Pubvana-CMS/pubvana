@@ -10,7 +10,7 @@
         <form action="<?= base_url('search') ?>" method="GET" class="mb-4">
             <div class="input-group">
                 <input type="text" class="form-control" name="q" value="<?= esc($query) ?>" placeholder="<?= lang('Blog.searchPostsPlaceholder') ?>">
-                <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i></button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-magnifying-glass"></i></button>
             </div>
         </form>
 

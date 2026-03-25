@@ -142,7 +142,7 @@ $totpEnabled = $totpRow ? (bool) $totpRow->totp_enabled : false;
     <div class="card-header py-3 d-flex align-items-center justify-content-between">
         <h6 class="m-0 font-weight-bold text-primary">Two-Factor Authentication</h6>
         <?php if ($totpEnabled): ?>
-            <span class="badge badge-success px-3 py-2"><i class="fas fa-check-circle mr-1"></i> Enabled</span>
+            <span class="badge badge-success px-3 py-2"><i class="fas fa-circle-check mr-1"></i> Enabled</span>
         <?php else: ?>
             <span class="badge badge-secondary px-3 py-2">Disabled</span>
         <?php endif; ?>
@@ -173,7 +173,7 @@ $totpEnabled = $totpRow ? (bool) $totpRow->totp_enabled : false;
                 a code from your authenticator app on each login.
             </p>
             <a href="<?= base_url('admin/users/2fa/setup') ?>" class="btn btn-primary">
-                <i class="fas fa-shield-alt mr-1"></i> Enable Two-Factor Authentication
+                <i class="fas fa-shield-halved mr-1"></i> Enable Two-Factor Authentication
             </a>
         <?php endif; ?>
     </div>

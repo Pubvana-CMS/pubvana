@@ -6,11 +6,11 @@
         <form method="POST" action="<?= base_url('admin/marketplace/refresh') ?>" class="d-inline">
             <?= csrf_field() ?>
             <button class="btn btn-sm btn-outline-secondary mr-2">
-                <i class="fas fa-sync-alt fa-sm"></i> <?= lang('Admin.marketplaceRefresh') ?>
+                <i class="fas fa-arrows-rotate fa-sm"></i> <?= lang('Admin.marketplaceRefresh') ?>
             </button>
         </form>
         <a href="<?= base_url('admin/store') ?>" class="btn btn-sm btn-outline-info">
-            <i class="fas fa-shopping-cart fa-sm"></i> <?= lang('Admin.marketplaceVisitStore') ?>
+            <i class="fas fa-cart-shopping fa-sm"></i> <?= lang('Admin.marketplaceVisitStore') ?>
         </a>
     </div>
 </div>
@@ -23,7 +23,7 @@
 
 <?php if (!empty($updates)): ?>
 <div class="alert alert-warning d-flex align-items-center">
-    <i class="fas fa-exclamation-triangle mr-2"></i>
+    <i class="fas fa-triangle-exclamation mr-2"></i>
     <strong><?= lang('Admin.marketplaceUpdatesAvailable', [count($updates)]) ?></strong>
     <?php foreach ($updates as $u): ?>
     <form method="POST" action="<?= base_url('admin/marketplace/update/' . $u->slug) ?>" class="ml-2">
@@ -75,7 +75,7 @@
                 <?php else: ?>
                     <span class="font-weight-bold text-dark">$<?= number_format($item->price ?? 0, 2) ?></span>
                     <a href="<?= esc($item->store_url) ?>" target="_blank" class="btn btn-sm btn-outline-info">
-                        <i class="fas fa-external-link-alt fa-xs"></i> <?= lang('Admin.marketplaceBuyNow') ?>
+                        <i class="fas fa-arrow-up-right-from-square fa-xs"></i> <?= lang('Admin.marketplaceBuyNow') ?>
                     </a>
                 <?php endif; ?>
             </div>
