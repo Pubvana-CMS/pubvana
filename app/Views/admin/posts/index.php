@@ -44,7 +44,7 @@
             <table class="table table-hover mb-0">
                 <thead class="bg-light">
                     <tr>
-                        <th>
+                        <th class="w-auto">
                             <input type="checkbox" id="select-all" title="Select all">
                         </th>
                         <th><?= lang('Admin.title') ?></th>

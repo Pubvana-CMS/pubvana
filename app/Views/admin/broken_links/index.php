@@ -62,10 +62,10 @@
                 <thead class="thead-light">
                     <tr>
                         <th><?= lang('Admin.brokenLinkUrl') ?></th>
-                        <th class="text-center"><?= lang('Admin.brokenLinkStatus') ?></th>
-                        <th><?= lang('Admin.brokenLinkError') ?></th>
-                        <th class="text-muted small"><?= lang('Admin.date') ?></th>
-                        <th class="text-right"><?= lang('Admin.actions') ?></th>
+                        <th class="w-10 text-center"><?= lang('Admin.brokenLinkStatus') ?></th>
+                        <th class="w-15"><?= lang('Admin.brokenLinkError') ?></th>
+                        <th class="w-15 text-muted small"><?= lang('Admin.date') ?></th>
+                        <th class="w-15 text-right"><?= lang('Admin.actions') ?></th>
                     </tr>
                 </thead>
                 <tbody>

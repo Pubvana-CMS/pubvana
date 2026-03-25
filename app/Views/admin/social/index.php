@@ -43,11 +43,11 @@
                 <table class="table table-hover mb-0">
                     <thead class="bg-light">
                         <tr>
-                            <th><?= lang('Admin.socialPlatform') ?></th>
+                            <th class="w-20"><?= lang('Admin.socialPlatform') ?></th>
                             <th><?= lang('Admin.socialUrl') ?></th>
-                            <th><?= lang('Admin.socialIcon') ?></th>
-                            <th><?= lang('Admin.status') ?></th>
-                            <th><?= lang('Admin.actions') ?></th>
+                            <th class="w-15"><?= lang('Admin.socialIcon') ?></th>
+                            <th class="w-10"><?= lang('Admin.status') ?></th>
+                            <th class="w-10"><?= lang('Admin.actions') ?></th>
                         </tr>
                     </thead>
                     <tbody>
