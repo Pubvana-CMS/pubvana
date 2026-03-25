@@ -13,9 +13,6 @@
             <thead class="bg-light">
                 <tr>
                     <th><?= lang('Admin.languageName') ?></th>
-                    <th><?= lang('Admin.languageName') ?></th>
-                    <th style="width:80px"><?= lang('Admin.languageCode') ?></th>
-                    <th style="width:90px">Direction</th>
                     <th style="width:100px"><?= lang('Admin.languageDefault') ?></th>
                     <th style="width:90px"><?= lang('Admin.languageEnabled') ?></th>
                     <th style="width:160px"><?= lang('Admin.actions') ?></th>
@@ -24,14 +21,7 @@
             <tbody>
             <?php foreach ($languages as $lang): ?>
                 <tr>
-                    <td><?= esc($lang->name) ?></td>
-                    <td><?= esc($lang->native_name) ?></td>
-                    <td><code><?= esc($lang->code) ?></code></td>
-                    <td>
-                        <span class="badge badge-<?= $lang->direction === 'rtl' ? 'warning' : 'secondary' ?>">
-                            <?= esc(strtoupper($lang->direction)) ?>
-                        </span>
-                    </td>
+                    <td><?= esc($lang->native_name) ?> <small class="text-muted">(<?= esc($lang->name) ?>)</small></td>
                     <td>
                         <?php if ($lang->is_default): ?>
                             <span class="badge badge-primary"><?= lang('Admin.languageDefault') ?></span>
@@ -72,7 +62,7 @@
                 </tr>
             <?php endforeach; ?>
             <?php if (empty($languages)): ?>
-                <tr><td colspan="7" class="text-center text-muted py-4"><?= lang('Admin.noResultsFound') ?></td></tr>
+                <tr><td colspan="4" class="text-center text-muted py-4"><?= lang('Admin.noResultsFound') ?></td></tr>
             <?php endif; ?>
             </tbody>
         </table>
