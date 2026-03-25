@@ -13,6 +13,25 @@
     </a>
 </div>
 
+<!-- Admin Notifications -->
+<div id="admin-notifications">
+    <?php foreach ($notifications as $notification): ?>
+    <?php $alertClass = $notification->severity === 'error' ? 'danger' : $notification->severity; ?>
+    <div class="alert alert-<?= $alertClass ?> alert-dismissible fade show mb-2" role="alert">
+        <strong><?= esc($notification->source_name) ?>:</strong>
+        <?= esc($notification->message) ?>
+        <?php if ($notification->action_url): ?>
+            <a href="<?= esc($notification->action_url) ?>" class="alert-link">
+                <?= esc($notification->action_label ?? 'View') ?>
+            </a>
+        <?php endif; ?>
+        <button type="button" class="btn-close-notification close" data-id="<?= $notification->id ?>" aria-label="Dismiss">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <?php endforeach; ?>
+</div>
+
 <!-- Stats Cards -->
 <div class="row">
     <div class="col-xl-3 col-md-6 mb-4">
@@ -149,4 +168,29 @@
 </div>
 
 <?php $content = ob_get_clean(); ?>
-<?= view($layout, array_merge(get_defined_vars(), ['content' => $content])) ?>
+
+<?php ob_start(); ?>
+<script>
+$(document).on('click', '.btn-close-notification[data-id]', function() {
+    var btn = $(this);
+    var alertEl = btn.closest('.alert');
+    var id = btn.data('id');
+
+    var formData = new FormData();
+    formData.append('csrf_test_name', '<?= csrf_hash() ?>');
+
+    $.ajax({
+        url: '<?= base_url("admin/notifications/dismiss") ?>/' + id,
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function() {
+            alertEl.fadeOut(300, function() { $(this).remove(); });
+        }
+    });
+});
+</script>
+<?php $extra_scripts = ob_get_clean(); ?>
+
+<?= view($layout, array_merge(get_defined_vars(), ['content' => $content, 'extra_scripts' => $extra_scripts])) ?>
