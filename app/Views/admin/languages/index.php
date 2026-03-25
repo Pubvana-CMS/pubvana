@@ -21,7 +21,7 @@
             <tbody>
             <?php foreach ($languages as $lang): ?>
                 <tr>
-                    <td><?= esc($lang->native_name) ?> <small class="text-muted">(<?= esc($lang->name) ?>)</small></td>
+                    <td><?= esc($lang->native_name) ?></td>
                     <td>
                         <?php if ($lang->is_default): ?>
                             <span class="badge badge-primary"><?= lang('Admin.languageDefault') ?></span>
