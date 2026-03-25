@@ -47,10 +47,10 @@
                     <div class="form-group">
                         <label class="font-weight-bold"><?= lang('Admin.tfaCodeLabel') ?></label>
                         <input type="text" name="totp_code"
-                               class="form-control text-center font-monospace"
+                               class="form-control text-center font-monospace tracking-wider"
                                inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
                                placeholder="000000" autofocus autocomplete="one-time-code"
-                               style="font-size:1.4rem; letter-spacing:0.4em">
+                               style="font-size:1.4rem">
                     </div>
                     <button type="submit" class="btn btn-success btn-block">
                         <i class="fas fa-check mr-1"></i> <?= lang('Admin.tfaConfirmBtn') ?>

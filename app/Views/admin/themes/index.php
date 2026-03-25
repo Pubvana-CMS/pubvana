@@ -10,7 +10,7 @@
     ?>
     <div class="col-md-4 mb-4">
         <div class="card shadow h-100 <?= $theme->is_active ? 'border-primary' : '' ?>">
-            <div class="card-img-top bg-gradient-primary d-flex align-items-center justify-content-center" style="height:180px">
+            <div class="card-img-top bg-gradient-primary d-flex align-items-center justify-content-center card-thumb-lg">
                 <i class="fas fa-palette fa-3x text-white-50"></i>
             </div>
             <div class="card-body">

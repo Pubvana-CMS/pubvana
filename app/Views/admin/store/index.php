@@ -36,9 +36,9 @@
         <div class="col-lg-4 col-md-6 mb-4">
             <div class="card shadow h-100">
                 <?php if (! empty($item->screenshot_url)): ?>
-                    <img src="<?= esc($item->screenshot_url) ?>" class="card-img-top" alt="<?= esc($item->name) ?>" style="height:180px;object-fit:cover;">
+                    <img src="<?= esc($item->screenshot_url) ?>" class="card-img-top card-thumb-lg obj-cover" alt="<?= esc($item->name) ?>">
                 <?php else: ?>
-                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height:180px;">
+                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center card-thumb-lg">
                         <i class="fas fa-<?= $item->type === 'theme' ? 'palette' : 'puzzle-piece' ?> fa-4x text-muted"></i>
                     </div>
                 <?php endif; ?>

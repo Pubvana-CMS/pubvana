@@ -39,9 +39,9 @@
     <div class="col-md-4 mb-4">
         <div class="card shadow h-100 <?= $item->installed_version ? 'border-success' : '' ?>">
             <?php if (!empty($item->screenshot_url)): ?>
-                <img src="<?= esc($item->screenshot_url) ?>" class="card-img-top" style="height:160px;object-fit:cover" alt="">
+                <img src="<?= esc($item->screenshot_url) ?>" class="card-img-top card-thumb obj-cover" alt="">
             <?php else: ?>
-                <div class="card-img-top bg-gradient-primary d-flex align-items-center justify-content-center" style="height:160px">
+                <div class="card-img-top bg-gradient-primary d-flex align-items-center justify-content-center card-thumb">
                     <i class="fas fa-<?= $item->item_type === 'theme' ? 'palette' : 'puzzle-piece' ?> fa-3x text-white-50"></i>
                 </div>
             <?php endif; ?>
