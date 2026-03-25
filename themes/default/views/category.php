@@ -2,7 +2,7 @@
 
 <div class="row">
     <div class="col-lg-8">
-        <h1 class="mb-1">Category: <strong><?= esc($category->name) ?></strong></h1>
+        <h1 class="mb-1"><?= lang('Blog.categoryHeading', [esc($category->name)]) ?></h1>
         <?php if ($category->description): ?>
             <p class="text-muted mb-4"><?= esc($category->description) ?></p>
         <?php endif; ?>
@@ -11,7 +11,7 @@
             <?= theme_view(THEMES_PATH . 'default/views/partials/post-card.php', ['post' => $post]) ?>
         <?php endforeach; ?>
         <?php if (empty($posts)): ?>
-            <p class="text-muted">No posts in this category yet.</p>
+            <p class="text-muted"><?= lang('Blog.noPostsInCategory') ?></p>
         <?php endif; ?>
 
         <?php if (isset($pager)): ?>

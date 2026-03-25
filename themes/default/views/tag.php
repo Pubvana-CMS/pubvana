@@ -2,13 +2,13 @@
 
 <div class="row">
     <div class="col-lg-8">
-        <h1 class="mb-4">Tag: <strong><?= esc($tag->name) ?></strong></h1>
+        <h1 class="mb-4"><?= lang('Blog.tagHeading', [esc($tag->name)]) ?></h1>
 
         <?php foreach ($posts as $post): ?>
             <?= theme_view(THEMES_PATH . 'default/views/partials/post-card.php', ['post' => $post]) ?>
         <?php endforeach; ?>
         <?php if (empty($posts)): ?>
-            <p class="text-muted">No posts with this tag.</p>
+            <p class="text-muted"><?= lang('Blog.noPostsWithTag') ?></p>
         <?php endif; ?>
 
         <?php if (isset($pager)): ?>

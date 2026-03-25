@@ -18,6 +18,6 @@
         <?php if ($post->excerpt): ?>
             <p class="card-text text-muted"><?= esc($post->excerpt) ?></p>
         <?php endif; ?>
-        <a href="<?= post_url($post->slug) ?>" class="btn btn-sm btn-outline-primary">Read More</a>
+        <a href="<?= post_url($post->slug) ?>" class="btn btn-sm btn-outline-primary"><?= lang('Blog.readMore') ?></a>
     </div>
 </article>

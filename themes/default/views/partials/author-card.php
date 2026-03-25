@@ -7,7 +7,7 @@ if (empty($author_profile)) {
     return;
 }
 
-$display_name = $author_profile->display_name ?? ($author_profile->username ?? 'Unknown Author');
+$display_name = $author_profile->display_name ?? ($author_profile->username ?? lang('Blog.unknownAuthor'));
 $bio          = $author_profile->bio ?? '';
 $avatar       = $author_profile->avatar ?? null;
 $website      = $author_profile->website ?? null;
@@ -23,6 +23,7 @@ $avatarUrl = $avatar
     ? base_url('writable/' . $avatar)
     : 'https://www.gravatar.com/avatar/' . md5(strtolower($author_profile->email ?? '')) . '?s=80&d=mp';
 ?>
+<p class="text-uppercase text-muted small mb-1 fw-semibold"><?= lang('Blog.authorCardLabel') ?></p>
 <div class="card border-0 bg-light rounded-3 p-4 my-5 d-flex flex-row align-items-start">
     <img src="<?= esc($avatarUrl) ?>"
          alt="<?= esc($display_name) ?>"

@@ -13,7 +13,7 @@ ob_start();
         <h1 class="h2 mb-4"><?= esc(site_name()) ?> &mdash; <small class="text-muted"><?= esc(site_tagline()) ?></small></h1>
 
         <?php if (empty($posts)): ?>
-            <div class="alert alert-info">No posts yet. Check back soon!</div>
+            <div class="alert alert-info"><?= lang('Blog.noPostsYet') ?></div>
         <?php endif; ?>
 
         <?php foreach ($posts as $post): ?>

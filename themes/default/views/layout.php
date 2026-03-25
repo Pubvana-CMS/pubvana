@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?= esc(service('request')->getLocale()) ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -15,6 +15,12 @@
     <?php endif; ?>
     <?php endif; ?>
     <link rel="alternate" type="application/rss+xml" title="<?= esc(site_name()) ?> RSS Feed" href="<?= base_url('feed') ?>">
+    <?php if (!empty($langSwitcher['buttons'])): ?>
+    <?php foreach ($langSwitcher['buttons'] as $btn): ?>
+    <link rel="alternate" hreflang="<?= esc($btn['code']) ?>" href="<?= esc(base_url(ltrim($btn['url'], '/'))) ?>">
+    <?php endforeach; ?>
+    <link rel="alternate" hreflang="x-default" href="<?= esc(base_url()) ?>">
+    <?php endif; ?>
 
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -35,7 +41,7 @@
 
 <?php if (!empty($preview_mode)): ?>
 <div style="background:#f59e0b;color:#000;text-align:center;padding:8px 16px;font-size:14px;font-weight:600;position:sticky;top:0;z-index:9999;">
-    &#128065; Preview Mode — This post is not publicly visible
+    &#128065; <?= lang('Blog.previewModeBanner') ?>
 </div>
 <?php endif; ?>
 
@@ -50,8 +56,8 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarMain">
             <ul class="navbar-nav me-auto">
-                <li class="nav-item"><a class="nav-link" href="<?= base_url() ?>">Home</a></li>
-                <li class="nav-item"><a class="nav-link" href="<?= base_url('blog') ?>">Blog</a></li>
+                <li class="nav-item"><a class="nav-link" href="<?= base_url() ?>"><?= lang('Blog.home') ?></a></li>
+                <li class="nav-item"><a class="nav-link" href="<?= base_url('blog') ?>"><?= lang('Blog.blog') ?></a></li>
                 <?php foreach (($primary_nav ?? []) as $navItem): ?>
                 <li class="nav-item">
                     <a class="nav-link" href="<?= esc($navItem->url) ?>" target="<?= esc($navItem->target) ?>">
@@ -61,7 +67,7 @@
                 <?php endforeach; ?>
             </ul>
             <form class="d-flex" action="<?= base_url('search') ?>" method="GET">
-                <input class="form-control form-control-sm me-2" type="search" name="q" placeholder="Search…" aria-label="Search">
+                <input class="form-control form-control-sm me-2" type="search" name="q" placeholder="<?= lang('Blog.searchPlaceholder') ?>" aria-label="<?= lang('Blog.search') ?>">
                 <button class="btn btn-outline-light btn-sm" type="submit"><i class="fas fa-search"></i></button>
             </form>
         </div>
@@ -110,13 +116,13 @@
                         ->where('theme_id', $t->id)->where('option_key', 'footer_copyright')
                         ->get()->getRowObject()->option_value ?? '';
                 }
-                echo $copyright ? esc($copyright) : '&copy; ' . date('Y') . ' ' . esc(site_name()) . '. All rights reserved.';
+                echo $copyright ? esc($copyright) : '&copy; ' . date('Y') . ' ' . esc(site_name()) . '. ' . lang('Blog.allRightsReserved');
                 ?>
                 &nbsp;&middot;&nbsp;
-                <a href="<?= base_url('feed') ?>" class="text-white-50"><i class="fas fa-rss"></i> RSS</a>
+                <a href="<?= base_url('feed') ?>" class="text-white-50"><i class="fas fa-rss"></i> <?= lang('Blog.rssFeed') ?></a>
                 <?php if (setting('Seo.sitemapEnabled')): ?>
                 &nbsp;&middot;&nbsp;
-                <a href="<?= base_url('sitemap.xml') ?>" class="text-white-50">Sitemap</a>
+                <a href="<?= base_url('sitemap.xml') ?>" class="text-white-50"><?= lang('Blog.sitemap') ?></a>
                 <?php endif; ?>
             </div>
         </div>

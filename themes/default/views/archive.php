@@ -2,13 +2,13 @@
 
 <div class="row">
     <div class="col-lg-8">
-        <h1 class="mb-4">Archive: <strong><?= date('F Y', mktime(0,0,0,$month,1,$year)) ?></strong></h1>
+        <h1 class="mb-4"><?= lang('Blog.archiveHeading', [date('F Y', mktime(0,0,0,$month,1,$year))]) ?></h1>
 
         <?php foreach ($posts as $post): ?>
             <?= theme_view(THEMES_PATH . 'default/views/partials/post-card.php', ['post' => $post]) ?>
         <?php endforeach; ?>
         <?php if (empty($posts)): ?>
-            <p class="text-muted">No posts in this period.</p>
+            <p class="text-muted"><?= lang('Blog.noPostsInPeriod') ?></p>
         <?php endif; ?>
 
         <?php if (isset($pager)): ?>
