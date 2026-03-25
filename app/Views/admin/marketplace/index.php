@@ -1,34 +1,34 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Marketplace</h1>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.marketplaceTitle') ?></h1>
     <div>
         <form method="POST" action="<?= base_url('admin/marketplace/refresh') ?>" class="d-inline">
             <?= csrf_field() ?>
             <button class="btn btn-sm btn-outline-secondary mr-2">
-                <i class="fas fa-sync-alt fa-sm"></i> Refresh
+                <i class="fas fa-sync-alt fa-sm"></i> <?= lang('Admin.marketplaceRefresh') ?>
             </button>
         </form>
         <a href="<?= base_url('admin/store') ?>" class="btn btn-sm btn-outline-info">
-            <i class="fas fa-shopping-cart fa-sm"></i> Visit Store
+            <i class="fas fa-shopping-cart fa-sm"></i> <?= lang('Admin.marketplaceVisitStore') ?>
         </a>
     </div>
 </div>
 
 <ul class="nav nav-tabs mb-3">
-    <li class="nav-item"><a class="nav-link <?= $filter === '' ? 'active' : '' ?>" href="<?= base_url('admin/marketplace') ?>">All</a></li>
-    <li class="nav-item"><a class="nav-link <?= $filter === 'theme' ? 'active' : '' ?>" href="<?= base_url('admin/marketplace/themes') ?>">Themes</a></li>
-    <li class="nav-item"><a class="nav-link <?= $filter === 'widget' ? 'active' : '' ?>" href="<?= base_url('admin/marketplace/widgets') ?>">Widgets</a></li>
+    <li class="nav-item"><a class="nav-link <?= $filter === '' ? 'active' : '' ?>" href="<?= base_url('admin/marketplace') ?>"><?= lang('Admin.marketplaceAll') ?></a></li>
+    <li class="nav-item"><a class="nav-link <?= $filter === 'theme' ? 'active' : '' ?>" href="<?= base_url('admin/marketplace/themes') ?>"><?= lang('Admin.marketplaceThemes') ?></a></li>
+    <li class="nav-item"><a class="nav-link <?= $filter === 'widget' ? 'active' : '' ?>" href="<?= base_url('admin/marketplace/widgets') ?>"><?= lang('Admin.marketplaceWidgets') ?></a></li>
 </ul>
 
 <?php if (!empty($updates)): ?>
 <div class="alert alert-warning d-flex align-items-center">
     <i class="fas fa-exclamation-triangle mr-2"></i>
-    <strong><?= count($updates) ?> update(s) available.</strong>
+    <strong><?= lang('Admin.marketplaceUpdatesAvailable', [count($updates)]) ?></strong>
     <?php foreach ($updates as $u): ?>
     <form method="POST" action="<?= base_url('admin/marketplace/update/' . $u->slug) ?>" class="ml-2">
         <?= csrf_field() ?>
-        <button class="btn btn-sm btn-warning">Update <?= esc($u->name) ?></button>
+        <button class="btn btn-sm btn-warning"><?= lang('Admin.update') ?> <?= esc($u->name) ?></button>
     </form>
     <?php endforeach; ?>
 </div>
@@ -49,7 +49,7 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <h5 class="card-title mb-1"><?= esc($item->name) ?></h5>
                     <?php if ($item->installed_version): ?>
-                        <span class="badge badge-success">Installed</span>
+                        <span class="badge badge-success"><?= lang('Admin.marketplaceInstalled') ?></span>
                     <?php endif; ?>
                 </div>
                 <p class="text-muted small mb-2"><?= esc($item->description) ?></p>
@@ -60,22 +60,22 @@
             </div>
             <div class="card-footer bg-white d-flex justify-content-between align-items-center">
                 <?php if ($item->is_free): ?>
-                    <span class="text-success font-weight-bold">Free</span>
+                    <span class="text-success font-weight-bold"><?= lang('Admin.marketplaceFree') ?></span>
                     <?php if (!$item->installed_version): ?>
                     <form method="POST" action="<?= base_url('admin/marketplace/install') ?>">
                         <?= csrf_field() ?>
                         <input type="hidden" name="slug" value="<?= esc($item->slug) ?>">
                         <input type="hidden" name="item_type" value="<?= esc($item->item_type) ?>">
                         <input type="hidden" name="download_url" value="<?= esc($item->download_url) ?>">
-                        <button class="btn btn-sm btn-primary">Install</button>
+                        <button class="btn btn-sm btn-primary"><?= lang('Admin.marketplaceInstall') ?></button>
                     </form>
                     <?php else: ?>
-                    <span class="text-muted small">v<?= esc($item->installed_version) ?> installed</span>
+                    <span class="text-muted small"><?= lang('Admin.marketplaceInstalledVersion', [esc($item->installed_version)]) ?></span>
                     <?php endif; ?>
                 <?php else: ?>
                     <span class="font-weight-bold text-dark">$<?= number_format($item->price ?? 0, 2) ?></span>
                     <a href="<?= esc($item->store_url) ?>" target="_blank" class="btn btn-sm btn-outline-info">
-                        <i class="fas fa-external-link-alt fa-xs"></i> Buy Now
+                        <i class="fas fa-external-link-alt fa-xs"></i> <?= lang('Admin.marketplaceBuyNow') ?>
                     </a>
                 <?php endif; ?>
             </div>
@@ -83,7 +83,7 @@
     </div>
 <?php endforeach; ?>
 <?php if (empty($items)): ?>
-    <div class="col-12"><p class="text-center text-muted py-4">No items found in the marketplace.</p></div>
+    <div class="col-12"><p class="text-center text-muted py-4"><?= lang('Admin.marketplaceNoItems') ?></p></div>
 <?php endif; ?>
 </div>
 

@@ -1,9 +1,9 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Affiliate Links</h1>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.affiliatesTitle') ?></h1>
     <a href="<?= base_url('admin/affiliates/create') ?>" class="btn btn-primary btn-sm shadow-sm">
-        <i class="fas fa-plus fa-sm"></i> New Link
+        <i class="fas fa-plus fa-sm"></i> <?= lang('Admin.create') ?>
     </a>
 </div>
 
@@ -11,7 +11,7 @@
 <div class="card shadow mb-4">
     <div class="card-body text-center text-muted py-5">
         <i class="fas fa-link fa-3x mb-3 d-block"></i>
-        No affiliate links yet. Create one to get started.
+        <?= lang('Admin.noResultsFound') ?>
     </div>
 </div>
 <?php else: ?>
@@ -24,12 +24,12 @@
             <table class="table table-hover mb-0">
                 <thead class="thead-light">
                     <tr>
-                        <th>Name</th>
-                        <th>Short URL</th>
-                        <th>Destination</th>
-                        <th class="text-center">Clicks</th>
-                        <th class="text-center">Active</th>
-                        <th class="text-right">Actions</th>
+                        <th><?= lang('Admin.affiliateName') ?></th>
+                        <th><?= lang('Admin.affiliateSlug') ?></th>
+                        <th><?= lang('Admin.affiliateDestination') ?></th>
+                        <th class="text-center"><?= lang('Admin.affiliateClicks') ?></th>
+                        <th class="text-center"><?= lang('Admin.affiliateActive') ?></th>
+                        <th class="text-right"><?= lang('Admin.actions') ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -55,9 +55,9 @@
                         </td>
                         <td class="text-center">
                             <?php if ($link->is_active): ?>
-                                <span class="badge badge-success">Active</span>
+                                <span class="badge badge-success"><?= lang('Admin.active') ?></span>
                             <?php else: ?>
-                                <span class="badge badge-secondary">Inactive</span>
+                                <span class="badge badge-secondary"><?= lang('Admin.inactive') ?></span>
                             <?php endif; ?>
                         </td>
                         <td class="text-right">
@@ -68,7 +68,7 @@
                             <form method="POST"
                                   action="<?= base_url('admin/affiliates/' . $link->id . '/delete') ?>"
                                   class="d-inline"
-                                  onsubmit="return confirm('Delete this affiliate link and all its click data?')">
+                                  onsubmit="return confirm('<?= lang('Admin.confirmDelete') ?>')">
                                 <?= csrf_field() ?>
                                 <button type="submit" class="btn btn-sm btn-outline-danger">
                                     <i class="fas fa-trash"></i>

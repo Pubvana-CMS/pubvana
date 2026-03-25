@@ -1,12 +1,12 @@
 <?php $layout = 'admin/layouts/main'; ob_start();
 $isEdit = isset($link) && $link !== null;
-$title  = $isEdit ? 'Edit Affiliate Link' : 'New Affiliate Link';
+$title  = $isEdit ? lang('Admin.edit') . ' ' . lang('Admin.affiliatesTitle') : lang('Admin.create') . ' ' . lang('Admin.affiliatesTitle');
 ?>
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <h1 class="h3 mb-0 text-gray-800"><?= $title ?></h1>
     <a href="<?= base_url('admin/affiliates') ?>" class="btn btn-secondary btn-sm shadow-sm">
-        <i class="fas fa-arrow-left fa-sm"></i> Back to Links
+        <i class="fas fa-arrow-left fa-sm"></i> <?= lang('Admin.affiliatesTitle') ?>
     </a>
 </div>
 
@@ -21,7 +21,7 @@ $title  = $isEdit ? 'Edit Affiliate Link' : 'New Affiliate Link';
 
             <div class="form-group row">
                 <label class="col-sm-3 col-form-label font-weight-bold">
-                    Name <span class="text-danger">*</span>
+                    <?= lang('Admin.affiliateName') ?> <span class="text-danger">*</span>
                 </label>
                 <div class="col-sm-7">
                     <input type="text" name="name" class="form-control"
@@ -33,7 +33,7 @@ $title  = $isEdit ? 'Edit Affiliate Link' : 'New Affiliate Link';
 
             <div class="form-group row">
                 <label class="col-sm-3 col-form-label font-weight-bold">
-                    Slug <span class="text-danger">*</span>
+                    <?= lang('Admin.affiliateSlug') ?> <span class="text-danger">*</span>
                 </label>
                 <div class="col-sm-7">
                     <div class="input-group">
@@ -50,7 +50,7 @@ $title  = $isEdit ? 'Edit Affiliate Link' : 'New Affiliate Link';
 
             <div class="form-group row">
                 <label class="col-sm-3 col-form-label font-weight-bold">
-                    Destination URL <span class="text-danger">*</span>
+                    <?= lang('Admin.affiliateDestination') ?> <span class="text-danger">*</span>
                 </label>
                 <div class="col-sm-7">
                     <input type="url" name="destination_url" class="form-control"
@@ -61,14 +61,14 @@ $title  = $isEdit ? 'Edit Affiliate Link' : 'New Affiliate Link';
             </div>
 
             <div class="form-group row">
-                <label class="col-sm-3 col-form-label font-weight-bold">Status</label>
+                <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.status') ?></label>
                 <div class="col-sm-7">
                     <div class="custom-control custom-switch">
                         <input type="hidden" name="is_active" value="0">
                         <input type="checkbox" class="custom-control-input" id="is_active"
                                name="is_active" value="1"
                                <?= old('is_active', $isEdit ? $link->is_active : 1) ? 'checked' : '' ?>>
-                        <label class="custom-control-label" for="is_active">Active</label>
+                        <label class="custom-control-label" for="is_active"><?= lang('Admin.affiliateActive') ?></label>
                     </div>
                     <small class="text-muted">Inactive links return a 404.</small>
                 </div>
@@ -77,9 +77,9 @@ $title  = $isEdit ? 'Edit Affiliate Link' : 'New Affiliate Link';
             <div class="form-group row">
                 <div class="col-sm-7 offset-sm-3">
                     <button type="submit" class="btn btn-primary">
-                        <?= $isEdit ? 'Save Changes' : 'Create Link' ?>
+                        <?= $isEdit ? lang('Admin.userSaveChanges') : lang('Admin.create') ?>
                     </button>
-                    <a href="<?= base_url('admin/affiliates') ?>" class="btn btn-secondary ml-2">Cancel</a>
+                    <a href="<?= base_url('admin/affiliates') ?>" class="btn btn-secondary ml-2"><?= lang('Admin.cancel') ?></a>
                 </div>
             </div>
         </form>

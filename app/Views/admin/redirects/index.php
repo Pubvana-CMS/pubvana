@@ -1,7 +1,7 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Redirects</h1>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.redirectsTitle') ?></h1>
 </div>
 
 <div class="row">
@@ -9,27 +9,27 @@
     <div class="col-md-4">
         <div class="card shadow mb-4">
             <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Add Redirect</h6>
+                <h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.redirectAdd') ?></h6>
             </div>
             <div class="card-body">
                 <form method="POST" action="<?= base_url('admin/redirects') ?>">
                     <?= csrf_field() ?>
                     <div class="form-group">
-                        <label>From URL <small class="text-muted">(relative, e.g. /old-page)</small></label>
+                        <label><?= lang('Admin.redirectFrom') ?> <small class="text-muted">(relative, e.g. /old-page)</small></label>
                         <input type="text" name="from_url" class="form-control" required placeholder="/old-page">
                     </div>
                     <div class="form-group">
-                        <label>To URL</label>
+                        <label><?= lang('Admin.redirectTo') ?></label>
                         <input type="text" name="to_url" class="form-control" required placeholder="/new-page">
                     </div>
                     <div class="form-group">
-                        <label>Type</label>
+                        <label><?= lang('Admin.redirectType') ?></label>
                         <select name="type" class="form-control">
                             <option value="301">301 Permanent</option>
                             <option value="302">302 Temporary</option>
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-block">Add Redirect</button>
+                    <button type="submit" class="btn btn-primary btn-block"><?= lang('Admin.redirectAdd') ?></button>
                 </form>
             </div>
         </div>
@@ -39,11 +39,11 @@
     <div class="col-md-8">
         <div class="card shadow mb-4">
             <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Active Redirects</h6>
+                <h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.redirectsTitle') ?></h6>
             </div>
             <div class="card-body p-0">
                 <table class="table table-hover mb-0">
-                    <thead class="bg-light"><tr><th>From</th><th>To</th><th>Type</th><th>Actions</th></tr></thead>
+                    <thead class="bg-light"><tr><th><?= lang('Admin.redirectFrom') ?></th><th><?= lang('Admin.redirectTo') ?></th><th><?= lang('Admin.redirectType') ?></th><th><?= lang('Admin.actions') ?></th></tr></thead>
                     <tbody>
                     <?php foreach ($redirects as $r): ?>
                         <tr>
@@ -51,15 +51,15 @@
                             <td><code><?= esc($r->to_url) ?></code></td>
                             <td><span class="badge badge-<?= $r->type == 301 ? 'warning' : 'info' ?>"><?= $r->type ?></span></td>
                             <td>
-                                <form method="POST" action="<?= base_url('admin/redirects/' . $r->id . '/delete') ?>" class="d-inline" onsubmit="return confirm('Delete redirect?')">
+                                <form method="POST" action="<?= base_url('admin/redirects/' . $r->id . '/delete') ?>" class="d-inline" onsubmit="return confirm('<?= lang('Admin.confirmDelete') ?>')">
                                     <?= csrf_field() ?>
-                                    <button class="btn btn-xs btn-outline-danger">Delete</button>
+                                    <button class="btn btn-xs btn-outline-danger"><?= lang('Admin.delete') ?></button>
                                 </form>
                             </td>
                         </tr>
                     <?php endforeach; ?>
                     <?php if (empty($redirects)): ?>
-                        <tr><td colspan="4" class="text-center text-muted py-4">No redirects configured.</td></tr>
+                        <tr><td colspan="4" class="text-center text-muted py-4"><?= lang('Admin.noResultsFound') ?></td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>

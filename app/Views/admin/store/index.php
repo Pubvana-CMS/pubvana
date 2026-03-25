@@ -1,7 +1,7 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Pubvana Store</h1>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.storeTitle') ?></h1>
     <div>
         <a href="<?= esc($storeUrl) ?>" target="_blank" class="btn btn-sm btn-outline-primary mr-2">
             <i class="fas fa-external-link-alt fa-sm mr-1"></i> Browse Full Store
@@ -65,15 +65,15 @@
                         <?php if ($item->is_free): ?>
                             <input type="hidden" name="license_key" value="">
                             <button type="submit" class="btn btn-success btn-sm btn-block">
-                                <i class="fas fa-download mr-1"></i> Install Free
+                                <i class="fas fa-download mr-1"></i> <?= lang('Admin.marketplaceInstall') ?>
                             </button>
                         <?php else: ?>
                             <div class="input-group mb-2">
                                 <input type="text" name="license_key" class="form-control form-control-sm"
-                                       placeholder="License key" required>
+                                       placeholder="<?= lang('Admin.storeLicenseKeyPlaceholder') ?>" required>
                             </div>
                             <button type="submit" class="btn btn-primary btn-sm btn-block">
-                                <i class="fas fa-download mr-1"></i> Install
+                                <i class="fas fa-download mr-1"></i> <?= lang('Admin.storeInstallBtn') ?>
                             </button>
                         <?php endif; ?>
                     </form>

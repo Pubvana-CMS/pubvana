@@ -1,17 +1,17 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Settings</h1>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.settingsTitle') ?></h1>
 </div>
 
 <ul class="nav nav-tabs mb-3" id="settingsTabs" role="tablist">
-    <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#general">General</a></li>
-    <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#seo"><i class="fas fa-star fa-xs text-warning mr-1"></i>SEO</a></li>
-    <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#email">Email</a></li>
-    <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#social">Social Login</a></li>
-    <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#sharing">Social Sharing</a></li>
-    <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#spam">Spam Protection</a></li>
-    <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#premium">Premium</a></li>
+    <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#general"><?= lang('Admin.settingsGeneral') ?></a></li>
+    <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#seo"><i class="fas fa-star fa-xs text-warning mr-1"></i><?= lang('Admin.settingsSeo') ?></a></li>
+    <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#email"><?= lang('Admin.settingsEmail') ?></a></li>
+    <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#social"><?= lang('Admin.settingsSocialLogin') ?></a></li>
+    <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#sharing"><?= lang('Admin.settingsSocialSharing') ?></a></li>
+    <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#spam"><?= lang('Admin.settingsSpam') ?></a></li>
+    <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#premium"><?= lang('Admin.settingsPremium') ?></a></li>
 </ul>
 
 <div class="tab-content">
@@ -19,74 +19,74 @@
     <!-- General -->
     <div class="tab-pane fade show active" id="general">
         <div class="card shadow mb-4">
-            <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary">General Settings</h6></div>
+            <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.generalSettingsHeading') ?></h6></div>
             <div class="card-body">
                 <form method="POST" action="<?= base_url('admin/settings/general') ?>">
                     <?= csrf_field() ?>
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label font-weight-bold">Site Name</label>
+                        <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.generalSiteName') ?></label>
                         <div class="col-sm-9"><input type="text" name="site_name" class="form-control" value="<?= esc(setting('App.siteName')) ?>"></div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label font-weight-bold">Tagline</label>
+                        <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.generalTagline') ?></label>
                         <div class="col-sm-9"><input type="text" name="site_tagline" class="form-control" value="<?= esc(setting('App.siteTagline')) ?>"></div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label font-weight-bold">Admin Email</label>
+                        <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.generalAdminEmail') ?></label>
                         <div class="col-sm-9"><input type="email" name="site_email" class="form-control" value="<?= esc(setting('App.siteEmail')) ?>"></div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label font-weight-bold">Posts Per Page</label>
+                        <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.generalPostsPerPage') ?></label>
                         <div class="col-sm-3"><input type="number" name="posts_per_page" class="form-control" min="1" max="100" value="<?= esc(setting('App.postsPerPage') ?? 10) ?>"></div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label font-weight-bold">Comments</label>
+                        <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.generalComments') ?></label>
                         <div class="col-sm-9">
                             <div class="custom-control custom-switch mb-2">
                                 <input type="hidden" name="comments_enabled" value="0">
                                 <input type="checkbox" class="custom-control-input" id="comments_enabled" name="comments_enabled" value="1"
                                        <?= setting('App.commentsEnabled') ? 'checked' : '' ?>>
-                                <label class="custom-control-label" for="comments_enabled">Enable comments</label>
+                                <label class="custom-control-label" for="comments_enabled"><?= lang('Admin.generalCommentsEnable') ?></label>
                             </div>
                             <div class="custom-control custom-switch">
                                 <input type="hidden" name="comment_moderation" value="0">
                                 <input type="checkbox" class="custom-control-input" id="comment_moderation" name="comment_moderation" value="1"
                                        <?= setting('App.commentModeration') ? 'checked' : '' ?>>
-                                <label class="custom-control-label" for="comment_moderation">Require moderation before publishing</label>
+                                <label class="custom-control-label" for="comment_moderation"><?= lang('Admin.generalCommentModeration') ?></label>
                             </div>
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label font-weight-bold">Maintenance Mode</label>
+                        <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.generalMaintenanceMode') ?></label>
                         <div class="col-sm-9">
                             <div class="custom-control custom-switch">
                                 <input type="hidden" name="maintenance_mode" value="0">
                                 <input type="checkbox" class="custom-control-input" id="maintenance_mode" name="maintenance_mode" value="1"
                                        <?= setting('App.maintenanceMode') ? 'checked' : '' ?>>
                                 <label class="custom-control-label" for="maintenance_mode">
-                                    Enable maintenance mode
-                                    <small class="text-muted d-block">Visitors see a "We'll be back soon" page. Admins can still access the site.</small>
+                                    <?= lang('Admin.generalMaintenanceEnable') ?>
+                                    <small class="text-muted d-block"><?= lang('Admin.generalMaintenanceHelp') ?></small>
                                 </label>
                             </div>
                         </div>
                     </div>
                     <hr>
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label font-weight-bold">Front Page</label>
+                        <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.generalFrontPage') ?></label>
                         <div class="col-sm-9">
                             <div class="form-check mb-2">
                                 <input class="form-check-input" type="radio" name="front_page_type" id="fp_blog" value="blog"
                                        <?= setting('App.frontPageType') !== 'page' ? 'checked' : '' ?>>
-                                <label class="form-check-label" for="fp_blog">Blog index (latest posts)</label>
+                                <label class="form-check-label" for="fp_blog"><?= lang('Admin.generalFrontPageBlog') ?></label>
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="front_page_type" id="fp_page" value="page"
                                        <?= setting('App.frontPageType') === 'page' ? 'checked' : '' ?>>
-                                <label class="form-check-label" for="fp_page">Static page:</label>
+                                <label class="form-check-label" for="fp_page"><?= lang('Admin.generalFrontPageStatic') ?></label>
                             </div>
                             <div class="mt-2 ml-4">
                                 <select name="front_page_id" class="form-control" id="front_page_id" style="max-width:300px">
-                                    <option value="">— Select a page —</option>
+                                    <option value=""><?= lang('Admin.generalSelectPage') ?></option>
                                     <?php foreach ($pages as $p): ?>
                                     <option value="<?= $p->id ?>" <?= setting('App.frontPageId') == $p->id ? 'selected' : '' ?>>
                                         <?= esc($p->title) ?>
@@ -97,7 +97,7 @@
                         </div>
                     </div>
                     <div class="text-right">
-                        <button type="submit" class="btn btn-primary">Save General Settings</button>
+                        <button type="submit" class="btn btn-primary"><?= lang('Admin.generalSaveBtn') ?></button>
                     </div>
                 </form>
             </div>
@@ -107,30 +107,30 @@
     <!-- SEO -->
     <div class="tab-pane fade" id="seo">
         <div class="card shadow mb-4">
-            <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary">SEO Settings</h6></div>
+            <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.seoSettingsHeading') ?></h6></div>
             <div class="card-body">
                 <form method="POST" action="<?= base_url('admin/settings/seo') ?>">
                     <?= csrf_field() ?>
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label font-weight-bold">Meta Description</label>
+                        <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.seoMetaDescription') ?></label>
                         <div class="col-sm-9">
                             <textarea name="meta_description" class="form-control" rows="3"><?= esc(setting('Seo.metaDescription')) ?></textarea>
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label font-weight-bold">Google Analytics ID</label>
-                        <div class="col-sm-9"><input type="text" name="google_analytics" class="form-control" placeholder="G-XXXXXXXXXX" value="<?= esc(setting('Seo.googleAnalytics')) ?>"></div>
+                        <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.seoGoogleAnalytics') ?></label>
+                        <div class="col-sm-9"><input type="text" name="google_analytics" class="form-control" placeholder="<?= lang('Admin.seoGoogleAnalyticsPlaceholder') ?>" value="<?= esc(setting('Seo.googleAnalytics')) ?>"></div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label font-weight-bold">Sitemap</label>
+                        <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.seoSitemap') ?></label>
                         <div class="col-sm-9">
                             <div class="custom-control custom-switch mb-2">
                                 <input type="hidden" name="sitemap_enabled" value="0">
                                 <input type="checkbox" class="custom-control-input" id="sitemap_enabled" name="sitemap_enabled" value="1"
                                        <?= setting('Seo.sitemapEnabled') ? 'checked' : '' ?>>
                                 <label class="custom-control-label" for="sitemap_enabled">
-                                    Enable sitemap.xml
-                                    <small class="text-muted d-block">Standard sitemap for all published posts and pages.</small>
+                                    <?= lang('Admin.seoSitemapEnable') ?>
+                                    <small class="text-muted d-block"><?= lang('Admin.seoSitemapHelp') ?></small>
                                 </label>
                             </div>
                             <div class="custom-control custom-switch">
@@ -138,14 +138,14 @@
                                 <input type="checkbox" class="custom-control-input" id="news_sitemap_enabled" name="news_sitemap_enabled" value="1"
                                        <?= setting('Seo.newsSitemapEnabled') ? 'checked' : '' ?>>
                                 <label class="custom-control-label" for="news_sitemap_enabled">
-                                    Enable news-sitemap.xml
-                                    <small class="text-muted d-block">Google News sitemap — lists posts published in the last 48 hours.</small>
+                                    <?= lang('Admin.seoNewsSitemap') ?>
+                                    <small class="text-muted d-block"><?= lang('Admin.seoNewsSitemapHelp') ?></small>
                                 </label>
                             </div>
                         </div>
                     </div>
                     <div class="text-right">
-                        <button type="submit" class="btn btn-primary">Save SEO Settings</button>
+                        <button type="submit" class="btn btn-primary"><?= lang('Admin.seoSaveBtn') ?></button>
                     </div>
                 </form>
             </div>
@@ -155,23 +155,23 @@
     <!-- Email -->
     <div class="tab-pane fade" id="email">
         <div class="card shadow mb-4">
-            <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary">Email Settings</h6></div>
+            <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.emailSettingsHeading') ?></h6></div>
             <div class="card-body">
                 <form method="POST" action="<?= base_url('admin/settings/email') ?>">
                     <?= csrf_field() ?>
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label font-weight-bold">From Name</label>
+                        <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.emailFromName') ?></label>
                         <div class="col-sm-9"><input type="text" name="email_from_name" class="form-control" value="<?= esc(setting('Email.fromName')) ?>"></div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label font-weight-bold">From Address</label>
+                        <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.emailFromAddress') ?></label>
                         <div class="col-sm-9"><input type="email" name="email_from_address" class="form-control" value="<?= esc(setting('Email.fromAddress')) ?>"></div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label font-weight-bold">Protocol</label>
+                        <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.emailProtocol') ?></label>
                         <div class="col-sm-4">
                             <select name="email_protocol" class="form-control">
-                                <?php foreach (['mail' => 'PHP Mail', 'smtp' => 'SMTP', 'sendmail' => 'Sendmail'] as $val => $lbl): ?>
+                                <?php foreach (['mail' => lang('Admin.emailProtocolMail'), 'smtp' => lang('Admin.emailProtocolSmtp'), 'sendmail' => lang('Admin.emailProtocolSendmail')] as $val => $lbl): ?>
                                 <option value="<?= $val ?>" <?= setting('Email.protocol') === $val ? 'selected' : '' ?>><?= $lbl ?></option>
                                 <?php endforeach; ?>
                             </select>
@@ -179,34 +179,34 @@
                     </div>
                     <div id="smtp-fields">
                         <div class="form-group row">
-                            <label class="col-sm-3 col-form-label font-weight-bold">SMTP Host</label>
+                            <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.emailSmtpHost') ?></label>
                             <div class="col-sm-9"><input type="text" name="smtp_host" class="form-control" value="<?= esc(setting('Email.SMTPHost')) ?>"></div>
                         </div>
                         <div class="form-row">
                             <div class="col-md-3 offset-md-3 form-group">
-                                <label>SMTP Port</label>
+                                <label><?= lang('Admin.emailSmtpPort') ?></label>
                                 <input type="number" name="smtp_port" class="form-control" value="<?= esc(setting('Email.SMTPPort') ?? 587) ?>">
                             </div>
                             <div class="col-md-3 form-group">
-                                <label>Encryption</label>
+                                <label><?= lang('Admin.emailSmtpEncryption') ?></label>
                                 <select name="smtp_crypto" class="form-control">
-                                    <option value="">None</option>
+                                    <option value=""><?= lang('Admin.emailSmtpEncryptionNone') ?></option>
                                     <option value="tls" <?= setting('Email.SMTPCrypto') === 'tls' ? 'selected' : '' ?>>TLS</option>
                                     <option value="ssl" <?= setting('Email.SMTPCrypto') === 'ssl' ? 'selected' : '' ?>>SSL</option>
                                 </select>
                             </div>
                         </div>
                         <div class="form-group row">
-                            <label class="col-sm-3 col-form-label font-weight-bold">SMTP Username</label>
+                            <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.emailSmtpUsername') ?></label>
                             <div class="col-sm-9"><input type="text" name="smtp_user" class="form-control" value="<?= esc(setting('Email.SMTPUser')) ?>"></div>
                         </div>
                         <div class="form-group row">
-                            <label class="col-sm-3 col-form-label font-weight-bold">SMTP Password</label>
+                            <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.emailSmtpPassword') ?></label>
                             <div class="col-sm-9"><input type="password" name="smtp_pass" class="form-control" autocomplete="new-password"></div>
                         </div>
                     </div>
                     <div class="text-right">
-                        <button type="submit" class="btn btn-primary">Save Email Settings</button>
+                        <button type="submit" class="btn btn-primary"><?= lang('Admin.emailSaveBtn') ?></button>
                     </div>
                 </form>
             </div>
@@ -217,45 +217,39 @@
     <!-- Social Login -->
     <div class="tab-pane fade" id="social">
         <div class="card shadow mb-4">
-            <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary">Social Login (OAuth)</h6></div>
+            <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.socialLoginHeading') ?></h6></div>
             <div class="card-body">
-                <p class="text-muted small mb-3">
-                    Credentials are saved to your <code>.env</code> file.
-                    Register your app at
-                    <a href="https://console.developers.google.com" target="_blank">Google</a>
-                    and <a href="https://developers.facebook.com" target="_blank">Facebook</a>
-                    to obtain client IDs and secrets.
-                </p>
+                <p class="text-muted small mb-3"><?= lang('Admin.socialLoginHelp') ?></p>
                 <form method="POST" action="<?= base_url('admin/settings/social') ?>">
                     <?= csrf_field() ?>
 
                     <h6 class="font-weight-bold"><i class="fab fa-google text-danger"></i> Google</h6>
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label">Client ID</label>
+                        <label class="col-sm-3 col-form-label"><?= lang('Admin.socialLoginGoogleId') ?></label>
                         <div class="col-sm-9"><input type="text" name="google_client_id" class="form-control"
                             value="<?= esc(env('oauth.google.clientId')) ?>"></div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label">Client Secret</label>
+                        <label class="col-sm-3 col-form-label"><?= lang('Admin.socialLoginGoogleSecret') ?></label>
                         <div class="col-sm-9"><input type="password" name="google_client_secret" class="form-control"
-                            autocomplete="new-password" placeholder="(leave blank to keep existing)"></div>
+                            autocomplete="new-password" placeholder="<?= lang('Admin.socialLoginPlaceholderSecret') ?>"></div>
                     </div>
 
                     <hr>
                     <h6 class="font-weight-bold"><i class="fab fa-facebook text-primary"></i> Facebook</h6>
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label">App ID</label>
+                        <label class="col-sm-3 col-form-label"><?= lang('Admin.socialLoginFbAppId') ?></label>
                         <div class="col-sm-9"><input type="text" name="facebook_client_id" class="form-control"
                             value="<?= esc(env('oauth.facebook.clientId')) ?>"></div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label">App Secret</label>
+                        <label class="col-sm-3 col-form-label"><?= lang('Admin.socialLoginFbAppSecret') ?></label>
                         <div class="col-sm-9"><input type="password" name="facebook_client_secret" class="form-control"
-                            autocomplete="new-password" placeholder="(leave blank to keep existing)"></div>
+                            autocomplete="new-password" placeholder="<?= lang('Admin.socialLoginPlaceholderSecret') ?>"></div>
                     </div>
 
                     <div class="text-right">
-                        <button type="submit" class="btn btn-primary">Save Social Login Settings</button>
+                        <button type="submit" class="btn btn-primary"><?= lang('Admin.socialLoginSaveBtn') ?></button>
                     </div>
                 </form>
             </div>
@@ -265,54 +259,51 @@
     <!-- Social Sharing -->
     <div class="tab-pane fade" id="sharing">
         <div class="card shadow mb-4">
-            <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary">Social Auto-Share on Publish</h6></div>
+            <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.socialSharingHeading') ?></h6></div>
             <div class="card-body">
-                <p class="text-muted small mb-3">
-                    When a post is published with "Share on publish" checked, Pubvana will automatically
-                    post to configured social accounts.
-                </p>
+                <p class="text-muted small mb-3"><?= lang('Admin.socialSharingHelp') ?></p>
                 <form method="POST" action="<?= base_url('admin/settings/sharing') ?>">
                     <?= csrf_field() ?>
 
-                    <h6 class="font-weight-bold"><i class="fab fa-twitter text-info"></i> Twitter / X</h6>
-                    <p class="text-muted small">Get keys at <a href="https://developer.twitter.com" target="_blank">developer.twitter.com</a> → Your App → Keys and Tokens.</p>
+                    <h6 class="font-weight-bold"><i class="fab fa-twitter text-info"></i> <?= lang('Admin.socialSharingTwitter') ?></h6>
+                    <p class="text-muted small"><?= lang('Admin.socialSharingTwitterHelp') ?></p>
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label">API Key</label>
+                        <label class="col-sm-3 col-form-label"><?= lang('Admin.socialSharingApiKey') ?></label>
                         <div class="col-sm-9"><input type="password" name="twitter_api_key" class="form-control"
-                            autocomplete="new-password" placeholder="(leave blank to keep existing)"></div>
+                            autocomplete="new-password" placeholder="<?= lang('Admin.socialLoginPlaceholderSecret') ?>"></div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label">API Secret</label>
+                        <label class="col-sm-3 col-form-label"><?= lang('Admin.socialSharingApiSecret') ?></label>
                         <div class="col-sm-9"><input type="password" name="twitter_api_secret" class="form-control"
-                            autocomplete="new-password" placeholder="(leave blank to keep existing)"></div>
+                            autocomplete="new-password" placeholder="<?= lang('Admin.socialLoginPlaceholderSecret') ?>"></div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label">Access Token</label>
+                        <label class="col-sm-3 col-form-label"><?= lang('Admin.socialSharingAccessToken') ?></label>
                         <div class="col-sm-9"><input type="password" name="twitter_access_token" class="form-control"
-                            autocomplete="new-password" placeholder="(leave blank to keep existing)"></div>
+                            autocomplete="new-password" placeholder="<?= lang('Admin.socialLoginPlaceholderSecret') ?>"></div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label">Access Secret</label>
+                        <label class="col-sm-3 col-form-label"><?= lang('Admin.socialSharingAccessSecret') ?></label>
                         <div class="col-sm-9"><input type="password" name="twitter_access_secret" class="form-control"
-                            autocomplete="new-password" placeholder="(leave blank to keep existing)"></div>
+                            autocomplete="new-password" placeholder="<?= lang('Admin.socialLoginPlaceholderSecret') ?>"></div>
                     </div>
 
                     <hr>
-                    <h6 class="font-weight-bold"><i class="fab fa-facebook text-primary"></i> Facebook Page</h6>
-                    <p class="text-muted small">Requires a Page Access Token with <code>pages_manage_posts</code> permission.</p>
+                    <h6 class="font-weight-bold"><i class="fab fa-facebook text-primary"></i> <?= lang('Admin.socialSharingFbPage') ?></h6>
+                    <p class="text-muted small"><?= lang('Admin.socialSharingFbPageHelp') ?></p>
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label">Page ID</label>
+                        <label class="col-sm-3 col-form-label"><?= lang('Admin.socialSharingFbPageId') ?></label>
                         <div class="col-sm-9"><input type="text" name="fb_page_id" class="form-control"
                             value="<?= esc(env('sharing.facebook.pageId')) ?>"></div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label">Page Access Token</label>
+                        <label class="col-sm-3 col-form-label"><?= lang('Admin.socialSharingFbPageToken') ?></label>
                         <div class="col-sm-9"><input type="password" name="fb_page_token" class="form-control"
-                            autocomplete="new-password" placeholder="(leave blank to keep existing)"></div>
+                            autocomplete="new-password" placeholder="<?= lang('Admin.socialLoginPlaceholderSecret') ?>"></div>
                     </div>
 
                     <div class="text-right">
-                        <button type="submit" class="btn btn-primary">Save Sharing Settings</button>
+                        <button type="submit" class="btn btn-primary"><?= lang('Admin.socialSharingSaveBtn') ?></button>
                     </div>
                 </form>
             </div>
@@ -323,14 +314,14 @@
     <!-- Spam Protection -->
     <div class="tab-pane fade" id="spam">
         <div class="card shadow mb-4">
-            <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary">Spam Protection (hCaptcha)</h6></div>
+            <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.spamProtectionHeading') ?></h6></div>
             <div class="card-body">
-                <p>Pubvana uses <a href="https://www.hcaptcha.com" target="_blank">hCaptcha</a> (privacy-respecting, non-Google) to protect comment forms and the contact form from spam bots.</p>
-                <p>hCaptcha is <strong>free</strong> for most sites. Sign up at <a href="https://www.hcaptcha.com" target="_blank">hcaptcha.com</a>, create a site, and add the following two keys to your <code>.env</code> file:</p>
+                <p><?= lang('Admin.spamHcaptchaIntro') ?></p>
+                <p><?= lang('Admin.spamHcaptchaFree') ?></p>
                 <pre class="bg-light p-3 rounded"><code>HCAPTCHA_SITE_KEY = your-site-key
 HCAPTCHA_SECRET_KEY = your-secret-key</code></pre>
                 <div class="alert alert-info mb-0">
-                    <strong>Note:</strong> If these keys are not set, hCaptcha is silently skipped — safe for local development. Once keys are present in <code>.env</code>, the widget appears automatically on the comment form and contact page without any further configuration.
+                    <?= lang('Admin.spamHcaptchaNote') ?>
                 </div>
             </div>
         </div>
@@ -346,49 +337,46 @@ HCAPTCHA_SECRET_KEY = your-secret-key</code></pre>
         ?>
         <div class="card shadow mb-4">
             <div class="card-header py-3 d-flex align-items-center justify-content-between">
-                <h6 class="m-0 font-weight-bold text-primary">Pubvana Premium Core</h6>
+                <h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.premiumHeading') ?></h6>
                 <?php if ($isDev): ?>
-                    <span class="badge badge-info px-3 py-2">Dev mode — always active</span>
+                    <span class="badge badge-info px-3 py-2"><?= lang('Admin.premiumDevMode') ?></span>
                 <?php elseif ($premiumStatus === 'valid'): ?>
-                    <span class="badge badge-success px-3 py-2"><i class="fas fa-check-circle mr-1"></i> Valid</span>
+                    <span class="badge badge-success px-3 py-2"><i class="fas fa-check-circle mr-1"></i> <?= lang('Admin.premiumStatusValid') ?></span>
                 <?php elseif ($premiumStatus === 'invalid'): ?>
-                    <span class="badge badge-danger px-3 py-2"><i class="fas fa-times-circle mr-1"></i> Invalid</span>
+                    <span class="badge badge-danger px-3 py-2"><i class="fas fa-times-circle mr-1"></i> <?= lang('Admin.premiumStatusInvalid') ?></span>
                 <?php elseif ($premiumStatus === 'unreachable'): ?>
-                    <span class="badge badge-warning px-3 py-2"><i class="fas fa-exclamation-triangle mr-1"></i> Unreachable</span>
+                    <span class="badge badge-warning px-3 py-2"><i class="fas fa-exclamation-triangle mr-1"></i> <?= lang('Admin.premiumStatusUnreachable') ?></span>
                 <?php else: ?>
-                    <span class="badge badge-secondary px-3 py-2">Unchecked</span>
+                    <span class="badge badge-secondary px-3 py-2"><?= lang('Admin.premiumStatusUnchecked') ?></span>
                 <?php endif; ?>
             </div>
             <div class="card-body">
                 <?php if ($isDev): ?>
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle mr-1"></i>
-                        Running on a local dev domain — all Premium Core features are active without a licence key.
+                        <?= lang('Admin.premiumDevInfo') ?>
                     </div>
                 <?php else: ?>
-                    <p class="text-muted small mb-3">
-                        Enter your <strong>Pubvana Premium Core</strong> licence key to unlock premium features.
-                        Purchase at <a href="https://pubvana.net/store/premium" target="_blank" rel="noopener">pubvana.net/store/premium</a>.
-                    </p>
+                    <p class="text-muted small mb-3"><?= lang('Admin.premiumHelp') ?></p>
                     <form method="POST" action="<?= base_url('admin/settings/premium') ?>">
                         <?= csrf_field() ?>
                         <div class="form-group row">
-                            <label class="col-sm-3 col-form-label font-weight-bold">Licence Key</label>
+                            <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.premiumLicenceKey') ?></label>
                             <div class="col-sm-9">
                                 <input type="text" name="license_key" class="form-control font-monospace"
-                                       placeholder="XXXX-XXXX-XXXX-XXXX"
+                                       placeholder="<?= lang('Admin.premiumLicenceKeyPlaceholder') ?>"
                                        value="<?= esc(setting('Premium.licenseKey') ?? '') ?>">
                                 <?php if ($premiumStatus === 'valid'): ?>
-                                    <small class="text-success"><i class="fas fa-check-circle"></i> Licence verified.</small>
+                                    <small class="text-success"><i class="fas fa-check-circle"></i> <?= lang('Admin.premiumKeyValid') ?></small>
                                 <?php elseif ($premiumStatus === 'invalid'): ?>
-                                    <small class="text-danger"><i class="fas fa-times-circle"></i> This key was not accepted. Check the key and try again.</small>
+                                    <small class="text-danger"><i class="fas fa-times-circle"></i> <?= lang('Admin.premiumKeyInvalid') ?></small>
                                 <?php elseif ($premiumStatus === 'unreachable'): ?>
-                                    <small class="text-warning"><i class="fas fa-exclamation-triangle"></i> Could not reach the licence server during last check.</small>
+                                    <small class="text-warning"><i class="fas fa-exclamation-triangle"></i> <?= lang('Admin.premiumKeyUnreachable') ?></small>
                                 <?php endif; ?>
                             </div>
                         </div>
                         <div class="text-right">
-                            <button type="submit" class="btn btn-primary">Activate Licence</button>
+                            <button type="submit" class="btn btn-primary"><?= lang('Admin.premiumActivateBtn') ?></button>
                         </div>
                     </form>
                 <?php endif; ?>

@@ -2,11 +2,11 @@
 
 <!-- Page Heading -->
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Updates</h1>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.updatesTitle') ?></h1>
     <form method="POST" action="<?= base_url('admin/updates/check') ?>">
         <?= csrf_field() ?>
         <button class="btn btn-sm btn-outline-secondary">
-            <i class="fas fa-sync-alt fa-sm"></i> Force Re-check
+            <i class="fas fa-sync-alt fa-sm"></i> <?= lang('Admin.updatesCheckBtn') ?>
         </button>
     </form>
 </div>

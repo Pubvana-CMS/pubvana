@@ -1,7 +1,7 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Import from WordPress</h1>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.importWpHeading') ?></h1>
 </div>
 
 <?php if (session()->getFlashdata('error')): ?>
@@ -37,7 +37,7 @@
     <div class="col-lg-6">
         <div class="card shadow mb-4">
             <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Upload WordPress Export</h6>
+                <h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.importWpHeading') ?></h6>
             </div>
             <div class="card-body">
                 <p class="text-muted small mb-3">
@@ -49,19 +49,19 @@
                     <?= csrf_field() ?>
 
                     <div class="form-group">
-                        <label class="font-weight-bold">WXR Export File (.xml)</label>
+                        <label class="font-weight-bold"><?= lang('Admin.importChooseFile') ?></label>
                         <input type="file" name="wxr_file" class="form-control-file" accept=".xml" required>
                     </div>
 
                     <div class="form-check mb-3">
                         <input type="checkbox" name="dry_run" id="dry_run" class="form-check-input" value="1">
                         <label class="form-check-label" for="dry_run">
-                            <strong>Dry run</strong> — preview what would be imported without writing to the database
+                            <?= lang('Admin.importDryRun') ?>
                         </label>
                     </div>
 
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-upload mr-1"></i> Upload &amp; Import
+                        <i class="fas fa-upload mr-1"></i> <?= lang('Admin.importRunBtn') ?>
                     </button>
                 </form>
             </div>

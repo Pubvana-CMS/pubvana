@@ -2,10 +2,10 @@
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <h1 class="h3 mb-0 text-gray-800">
-        Clicks — <span class="text-primary"><?= esc($link->name) ?></span>
+        <?= lang('Admin.affiliateClicksTitle', [esc($link->name)]) ?>
     </h1>
     <a href="<?= base_url('admin/affiliates') ?>" class="btn btn-secondary btn-sm shadow-sm">
-        <i class="fas fa-arrow-left fa-sm"></i> Back to Links
+        <i class="fas fa-arrow-left fa-sm"></i> <?= lang('Admin.affiliatesTitle') ?>
     </a>
 </div>
 
@@ -16,7 +16,7 @@
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Clicks</div>
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1"><?= lang('Admin.affiliateClicks') ?></div>
                         <div class="h5 mb-0 font-weight-bold text-gray-800"><?= number_format($total) ?></div>
                     </div>
                     <div class="col-auto"><i class="fas fa-mouse-pointer fa-2x text-gray-300"></i></div>
@@ -29,7 +29,7 @@
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Destination</div>
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1"><?= lang('Admin.affiliateDestination') ?></div>
                         <div class="small text-truncate text-gray-800">
                             <a href="<?= esc($link->destination_url) ?>" target="_blank" rel="noopener">
                                 <?= esc($link->destination_url) ?>
@@ -47,9 +47,9 @@
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
                         <div class="text-xs font-weight-bold text-uppercase mb-1
-                            text-<?= $link->is_active ? 'success' : 'secondary' ?>">Status</div>
+                            text-<?= $link->is_active ? 'success' : 'secondary' ?>"><?= lang('Admin.status') ?></div>
                         <div class="h5 mb-0 font-weight-bold text-gray-800">
-                            <?= $link->is_active ? 'Active' : 'Inactive' ?>
+                            <?= $link->is_active ? lang('Admin.active') : lang('Admin.inactive') ?>
                         </div>
                     </div>
                     <div class="col-auto"><i class="fas fa-circle fa-2x text-gray-300"></i></div>
@@ -61,12 +61,12 @@
 
 <div class="card shadow mb-4">
     <div class="card-header py-3 d-flex align-items-center justify-content-between">
-        <h6 class="m-0 font-weight-bold text-primary">Click Log</h6>
+        <h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.affiliateClicks') ?></h6>
         <span class="text-muted small">IPs are stored as SHA-256 hashes — no raw PII recorded.</span>
     </div>
     <div class="card-body p-0">
         <?php if (empty($clicks)): ?>
-            <div class="p-4 text-muted text-center">No clicks recorded yet.</div>
+            <div class="p-4 text-muted text-center"><?= lang('Admin.noResultsFound') ?></div>
         <?php else: ?>
         <div class="table-responsive">
             <table class="table table-hover mb-0">
