@@ -10,10 +10,9 @@
 
 ### Blogging and Small Business CMS
 
-Pubvana is a re-brand of Open Blog v3 (with added functionality). v2 is a full rewrite on CodeIgniter 4 with a modern admin UI, dual content editor, theme & widget system, and built-in marketplace.
+Pubvana v2 is a full rewrite of Pubvana v1.x built on CodeIgniter 4, Authentication with Shield, a modern admin UI, dual content editors, theme, plugin & widget system, built-in marketplace, and many new features. We aim for Pubvana to be lean and fast without the bloat of other CMS and Blog software available.
 
-These instructions are for users comfortable with the command line and
-  terminal. If you'd prefer a streamlined experience, [go here: placeholder].
+These instructions are for users comfortable with the command line and terminal. If you'd prefer a streamlined experience, [go here: placeholder].
 
 ## Installation
 
@@ -38,7 +37,8 @@ These instructions are for users comfortable with the command line and
 ```
 
 Install Pubvana from Packagist. (Note the '.' to install into your current directory)
-  ```composer create-project enlivenapp/pubvana .
+```
+composer create-project enlivenapp/pubvana .
 ```
 
   **For Development** : for contributors who want to run tests, build additional features and work on the codebase:
@@ -49,6 +49,9 @@ Install Pubvana from Packagist. (Note the '.' to install into your current direc
   composer install
 ```
 
+ The remaining steps apply to production and development environments.
+
+
 ### 3. Configure
 
   Open the sample environment file in a text editor or Vim/Nano:
@@ -57,7 +60,7 @@ Install Pubvana from Packagist. (Note the '.' to install into your current direc
 
   Edit these lines at a minimum: (uncomment (remove #))
 
-  CI_ENVIRONMENT = production
+  CI_ENVIRONMENT = production  # or development
 
   app.baseURL = 'https://your-domain.com/'
 
@@ -93,26 +96,96 @@ Point your web server to the `public/` folder. `https://your-server/path-to-pubv
 **Default admin login** — `admin@example.com` / `Admin@12345` — change password immediately after first login.
 
 
+### 7. File and Directory Structure
+
+Your web hosts serves files from the directory where `index.php` lives [Detailed Information](https://codeigniter.com/user_guide/installation/running.html#hosting-with-apache). Pubvana uses the default CodeIgniter `~DOC_ROOT/public/` setup and attempts to forward traffic to `/public/index.php` with clean URLs.  To increase security or if an `.htaccess` won't be honored (Nginx), you can change where these files reside on the server or edit your Nginx config file. Check the link above for detailed information how to move core files outside the web root, `index.php` into the root folder `public_html` on shared servers. 
+
+### 8. Web Server User
+
+Pubvana needs to create symlinks and write files on behalf of your web server. The following steps require you to know which user your web server runs as. If you already know, skip ahead to Step 9.
+
+**cPanel, DirectAdmin or shared hosting:**
+
+Your web server runs as your account username, the same user you are logged in as. Files you create are already owned by the correct user, so you can skip the `chown` ownership commands in the following steps.
+
+**VPS or dedicated server:**
+
+You manage the web server yourself. The user depends on your OS and web server:
+
+| Setup | Typical user |
+|-------|-------------|
+| Apache on Debian / Ubuntu | `www-data` |
+| Apache on RHEL / CentOS / AlmaLinux | `apache` |
+| Apache on Arch Linux | `http` |
+| Apache on macOS | `_www` |
+| Nginx on Debian / Ubuntu | `www-data` |
+| Nginx on RHEL / CentOS | `nginx` |
+| LiteSpeed | `nobody` or `lsadm` |
+
+You can confirm by checking your web server's configuration file. For Apache, look for the `User` directive in `/etc/apache2/apache2.conf` or `/etc/httpd/conf/httpd.conf`. For Nginx, look at the `user` line near the top of `/etc/nginx/nginx.conf`.
+
+**Not sure what web server you have?**
+
+Ask your hosting provider. Common web servers are Apache, Nginx, and LiteSpeed. Many cPanel hosts use LiteSpeed but display "Apache" in the control panel, DirectAdmin favors PHP-FPM. Either way, on cPanel/DirectAdmin the user is your account username.
+
+Keep this username handy. You will need it in the next steps.
 
 
-> **Theme assets symlink**
-> After installation, activate your chosen theme via **Admin → Themes**. This automatically creates the symlink `public/themes/{folder}` → `themes/{folder}/assets` so CSS, JS, and images are served correctly. If you deploy to a server where the symlink is missing (e.g. after a fresh `git clone`), either re-activate the theme in the admin or run:
-> ```bash
-> ln -s /path/to/pubvana/themes/default/assets /path/to/pubvana/public/themes/default
-> ```
->
-> The web server user (typically `www-data`) must be able to write to `public/themes/` to create symlinks when switching themes. Set this once after installation:
-> ```bash
-> chown www-data:www-data public/themes/
-> ```
+### 9. Theme Assets Symlink
 
-> **Media / uploads symlink**
-> Uploaded images (avatars, featured images, media library) are stored in `writable/uploads/` which is outside the web root. To serve them, create a symlink once after installation:
-> ```bash
-> mkdir -p public/writable
-> ln -s /path/to/pubvana/writable/uploads public/writable/uploads
-> ```
-> Only the `uploads/` subdirectory is exposed — sessions, cache, and logs remain inaccessible.
+ Theme CSS, JS, and images are stored in `themes/{folder}/assets/` under the project root, which is outside the document root. A **symlink** (symbolic link) is a shortcut that makes files from one location accessible at another without copying them. Pubvana uses symlinks inside the document root pointing to each theme's assets so browsers can load them.
+
+Pubvana attempts to create these automatically when you visit **Admin → Themes** or activate a theme. Each symlink looks like a regular directory but it points to another directory:
+
+```
+{document root}/themes/default  →  {project root}/themes/default/assets
+```
+
+On shared hosting you'll often see a `www` "directory", this is a symlink to the `public_html` directory. This is what we're doing here. 
+
+First, give your web server user (from Step 8) write access to the `themes/` directory inside your document root:
+
+```bash
+chown yourwebuser:yourwebuser /path/to/docroot/themes/
+```
+
+If this returns `Operation not permitted`, prefix with `sudo`:
+
+```bash
+sudo chown yourwebuser:yourwebuser /path/to/docroot/themes/
+```
+then enter your password.
+
+On cPanel, DirectAdmin or shared hosting you can skip this, as files are already owned by your account user.
+
+Once ownership is set, visit **Admin → Themes** and activate your theme. Pubvana will create the symlink automatically. If your theme's CSS and images are loading, you are all set.
+
+If the symlink was not created (styles are missing, images are broken), create it manually:
+
+```bash
+ln -s /path/to/project/themes/default/assets /path/to/docroot/themes/default
+```
+
+Replace `default` with your theme's folder name and adjust both paths to match your layout.
+
+### 10. Media Uploads Symlink
+
+Uploaded images (avatars, featured images, media library) are stored in `writable/uploads/` under the project root — also outside the document root. A symlink exposes only the `uploads/` subdirectory to browsers while keeping sessions, cache, and logs private.
+
+Quick troubleshooting: If `writable/sessions,  writable/cache, and writable/logs` (and often database errors) are not writable by the web user CodeIgniter will give the `white screen of death` when the environment is set to production. You may find the exact reason in the webserver's logs(not CodeIgniter's). If you're having significant trouble diagnosing the issue, set `CI_ENVIRONMENT = development` temporarily in your `.env` file which will show the debug bar and (likely) the exception causing the issue.  [CodeIgniter Doc - Running Your App](https://codeigniter.com/user_guide/installation/running.html#) | [CodeIgniter Troubleshooting](https://codeigniter.com/user_guide/installation/troubleshooting.html)
+
+```
+{document root}/writable/uploads  →  {project root}/writable/uploads
+```
+
+Create this once after installation:
+
+```bash
+mkdir -p /path/to/docroot/writable
+ln -s /path/to/project/writable/uploads /path/to/docroot/writable/uploads
+```
+
+**Note:** Apache must follow symlinks for both steps 9 and 10 to work. Pubvana's `.htaccess` already includes `Options +FollowSymlinks`.
 
 ## CLI Commands
 
@@ -126,13 +199,19 @@ Point your web server to the `public/` folder. `https://your-server/path-to-pubv
 
 ### Cron Jobs
 
-Scheduled post publishing requires a cron job. Add to crontab:
+Scheduled post publishing requires a cron job. Add to crontab by command line:
 
 ```
-* * * * * php /path/to/pubvana/spark posts:publish >> /dev/null 2>&1
+* * * * * path/to/php /path/to/pubvana/spark posts:publish >> /dev/null 2>&1
 ```
 
-Run `links:check` as needed (e.g. weekly) — results appear in Admin → Broken Links.
+Often it's easier to create Crons in your web control panel (CPanel/DirectAdmin).  To help:
+- `* * * * *` are the time slots. 
+- `path/to/php /path/to/pubvana/spark posts:publish`  Command to run
+- `dev/null 2>&1`  fancy way to say throw it away. You have more choices in your control panel.
+
+
+Run `path/to/php /path/to/pubvana/spark links:check` as needed (e.g. weekly) — to automate checking for broken links, results appear in Admin → Broken Links.
 
 ---
 
@@ -140,7 +219,7 @@ Run `links:check` as needed (e.g. weekly) — results appear in Admin → Broken
 
 - PHP 8.2+
 - MySQL 5.7+ / MariaDB 10.3+
-- Composer
+- Composer (highly recommended)
 - Apache `mod_rewrite` (or Nginx equivalent)
 - PHP extensions: `intl`, `mbstring`, `json`, `mysqlnd`, `gd`, `zip`
 
