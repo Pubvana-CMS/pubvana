@@ -12,22 +12,88 @@
 
 Pubvana is a re-brand of Open Blog v3 (with added functionality). v2 is a full rewrite on CodeIgniter 4 with a modern admin UI, dual content editor, theme & widget system, and built-in marketplace.
 
+These instructions are for users comfortable with the command line and
+  terminal. If you'd prefer a streamlined experience, [go here: placeholder].
+
 ## Installation
 
+### 1. Prerequisites
+
+  Before installing, make sure you have:
+  - PHP 8.2+ with required extensions (see Requirements below)
+  - Composer (getcomposer.org)
+  - MySQL 5.7+ or MariaDB 10.3+
+  - A web server (Apache with mod_rewrite, or Nginx)
+
+  Create an empty MySQL database and a user with full privileges on it. You'll
+  need the database name, username, and password for the next steps.
+
+  ### 2. Download
+
+  **For Production** : for site owners deploying Pubvana as is:
+
+ Navigate to the directory you wish to use for the project root.
+```
+  cd ~/public_html/
+```
+
+Install Pubvana from Packagist. (Note the '.' to install into your current directory)
+  ```composer create-project enlivenapp/pubvana .
+```
+
+  **For Development** : for contributors who want to run tests, build additional features and work on the codebase:
+
+```
+  git clone https://github.com/enlivenapp/pubvana.git
+  cd pubvana
+  composer install
+```
+
+### 3. Configure
+
+  Open the sample environment file in a text editor or Vim/Nano:
+
+```
+
+  Edit these lines at a minimum: (uncomment (remove #))
+
+  CI_ENVIRONMENT = production
+
+  app.baseURL = 'https://your-domain.com/'
+
+  database.default.hostname = localhost
+  database.default.database = your_database_name
+  database.default.username = your_database_user
+  database.default.password = your_database_password
+
+  Set CI_ENVIRONMENT to production for a live site or development for local
+  work.  Leaving this commented defaults to the production environment
+```
+
+Save this file as `.env`
+
+### 4. Initialize
+
+On the command line run these three commands separately.
+
 ```bash
-git clone https://github.com/enlivenapp/pubvana.git
-cd pubvana
-composer install
-cp env .env
-# Edit .env: set app.baseURL, database credentials, CI_ENVIRONMENT
 php spark key:generate
 php spark migrate --all
 php spark db:seed DatabaseSeeder
 ```
 
-Point your web server `DocumentRoot` at the `public/` folder.
+### 5. Web Server
 
-**Default admin login** — `admin@example.com` / `Admin@12345` — change immediately after first login.
+Point your web server to the `public/` folder. `https://your-server/path-to-pubvana`. You should see the homepage of your new website.
+
+### 6. Log In
+
+ Visit `https://your-server/path-to-pubvana/login`.
+
+**Default admin login** — `admin@example.com` / `Admin@12345` — change password immediately after first login.
+
+
+
 
 > **Theme assets symlink**
 > After installation, activate your chosen theme via **Admin → Themes**. This automatically creates the symlink `public/themes/{folder}` → `themes/{folder}/assets` so CSS, JS, and images are served correctly. If you deploy to a server where the symlink is missing (e.g. after a fresh `git clone`), either re-activate the theme in the admin or run:
