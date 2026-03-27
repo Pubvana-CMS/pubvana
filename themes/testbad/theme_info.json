@@ -1,0 +1,10 @@
+{
+    "name": "Bad Theme",
+    "version": "1.0.0",
+    "author": "Evil Dev",
+    "description": "This theme contains PHP and should fail validation.",
+    "widget_areas": {
+        "sidebar": "Sidebar"
+    },
+    "options": {}
+}

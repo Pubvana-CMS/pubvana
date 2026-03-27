@@ -52,16 +52,20 @@
                     </div>
                 <?php endif; ?>
             </div>
-            <div class="card-footer bg-white d-flex gap-2">
-                <?php if (! $theme->is_active && $isValid): ?>
-                <form method="POST" action="<?= base_url('admin/themes/' . $theme->id . '/activate') ?>">
-                    <?= csrf_field() ?>
-                    <button class="btn btn-sm btn-primary"><?= lang('Admin.themeActivate') ?></button>
-                </form>
-                <?php endif; ?>
-                <?php if (!empty($info['options'])): ?>
-                <a href="<?= base_url('admin/themes/' . $theme->id . '/options') ?>" class="btn btn-sm btn-outline-secondary"><?= lang('Admin.themeOptionsBtn') ?></a>
-                <?php endif; ?>
+            <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+                <div>
+                    <?php if (! $theme->is_active && $isValid): ?>
+                    <form method="POST" action="<?= base_url('admin/themes/' . $theme->id . '/activate') ?>" class="d-inline">
+                        <?= csrf_field() ?>
+                        <button class="btn btn-sm btn-primary"><?= lang('Admin.themeActivate') ?></button>
+                    </form>
+                    <?php endif; ?>
+                </div>
+                <div>
+                    <?php if (!empty($info['options'])): ?>
+                    <a href="<?= base_url('admin/themes/' . $theme->id . '/options') ?>" class="btn btn-sm btn-outline-secondary"><?= lang('Admin.themeOptionsBtn') ?></a>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </div>
