@@ -98,94 +98,13 @@ Point your web server to the `public/` folder. `https://your-server/path-to-pubv
 
 ### 7. File and Directory Structure
 
-Your web hosts serves files from the directory where `index.php` lives [Detailed Information](https://codeigniter.com/user_guide/installation/running.html#hosting-with-apache). Pubvana uses the default CodeIgniter `~DOC_ROOT/public/` setup and attempts to forward traffic to `/public/index.php` with clean URLs.  To increase security or if an `.htaccess` won't be honored (Nginx), you can change where these files reside on the server or edit your Nginx config file. Check the link above for detailed information how to move core files outside the web root, `index.php` into the root folder `public_html` on shared servers. 
+Your web host serves files from the directory where `index.php` lives [Detailed Information](https://codeigniter.com/user_guide/installation/running.html#hosting-with-apache). Pubvana uses the default CodeIgniter `~DOC_ROOT/public/` setup and attempts to forward traffic to `/public/index.php` with clean URLs. To increase security or if an `.htaccess` won't be honored (Nginx), you can change where these files reside on the server or edit your Nginx config file. Check the link above for detailed information how to move core files outside the web root, `index.php` into the root folder `public_html` on shared servers.
 
-### 8. Web Server User
+### 8. Theme Assets and Media
 
-Pubvana needs to create symlinks and write files on behalf of your web server. The following steps require you to know which user your web server runs as. If you already know, skip ahead to Step 9.
+**Theme Assets and Media:** Theme assets and media uploads are stored inside the web server's document root automatically. No symlinks are needed. Visit **Admin → Themes** to ensure theme assets are published.
 
-**cPanel, DirectAdmin or shared hosting:**
-
-Your web server runs as your account username, the same user you are logged in as. Files you create are already owned by the correct user, so you can skip the `chown` ownership commands in the following steps.
-
-**VPS or dedicated server:**
-
-You manage the web server yourself. The user depends on your OS and web server:
-
-| Setup | Typical user |
-|-------|-------------|
-| Apache on Debian / Ubuntu | `www-data` |
-| Apache on RHEL / CentOS / AlmaLinux | `apache` |
-| Apache on Arch Linux | `http` |
-| Apache on macOS | `_www` |
-| Nginx on Debian / Ubuntu | `www-data` |
-| Nginx on RHEL / CentOS | `nginx` |
-| LiteSpeed | `nobody` or `lsadm` |
-
-You can confirm by checking your web server's configuration file. For Apache, look for the `User` directive in `/etc/apache2/apache2.conf` or `/etc/httpd/conf/httpd.conf`. For Nginx, look at the `user` line near the top of `/etc/nginx/nginx.conf`.
-
-**Not sure what web server you have?**
-
-Ask your hosting provider. Common web servers are Apache, Nginx, and LiteSpeed. Many cPanel hosts use LiteSpeed but display "Apache" in the control panel, DirectAdmin favors PHP-FPM. Either way, on cPanel/DirectAdmin the user is your account username.
-
-Keep this username handy. You will need it in the next steps.
-
-
-### 9. Theme Assets Symlink
-
- Theme CSS, JS, and images are stored in `themes/{folder}/assets/` under the project root, which is outside the document root. A **symlink** (symbolic link) is a shortcut that makes files from one location accessible at another without copying them. Pubvana uses symlinks inside the document root pointing to each theme's assets so browsers can load them.
-
-Pubvana attempts to create these automatically when you visit **Admin → Themes** or activate a theme. Each symlink looks like a regular directory but it points to another directory:
-
-```
-{document root}/themes/default  →  {project root}/themes/default/assets
-```
-
-On shared hosting you'll often see a `www` "directory", this is a symlink to the `public_html` directory. This is what we're doing here. 
-
-First, give your web server user (from Step 8) write access to the `themes/` directory inside your document root:
-
-```bash
-chown yourwebuser:yourwebuser /path/to/docroot/themes/
-```
-
-If this returns `Operation not permitted`, prefix with `sudo`:
-
-```bash
-sudo chown yourwebuser:yourwebuser /path/to/docroot/themes/
-```
-then enter your password.
-
-On cPanel, DirectAdmin or shared hosting you can skip this, as files are already owned by your account user.
-
-Once ownership is set, visit **Admin → Themes** and activate your theme. Pubvana will create the symlink automatically. If your theme's CSS and images are loading, you are all set.
-
-If the symlink was not created (styles are missing, images are broken), create it manually:
-
-```bash
-ln -s /path/to/project/themes/default/assets /path/to/docroot/themes/default
-```
-
-Replace `default` with your theme's folder name and adjust both paths to match your layout.
-
-### 10. Media Uploads Symlink
-
-Uploaded images (avatars, featured images, media library) are stored in `writable/uploads/` under the project root — also outside the document root. A symlink exposes only the `uploads/` subdirectory to browsers while keeping sessions, cache, and logs private.
-
-Quick troubleshooting: If `writable/sessions,  writable/cache, and writable/logs` (and often database errors) are not writable by the web user CodeIgniter will give the `white screen of death` when the environment is set to production. You may find the exact reason in the webserver's logs(not CodeIgniter's). If you're having significant trouble diagnosing the issue, set `CI_ENVIRONMENT = development` temporarily in your `.env` file which will show the debug bar and (likely) the exception causing the issue.  [CodeIgniter Doc - Running Your App](https://codeigniter.com/user_guide/installation/running.html#) | [CodeIgniter Troubleshooting](https://codeigniter.com/user_guide/installation/troubleshooting.html)
-
-```
-{document root}/writable/uploads  →  {project root}/writable/uploads
-```
-
-Create this once after installation:
-
-```bash
-mkdir -p /path/to/docroot/writable
-ln -s /path/to/project/writable/uploads /path/to/docroot/writable/uploads
-```
-
-**Note:** Apache must follow symlinks for both steps 9 and 10 to work. Pubvana's `.htaccess` already includes `Options +FollowSymlinks`.
+Quick troubleshooting: If `writable/sessions`, `writable/cache`, and `writable/logs` are not writable by the web user, CodeIgniter will give the `white screen of death` when the environment is set to production. You may find the exact reason in the web server's logs (not CodeIgniter's). If you're having significant trouble diagnosing the issue, set `CI_ENVIRONMENT = development` temporarily in your `.env` file which will show the debug bar and (likely) the exception causing the issue. [CodeIgniter Doc - Running Your App](https://codeigniter.com/user_guide/installation/running.html#) | [CodeIgniter Troubleshooting](https://codeigniter.com/user_guide/installation/troubleshooting.html)
 
 ## CLI Commands
 
@@ -238,7 +157,7 @@ Run `path/to/php /path/to/pubvana/spark links:check` as needed (e.g. weekly) —
 
 - Posts & Pages with draft/published/scheduled workflow
 - Dual content editor — WYSIWYG HTML or Markdown, selectable per post
-- Theme system with widget areas, theme options, and asset symlinking
+- Theme system with sandboxed .tpl engine, widget areas, theme options, and framework-agnostic widgets
 - 8 built-in widgets with drag-and-drop area management
 - Configurable front page — blog index or any static page
 - Marketplace — browse and install free themes & widgets (live API + cache + mock fallback)
@@ -289,10 +208,9 @@ Before deploying to a public server:
 - [ ] Set `app.baseURL` to your actual domain in `.env`
 - [ ] Set `app.forceGlobalSecureRequests = true` in `app/Config/App.php` to enforce HTTPS and send HSTS headers
 - [ ] Enable CSP: set `app.CSPEnabled = true` in `app/Config/App.php` and configure a policy appropriate to your theme
-- [ ] Ensure only `writable/uploads/` is web-accessible (via the symlink above) — never symlink or move `writable/` itself into `public/`, as it contains sessions, cache, and logs
+- [ ] Ensure only `writable/uploads/` is web-accessible — never expose `writable/` itself to the public, as it contains sessions, cache, and logs
 - [ ] Ensure `.env` has permissions `600` and is not committed to version control
 - [ ] Run `php spark key:generate` once per installation — do not reuse encryption keys across sites
-- [ ] Set `chown www-data:www-data public/themes/` so only the web server can create theme symlinks
 
 ### Content Security Note
 
