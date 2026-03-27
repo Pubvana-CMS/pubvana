@@ -231,7 +231,7 @@ class Interpreter
 
     private function isTruthy(mixed $value): bool
     {
-        if ($value === null || $value === false || $value === '' || $value === 0 || $value === []) {
+        if ($value === null || $value === false || $value === '' || $value === 0 || $value === '0' || $value === []) {
             return false;
         }
         return true;

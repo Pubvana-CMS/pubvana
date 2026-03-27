@@ -367,6 +367,7 @@ return [
     'widgetArea'            => 'Area',
     'widgetNoOptions'       => 'No options.',
     'widgetSaveConfig'      => 'Save Configuration',
+    'widgetConfigure'       => 'Configure',
 
     // Widget flash messages
     'widgetAdded'           => 'Widget added.',

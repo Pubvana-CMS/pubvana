@@ -92,6 +92,25 @@ class Widgets extends BaseAdminController
             return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         $options = $this->request->getPost('options') ?? [];
+
+        // Ensure unchecked checkboxes are saved as "0" (HTML forms omit unchecked fields)
+        $instance = db_connect()->table('widget_instances wi')
+            ->select('w.folder')
+            ->join('widgets w', 'w.id = wi.widget_id')
+            ->where('wi.id', $instanceId)
+            ->get()->getRowObject();
+
+        if ($instance) {
+            $manifest = (new WidgetService())->readManifest($instance->folder);
+            if ($manifest) {
+                foreach ($manifest['admin']['options'] ?? [] as $key => $cfg) {
+                    if (($cfg['type'] ?? '') === 'checkbox' && ! isset($options[$key])) {
+                        $options[$key] = '0';
+                    }
+                }
+            }
+        }
+
         (new WidgetInstanceModel())->update($instanceId, ['options_json' => json_encode($options)]);
         return redirect()->to('/admin/widgets')->with('success', lang('Admin.widgetConfigured'));
     }

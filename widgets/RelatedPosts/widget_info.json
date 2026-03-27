@@ -27,6 +27,7 @@
             "posts": {
                 "provider": "PostModel.getRelated",
                 "params": {
+                    "postId": "@current_post_id",
                     "limit": "count"
                 }
             }

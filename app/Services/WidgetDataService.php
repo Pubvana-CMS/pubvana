@@ -16,7 +16,7 @@ class WidgetDataService
         'PostModel.getArchiveList',
         'CommentModel.getRecentApproved',
         'PostModel.getRelated',
-        'AuthorProfileModel.getForCurrentPost',
+        'AuthorProfileModel.getForPost',
     ];
 
     /**
@@ -55,15 +55,50 @@ class WidgetDataService
     }
 
     /**
-     * Substitute param definitions with actual option values.
-     * Each param value is an option key — look up its saved value.
+     * Substitute param definitions with actual option values or context values.
+     * Values starting with @ are resolved from the request context.
+     * All other values are option key lookups.
      */
     private function resolveParams(array $paramDefs, array $options): array
     {
         $resolved = [];
         foreach ($paramDefs as $paramName => $optionKey) {
-            $resolved[$paramName] = $options[$optionKey] ?? null;
+            if (is_string($optionKey) && str_starts_with($optionKey, '@')) {
+                $resolved[$paramName] = $this->resolveContext($optionKey);
+            } else {
+                $resolved[$paramName] = $options[$optionKey] ?? null;
+            }
         }
         return $resolved;
+    }
+
+    /**
+     * Resolve a @context_name value from the current request.
+     */
+    private function resolveContext(string $key): mixed
+    {
+        return match ($key) {
+            '@current_post_id' => $this->getCurrentPostId(),
+            default            => null,
+        };
+    }
+
+    private function getCurrentPostId(): ?int
+    {
+        $segments = service('uri')->getSegments();
+        $seg1 = $segments[0] ?? '';
+        $slug = $segments[1] ?? '';
+
+        if ($seg1 !== 'blog' || empty($slug)) {
+            return null;
+        }
+
+        $row = db_connect()->table('posts')
+            ->select('id')
+            ->where('slug', $slug)
+            ->where('status', 'published')
+            ->get()->getRowObject();
+
+        return $row ? (int) $row->id : null;
     }
 }

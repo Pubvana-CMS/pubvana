@@ -136,7 +136,7 @@ class WidgetService
         return $html;
     }
 
-    private function readManifest(string $folder): ?array
+    public function readManifest(string $folder): ?array
     {
         if (isset($this->manifestCache[$folder])) {
             return $this->manifestCache[$folder];

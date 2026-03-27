@@ -26,14 +26,13 @@
                 {% if post.excerpt %}
                     <div class="post-content">{{ post.excerpt | nl2br | raw }}</div>
                 {% endif %}
-                {% widget_area 'before-content' %}
             {% else %}
                 <div class="post-content">
                     {% render_content post %}
                 </div>
             {% endif %}
 
-            {% if author_profile %}
+            {% if is_premium_active and author_profile %}
                 {% include 'partials/author-card' with {author_profile: author_profile, post: post} %}
             {% endif %}
         </article>

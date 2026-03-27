@@ -49,7 +49,7 @@
                                 <?php endif; ?>
                             </span>
                             <span>
-                                <a href="<?= base_url('admin/widgets/' . $wi->id . '/configure') ?>" class="btn btn-xs btn-outline-primary"><?= lang('Admin.widgetSaveConfig') ?></a>
+                                <a href="<?= base_url('admin/widgets/' . $wi->id . '/configure') ?>" class="btn btn-xs btn-outline-primary"><?= lang('Admin.widgetConfigure') ?></a>
                                 <form method="POST" action="<?= base_url('admin/widgets/' . $wi->id . '/remove') ?>" class="d-inline">
                                     <?= csrf_field() ?>
                                     <button class="btn btn-xs btn-outline-danger" onclick="return confirm('<?= lang('Admin.confirmDelete') ?>')"><?= lang('Admin.delete') ?></button>
