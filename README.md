@@ -1,7 +1,7 @@
 # Pubvana
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Release](https://img.shields.io/badge/release-v2.1.2-blue)](https://github.com/enlivenapp/pubvana/releases)
+[![Release](https://img.shields.io/badge/release-v2.2.0-blue)](https://github.com/enlivenapp/pubvana/releases)
 [![PHP](https://img.shields.io/badge/PHP-8.2%2B-blue.svg)](https://www.php.net)
 [![CodeIgniter](https://img.shields.io/badge/CodeIgniter-4.7-orange.svg)](https://codeigniter.com)
 [![Installs](https://img.shields.io/packagist/dt/enlivenapp/pubvana.svg)](https://packagist.org/packages/enlivenapp/pubvana)
@@ -13,6 +13,13 @@
 Pubvana v2 is a full rewrite of Pubvana v1.x built on CodeIgniter 4, Authentication with Shield, a modern admin UI, dual content editors, theme, plugin & widget system, built-in marketplace, and many new features. We aim for Pubvana to be lean and fast without the bloat of other CMS and Blog software available.
 
 These instructions are for users comfortable with the command line and terminal. If you'd prefer a streamlined experience, [go here: placeholder].
+
+### For Developers
+
+Developers looking to build themes or widgets for Pubvana can find everything they need in these guides:
+
+- **[ThemeBuilder.md](ThemeBuilder.md)** — Complete theme development guide
+- **[WidgetBuilder.md](WidgetBuilder.md)** — Complete widget development guide
 
 ## Installation
 
