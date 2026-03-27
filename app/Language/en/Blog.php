@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Pubvana CMS — Blog / Public-facing language strings (English)
+ * Pubvana CMS - Blog / Public-facing language strings (English)
  *
  * Covers: blog listing, post detail, category, tag, archive, search,
  *         contact form, comments, pagination, paywall, preview mode,
@@ -53,7 +53,7 @@ return [
     // Preview mode banner
     // =========================================================================
 
-    'previewModeBanner' => 'Preview Mode — This post is not publicly visible',
+    'previewModeBanner' => 'Preview Mode - This post is not publicly visible',
 
     // =========================================================================
     // Premium paywall
@@ -142,13 +142,16 @@ return [
     // =========================================================================
 
     'pageNotFound'      => 'Page not found.',
-    'pageNotFoundTitle' => '404 — Page Not Found',
+    'pageNotFoundTitle' => '404 - Page Not Found',
 
     // =========================================================================
     // Maintenance mode
     // =========================================================================
 
     'maintenanceTitle'  => 'Under Maintenance',
-    'maintenanceBody'   => "We're performing scheduled maintenance. We'll be back soon — thanks for your patience!",
+    'maintenanceBody'   => "We're performing scheduled maintenance. We'll be back soon - thanks for your patience!",
+
+    // Language
+    'language'          => 'Language',
 
 ];

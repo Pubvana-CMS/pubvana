@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Pubvana CMS — Blog / Public-facing language strings (Indonesian)
+ * Pubvana CMS - Blog / Public-facing language strings (Indonesian)
  *
  * AI Translated: verification needed from native speaker
  *
@@ -49,7 +49,7 @@ return [
     // Preview mode banner
     // =========================================================================
 
-    'previewModeBanner' => 'Mode Pratinjau — Artikel ini tidak terlihat secara publik',
+    'previewModeBanner' => 'Mode Pratinjau - Artikel ini tidak terlihat secara publik',
 
     // =========================================================================
     // Premium paywall
@@ -138,13 +138,16 @@ return [
     // =========================================================================
 
     'pageNotFound'      => 'Halaman tidak ditemukan.',
-    'pageNotFoundTitle' => '404 — Halaman Tidak Ditemukan',
+    'pageNotFoundTitle' => '404 - Halaman Tidak Ditemukan',
 
     // =========================================================================
     // Maintenance mode
     // =========================================================================
 
     'maintenanceTitle'  => 'Sedang Pemeliharaan',
-    'maintenanceBody'   => 'Kami sedang melakukan pemeliharaan terjadwal. Kami akan segera kembali — terima kasih atas kesabaran Anda!',
+    'maintenanceBody'   => 'Kami sedang melakukan pemeliharaan terjadwal. Kami akan segera kembali - terima kasih atas kesabaran Anda!',
+
+    // Language
+    'language'          => 'Bahasa',
 
 ];

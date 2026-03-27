@@ -17,6 +17,7 @@ class WidgetDataService
         'CommentModel.getRecentApproved',
         'PostModel.getRelated',
         'AuthorProfileModel.getForPost',
+        'LanguageModel.getSwitcherData',
     ];
 
     /**

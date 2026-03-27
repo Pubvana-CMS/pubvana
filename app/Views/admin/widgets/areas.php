@@ -12,14 +12,14 @@
     <?php foreach ($areas as $i => $area): ?>
     <li class="nav-item">
         <a class="nav-link <?= $i === 0 ? 'active' : '' ?>"
-           data-toggle="tab" href="#area-<?= $area->id ?>"><?= esc($area->name) ?></a>
+           data-toggle="tab" href="#area-<?= $area->slug ?>"><?= esc($area->name) ?></a>
     </li>
     <?php endforeach; ?>
 </ul>
 
 <div class="tab-content">
 <?php foreach ($areas as $i => $area): ?>
-<div class="tab-pane fade <?= $i === 0 ? 'show active' : '' ?>" id="area-<?= $area->id ?>">
+<div class="tab-pane fade <?= $i === 0 ? 'show active' : '' ?>" id="area-<?= $area->slug ?>">
     <div class="row">
         <!-- Active widgets in this area -->
         <div class="col-md-7">
@@ -29,11 +29,11 @@
                     <small class="text-muted">Drag to reorder</small>
                 </div>
                 <div class="card-body p-2">
-                    <ul class="list-group widget-sortable" id="sortable-<?= $area->id ?>" data-area="<?= $area->id ?>">
-                        <?php $areaInstances = array_filter($instances, fn($wi) => $wi->widget_area_id == $area->id); ?>
+                    <ul class="list-group widget-sortable" id="sortable-<?= $area->slug ?>" data-area="<?= $area->slug ?>">
+                        <?php $areaInstances = array_filter($instances, fn($wi) => ($wi->area_slug ?? '') === $area->slug); ?>
                         <?php usort($areaInstances, fn($a, $b) => $a->sort_order - $b->sort_order); ?>
                         <?php if (empty($areaInstances)): ?>
-                        <li class="list-group-item text-center text-muted py-4" id="empty-<?= $area->id ?>">
+                        <li class="list-group-item text-center text-muted py-4" id="empty-<?= $area->slug ?>">
                             No widgets in this area. Add one from the list →
                         </li>
                         <?php endif; ?>
@@ -100,30 +100,32 @@
 <?php endif; ?>
 
 <?php $content = ob_get_clean(); ?>
-<?php $extra_scripts = <<<'SCRIPT'
+<?php ob_start(); ?>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
+var baseUrl = '<?= base_url() ?>';
+
 document.querySelectorAll('.widget-sortable').forEach(function(el) {
     Sortable.create(el, {
         animation: 150,
         handle: '.fa-grip-vertical',
         ghostClass: 'bg-light',
         onEnd: function(evt) {
-            var areaId = el.dataset.area;
             var ids = Array.from(el.querySelectorAll('[data-id]')).map(li => li.dataset.id);
             fetch(baseUrl + 'admin/widgets/reorder', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : ''
-                },
-                body: JSON.stringify({ area_id: areaId, order: ids })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order: ids })
             });
         }
     });
 });
-var baseUrl = '<?= base_url() ?>';
+
+// Restore active tab from URL hash
+if (window.location.hash) {
+    var tab = $('a[href="' + window.location.hash + '"]');
+    if (tab.length) tab.tab('show');
+}
 </script>
-SCRIPT;
-?>
+<?php $extra_scripts = ob_get_clean(); ?>
 <?= view($layout, array_merge(get_defined_vars(), ['content' => $content, 'extra_scripts' => $extra_scripts])) ?>

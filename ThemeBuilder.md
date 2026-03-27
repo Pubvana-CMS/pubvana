@@ -85,6 +85,7 @@ All 8 views and 7 partials should be present in a complete theme. Zero PHP files
 | `screenshot` | no | Filename relative to theme root, shown in admin |
 | `premium` | no | Boolean flag for paid themes |
 | `widget_areas` | no | Object mapping area slugs to human labels. DB rows created on activation. |
+| `widget_classes` | no | Object mapping `cls_` variable names to CSS classes. Injected into all widgets. See Section 10. |
 | `options` | no | Admin-editable theme options. Types: `text`, `checkbox`, `textarea`, `number` |
 
 Option values are stored in the `theme_options` table and available as variables in all theme views (see Section 6).
@@ -171,8 +172,6 @@ Includes inherit the parent scope. `with {}` adds or overrides variables. Paths 
 
 ## 5. Layout Inheritance — extends / block
 
-Replaces the old `ob_start()` / `theme_view(theme_layout())` pattern.
-
 **layout.tpl** defines the HTML shell with named blocks:
 
 ```
@@ -180,7 +179,7 @@ Replaces the old `ob_start()` / `theme_view(theme_layout())` pattern.
 <html lang="{{ locale }}">
 <head>
     <meta charset="utf-8">
-    <title>{{ seo.title | default(site_name) }}</title>
+    <title>{{ page_title | default(site_name) }}</title>
     <meta name="description" content="{{ seo.description }}">
     {% if seo.og_title %}
     <meta property="og:title" content="{{ seo.og_title }}">
@@ -189,12 +188,14 @@ Replaces the old `ob_start()` / `theme_view(theme_layout())` pattern.
     {% if seo.og_image %}
     <meta property="og:image" content="{{ seo.og_image }}">
     {% endif %}
+    <link rel="alternate" type="application/rss+xml" title="{{ site_name }} RSS Feed" href="{% site_url 'feed' %}">
+    <link rel="alternate" type="application/atom+xml" title="{{ site_name }} Atom Feed" href="{% site_url 'atom' %}">
     <link rel="stylesheet" href="{% theme_url 'css/theme.css' %}">
     {% block head_extra %}{% endblock %}
 </head>
 <body>
     <nav>
-        <a href="{% base_url '' %}">{{ site_name }}</a>
+        <a href="{% site_url '' %}">{{ site_name }}</a>
         {% for item in primary_nav %}
             <a href="{{ item.url }}" target="{{ item.target }}">{{ item.label }}</a>
         {% endfor %}
@@ -236,7 +237,7 @@ Replaces the old `ob_start()` / `theme_view(theme_layout())` pattern.
 ```
 {% extends 'layout' %}
 {% block content %}
-    <h1>{{ seo.title }}</h1>
+    <h1>{% lang 'Blog.latestPosts' %}</h1>
     {% for post in posts %}
         {% include 'partials/post-card' with {post: post} %}
     {% endfor %}
@@ -253,6 +254,7 @@ The engine loads the child, collects its block content, loads the parent (layout
 
 | Variable | Type | Description |
 |----------|------|-------------|
+| `page_title` | string | Browser tab title — "Post Title - Site Name" or just "Site Name" on homepage |
 | `theme` | object or null | Active theme DB row |
 | `site_name` | string | From `site_name()` helper |
 | `site_tagline` | string | From `site_tagline()` helper |
@@ -359,11 +361,12 @@ Tag functions output strings directly into the template. Arguments are space-sep
 |----------|-----------|-------------|
 | `lang` | `{% lang 'Blog.key' %}` | Localized string lookup |
 | `lang` | `{% lang 'Blog.key' arg1 arg2 %}` | With placeholder substitution (`{0}`, `{1}`) |
-| `base_url` | `{% base_url 'path' %}` | Site base URL + path |
+| `site_url` | `{% site_url 'path' %}` | Locale-aware URL — prepends locale prefix for non-default locales (e.g. `/es/path`) |
+| `base_url` | `{% base_url 'path' %}` | Plain base URL + path — **no locale prefix**. Use for assets, hreflang tags, and lang switcher URLs only |
 | `theme_url` | `{% theme_url 'css/theme.css' %}` | Active theme's asset URL |
-| `post_url` | `{% post_url slug_var %}` | Blog post URL: `/blog/{slug}` |
-| `category_url` | `{% category_url slug_var %}` | Category URL: `/category/{slug}` |
-| `tag_url` | `{% tag_url slug_var %}` | Tag URL: `/tag/{slug}` |
+| `post_url` | `{% post_url slug_var %}` | Locale-aware blog post URL: `/blog/{slug}` or `/es/blog/{slug}` |
+| `category_url` | `{% category_url slug_var %}` | Locale-aware category URL: `/category/{slug}` or `/es/category/{slug}` |
+| `tag_url` | `{% tag_url slug_var %}` | Locale-aware tag URL: `/tag/{slug}` or `/es/tag/{slug}` |
 | `widget_area` | `{% widget_area 'sidebar' %}` | Render all widgets assigned to this area |
 | `render_content` | `{% render_content entity_var %}` | Render entity's content (Markdown or HTML based on `.content_type`) |
 
@@ -372,12 +375,22 @@ Tag functions output strings directly into the template. Arguments are space-sep
 ```
 {% lang 'Blog.readMore' %}
 {% lang 'Blog.views' post.views|number_format %}
-{% base_url 'login' %}
+{% site_url 'login' %}                    {# locale-aware route URL #}
+{% base_url post.featured_image %}        {# asset path — no locale prefix #}
 {% theme_url 'images/logo.png' %}
 {% post_url post.slug %}
 {% widget_area 'sidebar' %}
 {% render_content post %}
 ```
+
+### `site_url` vs `base_url`
+
+Use `{% site_url %}` for **all route paths** (pages, feeds, login, search, etc.). It automatically prepends the locale prefix when the request is in a non-default language (e.g. `/es/blog` for Spanish).
+
+Use `{% base_url %}` only for:
+- **Asset paths** — `{% base_url post.featured_image %}`, `{% base_url author_profile.avatar %}`
+- **hreflang tags** — `{% base_url btn.url %}` (lang switcher URLs are already locale-prefixed)
+- **hreflang x-default** — `{% base_url '' %}` (intentionally the bare site root)
 
 ---
 
@@ -413,7 +426,9 @@ For untrusted HTML, use `{! variable !}` raw output tags (but prefer `{{ }}` wit
 
 ## 10. Widget Styling from Themes — The `cls_` Pattern
 
-Widgets output HTML with semantic CSS class defaults. Themes can override these by passing `cls_` variables into widget areas.
+Widgets output HTML with semantic CSS class defaults. Themes override these by declaring a `widget_classes` object in `theme_info.json`. These values are injected into every widget automatically at render time.
+
+### How It Works
 
 Every CSS class in a widget `.tpl` is a variable with a `default()` fallback:
 
@@ -421,7 +436,30 @@ Every CSS class in a widget `.tpl` is a variable with a `default()` fallback:
 <div class="{{ cls_widget | default('widget widget-categories') }}">
 ```
 
-If the theme doesn't pass `cls_widget`, the semantic default applies. If the theme passes its own value (e.g. Bootstrap classes), that replaces the default.
+If the theme provides `cls_widget` via `widget_classes`, that value is used. If not, the semantic default applies.
+
+### Declaring `widget_classes` in theme_info.json
+
+```json
+{
+    "name": "My Theme",
+    "widget_classes": {
+        "cls_list": "list-group list-group-flush",
+        "cls_list_item": "list-group-item d-flex justify-content-between align-items-center",
+        "cls_button": "btn btn-sm btn-primary",
+        "cls_tag": "badge bg-light text-dark text-decoration-none"
+    }
+}
+```
+
+Only override the classes you need. Any `cls_` variable not in `widget_classes` falls back to its semantic default, which your theme's `theme.css` should style.
+
+### Two Layers
+
+1. **`widget_classes` in JSON** — injects your framework's utility classes (Bootstrap, DaisyUI, Tailwind, etc.) directly into widget markup
+2. **`theme.css`** — styles the semantic defaults (`.widget-list`, `.widget-title`, etc.) as a base layer
+
+Both work together. `widget_classes` values take priority over semantic defaults.
 
 See **WidgetBuilder.md Section 5** for the complete `cls_` vocabulary with all standard variables and their defaults.
 
@@ -563,7 +601,7 @@ A minimal but complete theme demonstrating all patterns.
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ seo.title | default(site_name) }}</title>
+    <title>{{ page_title | default(site_name) }}</title>
     <meta name="description" content="{{ seo.description }}">
     {% if seo.og_title %}
     <meta property="og:title" content="{{ seo.og_title }}">
@@ -578,16 +616,18 @@ A minimal but complete theme demonstrating all patterns.
         {% endfor %}
         <link rel="alternate" hreflang="x-default" href="{% base_url '' %}">
     {% endif %}
+    <link rel="alternate" type="application/rss+xml" title="{{ site_name }} RSS Feed" href="{% site_url 'feed' %}">
+    <link rel="alternate" type="application/atom+xml" title="{{ site_name }} Atom Feed" href="{% site_url 'atom' %}">
     <link rel="stylesheet" href="{% theme_url 'css/theme.css' %}">
     {% block head_extra %}{% endblock %}
 </head>
 <body>
     <header>
-        <a href="{% base_url '' %}">{{ site_name }}</a>
+        <a href="{% site_url '' %}">{{ site_name }}</a>
         <span>{{ site_tagline }}</span>
         <nav>
-            <a href="{% base_url '' %}">{% lang 'Blog.home' %}</a>
-            <a href="{% base_url 'blog' %}">{% lang 'Blog.blog' %}</a>
+            <a href="{% site_url '' %}">{% lang 'Blog.home' %}</a>
+            <a href="{% site_url 'blog' %}">{% lang 'Blog.blog' %}</a>
             {% for item in primary_nav %}
                 <a href="{{ item.url }}" target="{{ item.target }}">{{ item.label }}</a>
             {% endfor %}
@@ -616,9 +656,9 @@ A minimal but complete theme demonstrating all patterns.
         {% widget_area 'footer-1' %}
         <p>{{ site_name }} &copy; {{ 'now' | date('Y') }}. {% lang 'Blog.allRightsReserved' %}</p>
         {% if sitemap_enabled %}
-            <a href="{% base_url 'sitemap.xml' %}">{% lang 'Blog.sitemap' %}</a>
+            <a href="{% site_url 'sitemap.xml' %}">{% lang 'Blog.sitemap' %}</a>
         {% endif %}
-        <a href="{% base_url 'blog/feed' %}">{% lang 'Blog.rssFeed' %}</a>
+        <a href="{% site_url 'feed' %}">{% lang 'Blog.rssFeed' %}</a>
     </footer>
 
     {% if analytics_id %}
@@ -685,7 +725,7 @@ A minimal but complete theme demonstrating all patterns.
         {% if is_logged_in %}
             {% include 'partials/comment-form' %}
         {% else %}
-            <p>{% lang 'Blog.commentLoginRequired' %} <a href="{% base_url 'login' %}">{% lang 'Blog.commentLoginLink' %}</a></p>
+            <p>{% lang 'Blog.commentLoginRequired' %} <a href="{% site_url 'login' %}">{% lang 'Blog.commentLoginLink' %}</a></p>
         {% endif %}
     {% endif %}
 {% endblock %}

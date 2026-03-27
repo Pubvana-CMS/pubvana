@@ -136,16 +136,17 @@ class LanguageSwitcher
      * Build the URL for the given locale code.
      *
      * - Strips existing locale prefix if present.
-     * - Prepends new locale code.
-     * - Root `/` becomes `/{locale}`.
+     * - Prepends new locale code (unless it's the default — bare path).
+     * - Root `/` becomes `/{locale}` (or just `/` for default).
      */
     protected function buildUrl(string $locale): string
     {
-        $uri = $this->currentUri;
+        $uri       = $this->currentUri;
+        $isDefault = ($locale === config('App')->defaultLocale);
 
         // Normalise: ensure leading slash, strip trailing slash (except root).
         if ($uri === '' || $uri === '/') {
-            return '/' . $locale;
+            return $isDefault ? '/' : '/' . $locale;
         }
 
         // Ensure leading slash for reliable prefix detection.
@@ -164,6 +165,11 @@ class LanguageSwitcher
                     $uri = '/';
                 }
             }
+        }
+
+        // Default locale uses bare paths (no prefix).
+        if ($isDefault) {
+            return $uri;
         }
 
         // $uri is now without a locale prefix (starts with / or is /).

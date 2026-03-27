@@ -1,5 +1,5 @@
 <div class="{{ cls_widget | default('widget widget-search') }}">
-    <form action="{% base_url 'search' %}" method="GET" class="{{ cls_form | default('widget-form') }}">
+    <form action="{% site_url 'search' %}" method="GET" class="{{ cls_form | default('widget-form') }}">
         <input type="search" name="q"
                class="{{ cls_input | default('widget-form-input') }}"
                placeholder="{{ placeholder | default('Search…') }}"

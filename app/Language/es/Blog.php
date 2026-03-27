@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Pubvana CMS — Blog / Public-facing language strings (Spanish — Latin American)
+ * Pubvana CMS - Blog / Public-facing language strings (Spanish - Latin American)
  *
  * AI Translated: verification needed from native speaker
  *
@@ -49,7 +49,7 @@ return [
     // Preview mode banner
     // =========================================================================
 
-    'previewModeBanner' => 'Modo vista previa — Esta entrada no es visible públicamente',
+    'previewModeBanner' => 'Modo vista previa - Esta entrada no es visible públicamente',
 
     // =========================================================================
     // Premium paywall
@@ -138,13 +138,16 @@ return [
     // =========================================================================
 
     'pageNotFound'      => 'Página no encontrada.',
-    'pageNotFoundTitle' => '404 — Página no encontrada',
+    'pageNotFoundTitle' => '404 - Página no encontrada',
 
     // =========================================================================
     // Maintenance mode
     // =========================================================================
 
     'maintenanceTitle'  => 'En mantenimiento',
-    'maintenanceBody'   => 'Estamos realizando mantenimiento programado. Volvemos pronto — ¡gracias por tu paciencia!',
+    'maintenanceBody'   => 'Estamos realizando mantenimiento programado. Volvemos pronto - ¡gracias por tu paciencia!',
+
+    // Language
+    'language'          => 'Idioma',
 
 ];

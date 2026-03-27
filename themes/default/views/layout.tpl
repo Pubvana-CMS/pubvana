@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ seo.title | default(site_name) }}</title>
+    <title>{{ page_title | default(site_name) }}</title>
     {% if seo.description %}
     <meta name="description" content="{{ seo.description }}">
     {% endif %}
@@ -14,8 +14,8 @@
     <meta property="og:image" content="{{ seo.og_image }}">
     {% endif %}
     {% endif %}
-    <link rel="alternate" type="application/rss+xml" title="{{ site_name }} RSS Feed" href="{% base_url 'feed' %}">
-    <link rel="alternate" type="application/atom+xml" title="{{ site_name }} Atom Feed" href="{% base_url 'atom' %}">
+    <link rel="alternate" type="application/rss+xml" title="{{ site_name }} RSS Feed" href="{% site_url 'feed' %}">
+    <link rel="alternate" type="application/atom+xml" title="{{ site_name }} Atom Feed" href="{% site_url 'atom' %}">
     {% if lang_switcher.buttons %}
     {% for btn in lang_switcher.buttons %}
     <link rel="alternate" hreflang="{{ btn.code }}" href="{% base_url btn.url %}">
@@ -24,7 +24,7 @@
     {% endif %}
 
     <!-- Bootstrap 5 -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{% theme_url 'css/bootstrap.css' %}" rel="stylesheet">
     <!-- Font Awesome 6 -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <!-- Theme CSS -->
@@ -51,7 +51,7 @@
 <!-- Navigation -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
     <div class="container">
-        <a class="navbar-brand fw-bold" href="{% base_url %}">
+        <a class="navbar-brand fw-bold" href="{% site_url %}">
             {{ site_name }}
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
@@ -59,8 +59,8 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarMain">
             <ul class="navbar-nav me-auto">
-                <li class="nav-item"><a class="nav-link" href="{% base_url %}">{% lang 'Blog.home' %}</a></li>
-                <li class="nav-item"><a class="nav-link" href="{% base_url 'blog' %}">{% lang 'Blog.blog' %}</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% site_url %}">{% lang 'Blog.home' %}</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% site_url 'blog' %}">{% lang 'Blog.blog' %}</a></li>
                 {% for navItem in primary_nav %}
                 <li class="nav-item">
                     <a class="nav-link" href="{{ navItem.url }}" target="{{ navItem.target }}">
@@ -69,7 +69,7 @@
                 </li>
                 {% endfor %}
             </ul>
-            <form class="d-flex" action="{% base_url 'search' %}" method="GET">
+            <form class="d-flex" action="{% site_url 'search' %}" method="GET">
                 <input class="form-control form-control-sm me-2" type="search" name="q" placeholder="{% lang 'Blog.searchPlaceholder' %}" aria-label="{% lang 'Blog.search' %}">
                 <button class="btn btn-outline-light btn-sm" type="submit"><i class="fas fa-magnifying-glass"></i></button>
             </form>
@@ -97,12 +97,22 @@
 <!-- Main Content -->
 <main class="py-5">
     <div class="container">
-        {% block content %}{% endblock %}
+        {% widget_area 'before-content' %}
+        <div class="row">
+            <div class="{% if show_sidebar == '1' %}col-lg-8{% else %}col-12{% endif %}">
+                {% block content %}{% endblock %}
+            </div>
+            {% if show_sidebar == '1' %}
+            <div class="col-lg-4">
+                {% include 'partials/sidebar' %}
+            </div>
+            {% endif %}
+        </div>
     </div>
 </main>
 
 <!-- Footer -->
-<footer class="bg-dark text-light py-5 mt-5">
+<footer class="bg-dark text-light py-5 mt-5" data-bs-theme="dark">
     <div class="container">
         <div class="row">
             <div class="col-md-3 mb-4">
@@ -133,10 +143,10 @@
                     &copy; {{ site_name }}. {% lang 'Blog.allRightsReserved' %}
                 {% endif %}
                 &nbsp;&middot;&nbsp;
-                <a href="{% base_url 'feed' %}" class="text-white-50"><i class="fas fa-rss"></i> {% lang 'Blog.rssFeed' %}</a>
+                <a href="{% site_url 'feed' %}" class="text-white-50"><i class="fas fa-rss"></i> {% lang 'Blog.rssFeed' %}</a>
                 {% if sitemap_enabled %}
                 &nbsp;&middot;&nbsp;
-                <a href="{% base_url 'sitemap.xml' %}" class="text-white-50">{% lang 'Blog.sitemap' %}</a>
+                <a href="{% site_url 'sitemap.xml' %}" class="text-white-50">{% lang 'Blog.sitemap' %}</a>
                 {% endif %}
             </div>
         </div>

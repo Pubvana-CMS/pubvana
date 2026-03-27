@@ -7,7 +7,7 @@
 
 <form method="POST" action="<?= base_url('admin/posts/create') ?>">
 <?= csrf_field() ?>
-<input type="hidden" name="content_type" id="content_type" value="html">
+<input type="hidden" name="content_type" id="content_type" value="markdown">
 
 <div class="row">
     <div class="col-lg-8">
@@ -23,20 +23,18 @@
                 <!-- Editor Toggle -->
                 <div class="form-group">
                     <label class="font-weight-bold d-block"><?= lang('Admin.postEditor') ?></label>
-                    <div class="btn-group btn-group-sm" role="group">
-                        <input type="radio" class="btn-check" name="editor_type" id="et_html" value="html" checked autocomplete="off">
-                        <label class="btn btn-outline-primary" for="et_html"><i class="fas fa-code"></i> <?= lang('Admin.postHtmlEditor') ?></label>
-                        <input type="radio" class="btn-check" name="editor_type" id="et_md" value="markdown" autocomplete="off">
-                        <label class="btn btn-outline-secondary" for="et_md"><i class="fab fa-markdown"></i> <?= lang('Admin.postMarkdown') ?></label>
+                    <div id="editor-toggle">
+                        <button type="button" class="btn btn-sm mr-1 btn-outline-secondary" data-editor="html"><i class="fas fa-code"></i> <?= lang('Admin.postHtmlEditor') ?></button>
+                        <button type="button" class="btn btn-sm btn-primary" data-editor="markdown"><i class="fab fa-markdown"></i> <?= lang('Admin.postMarkdown') ?></button>
                     </div>
                 </div>
 
                 <!-- HTML Editor -->
-                <div id="editor-html">
+                <div id="editor-html" style="display:none">
                     <textarea name="content" id="content-html" class="form-control" rows="15"><?= esc(old('content')) ?></textarea>
                 </div>
                 <!-- Markdown Editor -->
-                <div id="editor-md" style="display:none">
+                <div id="editor-md">
                     <textarea name="content_md" id="content-md" class="form-control" rows="15"><?= esc(old('content')) ?></textarea>
                 </div>
             </div>
@@ -160,6 +158,13 @@ var simplemdeEditor = null;
 
 function switchEditor(type) {
     document.getElementById('content_type').value = type;
+    document.querySelectorAll('#editor-toggle button').forEach(function(btn) {
+        if (btn.dataset.editor === type) {
+            btn.className = 'btn btn-sm mr-1 btn-primary';
+        } else {
+            btn.className = 'btn btn-sm mr-1 btn-outline-secondary';
+        }
+    });
     if (type === 'html') {
         document.getElementById('editor-html').style.display = 'block';
         document.getElementById('editor-md').style.display = 'none';
@@ -185,9 +190,19 @@ function switchEditor(type) {
     }
 }
 document.addEventListener('DOMContentLoaded', function() {
-    switchEditor('html');
-    document.querySelectorAll('input[name="editor_type"]').forEach(function(r) {
-        r.addEventListener('change', function() { switchEditor(this.value); });
+    switchEditor('markdown');
+    document.querySelectorAll('#editor-toggle button').forEach(function(btn) {
+        btn.addEventListener('click', function() { switchEditor(this.dataset.editor); });
+    });
+
+    // Sync active editor content into the 'content' field before form submission
+    document.querySelector('form').addEventListener('submit', function() {
+        var type = document.getElementById('content_type').value;
+        if (type === 'markdown' && simplemdeEditor) {
+            document.getElementById('content-html').value = simplemdeEditor.value();
+        } else if (summernoteInitialized) {
+            $('#content-html').val($('#content-html').summernote('code'));
+        }
     });
 });
 </script>

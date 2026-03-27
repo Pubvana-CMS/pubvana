@@ -54,11 +54,9 @@
 
                 <div class="form-group">
                     <label class="font-weight-bold d-block"><?= lang('Admin.postEditor') ?></label>
-                    <div class="btn-group btn-group-sm">
-                        <input type="radio" class="btn-check" name="editor_type" id="et_html" value="html" <?= ($post->content_type ?? 'html') === 'html' ? 'checked' : '' ?>>
-                        <label class="btn btn-outline-primary" for="et_html"><i class="fas fa-code"></i> <?= lang('Admin.postHtmlEditor') ?></label>
-                        <input type="radio" class="btn-check" name="editor_type" id="et_md" value="markdown" <?= ($post->content_type ?? '') === 'markdown' ? 'checked' : '' ?>>
-                        <label class="btn btn-outline-secondary" for="et_md"><i class="fab fa-markdown"></i> <?= lang('Admin.postMarkdown') ?></label>
+                    <div id="editor-toggle">
+                        <button type="button" class="btn btn-sm mr-1 <?= ($post->content_type ?? 'html') === 'html' ? 'btn-primary' : 'btn-outline-secondary' ?>" data-editor="html"><i class="fas fa-code"></i> <?= lang('Admin.postHtmlEditor') ?></button>
+                        <button type="button" class="btn btn-sm <?= ($post->content_type ?? 'html') === 'markdown' ? 'btn-primary' : 'btn-outline-secondary' ?>" data-editor="markdown"><i class="fab fa-markdown"></i> <?= lang('Admin.postMarkdown') ?></button>
                     </div>
                 </div>
 
@@ -188,6 +186,13 @@ var simplemdeEditor = null;
 
 function switchEditor(type) {
     document.getElementById('content_type').value = type;
+    document.querySelectorAll('#editor-toggle button').forEach(function(btn) {
+        if (btn.dataset.editor === type) {
+            btn.className = 'btn btn-sm mr-1 btn-primary';
+        } else {
+            btn.className = 'btn btn-sm mr-1 btn-outline-secondary';
+        }
+    });
     if (type === 'html') {
         document.getElementById('editor-html').style.display = 'block';
         document.getElementById('editor-md').style.display = 'none';
@@ -216,8 +221,18 @@ document.addEventListener('DOMContentLoaded', function() {
     var type = document.getElementById('content_type').value;
     if (type === 'html') switchEditor('html');
     else switchEditor('markdown');
-    document.querySelectorAll('input[name="editor_type"]').forEach(function(r) {
-        r.addEventListener('change', function() { switchEditor(this.value); });
+    document.querySelectorAll('#editor-toggle button').forEach(function(btn) {
+        btn.addEventListener('click', function() { switchEditor(this.dataset.editor); });
+    });
+
+    // Sync active editor content into the 'content' field before form submission
+    document.querySelector('form').addEventListener('submit', function() {
+        var type = document.getElementById('content_type').value;
+        if (type === 'markdown' && simplemdeEditor) {
+            document.getElementById('content-html').value = simplemdeEditor.value();
+        } else if (summernoteInitialized) {
+            document.getElementById('content-html').value = \$('#content-html').summernote('code');
+        }
     });
 });
 </script>

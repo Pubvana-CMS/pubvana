@@ -272,8 +272,8 @@ class Blog extends BaseController
             ->paginate($perPage, 'default');
 
         $breadcrumb = $this->seoService->getBreadcrumbJsonLd([
-            ['name' => 'Home',     'url' => base_url()],
-            ['name' => $category->name, 'url' => base_url('category/' . $category->slug)],
+            ['name' => 'Home',     'url' => site_url()],
+            ['name' => $category->name, 'url' => site_url('category/' . $category->slug)],
         ]);
 
         return $this->themeService->view('category', [
@@ -302,8 +302,8 @@ class Blog extends BaseController
             ->paginate($perPage, 'default');
 
         $breadcrumb = $this->seoService->getBreadcrumbJsonLd([
-            ['name' => 'Home', 'url' => base_url()],
-            ['name' => $tag->name, 'url' => base_url('tag/' . $tag->slug)],
+            ['name' => 'Home', 'url' => site_url()],
+            ['name' => $tag->name, 'url' => site_url('tag/' . $tag->slug)],
         ]);
 
         return $this->themeService->view('tag', [
@@ -329,8 +329,8 @@ class Blog extends BaseController
         $archiveTitle = date('F Y', mktime(0, 0, 0, $month, 1, $year));
         $fake = (object) ['title' => $archiveTitle];
         $breadcrumb = $this->seoService->getBreadcrumbJsonLd([
-            ['name' => 'Home',        'url' => base_url()],
-            ['name' => $archiveTitle, 'url' => base_url("archive/{$year}/{$month}")],
+            ['name' => 'Home',        'url' => site_url()],
+            ['name' => $archiveTitle, 'url' => site_url("archive/{$year}/{$month}")],
         ]);
 
         return $this->themeService->view('archive', [

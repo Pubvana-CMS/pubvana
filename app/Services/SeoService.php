@@ -6,16 +6,17 @@ class SeoService
 {
     public function getMeta(object $entity): array
     {
-        $siteName = setting('App.siteName') ?? 'Pubvana';
-        $title    = $entity->meta_title ?? $entity->title ?? $siteName;
-        $desc     = $entity->meta_description ?? setting('Seo.metaDescription') ?? '';
+        $siteName  = setting('App.siteName') ?? 'Pubvana';
+        $pageTitle = $entity->title ?? '';
+        $metaTitle = $entity->meta_title ?? $pageTitle;
+        $desc      = $entity->meta_description ?? setting('Seo.metaDescription') ?? '';
 
         return [
-            'title'       => esc($title . ' - ' . $siteName),
-            'description' => esc($desc),
-            'og_title'    => esc($title),
+            'title'          => esc($pageTitle),
+            'description'    => esc($desc),
+            'og_title'       => esc($metaTitle),
             'og_description' => esc($desc),
-            'og_image'    => isset($entity->featured_image) ? base_url($entity->featured_image) : '',
+            'og_image'       => isset($entity->featured_image) ? base_url($entity->featured_image) : '',
         ];
     }
 

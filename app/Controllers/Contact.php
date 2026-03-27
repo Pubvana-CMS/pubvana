@@ -53,6 +53,6 @@ class Contact extends BaseController
         );
         $email->send();
 
-        return redirect()->to('/contact')->with('success', lang('Blog.contactSent'));
+        return redirect()->to(site_url('contact'))->with('success', lang('Blog.contactSent'));
     }
 }

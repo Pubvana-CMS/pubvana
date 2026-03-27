@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Pubvana CMS — Blog / Public-facing language strings (Slovak)
+ * Pubvana CMS - Blog / Public-facing language strings (Slovak)
  *
  * AI Translated: verification needed from native speaker
  *
@@ -49,7 +49,7 @@ return [
     // Preview mode banner
     // =========================================================================
 
-    'previewModeBanner' => 'Režim náhľadu — Tento príspevok nie je verejne viditeľný',
+    'previewModeBanner' => 'Režim náhľadu - Tento príspevok nie je verejne viditeľný',
 
     // =========================================================================
     // Premium paywall
@@ -138,13 +138,16 @@ return [
     // =========================================================================
 
     'pageNotFound'      => 'Stránka sa nenašla.',
-    'pageNotFoundTitle' => '404 — Stránka sa nenašla',
+    'pageNotFoundTitle' => '404 - Stránka sa nenašla',
 
     // =========================================================================
     // Maintenance mode
     // =========================================================================
 
     'maintenanceTitle'  => 'Prebieha údržba',
-    'maintenanceBody'   => 'Vykonávame plánovanú údržbu. Čoskoro budeme späť — ďakujeme za vašu trpezlivosť!',
+    'maintenanceBody'   => 'Vykonávame plánovanú údržbu. Čoskoro budeme späť - ďakujeme za vašu trpezlivosť!',
+
+    // Language
+    'language'          => 'Jazyk',
 
 ];

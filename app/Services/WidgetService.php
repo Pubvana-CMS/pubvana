@@ -85,13 +85,16 @@ class WidgetService
             $providerData = (new WidgetDataService())->resolve($providers, $merged);
         }
 
-        // Render template
+        // Load theme cls_ overrides
+        $themeClasses = $this->getThemeWidgetClasses();
+
+        // Render template — theme classes go first, then options + providers overlay
         $template = $manifest['output']['template'] ?? 'widget.tpl';
         $tplPath = WIDGETS_PATH . $folder . '/views/' . $template;
         $basePath = WIDGETS_PATH . $folder . '/views/';
         $engine = new Engine();
 
-        return $engine->render($tplPath, array_merge($merged, $providerData), $basePath);
+        return $engine->render($tplPath, array_merge($themeClasses, $merged, $providerData), $basePath);
     }
 
     public function renderAdminForm(string $folder, array $savedOptions = []): string
@@ -154,6 +157,30 @@ class WidgetService
 
         $this->manifestCache[$folder] = $data;
         return $data;
+    }
+
+    private function getThemeWidgetClasses(): array
+    {
+        static $classes = null;
+        if ($classes !== null) {
+            return $classes;
+        }
+
+        $classes = [];
+        $themeService = new ThemeService();
+        $theme = $themeService->getActive();
+        if (! $theme) {
+            return $classes;
+        }
+
+        $jsonPath = THEMES_PATH . $theme->folder . '/theme_info.json';
+        if (! is_file($jsonPath)) {
+            return $classes;
+        }
+
+        $info = json_decode(file_get_contents($jsonPath), true);
+        $classes = $info['widget_classes'] ?? [];
+        return $classes;
     }
 
     private function getDefaults(array $manifest): array
