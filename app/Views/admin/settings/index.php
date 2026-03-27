@@ -96,6 +96,13 @@
                             </div>
                         </div>
                     </div>
+                    <div class="form-group row">
+                        <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.generalPageCacheTtl') ?></label>
+                        <div class="col-sm-3">
+                            <input type="number" name="page_cache_ttl" class="form-control" min="0" value="<?= esc(setting('App.pageCacheTtl') ?? 120) ?>">
+                            <small class="text-muted">Seconds. 0 = disabled.</small>
+                        </div>
+                    </div>
                     <div class="text-right">
                         <button type="submit" class="btn btn-primary"><?= lang('Admin.generalSaveBtn') ?></button>
                     </div>

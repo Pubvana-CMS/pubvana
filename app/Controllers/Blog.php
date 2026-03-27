@@ -10,13 +10,11 @@ use App\Models\TagModel;
 use App\Services\HCaptchaService;
 use App\Services\OgImageService;
 use App\Services\SeoService;
-use App\Services\ThemeService;
 
 class Blog extends BaseController
 {
     protected PostModel    $postModel;
     protected SeoService   $seoService;
-    protected ThemeService $themeService;
 
     public function initController(
         \CodeIgniter\HTTP\RequestInterface $request,
@@ -39,10 +37,10 @@ class Blog extends BaseController
             if ($pageId) {
                 $page = (new \App\Models\PageModel())->find($pageId);
                 if ($page && $page->status === 'published') {
-                    return $this->themeService->view('page', array_merge($this->data, [
+                    return $this->themeService->view('page', [
                         'page' => $page,
                         'seo'  => $this->seoService->getMeta($page),
-                    ]));
+                    ]);
                 }
             }
         }
@@ -52,11 +50,11 @@ class Blog extends BaseController
             ->orderBy('published_at', 'DESC')
             ->paginate($perPage, 'default');
 
-        return $this->themeService->view('home', array_merge($this->data, [
-            'posts'  => $posts,
-            'pager'  => $this->postModel->pager,
-            'seo'    => $this->seoService->getDefaultMeta(),
-        ]));
+        return $this->themeService->view('home', [
+            'posts' => $posts,
+            'pager' => $this->postModel->pager,
+            'seo'   => $this->seoService->getDefaultMeta(),
+        ]);
     }
 
     public function post(string $slug)
@@ -122,14 +120,18 @@ class Blog extends BaseController
 
         $paywall = ! empty($post->is_premium) && ! auth()->loggedIn();
 
-        return $this->themeService->view('post', array_merge($this->data, [
+        $wordCount = str_word_count(strip_tags($post->content ?? ''));
+        $readingTime = max(1, (int) ceil($wordCount / 200));
+
+        return $this->themeService->view('post', [
             'post'           => $post,
             'comments'       => $comments,
             'author_profile' => $authorProfile,
             'seo'            => $seo,
             'json_ld'        => $this->seoService->getJsonLd($post, $authorProfile),
             'paywall'        => $paywall,
-        ]));
+            'reading_time'   => $readingTime,
+        ]);
     }
 
     public function preview(string $token)
@@ -162,14 +164,18 @@ class Blog extends BaseController
             }
         }
 
-        return $this->themeService->view('post', array_merge($this->data, [
+        $wordCount = str_word_count(strip_tags($post->content ?? ''));
+        $readingTime = max(1, (int) ceil($wordCount / 200));
+
+        return $this->themeService->view('post', [
             'post'           => $post,
             'comments'       => $comments,
             'author_profile' => $authorProfile,
             'seo'            => $this->seoService->getMeta($post),
             'json_ld'        => $this->seoService->getJsonLd($post, $authorProfile),
             'preview_mode'   => true,
-        ]));
+            'reading_time'   => $readingTime,
+        ]);
     }
 
     protected function handleComment(object $post): bool
@@ -270,13 +276,13 @@ class Blog extends BaseController
             ['name' => $category->name, 'url' => base_url('category/' . $category->slug)],
         ]);
 
-        return $this->themeService->view('category', array_merge($this->data, [
+        return $this->themeService->view('category', [
             'category' => $category,
             'posts'    => $posts,
             'pager'    => $this->postModel->pager,
             'seo'      => $this->seoService->getMeta($category),
             'json_ld'  => $breadcrumb,
-        ]));
+        ]);
     }
 
     public function tag(string $slug): string
@@ -300,13 +306,13 @@ class Blog extends BaseController
             ['name' => $tag->name, 'url' => base_url('tag/' . $tag->slug)],
         ]);
 
-        return $this->themeService->view('tag', array_merge($this->data, [
+        return $this->themeService->view('tag', [
             'tag'     => $tag,
             'posts'   => $posts,
             'pager'   => $this->postModel->pager,
             'seo'     => $this->seoService->getMeta($tag),
             'json_ld' => $breadcrumb,
-        ]));
+        ]);
     }
 
     public function archive(int $year, int $month): string
@@ -327,7 +333,7 @@ class Blog extends BaseController
             ['name' => $archiveTitle, 'url' => base_url("archive/{$year}/{$month}")],
         ]);
 
-        return $this->themeService->view('archive', array_merge($this->data, [
+        return $this->themeService->view('archive', [
             'posts'   => $posts,
             'pager'   => $this->postModel->pager,
             'year'    => $year,
@@ -335,6 +341,6 @@ class Blog extends BaseController
             'archive' => $fake,
             'seo'     => $this->seoService->getMeta($fake),
             'json_ld' => $breadcrumb,
-        ]));
+        ]);
     }
 }

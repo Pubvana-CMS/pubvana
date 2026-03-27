@@ -22,6 +22,7 @@ class SettingsSeeder extends Seeder
             ['class' => 'Email',       'key' => 'fromEmail',         'value' => 'no-reply@example.com', 'type' => 'string'],
             ['class' => 'Marketplace', 'key' => 'apiUrl',            'value' => 'https://pubvana.net/api/marketplace', 'type' => 'string'],
             ['class' => 'Marketplace', 'key' => 'storeUrl',          'value' => 'https://pubvana.net/store', 'type' => 'string'],
+            ['class' => 'App',         'key' => 'pageCacheTtl',      'value' => '120',            'type' => 'integer'],
         ];
         $now = date('Y-m-d H:i:s');
         foreach ($settings as $s) {

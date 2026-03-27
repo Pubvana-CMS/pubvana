@@ -169,7 +169,7 @@ class MarketplaceService
         @unlink($zipPath);
 
         if ($type === 'theme') {
-            (new ThemeService())->symlinkAssets($folder);
+            (new ThemeService())->publishAssets($folder);
         }
 
         $this->registerInstalled($type, $folder);

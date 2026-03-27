@@ -44,7 +44,7 @@
             <div class="card-body text-muted small">
                 <p><strong>What is included?</strong><br>
                     All database tables (posts, pages, users, settings, comments, media records,
-                    navigation, themes, widgets, etc.) and every file in <code>writable/uploads/</code>.
+                    navigation, themes, widgets, etc.) and every file in <code>uploads/</code>.
                 </p>
                 <p><strong>What is not included?</strong><br>
                     Theme files, plugin files, and the application code itself — these are managed
@@ -52,7 +52,7 @@
                 </p>
                 <p><strong>How do I restore?</strong><br>
                     Import <code>database.sql</code> via phpMyAdmin or the MySQL CLI, then copy the
-                    <code>uploads/</code> folder back to <code>writable/uploads/</code>.
+                    <code>uploads/</code> folder back to the <code>uploads/</code> directory next to <code>index.php</code>.
                 </p>
                 <p class="mb-0"><strong>Tip:</strong> Schedule a weekly cron job or set a
                     reminder to download a fresh backup before major changes.</p>

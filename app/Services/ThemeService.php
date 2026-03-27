@@ -4,21 +4,39 @@ namespace App\Services;
 
 use App\Models\ThemeModel;
 use App\Models\WidgetAreaModel;
+use App\Libraries\TemplateEngine\Engine;
+use App\Models\NavigationModel;
+use App\Models\SocialModel;
+use App\Services\PluginManager;
 
 class ThemeService
 {
     protected ?object $activeTheme = null;
 
+    private ?Engine $engine = null;
+
     public function discover(): array
     {
         $themes = [];
         foreach (glob(THEMES_PATH . '*', GLOB_ONLYDIR) as $dir) {
-            $infoFile = $dir . '/theme_info.php';
-            if (is_file($infoFile)) {
-                $info = require $infoFile;
-                $info['folder'] = basename($dir);
-                $themes[]       = $info;
+            $jsonFile = $dir . '/theme_info.json';
+            $phpFile  = $dir . '/theme_info.php';
+
+            if (is_file($jsonFile)) {
+                $info = json_decode(file_get_contents($jsonFile), true);
+            } elseif (is_file($phpFile)) {
+                // Legacy fallback during transition
+                $info = require $phpFile;
+            } else {
+                continue;
             }
+
+            if (! is_array($info)) {
+                continue;
+            }
+
+            $info['folder'] = basename($dir);
+            $themes[] = $info;
         }
         return $themes;
     }
@@ -34,16 +52,30 @@ class ThemeService
                 $model->insert([
                     'name'         => $info['name']    ?? $folder,
                     'folder'       => $folder,
-                    'version'      => $info['version'] ?? '1.0.0',
+                    'version'      => $info['version'] ?? 'unknown',
                     'is_active'    => 0,
                     'installed_at' => $now,
                     'created_at'   => $now,
                     'updated_at'   => $now,
                 ]);
             }
-            // Ensure asset symlink exists even if theme has never been activated
-            $this->symlinkAssets($folder);
+
+            // Validate — check for PHP tags
+            $this->validationResults[$folder] = $this->validateTheme($folder);
+
+            // Publish assets for all discovered themes (screenshots, etc.)
+            $this->publishAssets($folder);
         }
+    }
+
+    /**
+     * Get validation results (populated after sync() runs).
+     *
+     * @return array<string, bool> folder => isValid
+     */
+    public function getValidationResults(): array
+    {
+        return $this->validationResults;
     }
 
     public function getActive(): ?object
@@ -56,35 +88,221 @@ class ThemeService
         return $this->activeTheme;
     }
 
-    public function view(string $name, array $data = []): string
+    private function getEngine(): Engine
+    {
+        if ($this->engine === null) {
+            $this->engine = new Engine();
+        }
+        return $this->engine;
+    }
+
+    /**
+     * Render a theme view with the template engine.
+     *
+     * ThemeService owns the full data bag: it loads common data (nav, settings,
+     * theme options, auth state, etc.) internally, then merges in page-specific
+     * data from the controller.
+     *
+     * @param string $name     View name (e.g. 'home', 'post', 'page')
+     * @param array  $pageData Page-specific data from the controller
+     * @return string Rendered HTML
+     */
+    public function view(string $name, array $pageData = []): string
     {
         $theme = $this->getActive();
         if (! $theme) {
             return '<p>No active theme.</p>';
         }
 
-        $path = THEMES_PATH . $theme->folder . '/views/' . $name . '.php';
-
-        // Fall back to parent theme if the view isn't in the active theme
-        if (! is_file($path)) {
-            $infoFile = THEMES_PATH . $theme->folder . '/theme_info.php';
-            $info     = is_file($infoFile) ? (require $infoFile) : [];
-            $parent   = $info['parent'] ?? null;
-            if ($parent) {
-                $path = THEMES_PATH . $parent . '/views/' . $name . '.php';
-            }
-        }
-
+        $path = THEMES_PATH . $theme->folder . '/views/' . $name . '.tpl';
         if (! is_file($path)) {
             return '<p>Theme view not found: ' . esc($name) . '</p>';
         }
 
-        // CI4's view() doesn't support absolute paths; render via extract+include
-        extract($data);
-        ob_start();
-        include $path;
-        return ob_get_clean();
+        // Check cache (skip for logged-in users — they may see different content)
+        $cacheTtl = (int) (setting('App.pageCacheTtl') ?? 120);
+        $useCache  = $cacheTtl > 0 && ! $this->isLoggedIn();
+
+        if ($useCache) {
+            $cacheKey = $this->buildCacheKey($name, $pageData);
+            $cached = cache($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+
+        // Pre-render pager to HTML if present
+        if (isset($pageData['pager'])) {
+            $pageData['pager_links'] = $pageData['pager']->links();
+            unset($pageData['pager']);
+        }
+
+        $data = array_merge($this->buildCommonData(), $pageData);
+        $basePath = THEMES_PATH . $theme->folder . '/views/';
+        $html = $this->getEngine()->render($path, $data, $basePath);
+
+        if ($useCache) {
+            cache()->save($cacheKey, $html, $cacheTtl);
+        }
+
+        return $html;
     }
+
+    private function isLoggedIn(): bool
+    {
+        try {
+            return auth()->loggedIn();
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    private function buildCacheKey(string $viewName, array $pageData): string
+    {
+        $theme = $this->getActive();
+        $uri = service('request')->getUri()->getPath();
+        $locale = service('request')->getLocale();
+
+        return 'page_cache_' . md5(
+            ($theme->folder ?? 'none') . '|' . $viewName . '|' . $uri . '|' . $locale
+        );
+    }
+
+    /**
+     * Build the common data bag that every theme view receives.
+     *
+     * This replaces what BaseController::initController() used to build.
+     */
+    private function buildCommonData(): array
+    {
+        $theme = $this->getActive();
+        $request = service('request');
+
+        // Navigation
+        try {
+            $navModel = new NavigationModel();
+            $primaryNav = $navModel->where('nav_group', 'primary')->orderBy('sort_order')->findAll();
+            $footerNav  = $navModel->where('nav_group', 'footer')->orderBy('sort_order')->findAll();
+        } catch (\Throwable $e) {
+            $primaryNav = [];
+            $footerNav  = [];
+        }
+
+        // Social links
+        try {
+            $socialLinks = (new SocialModel())->where('is_active', 1)->orderBy('sort_order')->findAll();
+        } catch (\Throwable $e) {
+            $socialLinks = [];
+        }
+
+        // Plugin menu items
+        try {
+            $pm = PluginManager::instance();
+            $pm->loadAll();
+            $pluginMenuItems = $pm->getMenuItems();
+        } catch (\Throwable $e) {
+            $pluginMenuItems = [];
+        }
+
+        // Theme options — load ALL options for active theme into the bag by key name
+        $themeOptions = [];
+        if ($theme) {
+            $rows = db_connect()->table('theme_options')
+                ->where('theme_id', $theme->id)
+                ->get()->getResultObject();
+            foreach ($rows as $row) {
+                $themeOptions[$row->option_key] = $row->option_value;
+            }
+        }
+
+        // Locale
+        $locale = $request->getLocale();
+        if (empty($locale)) {
+            $locale = config('App')->defaultLocale;
+        }
+
+        // Auth state
+        $isLoggedIn = $this->isLoggedIn();
+
+        // Flash messages
+        $flashSuccess = session()->getFlashdata('success');
+        $flashError   = session()->getFlashdata('error');
+
+        // Settings
+        $analyticsId       = setting('Seo.googleAnalytics');
+        $sitemapEnabled    = (bool) setting('Seo.sitemapEnabled');
+        $commentsEnabled   = (bool) setting('App.commentsEnabled');
+        $commentModeration = (bool) setting('App.commentModeration');
+        $hcaptchaSiteKey   = env('hcaptcha.siteKey') ?: '';
+
+        return array_merge($themeOptions, [
+            'theme'              => $theme,
+            'site_name'          => site_name(),
+            'site_tagline'       => site_tagline(),
+            'locale'             => $locale,
+            'primary_nav'        => $primaryNav,
+            'footer_nav'         => $footerNav,
+            'social_links'       => $socialLinks,
+            'plugin_menu_items'  => $pluginMenuItems,
+            'is_logged_in'       => $isLoggedIn,
+            'flash_success'      => $flashSuccess,
+            'flash_error'        => $flashError,
+            'analytics_id'       => $analyticsId,
+            'sitemap_enabled'    => $sitemapEnabled,
+            'comments_enabled'   => $commentsEnabled,
+            'comment_moderation' => $commentModeration,
+            'hcaptcha_site_key'  => $hcaptchaSiteKey,
+            'lang_switcher'      => $this->langSwitcherData,
+        ]);
+    }
+
+    /**
+     * Allow controllers to inject the language switcher data.
+     * Called after buildLangSwitcher() in public controllers.
+     */
+    public function setLangSwitcher(array $langSwitcher): void
+    {
+        $this->langSwitcherData = $langSwitcher;
+    }
+
+    private array $langSwitcherData = [];
+
+    /**
+     * Scan all files in a theme directory for PHP tags.
+     * Returns true if the theme is clean, false if PHP is found.
+     */
+    public function validateTheme(string $folder): bool
+    {
+        $dir = THEMES_PATH . $folder;
+        if (! is_dir($dir)) {
+            return false;
+        }
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS)
+        );
+
+        foreach ($iterator as $file) {
+            if (! $file->isFile()) {
+                continue;
+            }
+
+            // Only scan text-like files, skip images/fonts/binaries
+            $ext = strtolower($file->getExtension());
+            if (in_array($ext, ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'woff', 'woff2', 'ttf', 'eot', 'otf', 'zip'], true)) {
+                continue;
+            }
+
+            $content = file_get_contents($file->getPathname());
+            if (str_contains($content, '<?php') || str_contains($content, '<?=') || str_contains($content, '<%')) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private array $validationResults = [];
 
     public function activate(int $id): bool
     {
@@ -111,18 +329,24 @@ class ThemeService
 
         $this->activeTheme = null;
         $this->syncWidgetAreas($theme);
-        $this->symlinkAssets($theme->folder);
+        $this->publishAssets($theme->folder);
 
         return true;
     }
 
     protected function syncWidgetAreas(object $theme): void
     {
-        $infoFile = THEMES_PATH . $theme->folder . '/theme_info.php';
-        if (! is_file($infoFile)) {
+        $jsonFile = THEMES_PATH . $theme->folder . '/theme_info.json';
+        $phpFile  = THEMES_PATH . $theme->folder . '/theme_info.php';
+
+        if (is_file($jsonFile)) {
+            $info = json_decode(file_get_contents($jsonFile), true) ?? [];
+        } elseif (is_file($phpFile)) {
+            $info = require $phpFile;
+        } else {
             return;
         }
-        $info  = require $infoFile;
+
         $areas = $info['widget_areas'] ?? [];
 
         $areaModel = new WidgetAreaModel();
@@ -155,31 +379,87 @@ class ThemeService
         }
     }
 
-    public function symlinkAssets(string $folder): void
+    /**
+     * Copy theme assets to the web-accessible directory.
+     *
+     * Copies themes/{folder}/assets/* → FCPATH/themes/{folder}/
+     * Replaces the old symlink approach — real files, no symlinks needed.
+     */
+    public function publishAssets(string $folder): void
     {
-        // Reject any folder name containing path separators or non-safe characters
         if (! preg_match('/^[a-zA-Z0-9_-]+$/', $folder)) {
             throw new \RuntimeException('Invalid theme folder name: ' . $folder);
         }
 
-        $target     = THEMES_PATH . $folder . '/assets';
-        $link       = FCPATH . 'themes/' . $folder;
-        $themesReal = realpath(THEMES_PATH);
+        $source = THEMES_PATH . $folder . '/assets';
+        $dest   = FCPATH . 'themes/' . $folder;
 
-        // Verify resolved target stays within THEMES_PATH
-        if ($themesReal && is_dir($target)) {
-            $targetReal = realpath($target);
-            if ($targetReal === false || strpos($targetReal, $themesReal) !== 0) {
-                throw new \RuntimeException('Theme assets path resolves outside THEMES_PATH.');
+        if (! is_dir($source)) {
+            return;
+        }
+
+        // Clean replace: remove existing destination
+        if (is_dir($dest)) {
+            $this->removeDirectory($dest);
+        }
+
+        // Also remove any existing symlink from the old system
+        if (is_link($dest)) {
+            unlink($dest);
+        }
+
+        // Ensure parent directory exists
+        $parentDir = FCPATH . 'themes';
+        if (! is_dir($parentDir)) {
+            mkdir($parentDir, 0755, true);
+        }
+
+        $this->copyDirectory($source, $dest);
+    }
+
+    /** Recursively copy a directory. */
+    private function copyDirectory(string $source, string $dest): void
+    {
+        mkdir($dest, 0755, true);
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::SELF_FIRST
+        );
+
+        foreach ($iterator as $item) {
+            $targetPath = $dest . '/' . $iterator->getSubPathname();
+            if ($item->isDir()) {
+                if (! is_dir($targetPath)) {
+                    mkdir($targetPath, 0755, true);
+                }
+            } else {
+                copy($item->getPathname(), $targetPath);
+            }
+        }
+    }
+
+    /** Recursively remove a directory and all its contents. */
+    private function removeDirectory(string $dir): void
+    {
+        if (! is_dir($dir)) {
+            return;
+        }
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        foreach ($iterator as $item) {
+            if ($item->isDir()) {
+                rmdir($item->getPathname());
+            } else {
+                unlink($item->getPathname());
             }
         }
 
-        if (is_link($link)) {
-            unlink($link);
-        }
-        if (is_dir($target) && ! is_link($link)) {
-            symlink($target, $link);
-        }
+        rmdir($dir);
     }
 
     public function getThemeOption(int $themeId, string $key, mixed $default = null): mixed

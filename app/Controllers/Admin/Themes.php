@@ -15,7 +15,8 @@ class Themes extends BaseAdminController
         $themes = (new ThemeModel())->findAll();
 
         return $this->adminView('themes/index', array_merge($this->baseData('Themes', 'themes'), [
-            'themes' => $themes,
+            'themes'     => $themes,
+            'validation' => $themeService->getValidationResults(),
         ]));
     }
 
@@ -24,12 +25,23 @@ class Themes extends BaseAdminController
         if (! auth()->user()->can('admin.themes')) {
             return redirect()->to('/admin/themes')->with('error', lang('Admin.permissionDenied'));
         }
+
+        $theme = (new ThemeModel())->find($id);
+        if (! $theme) {
+            return redirect()->to('/admin/themes')->with('error', 'Theme not found.');
+        }
+
         $service = new ThemeService();
-        $ok      = $service->activate($id);
+
+        if (! $service->validateTheme($theme->folder)) {
+            return redirect()->to('/admin/themes')->with('error', lang('Admin.themeValidationFailed'));
+        }
+
+        $ok = $service->activate($id);
         if (! $ok) {
             return redirect()->to('/admin/themes')->with('error', lang('Admin.themeInvalidLicense'));
         }
-        $theme = (new ThemeModel())->find($id);
+
         ActivityLogger::log('theme.activated', 'theme', $id, 'Activated theme: ' . ($theme->name ?? $id));
         return redirect()->to('/admin/themes')->with('success', lang('Admin.themeActivated'));
     }
@@ -44,8 +56,16 @@ class Themes extends BaseAdminController
         if (! $theme) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
-        $infoFile = THEMES_PATH . $theme->folder . '/theme_info.php';
-        $info     = is_file($infoFile) ? require $infoFile : [];
+
+        $jsonFile = THEMES_PATH . $theme->folder . '/theme_info.json';
+        $phpFile  = THEMES_PATH . $theme->folder . '/theme_info.php';
+        if (is_file($jsonFile)) {
+            $info = json_decode(file_get_contents($jsonFile), true) ?? [];
+        } elseif (is_file($phpFile)) {
+            $info = require $phpFile;
+        } else {
+            $info = [];
+        }
 
         $service = new ThemeService();
         $saved   = [];
@@ -71,8 +91,17 @@ class Themes extends BaseAdminController
         if (! $theme) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
-        $infoFile = THEMES_PATH . $theme->folder . '/theme_info.php';
-        $info     = is_file($infoFile) ? require $infoFile : [];
+
+        $jsonFile = THEMES_PATH . $theme->folder . '/theme_info.json';
+        $phpFile  = THEMES_PATH . $theme->folder . '/theme_info.php';
+        if (is_file($jsonFile)) {
+            $info = json_decode(file_get_contents($jsonFile), true) ?? [];
+        } elseif (is_file($phpFile)) {
+            $info = require $phpFile;
+        } else {
+            $info = [];
+        }
+
         $service  = new ThemeService();
 
         $posted = $this->request->getPost('options') ?? [];
