@@ -345,6 +345,7 @@ return [
     'themeOptionsBtn'       => 'Options',
     'themeActive'           => 'Active',
     'themeBy'               => 'By',
+    'themeSupport'          => 'Support',
     'themeVersion'          => 'Version',
     'themeSaveOptions'      => 'Save Options',
     'themeInvalidLicense'   => 'Cannot activate theme — license is invalid. Re-install or contact support.',

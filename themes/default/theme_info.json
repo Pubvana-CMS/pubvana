@@ -1,7 +1,9 @@
 {
     "name": "Default",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "author": "Pubvana",
+    "author_url": "https://pubvana.net",
+    "support_url": "https://pubvana.net/contact",
     "description": "Clean Bootstrap 5 theme.",
     "screenshot": "screenshot.png",
     "widget_areas": {

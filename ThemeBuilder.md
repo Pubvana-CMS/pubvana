@@ -47,6 +47,8 @@ All 8 views and 7 partials should be present in a complete theme. Zero PHP files
     "name": "My Theme",
     "version": "1.0.0",
     "author": "Your Name",
+    "author_url": "https://yoursite.com",
+    "support_url": "https://yoursite.com/support",
     "description": "One line description.",
     "screenshot": "screenshot.png",
     "premium": false,
@@ -77,6 +79,8 @@ All 8 views and 7 partials should be present in a complete theme. Zero PHP files
 | `name` | yes | Human-readable theme name |
 | `version` | yes | Semantic version |
 | `author` | no | Author name |
+| `author_url` | no | Author's website URL (linked in admin) |
+| `support_url` | no | Support/contact URL (linked in admin) |
 | `description` | no | Short description |
 | `screenshot` | no | Filename relative to theme root, shown in admin |
 | `premium` | no | Boolean flag for paid themes |

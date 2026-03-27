@@ -45,7 +45,18 @@
                     <?php endif; ?>
                 </div>
                 <p class="card-text text-muted small"><?= esc($info['description'] ?? '') ?></p>
-                <p class="text-muted small"><?= lang('Admin.themeBy') ?> <?= esc($info['author'] ?? 'Unknown') ?> &middot; v<?= esc($theme->version ?? '?') ?></p>
+                <p class="text-muted small">
+                    <?= lang('Admin.themeBy') ?>
+                    <?php if (!empty($info['author_url'])): ?>
+                        <a href="<?= esc($info['author_url']) ?>" target="_blank" rel="noopener"><?= esc($info['author'] ?? 'Unknown') ?></a>
+                    <?php else: ?>
+                        <?= esc($info['author'] ?? 'Unknown') ?>
+                    <?php endif; ?>
+                    &middot; v<?= esc($theme->version ?? '?') ?>
+                    <?php if (!empty($info['support_url'])): ?>
+                        &middot; <a href="<?= esc($info['support_url']) ?>" target="_blank" rel="noopener"><?= lang('Admin.themeSupport') ?></a>
+                    <?php endif; ?>
+                </p>
                 <?php if (! $isValid): ?>
                     <div class="alert alert-danger small py-1 px-2 mb-0">
                         <i class="fas fa-exclamation-triangle"></i> <?= lang('Admin.themeValidationFailed') ?>
