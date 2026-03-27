@@ -30,11 +30,11 @@ class Search extends BaseController
         }
 
         $fake = (object) ['title' => 'Search: ' . $q, 'meta_title' => null, 'meta_description' => null];
-        return $this->themeService->view('search', array_merge($this->data, [
+        return $this->themeService->view('search', [
             'query'  => $q,
             'posts'  => $posts,
             'pager'  => $pager,
             'seo'    => (new SeoService())->getMeta($fake),
-        ]));
+        ]);
     }
 }

@@ -20,9 +20,9 @@ class Pages extends BaseController
 
         $seo = (new SeoService())->getMeta($page);
 
-        return $this->themeService->view('page', array_merge($this->data, [
+        return $this->themeService->view('page', [
             'page' => $page,
             'seo'  => $seo,
-        ]));
+        ]);
     }
 }

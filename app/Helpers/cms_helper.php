@@ -33,25 +33,6 @@ if (! function_exists('theme_url')) {
     }
 }
 
-if (! function_exists('theme_layout')) {
-    /**
-     * Returns the absolute path to the active theme's layout.php,
-     * falling back to the default theme's layout if the active theme
-     * doesn't have its own (i.e. it's a child/parent theme).
-     */
-    function theme_layout(): string
-    {
-        $theme = active_theme();
-        if ($theme) {
-            $path = THEMES_PATH . $theme->folder . '/views/layout.php';
-            if (is_file($path)) {
-                return $path;
-            }
-        }
-        return THEMES_PATH . 'default/views/layout.php';
-    }
-}
-
 if (! function_exists('site_name')) {
     function site_name(): string
     {
@@ -115,19 +96,3 @@ if (! function_exists('slug_from_title')) {
     }
 }
 
-if (! function_exists('theme_view')) {
-    /**
-     * Render a view file from the active theme using direct PHP include.
-     * Avoids CI4's view() absolute-path restriction.
-     */
-    function theme_view(string $path, array $data = []): string
-    {
-        if (! is_file($path)) {
-            return '';
-        }
-        extract($data);
-        ob_start();
-        include $path;
-        return ob_get_clean();
-    }
-}

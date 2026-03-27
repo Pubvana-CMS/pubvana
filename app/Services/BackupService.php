@@ -34,7 +34,7 @@ class BackupService
         }
 
         $zip->addFile($sqlFile, 'database.sql');
-        $this->zipDirectory($zip, WRITEPATH . 'uploads/', 'uploads/');
+        $this->zipDirectory($zip, FCPATH . 'uploads/', 'uploads/');
         $zip->close();
 
         // Clean up the loose SQL file

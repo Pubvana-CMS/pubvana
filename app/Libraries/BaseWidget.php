@@ -33,14 +33,25 @@ abstract class BaseWidget
     protected function view(string $name, array $data = []): string
     {
         $folder = $this->getFolder();
-        $path   = WIDGETS_PATH . $folder . '/views/' . $name . '.php';
-        if (! is_file($path)) {
-            return '';
+        $tplPath = WIDGETS_PATH . $folder . '/views/' . $name . '.tpl';
+        $phpPath = WIDGETS_PATH . $folder . '/views/' . $name . '.php';
+
+        // Prefer .tpl, fall back to .php during transition
+        if (is_file($tplPath)) {
+            $engine = new \App\Libraries\TemplateEngine\Engine();
+            $basePath = WIDGETS_PATH . $folder . '/views/';
+            return $engine->render($tplPath, $data, $basePath);
         }
-        extract($data);
-        ob_start();
-        include $path;
-        return ob_get_clean();
+
+        // Legacy PHP fallback
+        if (is_file($phpPath)) {
+            extract($data);
+            ob_start();
+            include $phpPath;
+            return ob_get_clean();
+        }
+
+        return '';
     }
 
     protected function getFolder(): string

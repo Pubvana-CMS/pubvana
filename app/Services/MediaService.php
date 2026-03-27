@@ -36,7 +36,7 @@ class MediaService
         $ext     = $this->mimeToExt($mimeType);
         $name    = bin2hex(random_bytes(16));
         $relDir  = 'uploads/' . date('Y/m');
-        $absDir  = WRITEPATH . $relDir;
+        $absDir  = FCPATH . $relDir;
 
         if (! is_dir($absDir)) {
             mkdir($absDir, 0755, true);
@@ -47,8 +47,8 @@ class MediaService
 
         // CI4's GD handler always encodes in the source format, so we let it
         // write to original-extension intermediates, then convert to WebP ourselves.
-        $absIntermediate      = WRITEPATH . $relDir . '/' . $name . '.' . $ext;
-        $thumbDir             = WRITEPATH . $relDir . '/thumbs';
+        $absIntermediate      = FCPATH . $relDir . '/' . $name . '.' . $ext;
+        $thumbDir             = FCPATH . $relDir . '/thumbs';
         $thumbIntermediate    = $thumbDir . '/' . $name . '.' . $ext;
 
         if (! is_dir($thumbDir)) {
@@ -66,8 +66,8 @@ class MediaService
             ->save($thumbIntermediate, 80);
 
         if ($convertToWebP) {
-            $relPath   = $relDir . '/' . $name . '.webp';
-            $absPath   = WRITEPATH . $relPath;
+            $relPath   = '/' . $relDir . '/' . $name . '.webp';
+            $absPath   = FCPATH . $relDir . '/' . $name . '.webp';
             $thumbPath = $thumbDir . '/' . $name . '.webp';
             $mimeType  = 'image/webp';
             $this->saveAsWebP($absIntermediate, $absPath, 85);
@@ -75,7 +75,7 @@ class MediaService
             @unlink($absIntermediate);
             @unlink($thumbIntermediate);
         } else {
-            $relPath   = $relDir . '/' . $name . '.' . $ext;
+            $relPath   = '/' . $relDir . '/' . $name . '.' . $ext;
             $absPath   = $absIntermediate;
             $thumbPath = $thumbIntermediate;
         }
@@ -95,7 +95,7 @@ class MediaService
         return [
             'id'   => $mediaId,
             'path' => $relPath,
-            'url'  => base_url('writable/' . $relPath),
+            'url'  => base_url($relPath),
         ];
     }
 
@@ -106,7 +106,7 @@ class MediaService
         if (! $media) {
             return false;
         }
-        $abs = WRITEPATH . ltrim($media->path, '/');
+        $abs = FCPATH . ltrim($media->path, '/');
         if (is_file($abs)) {
             @unlink($abs);
         }

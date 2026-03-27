@@ -341,7 +341,7 @@ _Translators Wanted!_
 
 If you would like to help translate files, please fork this repo and send a PR.
 
-v2 ships with 6 languages: English (source), French, Indonesian, Portuguese, Slovak, and Spanish (Latin American). All non-English translations were AI-generated and need verification from native speakers. 16 additional languages are seeded in the admin panel but ship without translation files — CI4 falls back to English.
+v2 ships with 6 languages: English (source), French, Indonesian, Portuguese, Slovak, and Spanish (Latin American). All non-English translations were AI-generated and need verification from native speakers.
 
 Please include a README.md update under 'Translators' with your name and a link to your site/GitHub (optional).
 

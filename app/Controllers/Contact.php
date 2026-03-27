@@ -10,7 +10,7 @@ class Contact extends BaseController
     {
         $this->buildLangSwitcher();
 
-        return $this->themeService->view('page', array_merge($this->data, [
+        return $this->themeService->view('page', [
             'page' => (object) [
                 'title'        => 'Contact',
                 'content'      => view('contact_form'),
@@ -23,7 +23,7 @@ class Contact extends BaseController
                 'og_description' => '',
                 'og_image'    => '',
             ],
-        ]));
+        ]);
     }
 
     public function send()

@@ -10,12 +10,23 @@ class WidgetService
     {
         $widgets = [];
         foreach (glob(WIDGETS_PATH . '*', GLOB_ONLYDIR) as $dir) {
-            $infoFile = $dir . '/widget_info.php';
-            if (is_file($infoFile)) {
-                $info = require $infoFile;
-                $info['folder'] = basename($dir);
-                $widgets[]      = $info;
+            $jsonFile = $dir . '/widget_info.json';
+            $phpFile  = $dir . '/widget_info.php';
+
+            if (is_file($jsonFile)) {
+                $info = json_decode(file_get_contents($jsonFile), true);
+            } elseif (is_file($phpFile)) {
+                $info = require $phpFile;
+            } else {
+                continue;
             }
+
+            if (! is_array($info)) {
+                continue;
+            }
+
+            $info['folder'] = basename($dir);
+            $widgets[] = $info;
         }
         return $widgets;
     }

@@ -348,6 +348,8 @@ return [
     'themeVersion'          => 'Version',
     'themeSaveOptions'      => 'Save Options',
     'themeInvalidLicense'   => 'Cannot activate theme — license is invalid. Re-install or contact support.',
+    'themeValidationFailed' => 'Theme contains PHP code and cannot be activated.',
+    'noThemesInstalled'     => 'No themes installed. Visit the Marketplace to get themes.',
 
     // Theme flash messages
     'themeActivated'        => 'Theme activated.',
@@ -528,6 +530,7 @@ return [
     'generalFrontPageBlog'      => 'Blog index (latest posts)',
     'generalFrontPageStatic'    => 'Static page:',
     'generalSelectPage'         => '— Select a page —',
+    'generalPageCacheTtl'       => 'Page Cache TTL',
     'generalSaveBtn'            => 'Save General Settings',
 
     // General flash messages

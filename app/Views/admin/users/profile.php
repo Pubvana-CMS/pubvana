@@ -45,7 +45,7 @@
                         <div class="col-sm-9">
                             <?php if (!empty($profile->avatar)): ?>
                                 <div class="mb-2">
-                                    <img src="<?= esc(base_url('writable/' . $profile->avatar)) ?>"
+                                    <img src="<?= esc(base_url($profile->avatar)) ?>"
                                          alt="Current avatar" class="rounded-circle obj-cover" width="80" height="80">
                                 </div>
                             <?php endif; ?>
@@ -112,7 +112,7 @@
             <div class="card-body text-center">
                 <?php
                 $avatarUrl = !empty($profile->avatar)
-                    ? base_url('writable/' . $profile->avatar)
+                    ? base_url($profile->avatar)
                     : 'https://www.gravatar.com/avatar/' . md5(strtolower($subject_user->email ?? '')) . '?s=80&d=mp';
                 ?>
                 <img src="<?= esc($avatarUrl) ?>" class="rounded-circle mb-3 obj-cover" width="80" height="80" alt="">
