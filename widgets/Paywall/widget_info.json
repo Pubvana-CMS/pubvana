@@ -1,0 +1,11 @@
+{
+    "name": "Paywall",
+    "description": "Displays a call-to-action for premium/paywalled content.",
+    "version": "1.0.0",
+    "admin": {
+        "options": {}
+    },
+    "output": {
+        "template": "widget.tpl"
+    }
+}

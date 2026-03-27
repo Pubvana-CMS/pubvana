@@ -1,0 +1,28 @@
+{
+    "name": "Categories List",
+    "description": "Displays a list of post categories with optional post counts.",
+    "version": "1.0.0",
+    "admin": {
+        "options": {
+            "title": {
+                "type": "text",
+                "label": "Widget Title",
+                "default": "Categories"
+            },
+            "show_count": {
+                "type": "checkbox",
+                "label": "Show Post Count",
+                "default": "1"
+            }
+        }
+    },
+    "output": {
+        "template": "widget.tpl",
+        "providers": {
+            "categories": {
+                "provider": "CategoryModel.getWithPostCount",
+                "params": {}
+            }
+        }
+    }
+}

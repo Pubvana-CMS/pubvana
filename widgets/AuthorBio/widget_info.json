@@ -1,0 +1,18 @@
+{
+    "name": "Author Bio",
+    "description": "Displays the post author's profile card on single post pages.",
+    "version": "1.0.0",
+    "admin": {
+        "notice": "No configuration needed. This widget automatically displays the current post author's profile. Set up profiles in Admin → Users → Profile tab.",
+        "options": {}
+    },
+    "output": {
+        "template": "widget.tpl",
+        "providers": {
+            "profile": {
+                "provider": "AuthorProfileModel.getForCurrentPost",
+                "params": {}
+            }
+        }
+    }
+}

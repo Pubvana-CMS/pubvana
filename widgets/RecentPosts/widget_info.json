@@ -1,0 +1,40 @@
+{
+    "name": "Recent Posts",
+    "description": "Displays a list of the most recent published posts.",
+    "version": "1.0.0",
+    "admin": {
+        "options": {
+            "title": {
+                "type": "text",
+                "label": "Widget Title",
+                "default": "Recent Posts"
+            },
+            "count": {
+                "type": "number",
+                "label": "Number of Posts",
+                "default": "5"
+            },
+            "show_date": {
+                "type": "checkbox",
+                "label": "Show Date",
+                "default": "1"
+            },
+            "show_excerpt": {
+                "type": "checkbox",
+                "label": "Show Excerpt",
+                "default": "0"
+            }
+        }
+    },
+    "output": {
+        "template": "widget.tpl",
+        "providers": {
+            "posts": {
+                "provider": "PostModel.getRecent",
+                "params": {
+                    "limit": "count"
+                }
+            }
+        }
+    }
+}

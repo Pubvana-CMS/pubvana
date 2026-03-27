@@ -1,0 +1,34 @@
+{
+    "name": "Archive List",
+    "description": "Displays a list of monthly or yearly archive links.",
+    "version": "1.0.0",
+    "admin": {
+        "options": {
+            "title": {
+                "type": "text",
+                "label": "Widget Title",
+                "default": "Archives"
+            },
+            "format": {
+                "type": "select",
+                "label": "Format",
+                "default": "monthly",
+                "choices": {
+                    "monthly": "Monthly",
+                    "yearly": "Yearly"
+                }
+            }
+        }
+    },
+    "output": {
+        "template": "widget.tpl",
+        "providers": {
+            "rows": {
+                "provider": "PostModel.getArchiveList",
+                "params": {
+                    "format": "format"
+                }
+            }
+        }
+    }
+}

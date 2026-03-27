@@ -1,0 +1,32 @@
+{
+    "name": "Table of Contents",
+    "description": "Auto-generates a table of contents from post headings.",
+    "version": "1.0.0",
+    "admin": {
+        "options": {
+            "title": {
+                "type": "text",
+                "label": "Widget Title",
+                "default": "Table of Contents"
+            },
+            "min_headings": {
+                "type": "number",
+                "label": "Minimum Headings to Show",
+                "default": "2"
+            },
+            "max_depth": {
+                "type": "select",
+                "label": "Max Heading Depth",
+                "default": "h3",
+                "choices": {
+                    "h2": "H2 only",
+                    "h3": "H2 + H3",
+                    "h4": "H2 + H3 + H4"
+                }
+            }
+        }
+    },
+    "output": {
+        "template": "widget.tpl"
+    }
+}

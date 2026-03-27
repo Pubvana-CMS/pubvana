@@ -1,0 +1,17 @@
+{
+    "name": "Search Form",
+    "description": "Displays a search form.",
+    "version": "1.0.0",
+    "admin": {
+        "options": {
+            "placeholder": {
+                "type": "text",
+                "label": "Placeholder Text",
+                "default": ""
+            }
+        }
+    },
+    "output": {
+        "template": "widget.tpl"
+    }
+}

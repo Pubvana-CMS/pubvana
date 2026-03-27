@@ -66,4 +66,112 @@ class PostModel extends Model
     {
         return $this->where('preview_token', $token)->first();
     }
+
+    public function getRecent(int $limit = 5): array
+    {
+        return $this->published()
+            ->orderBy('published_at', 'DESC')
+            ->limit($limit)
+            ->findAll();
+    }
+
+    public function getArchiveList(string $format = 'monthly'): array
+    {
+        $db = db_connect();
+
+        if ($format === 'yearly') {
+            $rows = $db->table('posts')
+                ->select('YEAR(published_at) as year, COUNT(*) as count')
+                ->where('status', 'published')
+                ->where('deleted_at IS NULL')
+                ->groupBy('YEAR(published_at)')
+                ->orderBy('year', 'DESC')
+                ->limit(10)
+                ->get()->getResultObject();
+            foreach ($rows as $r) {
+                $r->url   = base_url('archive/' . $r->year . '/1');
+                $r->label = $r->year;
+            }
+        } else {
+            $rows = $db->table('posts')
+                ->select('YEAR(published_at) as year, MONTH(published_at) as month, COUNT(*) as count')
+                ->where('status', 'published')
+                ->where('deleted_at IS NULL')
+                ->groupBy(['YEAR(published_at)', 'MONTH(published_at)'])
+                ->orderBy('year', 'DESC')
+                ->orderBy('month', 'DESC')
+                ->limit(12)
+                ->get()->getResultObject();
+            foreach ($rows as $r) {
+                $r->url   = base_url('archive/' . $r->year . '/' . $r->month);
+                $r->label = date('F Y', mktime(0, 0, 0, $r->month, 1, $r->year));
+            }
+        }
+
+        return (array) $rows;
+    }
+
+    public function getRelated(int $postId, int $limit = 4): array
+    {
+        $db = db_connect();
+
+        $catIds = array_column(
+            $db->table('posts_to_categories')
+               ->where('post_id', $postId)
+               ->get()->getResultArray(),
+            'category_id'
+        );
+        $tagIds = array_column(
+            $db->table('tags_to_posts')
+               ->where('post_id', $postId)
+               ->get()->getResultArray(),
+            'tag_id'
+        );
+
+        $scores = [];
+
+        // +2 per shared category
+        if ($catIds) {
+            $rows = $db->table('posts_to_categories ptc')
+                       ->select('ptc.post_id, p.title, p.slug, p.featured_image, p.published_at')
+                       ->join('posts p', 'p.id = ptc.post_id')
+                       ->whereIn('ptc.category_id', $catIds)
+                       ->where('ptc.post_id !=', $postId)
+                       ->where('p.status', 'published')
+                       ->get()->getResultArray();
+            foreach ($rows as $row) {
+                $id = $row['post_id'];
+                if (! isset($scores[$id])) {
+                    $scores[$id] = array_merge($row, ['score' => 0]);
+                }
+                $scores[$id]['score'] += 2;
+            }
+        }
+
+        // +1 per shared tag
+        if ($tagIds) {
+            $rows = $db->table('tags_to_posts ttp')
+                       ->select('ttp.post_id, p.title, p.slug, p.featured_image, p.published_at')
+                       ->join('posts p', 'p.id = ttp.post_id')
+                       ->whereIn('ttp.tag_id', $tagIds)
+                       ->where('ttp.post_id !=', $postId)
+                       ->where('p.status', 'published')
+                       ->get()->getResultArray();
+            foreach ($rows as $row) {
+                $id = $row['post_id'];
+                if (! isset($scores[$id])) {
+                    $scores[$id] = array_merge($row, ['score' => 0]);
+                }
+                $scores[$id]['score'] += 1;
+            }
+        }
+
+        if (! $scores) {
+            return [];
+        }
+
+        usort($scores, fn($a, $b) => $b['score'] <=> $a['score']);
+
+        return array_slice(array_values($scores), 0, $limit);
+    }
 }

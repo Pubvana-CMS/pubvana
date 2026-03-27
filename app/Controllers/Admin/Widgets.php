@@ -77,9 +77,8 @@ class Widgets extends BaseAdminController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
-        $widget  = (new WidgetService())->getInstance($instance->folder);
         $options = $instance->options_json ? json_decode($instance->options_json, true) : [];
-        $form    = $widget ? $widget->renderAdminForm($options) : '<p>No options.</p>';
+        $form    = (new \App\Services\WidgetService())->renderAdminForm($instance->folder, $options);
 
         return $this->adminView('widgets/configure', array_merge($this->baseData('Configure Widget', 'widgets'), [
             'instance' => $instance,

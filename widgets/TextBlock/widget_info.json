@@ -1,0 +1,22 @@
+{
+    "name": "Text Block",
+    "description": "Displays custom HTML or text content.",
+    "version": "1.0.0",
+    "admin": {
+        "options": {
+            "title": {
+                "type": "text",
+                "label": "Widget Title",
+                "default": ""
+            },
+            "content": {
+                "type": "textarea",
+                "label": "Content",
+                "default": ""
+            }
+        }
+    },
+    "output": {
+        "template": "widget.tpl"
+    }
+}

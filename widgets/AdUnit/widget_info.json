@@ -1,0 +1,22 @@
+{
+    "name": "Ad Unit",
+    "description": "Displays custom ad code or HTML embed.",
+    "version": "1.0.0",
+    "admin": {
+        "options": {
+            "title": {
+                "type": "text",
+                "label": "Widget Title",
+                "default": ""
+            },
+            "code": {
+                "type": "textarea",
+                "label": "Ad Code",
+                "default": ""
+            }
+        }
+    },
+    "output": {
+        "template": "widget.tpl"
+    }
+}
