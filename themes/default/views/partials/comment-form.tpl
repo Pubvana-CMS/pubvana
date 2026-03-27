@@ -20,7 +20,7 @@
                 {% endif %}
             </form>
         {% else %}
-            <p>{% lang 'Blog.commentLoginRequired' %} <a href="{% base_url 'login' %}">{% lang 'Blog.commentLoginLink' %}</a></p>
+            <p>{% lang 'Blog.commentLoginRequired' %} <a href="{% site_url 'login' %}">{% lang 'Blog.commentLoginLink' %}</a></p>
         {% endif %}
     </div>
 </div>

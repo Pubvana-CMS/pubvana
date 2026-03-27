@@ -16,15 +16,19 @@ class Widgets extends BaseAdminController
         }
         (new WidgetService())->sync();
 
-        $theme    = $this->themeService->getActive();
+        $theme     = $this->themeService->getActive();
         $areaModel = new WidgetAreaModel();
-        $areas    = $theme ? $areaModel->where('theme_id', $theme->id)->findAll() : [];
+        $areas     = $theme ? $areaModel->where('theme_id', $theme->id)->findAll() : [];
 
+        // Fetch instances by slug so widgets carry over across themes
+        $slugs = array_column((array) $areas, 'slug');
         $db = db_connect();
-        $instances = $areas ? $db->table('widget_instances wi')
-            ->select('wi.*, w.name as widget_name, w.folder')
+        $instances = $slugs ? $db->table('widget_instances wi')
+            ->select('wi.*, w.name as widget_name, w.folder, wa.slug as area_slug')
             ->join('widgets w', 'w.id = wi.widget_id')
-            ->whereIn('wi.widget_area_id', array_column((array) $areas, 'id'))
+            ->join('widget_areas wa', 'wa.id = wi.widget_area_id')
+            ->whereIn('wa.slug', $slugs)
+            ->where('w.is_active', 1)
             ->orderBy('wi.sort_order', 'ASC')
             ->get()->getResultObject() : [];
 
@@ -49,7 +53,9 @@ class Widgets extends BaseAdminController
             'sort_order'     => 999,
             'options_json'   => null,
         ]);
-        return redirect()->to('/admin/widgets')->with('success', lang('Admin.widgetAdded'));
+        $area = (new WidgetAreaModel())->find($areaId);
+        $slug = $area ? $area->slug : '';
+        return redirect()->to('/admin/widgets#area-' . $slug)->with('success', lang('Admin.widgetAdded'));
     }
 
     public function removeFromArea(int $instanceId)
@@ -57,8 +63,15 @@ class Widgets extends BaseAdminController
         if (! auth()->user()->can('admin.widgets')) {
             return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
+        // Get the area slug before deleting so we can redirect back to the right tab
+        $instance = db_connect()->table('widget_instances wi')
+            ->select('wa.slug')
+            ->join('widget_areas wa', 'wa.id = wi.widget_area_id')
+            ->where('wi.id', $instanceId)
+            ->get()->getRowObject();
+        $slug = $instance ? $instance->slug : '';
         (new WidgetInstanceModel())->delete($instanceId);
-        return redirect()->to('/admin/widgets')->with('success', lang('Admin.widgetRemoved'));
+        return redirect()->to('/admin/widgets#area-' . $slug)->with('success', lang('Admin.widgetRemoved'));
     }
 
     public function configure(int $instanceId): string
@@ -112,7 +125,13 @@ class Widgets extends BaseAdminController
         }
 
         (new WidgetInstanceModel())->update($instanceId, ['options_json' => json_encode($options)]);
-        return redirect()->to('/admin/widgets')->with('success', lang('Admin.widgetConfigured'));
+        $instance = db_connect()->table('widget_instances wi')
+            ->select('wa.slug')
+            ->join('widget_areas wa', 'wa.id = wi.widget_area_id')
+            ->where('wi.id', $instanceId)
+            ->get()->getRowObject();
+        $slug = $instance ? $instance->slug : '';
+        return redirect()->to('/admin/widgets#area-' . $slug)->with('success', lang('Admin.widgetConfigured'));
     }
 
     public function reorder()
@@ -120,7 +139,8 @@ class Widgets extends BaseAdminController
         if (! auth()->user()->can('admin.widgets')) {
             return $this->response->setStatusCode(403)->setJSON(['error' => 'Permission denied.']);
         }
-        $order = $this->request->getPost('order') ?? [];
+        $json = $this->request->getJSON(true);
+        $order = $json['order'] ?? [];
         $model = new WidgetInstanceModel();
         foreach ($order as $i => $instanceId) {
             $model->update((int) $instanceId, ['sort_order' => $i]);

@@ -1,0 +1,28 @@
+{
+    "name": "Language Picker",
+    "description": "Displays a language switcher in buttons, dropdown, or list format.",
+    "version": "1.0.0",
+    "admin": {
+        "options": {
+            "style": {
+                "type": "select",
+                "label": "Display Style",
+                "default": "buttons",
+                "choices": {
+                    "buttons": "Buttons",
+                    "dropdown": "Dropdown",
+                    "ul": "UL/LI Links"
+                }
+            }
+        }
+    },
+    "output": {
+        "template": "widget.tpl",
+        "providers": {
+            "switcher": {
+                "provider": "LanguageModel.getSwitcherData",
+                "params": {}
+            }
+        }
+    }
+}

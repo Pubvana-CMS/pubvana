@@ -89,7 +89,7 @@ class PostModel extends Model
                 ->limit(10)
                 ->get()->getResultObject();
             foreach ($rows as $r) {
-                $r->url   = base_url('archive/' . $r->year . '/1');
+                $r->url   = site_url('archive/' . $r->year . '/1');
                 $r->label = $r->year;
             }
         } else {
@@ -103,7 +103,7 @@ class PostModel extends Model
                 ->limit(12)
                 ->get()->getResultObject();
             foreach ($rows as $r) {
-                $r->url   = base_url('archive/' . $r->year . '/' . $r->month);
+                $r->url   = site_url('archive/' . $r->year . '/' . $r->month);
                 $r->label = date('F Y', mktime(0, 0, 0, $r->month, 1, $r->year));
             }
         }

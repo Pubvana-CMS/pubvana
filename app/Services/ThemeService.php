@@ -65,6 +65,12 @@ class ThemeService
 
             // Publish assets for all discovered themes (screenshots, etc.)
             $this->publishAssets($folder);
+
+            // Seed default options if not already saved
+            $theme = $model->where('folder', $folder)->first();
+            if ($theme) {
+                $this->syncDefaultOptions($theme);
+            }
         }
     }
 
@@ -138,6 +144,14 @@ class ThemeService
         }
 
         $data = array_merge($this->buildCommonData(), $pageData);
+
+        // Build page_title for the <title> tag: "Post Title - Site Name" or just "Site Name"
+        $siteName = $data['site_name'] ?? '';
+        $seoTitle = $data['seo']['title'] ?? '';
+        $data['page_title'] = ($seoTitle !== '' && $seoTitle !== $siteName)
+            ? $seoTitle . ' - ' . $siteName
+            : $siteName;
+
         $basePath = THEMES_PATH . $theme->folder . '/views/';
         $html = $this->getEngine()->render($path, $data, $basePath);
 
@@ -378,6 +392,39 @@ class ThemeService
         // Remove areas no longer in theme_info (slug removed from theme)
         foreach ($existing as $obsolete) {
             $areaModel->delete($obsolete->id);
+        }
+    }
+
+    /**
+     * Seed default theme options into the DB if they don't already exist.
+     */
+    protected function syncDefaultOptions(object $theme): void
+    {
+        $jsonFile = THEMES_PATH . $theme->folder . '/theme_info.json';
+        if (! is_file($jsonFile)) {
+            return;
+        }
+
+        $info    = json_decode(file_get_contents($jsonFile), true) ?? [];
+        $options = $info['options'] ?? [];
+        if (empty($options)) {
+            return;
+        }
+
+        $db = db_connect();
+        foreach ($options as $key => $def) {
+            $exists = $db->table('theme_options')
+                ->where('theme_id', $theme->id)
+                ->where('option_key', $key)
+                ->countAllResults();
+
+            if ($exists === 0) {
+                $db->table('theme_options')->insert([
+                    'theme_id'     => $theme->id,
+                    'option_key'   => $key,
+                    'option_value' => $def['default'] ?? '',
+                ]);
+            }
         }
     }
 

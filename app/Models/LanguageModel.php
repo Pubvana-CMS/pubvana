@@ -80,6 +80,26 @@ class LanguageModel extends Model
     }
 
     /**
+     * Return the full language switcher data (buttons, dropdown, ul formats).
+     */
+    public function getSwitcherData(): array
+    {
+        $languages = $this->getActive();
+        if (count($languages) <= 1) {
+            return [];
+        }
+
+        $request = service('request');
+        $switcher = new \App\Libraries\LanguageSwitcher(
+            $languages,
+            $request->getUri()->getPath(),
+            $request->getLocale()
+        );
+
+        return $switcher->build();
+    }
+
+    /**
      * Return a flat array of active language codes for Config\App::$supportedLocales.
      */
     public function getSupportedLocales(): array

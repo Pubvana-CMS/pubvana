@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Pubvana CMS — Blog / Public-facing language strings (French)
+ * Pubvana CMS - Blog / Public-facing language strings (French)
  *
  * AI Translated: verification needed from native speaker
  *
@@ -49,7 +49,7 @@ return [
     // Preview mode banner
     // =========================================================================
 
-    'previewModeBanner' => 'Mode aperçu — Cet article n\'est pas visible publiquement',
+    'previewModeBanner' => 'Mode aperçu - Cet article n\'est pas visible publiquement',
 
     // =========================================================================
     // Premium paywall
@@ -138,13 +138,16 @@ return [
     // =========================================================================
 
     'pageNotFound'      => 'Page introuvable.',
-    'pageNotFoundTitle' => '404 — Page introuvable',
+    'pageNotFoundTitle' => '404 - Page introuvable',
 
     // =========================================================================
     // Maintenance mode
     // =========================================================================
 
     'maintenanceTitle'  => 'En maintenance',
-    'maintenanceBody'   => 'Nous effectuons une maintenance planifiée. Nous serons de retour bientôt — merci de votre patience !',
+    'maintenanceBody'   => 'Nous effectuons une maintenance planifiée. Nous serons de retour bientôt - merci de votre patience !',
+
+    // Language
+    'language'          => 'Langue',
 
 ];

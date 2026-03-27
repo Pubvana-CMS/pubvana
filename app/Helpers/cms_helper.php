@@ -50,21 +50,21 @@ if (! function_exists('site_tagline')) {
 if (! function_exists('post_url')) {
     function post_url(string $slug): string
     {
-        return base_url('blog/' . $slug);
+        return site_url('blog/' . $slug);
     }
 }
 
 if (! function_exists('category_url')) {
     function category_url(string $slug): string
     {
-        return base_url('category/' . $slug);
+        return site_url('category/' . $slug);
     }
 }
 
 if (! function_exists('tag_url')) {
     function tag_url(string $slug): string
     {
-        return base_url('tag/' . $slug);
+        return site_url('tag/' . $slug);
     }
 }
 

@@ -17,6 +17,7 @@ class TagRegistry
             'lang'           => $this->tagLang($args),
             'theme_url'      => $this->tagThemeUrl($args),
             'base_url'       => $this->tagBaseUrl($args),
+            'site_url'       => $this->tagSiteUrl($args),
             'widget_area'    => $this->tagWidgetArea($args),
             'post_url'       => $this->tagPostUrl($args),
             'category_url'   => $this->tagCategoryUrl($args),
@@ -41,6 +42,11 @@ class TagRegistry
     private function tagBaseUrl(array $args): string
     {
         return base_url((string) ($args[0] ?? ''));
+    }
+
+    private function tagSiteUrl(array $args): string
+    {
+        return site_url((string) ($args[0] ?? ''));
     }
 
     private function tagWidgetArea(array $args): string

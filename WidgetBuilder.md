@@ -237,7 +237,7 @@ Every CSS class in a widget `.tpl` is a variable with a semantic default:
 - If the theme passes `cls_widget`, that value is used
 - If not, the default `'widget widget-categories'` applies
 
-Themes inject their own classes (e.g. Bootstrap) by passing `cls_` variables when rendering the widget area.
+Themes declare their class overrides in `theme_info.json` under `widget_classes`. These are injected into every widget automatically at render time.
 
 ### Standard `cls_` Variables
 

@@ -77,6 +77,11 @@ Events::on('pre_system', static function (): void {
 
         if (! empty($codes)) {
             config('App')->supportedLocales = $codes;
+
+            // The IncomingRequest copied supportedLocales at construction time
+            // (before this event), so its internal validLocales is stale.
+            // Sync it now so setLocale() accepts the DB-driven codes.
+            service('request')->setValidLocales($codes);
         }
     } catch (\Throwable $e) {
         // DB may not be available (e.g. CLI spark commands during install)
