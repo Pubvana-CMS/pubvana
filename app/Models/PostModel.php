@@ -111,8 +111,12 @@ class PostModel extends Model
         return (array) $rows;
     }
 
-    public function getRelated(int $postId, int $limit = 4): array
+    public function getRelated(?int $postId, int $limit = 4): array
     {
+        if (! $postId) {
+            return [];
+        }
+
         $db = db_connect();
 
         $catIds = array_column(

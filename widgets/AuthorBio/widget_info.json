@@ -10,8 +10,10 @@
         "template": "widget.tpl",
         "providers": {
             "profile": {
-                "provider": "AuthorProfileModel.getForCurrentPost",
-                "params": {}
+                "provider": "AuthorProfileModel.getForPost",
+                "params": {
+                    "postId": "@current_post_id"
+                }
             }
         }
     }

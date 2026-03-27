@@ -32,18 +32,18 @@ class AuthorProfileModel extends Model
         }
     }
 
-    public function getForCurrentPost(): ?object
+    public function getForPost(?int $postId): ?object
     {
-        // Only render on single-post pages: /post/{slug}
-        $segments = service('uri')->getSegments(); // 0-indexed plain array
-        $seg1     = $segments[0] ?? '';
-        $slug     = $segments[1] ?? '';
-
-        if ($seg1 !== 'post' || empty($slug)) {
+        if (! $postId) {
             return null;
         }
 
-        $post = (new PostModel())->published()->findBySlug($slug);
+        $post = db_connect()->table('posts')
+            ->select('author_id')
+            ->where('id', $postId)
+            ->where('status', 'published')
+            ->get()->getRowObject();
+
         if (! $post || empty($post->author_id)) {
             return null;
         }

@@ -234,6 +234,7 @@ class ThemeService
         $commentsEnabled   = (bool) setting('App.commentsEnabled');
         $commentModeration = (bool) setting('App.commentModeration');
         $hcaptchaSiteKey   = env('hcaptcha.siteKey') ?: '';
+        $isPremiumActive   = (new PremiumService())->isLicensed();
 
         return array_merge($themeOptions, [
             'theme'              => $theme,
@@ -252,6 +253,7 @@ class ThemeService
             'comments_enabled'   => $commentsEnabled,
             'comment_moderation' => $commentModeration,
             'hcaptcha_site_key'  => $hcaptchaSiteKey,
+            'is_premium_active'  => $isPremiumActive,
             'lang_switcher'      => $this->langSwitcherData,
         ]);
     }
