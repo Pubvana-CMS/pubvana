@@ -1,7 +1,9 @@
 {
     "name": "Bad Theme",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "author": "Evil Dev",
+    "author_url": "https://pubvana.net",
+    "support_url": "https://pubvana.net/contact",
     "description": "This theme contains PHP and should fail validation.",
     "widget_areas": {
         "sidebar": "Sidebar"
