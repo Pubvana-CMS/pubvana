@@ -1,0 +1,33 @@
+{
+    "name": "Social Links",
+    "description": "Displays social media profile links.",
+    "version": "1.0.0",
+    "admin": {
+        "notice": "Social links are managed centrally. To add or edit your social profiles, go to Admin → Social Links.",
+        "options": {
+            "title": {
+                "type": "text",
+                "label": "Widget Title",
+                "default": "Follow Us"
+            },
+            "style": {
+                "type": "select",
+                "label": "Style",
+                "default": "icons",
+                "choices": {
+                    "icons": "Icons only",
+                    "icons+text": "Icons + Text"
+                }
+            }
+        }
+    },
+    "output": {
+        "template": "widget.tpl",
+        "providers": {
+            "links": {
+                "provider": "SocialModel.getActive",
+                "params": {}
+            }
+        }
+    }
+}

@@ -1,0 +1,30 @@
+{
+    "name": "Tag Cloud",
+    "description": "Displays tags as a cloud of links.",
+    "version": "1.0.0",
+    "admin": {
+        "options": {
+            "title": {
+                "type": "text",
+                "label": "Widget Title",
+                "default": "Tags"
+            },
+            "max_tags": {
+                "type": "number",
+                "label": "Maximum Tags",
+                "default": "30"
+            }
+        }
+    },
+    "output": {
+        "template": "widget.tpl",
+        "providers": {
+            "tags": {
+                "provider": "TagModel.getWithPostCount",
+                "params": {
+                    "limit": "max_tags"
+                }
+            }
+        }
+    }
+}

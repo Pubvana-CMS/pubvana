@@ -51,4 +51,15 @@ class CommentModel extends Model
         }
         return $tree;
     }
+
+    public function getRecentApproved(int $limit = 5): array
+    {
+        return $this->db->table('comments c')
+            ->select('c.author_name, c.content, c.created_at, p.slug as post_slug, p.title as post_title')
+            ->join('posts p', 'p.id = c.post_id')
+            ->where('c.status', 'approved')
+            ->orderBy('c.created_at', 'DESC')
+            ->limit($limit)
+            ->get()->getResultObject();
+    }
 }

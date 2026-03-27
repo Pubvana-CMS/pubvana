@@ -1,0 +1,35 @@
+{
+    "name": "Related Posts",
+    "description": "Displays posts related to the current post by shared categories and tags.",
+    "version": "1.0.0",
+    "admin": {
+        "options": {
+            "title": {
+                "type": "text",
+                "label": "Widget Title",
+                "default": "Related Posts"
+            },
+            "count": {
+                "type": "number",
+                "label": "Number of Posts",
+                "default": "4"
+            },
+            "show_thumbnail": {
+                "type": "checkbox",
+                "label": "Show Thumbnails",
+                "default": "1"
+            }
+        }
+    },
+    "output": {
+        "template": "widget.tpl",
+        "providers": {
+            "posts": {
+                "provider": "PostModel.getRelated",
+                "params": {
+                    "limit": "count"
+                }
+            }
+        }
+    }
+}

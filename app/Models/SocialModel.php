@@ -12,4 +12,11 @@ class SocialModel extends Model
     protected $useTimestamps = false;
 
     protected $allowedFields = ['platform', 'url', 'icon', 'sort_order', 'is_active'];
+
+    public function getActive(): array
+    {
+        return $this->where('is_active', 1)
+            ->orderBy('sort_order')
+            ->findAll();
+    }
 }

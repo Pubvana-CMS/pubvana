@@ -1,0 +1,30 @@
+{
+    "name": "Recent Comments",
+    "description": "Displays the most recent approved comments.",
+    "version": "1.0.0",
+    "admin": {
+        "options": {
+            "title": {
+                "type": "text",
+                "label": "Widget Title",
+                "default": "Recent Comments"
+            },
+            "count": {
+                "type": "number",
+                "label": "Number of Comments",
+                "default": "5"
+            }
+        }
+    },
+    "output": {
+        "template": "widget.tpl",
+        "providers": {
+            "comments": {
+                "provider": "CommentModel.getRecentApproved",
+                "params": {
+                    "limit": "count"
+                }
+            }
+        }
+    }
+}

@@ -70,8 +70,8 @@
                 </div>
                 <div class="card-body p-2">
                     <?php foreach ($available as $w):
-                        $wInfoFile = WIDGETS_PATH . $w->folder . '/widget_info.php';
-                        $wInfo = is_file($wInfoFile) ? require $wInfoFile : [];
+                        $wJsonFile = WIDGETS_PATH . $w->folder . '/widget_info.json';
+                        $wInfo = is_file($wJsonFile) ? json_decode(file_get_contents($wJsonFile), true) : [];
                     ?>
                     <form method="POST" action="<?= base_url('admin/widgets/add') ?>" class="mb-1">
                         <?= csrf_field() ?>

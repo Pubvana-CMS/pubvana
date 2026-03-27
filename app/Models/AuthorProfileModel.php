@@ -31,4 +31,40 @@ class AuthorProfileModel extends Model
             $this->insert($data);
         }
     }
+
+    public function getForCurrentPost(): ?object
+    {
+        // Only render on single-post pages: /post/{slug}
+        $segments = service('uri')->getSegments(); // 0-indexed plain array
+        $seg1     = $segments[0] ?? '';
+        $slug     = $segments[1] ?? '';
+
+        if ($seg1 !== 'post' || empty($slug)) {
+            return null;
+        }
+
+        $post = (new PostModel())->published()->findBySlug($slug);
+        if (! $post || empty($post->author_id)) {
+            return null;
+        }
+
+        $profile = $this->getByUserId((int) $post->author_id);
+        if (! $profile) {
+            return null;
+        }
+
+        // Attach email/username for gravatar fallback
+        $userRow = db_connect()->table('users u')
+            ->select('u.username, ai.secret AS email')
+            ->join('auth_identities ai', 'ai.user_id = u.id AND ai.type = \'email_password\'', 'left')
+            ->where('u.id', $post->author_id)
+            ->get()->getRowObject();
+
+        if ($userRow) {
+            $profile->username = $userRow->username;
+            $profile->email    = $userRow->email;
+        }
+
+        return $profile;
+    }
 }
