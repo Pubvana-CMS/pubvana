@@ -35,6 +35,7 @@ Thumbs.db
 
 # Claude Code
 .claude/
+CLAUDE.md
 
 # Theme asset symlinks (recreated on deploy)
 /public/themes/
@@ -52,6 +53,7 @@ themes/ember/
 themes/flatly/
 themes/lux/
 themes/sandstone/
+themes/pvdark/
 themes/slate/
 themes/ember.zip
 
