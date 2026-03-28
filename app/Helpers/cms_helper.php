@@ -5,13 +5,12 @@
  * Loaded globally via Config/Autoload.php $helpers.
  */
 
-use App\Services\ThemeService;
 use App\Services\WidgetService;
 
 if (! function_exists('active_theme')) {
     function active_theme(): ?object
     {
-        return (new ThemeService())->getActive();
+        return service('theme')->getActive();
     }
 }
 

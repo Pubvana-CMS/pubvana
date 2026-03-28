@@ -6,6 +6,12 @@
     "support_url": "https://pubvana.net/contact",
     "description": "Clean Bootstrap 5 theme.",
     "screenshot": "screenshot.png",
+    "css_framework": "Bootstrap",
+    "css_frame_ver": "5.x",
+    "icon_pack": "FontAwesome",
+    "icon_pack_ver": "6.x",
+    "js_framework": "Bootstrap",
+    "js_framework_ver": "5.x",
     "widget_areas": {
         "sidebar": "Main Sidebar",
         "footer-1": "Footer Column 1",

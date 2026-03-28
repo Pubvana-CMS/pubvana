@@ -12,6 +12,7 @@ class WidgetService
     {
         $widgets = [];
         foreach (glob(WIDGETS_PATH . '*', GLOB_ONLYDIR) as $dir) {
+            $folder   = basename($dir);
             $jsonFile = $dir . '/widget_info.json';
             if (! is_file($jsonFile)) {
                 continue;
@@ -22,7 +23,22 @@ class WidgetService
                 continue;
             }
 
-            $info['folder'] = basename($dir);
+            // Enforce required manifest fields
+            foreach (['name', 'description', 'version'] as $field) {
+                if (empty($info[$field])) {
+                    log_message('warning', "Widget '{$folder}': missing required field '{$field}' in widget_info.json — skipped.");
+                    continue 2;
+                }
+            }
+
+            // Reject widgets containing PHP files (widgets are JSON + templates only)
+            $phpFiles = glob($dir . '/*.php');
+            if (! empty($phpFiles)) {
+                log_message('warning', "Widget '{$folder}': contains PHP files — skipped. Widgets must be JSON + templates only.");
+                continue;
+            }
+
+            $info['folder'] = $folder;
             $widgets[] = $info;
         }
         return $widgets;
@@ -85,16 +101,17 @@ class WidgetService
             $providerData = (new WidgetDataService())->resolve($providers, $merged);
         }
 
-        // Load theme cls_ overrides
+        // Load theme cls_ overrides and resolved icon variables
         $themeClasses = $this->getThemeWidgetClasses();
+        $themeIcons   = $this->getThemeIconClasses();
 
-        // Render template — theme classes go first, then options + providers overlay
+        // Render template — theme classes, icons, saved options, and provider data merged into one array
         $template = $manifest['output']['template'] ?? 'widget.tpl';
         $tplPath = WIDGETS_PATH . $folder . '/views/' . $template;
         $basePath = WIDGETS_PATH . $folder . '/views/';
         $engine = new Engine();
 
-        return $engine->render($tplPath, array_merge($themeClasses, $merged, $providerData), $basePath);
+        return $engine->render($tplPath, array_merge($themeClasses, $themeIcons, $merged, $providerData), $basePath);
     }
 
     public function renderAdminForm(string $folder, array $savedOptions = []): string
@@ -167,7 +184,7 @@ class WidgetService
         }
 
         $classes = [];
-        $themeService = new ThemeService();
+        $themeService = service('theme');
         $theme = $themeService->getActive();
         if (! $theme) {
             return $classes;
@@ -181,6 +198,48 @@ class WidgetService
         $info = json_decode(file_get_contents($jsonPath), true);
         $classes = $info['widget_classes'] ?? [];
         return $classes;
+    }
+
+    /**
+     * Resolve icon classes from the active theme's icon pack.
+     * Returns variables like icon_facebook, icon_website, etc.
+     * Cached per request — only reads theme_info.json and calls IconService once.
+     */
+    private function getThemeIconClasses(): array
+    {
+        static $icons = null;
+        if ($icons !== null) {
+            return $icons;
+        }
+
+        $icons = [];
+        $themeService = service('theme');
+        $theme = $themeService->getActive();
+        if (! $theme) {
+            return $icons;
+        }
+
+        $jsonPath = THEMES_PATH . $theme->folder . '/theme_info.json';
+        if (! is_file($jsonPath)) {
+            return $icons;
+        }
+
+        $info = json_decode(file_get_contents($jsonPath), true);
+        $pack = $info['icon_pack'] ?? '';
+        $ver  = $info['icon_pack_ver'] ?? '';
+        if (! $pack || ! $ver) {
+            return $icons;
+        }
+
+        // Resolve all brand + generic icons and prefix keys with "icon_"
+        $brandMap  = IconService::getBrandMap($pack, $ver);
+        $genericMap = IconService::getGenericMap($pack, $ver);
+
+        foreach (array_merge($brandMap, $genericMap) as $key => $class) {
+            $icons['icon_' . $key] = $class;
+        }
+
+        return $icons;
     }
 
     private function getDefaults(array $manifest): array

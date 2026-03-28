@@ -4,6 +4,12 @@
     <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.socialTitle') ?></h1>
 </div>
 
+<?php if (! empty($iconNotice)): ?>
+<div class="alert alert-warning">
+    <i class="fas fa-exclamation-triangle fa-fw"></i> <?= esc($iconNotice) ?>
+</div>
+<?php endif; ?>
+
 <div class="row">
     <!-- Add new link -->
     <div class="col-md-4">
@@ -12,6 +18,15 @@
                 <h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.socialTitle') ?></h6>
             </div>
             <div class="card-body">
+                <?php if (! empty($themeInfo['icon_pack'])): ?>
+                <div class="alert alert-info small mb-3">
+                    <i class="fas fa-palette fa-fw"></i>
+                    The current theme <strong><?= esc($themeInfo['name'] ?? 'Unknown') ?></strong> uses
+                    <strong><?= esc($themeInfo['icon_pack']) ?></strong>
+                    (v<?= esc($themeInfo['icon_pack_ver'] ?? '?') ?>) for icons.
+                    Below you can choose the icons available that will display for the Social Links feature of this site.
+                </div>
+                <?php endif; ?>
                 <form method="POST" action="<?= base_url('admin/social/store') ?>">
                     <?= csrf_field() ?>
                     <div class="form-group">
@@ -26,6 +41,7 @@
                         <input type="hidden" name="icon" id="icon-value">
                         <div id="icon-dropdown" class="border rounded mt-1 bg-white" style="display:none; max-height:200px; overflow-y:auto">
                         </div>
+                        <small class="form-text text-muted">These icons are just a representation of the icon that will be used. The actual icon may differ depending on the active theme's icon pack.</small>
                     </div>
                     <div class="form-group">
                         <label><?= lang('Admin.socialUrl') ?></label>
@@ -56,7 +72,7 @@
                     <?php foreach ($links as $link): ?>
                         <tr>
                             <td>
-                                <i class="<?= esc($link->icon) ?> fa-fw fa-lg text-primary"></i>
+                                <i class="<?= esc($adminIcons[$link->id] ?? $link->icon) ?> fa-fw fa-lg text-primary"></i>
                             </td>
                             <td>
                                 <a href="#" class="copy-url" data-url="<?= esc($link->url) ?>" data-toggle="tooltip" title="<?= esc($link->url) ?>">
@@ -108,52 +124,32 @@ $(function(){
     // Icon picker
     var icons = [
         {label:'Facebook',    cls:'fab fa-facebook'},
-        {label:'Facebook',    cls:'fab fa-facebook-f'},
-        {label:'Facebook',    cls:'fab fa-square-facebook'},
         {label:'Messenger',   cls:'fab fa-facebook-messenger'},
-        {label:'Twitter / X', cls:'fab fa-twitter'},
-        {label:'Twitter / X', cls:'fab fa-square-twitter'},
         {label:'X',           cls:'fab fa-x-twitter'},
         {label:'Instagram',   cls:'fab fa-instagram'},
         {label:'YouTube',     cls:'fab fa-youtube'},
-        {label:'YouTube',     cls:'fab fa-square-youtube'},
         {label:'LinkedIn',    cls:'fab fa-linkedin'},
-        {label:'LinkedIn',    cls:'fab fa-linkedin-in'},
         {label:'Pinterest',   cls:'fab fa-pinterest'},
-        {label:'Pinterest',   cls:'fab fa-pinterest-p'},
-        {label:'Pinterest',   cls:'fab fa-square-pinterest'},
         {label:'TikTok',      cls:'fab fa-tiktok'},
         {label:'Snapchat',    cls:'fab fa-snapchat'},
-        {label:'Snapchat',    cls:'fab fa-square-snapchat'},
         {label:'Reddit',      cls:'fab fa-reddit'},
-        {label:'Reddit',      cls:'fab fa-reddit-alien'},
-        {label:'Reddit',      cls:'fab fa-square-reddit'},
         {label:'Discord',     cls:'fab fa-discord'},
         {label:'Twitch',      cls:'fab fa-twitch'},
         {label:'GitHub',      cls:'fab fa-github'},
-        {label:'GitHub',      cls:'fab fa-github-alt'},
-        {label:'GitHub',      cls:'fab fa-square-github'},
         {label:'WhatsApp',    cls:'fab fa-whatsapp'},
-        {label:'WhatsApp',    cls:'fab fa-square-whatsapp'},
         {label:'Telegram',    cls:'fab fa-telegram'},
         {label:'Mastodon',    cls:'fab fa-mastodon'},
         {label:'Tumblr',      cls:'fab fa-tumblr'},
-        {label:'Tumblr',      cls:'fab fa-square-tumblr'},
-        {label:'Vimeo',       cls:'fab fa-vimeo'},
         {label:'Vimeo',       cls:'fab fa-vimeo-v'},
-        {label:'Vimeo',       cls:'fab fa-square-vimeo'},
         {label:'Flickr',      cls:'fab fa-flickr'},
         {label:'Dribbble',    cls:'fab fa-dribbble'},
-        {label:'Dribbble',    cls:'fab fa-square-dribbble'},
         {label:'Behance',     cls:'fab fa-behance'},
-        {label:'Behance',     cls:'fab fa-square-behance'},
         {label:'Medium',      cls:'fab fa-medium'},
         {label:'Spotify',     cls:'fab fa-spotify'},
         {label:'SoundCloud',  cls:'fab fa-soundcloud'},
         {label:'Slack',       cls:'fab fa-slack'},
         {label:'Skype',       cls:'fab fa-skype'},
         {label:'Steam',       cls:'fab fa-steam'},
-        {label:'Steam',       cls:'fab fa-square-steam'},
         {label:'Patreon',     cls:'fab fa-patreon'},
         {label:'PayPal',      cls:'fab fa-paypal'}
     ];

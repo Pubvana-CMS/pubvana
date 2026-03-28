@@ -57,6 +57,19 @@
                         &middot; <a href="<?= esc($info['support_url']) ?>" target="_blank" rel="noopener"><?= lang('Admin.themeSupport') ?></a>
                     <?php endif; ?>
                 </p>
+                <?php if (!empty($info['css_framework']) || !empty($info['js_framework']) || !empty($info['icon_pack'])): ?>
+                <p class="text-muted small mb-1">
+                    <?php if (!empty($info['css_framework'])): ?>
+                        <i class="fab fa-css3"></i> <?= esc($info['css_framework']) ?> <?= esc($info['css_frame_ver'] ?? '') ?>
+                    <?php endif; ?>
+                    <?php if (!empty($info['js_framework'])): ?>
+                        | <i class="fab fa-js-square"></i> <?= esc($info['js_framework']) ?> <?= esc($info['js_framework_ver'] ?? '') ?>
+                    <?php endif; ?>
+                    <?php if (!empty($info['icon_pack'])): ?>
+                        | <i class="fas fa-icons"></i> <?= esc($info['icon_pack']) ?> <?= esc($info['icon_pack_ver'] ?? '') ?>
+                    <?php endif; ?>
+                </p>
+                <?php endif; ?>
                 <?php if (! $isValid): ?>
                     <div class="alert alert-danger small py-1 px-2 mb-0">
                         <i class="fas fa-exclamation-triangle"></i> <?= lang('Admin.themeValidationFailed') ?>
