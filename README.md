@@ -215,7 +215,7 @@ Before deploying to a public server:
 - [ ] Set `app.baseURL` to your actual domain in `.env`
 - [ ] Set `app.forceGlobalSecureRequests = true` in `app/Config/App.php` to enforce HTTPS and send HSTS headers
 - [ ] Enable CSP: set `app.CSPEnabled = true` in `app/Config/App.php` and configure a policy appropriate to your theme
-- [ ] Ensure only `writable/uploads/` is web-accessible — never expose `writable/` itself to the public, as it contains sessions, cache, and logs
+- [ ] Verify your web server's DocumentRoot points to `public/` — this keeps `writable/` (sessions, cache, logs) outside the web root automatically
 - [ ] Ensure `.env` has permissions `600` and is not committed to version control
 - [ ] Run `php spark key:generate` once per installation — do not reuse encryption keys across sites
 
@@ -256,32 +256,22 @@ Please use the [Issues Tracker](https://github.com/enlivenapp/pubvana/issues).
 
 Pubvana is released under the MIT Open Source License.
 
-## Contributors & Team Members
+## Contributors
 
 - Enliven Applications
 
-## Translators & Translations
+## Translations
 
 _Translators Wanted!_
 
-If you would like to help translate files, please fork this repo and send a PR.
+Pubvana ships with 6 languages: English (source), Spanish (Latin American), French, Indonesian, Portuguese, and Slovak. French, Slovak, Indonesian, and Portuguese are partially AI-translated and need verification from native speakers.
 
-v2 ships with 6 languages: English (source), French, Indonesian, Portuguese, Slovak, and Spanish (Latin American). All non-English translations were AI-generated and need verification from native speakers.
+If you would like to help verify or add translations, please fork this repo and send a PR.
 
-Please include a README.md update under 'Translators' with your name and a link to your site/GitHub (optional).
-
-* French — AI translated, needs native speaker verification
-  - v1 contributors: [Paul DUBOT](https://github.com/keeganpa), [Léonard GAURIAU](https://github.com/leoDisjonct), [Clément TRASSOUDAINE](https://github.com/intv0id), [Jean-Baptiste VALLADEAU](https://github.com/ignamarte), [Rhagngahr](https://github.com/Rhagngahr)
-
-* Indonesian — AI translated, needs native speaker verification
-  - v1 contributor: [Suhindra](https://github.com/suhindra)
-
-* Portuguese — AI translated, needs native speaker verification
-  - v1 contributor: [Samuel Fontebasso](https://github.com/fontebasso)
-
-* Slovak — AI translated, needs native speaker verification
-
-* Spanish (Latin American) — AI translated, needs native speaker verification
+* French — [Paul DUBOT](https://github.com/keeganpa), [Léonard GAURIAU](https://github.com/leoDisjonct), [Clément TRASSOUDAINE](https://github.com/intv0id), [Jean-Baptiste VALLADEAU](https://github.com/ignamarte), [Rhagngahr](https://github.com/Rhagngahr)
+* Indonesian — [Suhindra](https://github.com/suhindra)
+* Portuguese — [Samuel Fontebasso](https://github.com/fontebasso)
+* Slovak — Kristián Feldsam
 
 ## Roadmap / Todo
 
