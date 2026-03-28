@@ -18,6 +18,13 @@ widgets/RecentPosts/
 **Naming convention:**
 - Folder: capitalized, no underscores (e.g. `RecentPosts`, `TagCloud`, `CategoriesList`)
 
+### Validation Rules
+
+`WidgetService` enforces these rules when scanning widget directories. Widgets that fail validation are skipped and logged as warnings:
+
+1. **Required manifest fields** — `widget_info.json` must contain non-empty `name`, `description`, and `version` fields. Missing any of these causes the widget to be skipped.
+2. **No PHP files** — The widget directory must not contain any `.php` files. Widgets are JSON + templates only. If a `.php` file is found in the widget's root directory, the widget is skipped entirely. This is a security measure — all data access goes through the whitelisted provider system (see Section 2), never through arbitrary PHP.
+
 ---
 
 ## 2. widget_info.json Format
@@ -70,6 +77,7 @@ The manifest has three top-level sections: metadata, `admin`, and `output`.
 | `name` | yes | Human-readable widget name |
 | `description` | yes | Short description |
 | `version` | yes | Semantic version |
+| `premium` | no | Set to `true` to display a "Premium" badge in the admin widget list |
 
 ### `admin` Section
 
@@ -113,6 +121,10 @@ Each provider entry declares a whitelisted `Model.method` call:
 
 - `provider` — a whitelisted `Model.method` string (e.g. `PostModel.getRecent`). `WidgetDataService` validates against its whitelist before calling.
 - `params` — maps parameter names to option keys. The saved option value is substituted at runtime. Use `{}` if no params needed.
+- **Context parameters:** Values prefixed with `@` are resolved from the current request, not from saved options. Use these when a widget needs runtime information like which post is being viewed. Currently supported: `@current_post_id` (the ID of the blog post being viewed, or `null` on non-post pages). Example:
+  ```json
+  "params": { "postId": "@current_post_id" }
+  ```
 - The model method is called by `WidgetDataService`, which is a service layer — widgets never touch models directly.
 - If a provider isn't whitelisted or the model method doesn't exist, the template variable receives `null`.
 
@@ -127,7 +139,8 @@ Each provider entry declares a whitelisted `Model.method` call:
 | `PostModel.getArchiveList` | Monthly/yearly archive list. Params: `format` |
 | `CommentModel.getRecentApproved` | Recent approved comments. Params: `limit` |
 | `PostModel.getRelated` | Posts related to current post. Params: `limit` |
-| `AuthorProfileModel.getForCurrentPost` | Author profile for the current post page |
+| `AuthorProfileModel.getForPost` | Author profile for the current post. Params: `postId` (context param — see below) |
+| `LanguageModel.getSwitcherData` | Available languages for the locale switcher |
 
 ---
 
@@ -140,9 +153,11 @@ There are no PHP widget classes. `WidgetService` handles the entire lifecycle:
 3. Reads defaults from `admin.options`, loads saved values from `widget_instances.options_json` in the DB, merges saved over defaults
 4. Reads `output.providers`, passes to `WidgetDataService::resolve()` with merged options
 5. `WidgetDataService` validates each provider against its whitelist, calls `Model.method` with resolved params, returns data keyed by template variable name
-6. Merges options + provider results into one data array
+6. Merges theme CSS classes (`cls_` variables from `theme_info.json`), theme icon classes (`icon_*` variables resolved from the active theme's `icon_pack` — see Section 5b), saved admin options, and provider results into one template data array
 7. Engine renders `output.template` with that data
 8. HTML returned and concatenated into the page
+
+**Theme portability:** Widget instances are assigned to areas by **slug**, not by theme-specific IDs. If two themes define the same area slug (e.g. `sidebar`), widget instances carry over automatically when the user switches themes.
 
 ---
 
@@ -177,7 +192,7 @@ Widget views use `.tpl` files rendered by Pubvana's template engine. **No PHP is
 {% endfor %}
 ```
 
-**Truthiness:** `null`, `false`, `''`, `0`, `[]` are falsy. Everything else is truthy.
+**Truthiness:** `null`, `false`, `''`, `0`, `'0'`, `[]` are falsy. Everything else is truthy. (Note: unchecked checkboxes save as `"0"`, which is correctly treated as falsy in `{% if %}` conditions.)
 
 ### Operators
 
@@ -192,6 +207,7 @@ Widget views use `.tpl` files rendered by Pubvana's template engine. **No PHP is
 ```
 {% lang 'Blog.readMore' %}
 {% base_url 'path' %}
+{% site_url 'path' %}
 {% theme_url 'css/style.css' %}
 {% post_url slug_variable %}
 {% category_url slug_variable %}
@@ -263,7 +279,7 @@ Themes declare their class overrides in `theme_info.json` under `widget_classes`
 | `cls_card_title` | `widget-card-title` | Card title |
 | `cls_card_text` | `widget-card-text` | Card text |
 | `cls_thumbnail` | `widget-thumbnail` | Thumbnail image |
-| `cls_social_links` | `widget-social-links` / `widget-social-links-list` | Social links container |
+| `cls_social_links` | `widget-social-links` | Social links container |
 | `cls_social_link` | `widget-social-link` | Individual social link |
 | `cls_toc_nav` | `widget-toc-nav` | Table of contents nav |
 | `cls_toc_list` | `widget-toc-list` | TOC list |
@@ -285,12 +301,115 @@ Themes declare their class overrides in `theme_info.json` under `widget_classes`
 
 ---
 
+## 5b. Icon Variables — The `icon_*` Pattern
+
+Alongside `cls_*` for structural styling, widgets have access to `icon_*` variables for icon library classes. These are automatically resolved from the active theme's `icon_pack` and `icon_pack_ver` declared in `theme_info.json` and injected into every widget at render time — no configuration or provider needed.
+
+### How It Works
+
+The CMS reads the active theme's icon pack declaration, looks up every supported platform key in the `IconService` registry, and injects variables prefixed with `icon_` into the widget template data. For example, if the active theme declares `"icon_pack": "BootstrapIcons"` with `"icon_pack_ver": "1"`, then `icon_facebook` resolves to `bi bi-facebook`, `icon_github` resolves to `bi bi-github`, and so on.
+
+### Available Icon Variables
+
+**Brand icons** (29 platforms):
+
+| Variable | Description | FA6 Example | BootstrapIcons Example |
+|----------|-------------|-------------|----------------------|
+| `icon_facebook` | Facebook | `fa-brands fa-facebook` | `bi bi-facebook` |
+| `icon_messenger` | Facebook Messenger | `fa-brands fa-facebook-messenger` | `bi bi-messenger` |
+| `icon_x` | X (Twitter) | `fa-brands fa-x-twitter` | `bi bi-twitter-x` |
+| `icon_instagram` | Instagram | `fa-brands fa-instagram` | `bi bi-instagram` |
+| `icon_youtube` | YouTube | `fa-brands fa-youtube` | `bi bi-youtube` |
+| `icon_linkedin` | LinkedIn | `fa-brands fa-linkedin` | `bi bi-linkedin` |
+| `icon_pinterest` | Pinterest | `fa-brands fa-pinterest` | `bi bi-pinterest` |
+| `icon_tiktok` | TikTok | `fa-brands fa-tiktok` | `bi bi-tiktok` |
+| `icon_snapchat` | Snapchat | `fa-brands fa-snapchat` | `bi bi-snapchat` |
+| `icon_reddit` | Reddit | `fa-brands fa-reddit` | `bi bi-reddit` |
+| `icon_discord` | Discord | `fa-brands fa-discord` | `bi bi-discord` |
+| `icon_twitch` | Twitch | `fa-brands fa-twitch` | `bi bi-twitch` |
+| `icon_github` | GitHub | `fa-brands fa-github` | `bi bi-github` |
+| `icon_whatsapp` | WhatsApp | `fa-brands fa-whatsapp` | `bi bi-whatsapp` |
+| `icon_telegram` | Telegram | `fa-brands fa-telegram` | `bi bi-telegram` |
+| `icon_mastodon` | Mastodon | `fa-brands fa-mastodon` | `bi bi-mastodon` |
+| `icon_tumblr` | Tumblr | `fa-brands fa-tumblr` | `bi bi-globe` |
+| `icon_vimeo` | Vimeo | `fa-brands fa-vimeo-v` | `bi bi-vimeo` |
+| `icon_flickr` | Flickr | `fa-brands fa-flickr` | `bi bi-globe` |
+| `icon_dribbble` | Dribbble | `fa-brands fa-dribbble` | `bi bi-dribbble` |
+| `icon_behance` | Behance | `fa-brands fa-behance` | `bi bi-behance` |
+| `icon_medium` | Medium | `fa-brands fa-medium` | `bi bi-medium` |
+| `icon_spotify` | Spotify | `fa-brands fa-spotify` | `bi bi-spotify` |
+| `icon_soundcloud` | SoundCloud | `fa-brands fa-soundcloud` | `bi bi-globe` |
+| `icon_slack` | Slack | `fa-brands fa-slack` | `bi bi-slack` |
+| `icon_skype` | Skype | `fa-brands fa-skype` | `bi bi-skype` |
+| `icon_steam` | Steam | `fa-brands fa-steam` | `bi bi-steam` |
+| `icon_patreon` | Patreon | `fa-brands fa-patreon` | `bi bi-globe` |
+| `icon_paypal` | PayPal | `fa-brands fa-paypal` | `bi bi-paypal` |
+
+**Generic icons** (non-brand):
+
+| Variable | Description | FA6 Example | BootstrapIcons Example |
+|----------|-------------|-------------|----------------------|
+| `icon_website` | Globe / generic website | `fa-solid fa-globe` | `bi bi-globe` |
+
+### Usage in Templates
+
+Always use `icon_*` variables with a `default()` fallback. The fallback ensures the widget renders correctly even if no theme is active or the theme doesn't declare an icon pack. Use Font Awesome 5/6 classes as defaults since they are the most widely used:
+
+```
+{# Correct — uses theme icon with FA fallback #}
+<i class="{{ icon_facebook | default('fab fa-facebook') }}"></i>
+<i class="{{ icon_website | default('fas fa-globe') }}"></i>
+<i class="{{ icon_x | default('fab fa-twitter') }}"></i>
+
+{# Wrong — hardcoded icon class, breaks on non-FA themes #}
+<i class="fab fa-facebook"></i>
+```
+
+### Complete Example: Social Links in a Widget
+
+This pattern from the **AuthorBio** widget shows `cls_*` and `icon_*` working together — structural styling from the theme's CSS framework, icon classes from the theme's icon pack:
+
+```
+<div class="{{ cls_social_links | default('widget-social-links') }}">
+    {% if profile.website %}
+        <a href="{{ profile.website }}"
+           class="{{ cls_social_link | default('widget-social-link') }}"
+           target="_blank" rel="noopener" title="Website">
+            <i class="{{ icon_website | default('fas fa-globe') }}"></i>
+        </a>
+    {% endif %}
+    {% if profile.twitter %}
+        <a href="https://twitter.com/{{ profile.twitter }}"
+           class="{{ cls_social_link | default('widget-social-link') }}"
+           target="_blank" rel="noopener" title="Twitter">
+            <i class="{{ icon_x | default('fab fa-twitter') }}"></i>
+        </a>
+    {% endif %}
+    {% if profile.facebook %}
+        <a href="https://facebook.com/{{ profile.facebook }}"
+           class="{{ cls_social_link | default('widget-social-link') }}"
+           target="_blank" rel="noopener" title="Facebook">
+            <i class="{{ icon_facebook | default('fab fa-facebook') }}"></i>
+        </a>
+    {% endif %}
+</div>
+```
+
+With a Bootstrap Icons theme, `icon_facebook` becomes `bi bi-facebook`. With a Tabler Icons theme, it becomes `ti ti-brand-facebook`. The widget template never changes.
+
+### Supported Icon Packs
+
+The CMS supports 7 icon packs. See **ThemeBuilder.md Section 11** for the full list with version numbers and example classes.
+
+---
+
 ## 6. Available Tag Functions
 
 | Function | Signature | Description |
 |----------|-----------|-------------|
 | `lang` | `{% lang 'Blog.key' %}` or `{% lang 'Blog.key' arg1 %}` | Localized string. Supports `{0}`, `{1}` placeholders. |
 | `base_url` | `{% base_url 'path' %}` | Site base URL + path |
+| `site_url` | `{% site_url 'path' %}` | Locale-aware site URL + path |
 | `theme_url` | `{% theme_url 'css/theme.css' %}` | Active theme's asset URL |
 | `post_url` | `{% post_url slug %}` | Blog post URL: `/blog/{slug}` |
 | `category_url` | `{% category_url slug %}` | Category URL: `/category/{slug}` |
