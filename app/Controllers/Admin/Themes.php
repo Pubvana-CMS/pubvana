@@ -2,15 +2,15 @@
 
 namespace App\Controllers\Admin;
 
+use App\Models\SocialModel;
 use App\Models\ThemeModel;
 use App\Services\ActivityLogger;
-use App\Services\ThemeService;
-
+use App\Services\IconService;
 class Themes extends BaseAdminController
 {
     public function index(): string
     {
-        $themeService = new ThemeService();
+        $themeService = service('theme');
         $themeService->sync();
         $themes = (new ThemeModel())->findAll();
 
@@ -31,7 +31,7 @@ class Themes extends BaseAdminController
             return redirect()->to('/admin/themes')->with('error', 'Theme not found.');
         }
 
-        $service = new ThemeService();
+        $service = service('theme');
 
         if (! $service->validateTheme($theme->folder)) {
             return redirect()->to('/admin/themes')->with('error', lang('Admin.themeValidationFailed'));
@@ -40,6 +40,32 @@ class Themes extends BaseAdminController
         $ok = $service->activate($id);
         if (! $ok) {
             return redirect()->to('/admin/themes')->with('error', lang('Admin.themeInvalidLicense'));
+        }
+
+        // Convert social link icons to the newly activated theme's icon pack
+        $jsonPath = THEMES_PATH . $theme->folder . '/theme_info.json';
+        if (is_file($jsonPath)) {
+            $info = json_decode(file_get_contents($jsonPath), true) ?? [];
+            $pack = $info['icon_pack'] ?? '';
+            $ver  = $info['icon_pack_ver'] ?? '';
+
+            if ($pack && $ver) {
+                $expectedBase = IconService::getBaseClass($pack, $ver);
+                if ($expectedBase) {
+                    $socialModel = new SocialModel();
+                    $links = $socialModel->findAll();
+
+                    foreach ($links as $link) {
+                        if (! str_starts_with($link->icon, $expectedBase)) {
+                            $platformKey = IconService::getPlatformFromIcon($link->icon);
+                            if ($platformKey) {
+                                $newIcon = IconService::getClass($platformKey, $pack, $ver);
+                                $socialModel->update($link->id, ['icon' => $newIcon]);
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         ActivityLogger::log('theme.activated', 'theme', $id, 'Activated theme: ' . ($theme->name ?? $id));
@@ -67,7 +93,7 @@ class Themes extends BaseAdminController
             $info = [];
         }
 
-        $service = new ThemeService();
+        $service = service('theme');
         $saved   = [];
         foreach (array_keys($info['options'] ?? []) as $key) {
             $saved[$key] = $service->getThemeOption($id, $key, $info['options'][$key]['default'] ?? '');
@@ -102,7 +128,7 @@ class Themes extends BaseAdminController
             $info = [];
         }
 
-        $service  = new ThemeService();
+        $service  = service('theme');
 
         $posted = $this->request->getPost('options') ?? [];
         foreach (array_keys($info['options'] ?? []) as $key) {

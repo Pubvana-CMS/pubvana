@@ -19,16 +19,16 @@
             {% if profile.website or profile.twitter or profile.facebook or profile.linkedin %}
             <div class="{{ cls_social_links | default('widget-social-links') }}">
                 {% if profile.website %}
-                    <a href="{{ profile.website }}" class="{{ cls_social_link | default('widget-social-link') }}" target="_blank" rel="noopener" title="Website"><i class="fas fa-globe"></i></a>
+                    <a href="{{ profile.website }}" class="{{ cls_social_link | default('widget-social-link') }}" target="_blank" rel="noopener" title="Website"><i class="{{ icon_website | default('fas fa-globe') }}"></i></a>
                 {% endif %}
                 {% if profile.twitter %}
-                    <a href="https://twitter.com/{{ profile.twitter }}" class="{{ cls_social_link | default('widget-social-link') }}" target="_blank" rel="noopener" title="Twitter"><i class="fab fa-twitter"></i></a>
+                    <a href="https://twitter.com/{{ profile.twitter }}" class="{{ cls_social_link | default('widget-social-link') }}" target="_blank" rel="noopener" title="Twitter"><i class="{{ icon_x | default('fab fa-twitter') }}"></i></a>
                 {% endif %}
                 {% if profile.facebook %}
-                    <a href="https://facebook.com/{{ profile.facebook }}" class="{{ cls_social_link | default('widget-social-link') }}" target="_blank" rel="noopener" title="Facebook"><i class="fab fa-facebook"></i></a>
+                    <a href="https://facebook.com/{{ profile.facebook }}" class="{{ cls_social_link | default('widget-social-link') }}" target="_blank" rel="noopener" title="Facebook"><i class="{{ icon_facebook | default('fab fa-facebook') }}"></i></a>
                 {% endif %}
                 {% if profile.linkedin %}
-                    <a href="https://linkedin.com/in/{{ profile.linkedin }}" class="{{ cls_social_link | default('widget-social-link') }}" target="_blank" rel="noopener" title="LinkedIn"><i class="fab fa-linkedin"></i></a>
+                    <a href="https://linkedin.com/in/{{ profile.linkedin }}" class="{{ cls_social_link | default('widget-social-link') }}" target="_blank" rel="noopener" title="LinkedIn"><i class="{{ icon_linkedin | default('fab fa-linkedin') }}"></i></a>
                 {% endif %}
             </div>
             {% endif %}

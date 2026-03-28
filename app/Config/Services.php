@@ -2,6 +2,7 @@
 
 namespace Config;
 
+use App\Services\ThemeService;
 use CodeIgniter\Config\BaseService;
 
 /**
@@ -19,14 +20,12 @@ use CodeIgniter\Config\BaseService;
  */
 class Services extends BaseService
 {
-    /*
-     * public static function example($getShared = true)
-     * {
-     *     if ($getShared) {
-     *         return static::getSharedInstance('example');
-     *     }
-     *
-     *     return new \CodeIgniter\Example();
-     * }
-     */
+    public static function theme(bool $getShared = true): ThemeService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('theme');
+        }
+
+        return new ThemeService();
+    }
 }

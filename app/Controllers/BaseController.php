@@ -4,7 +4,6 @@ namespace App\Controllers;
 
 use App\Libraries\LanguageSwitcher;
 use App\Models\LanguageModel;
-use App\Services\ThemeService;
 use CodeIgniter\Controller;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
@@ -13,13 +12,13 @@ use Psr\Log\LoggerInterface;
 abstract class BaseController extends Controller
 {
     protected array $data = [];
-    protected ThemeService $themeService;
+    protected \App\Services\ThemeService $themeService;
 
     public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger)
     {
         parent::initController($request, $response, $logger);
 
-        $this->themeService = new ThemeService();
+        $this->themeService = service('theme');
 
         // Locale detection — CI4 automatically calls $request->setLocale() when
         // a {locale} route segment is matched, so getLocale() returns the correct
