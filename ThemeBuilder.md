@@ -51,6 +51,12 @@ All 8 views and 7 partials should be present in a complete theme. Zero PHP files
     "support_url": "https://yoursite.com/support",
     "description": "One line description.",
     "screenshot": "screenshot.png",
+    "css_framework": "Bootstrap",
+    "css_frame_ver": "5.x",
+    "icon_pack": "FontAwesome",
+    "icon_pack_ver": "6.x",
+    "js_framework": "Bootstrap",
+    "js_framework_ver": "5.x",
     "premium": false,
     "widget_areas": {
         "sidebar": "Main Sidebar",
@@ -83,12 +89,72 @@ All 8 views and 7 partials should be present in a complete theme. Zero PHP files
 | `support_url` | no | Support/contact URL (linked in admin) |
 | `description` | no | Short description |
 | `screenshot` | no | Filename relative to theme root, shown in admin |
+| `css_framework` | yes | CSS framework name (e.g. `Bootstrap`, `DaisyUI`, `Tailwind`) |
+| `css_frame_ver` | yes | CSS framework version (e.g. `5.x`) |
+| `icon_pack` | yes | Icon library name (e.g. `FontAwesome`, `BootstrapIcons`, `Tabler`) |
+| `icon_pack_ver` | yes | Icon library version (e.g. `6.x`) |
+| `js_framework` | yes | JS framework name (e.g. `Bootstrap`, `AlpineJS`, `jQuery`, `none`) |
+| `js_framework_ver` | yes | JS framework version (e.g. `5.x`, `3.x`). Empty string if `js_framework` is `none` |
 | `premium` | no | Boolean flag for paid themes |
 | `widget_areas` | no | Object mapping area slugs to human labels. DB rows created on activation. |
 | `widget_classes` | no | Object mapping `cls_` variable names to CSS classes. Injected into all widgets. See Section 10. |
-| `options` | no | Admin-editable theme options. Types: `text`, `checkbox`, `textarea`, `number` |
+| `options` | no | Admin-editable theme options. Types: `text`, `checkbox`, `textarea`, `select`, `color`, `number` |
 
 Option values are stored in the `theme_options` table and available as variables in all theme views (see Section 6).
+
+### Widget areas
+
+Each slug declared in `widget_areas` becomes an assignable area in the admin Widgets page. To render an area in your theme, use the `{% widget_area %}` tag function with the matching slug:
+
+```
+{% widget_area 'sidebar' %}
+{% widget_area 'footer-1' %}
+{% widget_area 'before-content' %}
+```
+
+Areas are created in the database when the theme is activated. The admin can then drag widgets into each area and reorder them. If no widgets are assigned to an area, `{% widget_area %}` outputs nothing.
+
+### Option type details
+
+All option definitions support an optional `help` sub-key — rendered as hint text below the input.
+
+**`select`** requires a `choices` object mapping values to display labels:
+
+```json
+"layout_style": {
+    "type": "select",
+    "label": "Layout Style",
+    "choices": {
+        "wide": "Wide",
+        "boxed": "Boxed",
+        "narrow": "Narrow"
+    },
+    "default": "wide"
+}
+```
+
+**`color`** renders an HTML color picker:
+
+```json
+"accent_color": {
+    "type": "color",
+    "label": "Accent Color",
+    "default": "#f59e0b",
+    "help": "Used for links, buttons, and highlights"
+}
+```
+
+**`number`** supports optional `min` and `max` constraints:
+
+```json
+"posts_per_page": {
+    "type": "number",
+    "label": "Posts Per Page",
+    "default": "10",
+    "min": 1,
+    "max": 50
+}
+```
 
 ---
 
@@ -180,7 +246,9 @@ Includes inherit the parent scope. `with {}` adds or overrides variables. Paths 
 <head>
     <meta charset="utf-8">
     <title>{{ page_title | default(site_name) }}</title>
+    {% if seo.description %}
     <meta name="description" content="{{ seo.description }}">
+    {% endif %}
     {% if seo.og_title %}
     <meta property="og:title" content="{{ seo.og_title }}">
     <meta property="og:description" content="{{ seo.og_description }}">
@@ -192,8 +260,22 @@ Includes inherit the parent scope. `with {}` adds or overrides variables. Paths 
     <link rel="alternate" type="application/atom+xml" title="{{ site_name }} Atom Feed" href="{% site_url 'atom' %}">
     <link rel="stylesheet" href="{% theme_url 'css/theme.css' %}">
     {% block head_extra %}{% endblock %}
+    {% if json_ld %}
+    <script type="application/ld+json">{! json_ld !}</script>
+    {% endif %}
+    {% if analytics_id %}
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ analytics_id }}"></script>
+    <script>
+        window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+        gtag('js',new Date());gtag('config','{{ analytics_id | raw }}');
+    </script>
+    {% endif %}
 </head>
 <body>
+    {% if preview_mode %}
+        <div class="preview-banner">{% lang 'Blog.previewModeBanner' %}</div>
+    {% endif %}
+
     <nav>
         <a href="{% site_url '' %}">{{ site_name }}</a>
         {% for item in primary_nav %}
@@ -208,6 +290,7 @@ Includes inherit the parent scope. `with {}` adds or overrides variables. Paths 
         <div class="alert-error">{{ flash_error }}</div>
     {% endif %}
 
+    {% widget_area 'before-content' %}
     <main>
         {% block content %}{% endblock %}
     </main>
@@ -219,15 +302,6 @@ Includes inherit the parent scope. `with {}` adds or overrides variables. Paths 
         <p>{{ footer_copyright | default(site_name) }} &copy; {{ 'now' | date('Y') }}. {% lang 'Blog.allRightsReserved' %}</p>
     </footer>
 
-    {% if analytics_id %}
-    <script async src="https://www.googletagmanager.com/gtag/js?id={{ analytics_id }}"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', '{{ analytics_id | raw }}');
-    </script>
-    {% endif %}
 </body>
 </html>
 ```
@@ -271,6 +345,10 @@ The engine loads the child, collects its block content, loads the parent (layout
 | `comments_enabled` | bool | Whether comments are enabled site-wide |
 | `comment_moderation` | bool | Whether new comments need approval |
 | `hcaptcha_site_key` | string | hCaptcha site key (empty if not configured) |
+| `is_premium_active` | bool | Whether the site has an active premium license |
+| `csrf_field` | string | Pre-built CSRF hidden input tag — use `{! csrf_field !}` in forms |
+| `csrf_token_name` | string | CSRF token field name (for manual form building) |
+| `csrf_token_value` | string | CSRF token hash value (for manual form building) |
 | `lang_switcher` | array | Language switcher data (`buttons`, `dropdown`, `ul` formats) |
 | _(theme option keys)_ | string | All theme options from `theme_options` table (e.g. `show_sidebar`, `footer_copyright`) |
 
@@ -281,6 +359,14 @@ The engine loads the child, collects its block content, loads the parent (layout
 ## 7. Page-Specific Variables per View
 
 Controllers pass only page-specific data. These are merged with common data (Section 6) by ThemeService.
+
+**`json_ld`** is passed by several controllers (post, category, tag, archive). Rather than rendering it in each page view, place the JSON-LD output in `layout.tpl` `<head>` — it's a no-op on pages that don't provide it:
+
+```
+{% if json_ld %}
+<script type="application/ld+json">{! json_ld !}</script>
+{% endif %}
+```
 
 ### home.tpl
 
@@ -461,21 +547,110 @@ Only override the classes you need. Any `cls_` variable not in `widget_classes` 
 
 Both work together. `widget_classes` values take priority over semantic defaults.
 
+### Pagination Classes
+
+In addition to widget styling, themes control pagination markup via `cls_pager_*` keys in `widget_classes`. These are read by `ThemeService::getPaginationClasses()` and injected into the pager template that renders `pager_links`.
+
+| Variable | Default | Used For |
+|----------|---------|----------|
+| `cls_pager_list` | `pv-pagination` | Pagination `<ul>` wrapper |
+| `cls_pager_item` | `pv-page-item` | Each `<li>` page entry |
+| `cls_pager_link` | `pv-page-link` | `<a>` or `<span>` inside each item |
+| `cls_pager_active` | `pv-page-active` | Added to active `<li>` |
+| `cls_pager_disabled` | `pv-page-disabled` | Added to disabled `<li>` |
+
+Defaults are framework-agnostic `pv-*` classes. Override in `widget_classes` to map to your framework:
+
+```json
+"widget_classes": {
+    "cls_pager_list": "pagination justify-content-center",
+    "cls_pager_item": "page-item",
+    "cls_pager_link": "page-link",
+    "cls_pager_active": "active",
+    "cls_pager_disabled": "disabled"
+}
+```
+
 See **WidgetBuilder.md Section 5** for the complete `cls_` vocabulary with all standard variables and their defaults.
 
 ---
 
-## 11. User-Visible Strings — `{% lang %}` Requirement
+## 11. Icon Pack Support
+
+Themes declare which icon library they use via the `icon_pack` and `icon_pack_ver` fields in `theme_info.json`. The CMS uses this declaration to keep social link icons, widget icons, and any other icon references in sync with the active theme's icon library — automatically, with no manual effort from the site admin.
+
+### What Happens When a Theme is Activated
+
+When an admin activates a theme, the CMS reads the new theme's `icon_pack` and `icon_pack_ver` from its manifest and automatically converts all social link icons stored in the database to the correct CSS classes for that icon pack. For example, if social links were saved with Font Awesome 6 classes (`fa-brands fa-facebook`) and the admin switches to a theme using Bootstrap Icons, the stored icon classes are updated to `bi bi-facebook` on activation.
+
+This means theme developers do not need to worry about what icon classes were stored before their theme was activated — the CMS handles the translation.
+
+### Supported Icon Packs
+
+The CMS ships with built-in support for these icon libraries. The `icon_pack` value in `theme_info.json` must match one of the names below (matching is case-insensitive and ignores spaces, hyphens, and underscores — so `"FontAwesome"`, `"Font Awesome"`, and `"font-awesome"` all work). The `icon_pack_ver` value only needs the major version number (e.g. `"6.x"`, `"6"`, or `"6.2.14"` all resolve to major version `6`).
+
+| `icon_pack` | Supported Versions | Example Class |
+|-------------|-------------------|---------------|
+| `FontAwesome` | 5, 6, 7 | `fa-brands fa-facebook` (v6/7), `fab fa-facebook` (v5) |
+| `BootstrapIcons` | 1 | `bi bi-facebook` |
+| `RemixIcon` | 4 | `ri-facebook-fill` |
+| `Boxicons` | 2 | `bx bxl-facebook` |
+| `TablerIcons` | 3 | `ti ti-brand-facebook` |
+| `PhosphorIcons` | 2 | `ph ph-facebook-logo` |
+| `Lineicons` | 4 | `lni lni-facebook` |
+
+Each pack includes mappings for 29 brand platforms (Facebook, X/Twitter, Instagram, YouTube, LinkedIn, Pinterest, TikTok, Snapchat, Reddit, Discord, Twitch, GitHub, WhatsApp, Telegram, Mastodon, Tumblr, Vimeo, Flickr, Dribbble, Behance, Medium, Spotify, SoundCloud, Slack, Skype, Steam, Patreon, PayPal, Messenger) plus generic icons like `website` (globe icon).
+
+### Icon Variables in Widget Templates (`icon_*`)
+
+When a widget is rendered, the CMS automatically injects `icon_*` template variables based on the active theme's icon pack. These variables let widget templates display the correct icon class without hardcoding any specific icon library.
+
+Available variables follow the pattern `icon_{platform_key}`:
+
+**Brand icons:** `icon_facebook`, `icon_messenger`, `icon_x`, `icon_instagram`, `icon_youtube`, `icon_linkedin`, `icon_pinterest`, `icon_tiktok`, `icon_snapchat`, `icon_reddit`, `icon_discord`, `icon_twitch`, `icon_github`, `icon_whatsapp`, `icon_telegram`, `icon_mastodon`, `icon_tumblr`, `icon_vimeo`, `icon_flickr`, `icon_dribbble`, `icon_behance`, `icon_medium`, `icon_spotify`, `icon_soundcloud`, `icon_slack`, `icon_skype`, `icon_steam`, `icon_patreon`, `icon_paypal`
+
+**Generic icons:** `icon_website`
+
+Use these in widget `.tpl` files with a `default()` fallback so the widget still works if no theme is active or the theme doesn't declare an icon pack:
+
+```
+<i class="{{ icon_facebook | default('fab fa-facebook') }}"></i>
+<i class="{{ icon_website | default('fas fa-globe') }}"></i>
+<i class="{{ icon_x | default('fab fa-twitter') }}"></i>
+```
+
+The `default()` value should be a reasonable Font Awesome 5/6 class since that's the most commonly used icon library. See the **AuthorBio** widget for a real-world example of `icon_*` usage alongside `cls_*` class variables.
+
+### How It Works Together
+
+The `cls_*` pattern (Section 10) controls **structural CSS** — layout, spacing, typography classes from whatever CSS framework the theme uses. The `icon_*` pattern controls **icon CSS** — the correct icon library class for a given platform. Together they make widgets fully portable across themes:
+
+```
+{# cls_ for structural styling, icon_ for icon library #}
+<a href="{{ profile.website }}" class="{{ cls_social_link | default('widget-social-link') }}">
+    <i class="{{ icon_website | default('fas fa-globe') }}"></i>
+</a>
+```
+
+A Bootstrap + Font Awesome 6 theme and a DaisyUI + Bootstrap Icons theme will both render this widget correctly, with no template changes.
+
+---
+
+## 12. User-Visible Strings — `{% lang %}` Requirement
 
 **All user-visible text in `.tpl` files must use `{% lang %}` tags.** No hardcoded English.
 
 Available `Blog.*` keys organized by view:
 
-**All views (layout):** `home`, `blog`, `search`, `searchPlaceholder`, `rssFeed`, `sitemap`, `allRightsReserved`
+**All views (layout):** `home`, `blog`, `search`, `searchPlaceholder`, `rssFeed`, `sitemap`, `allRightsReserved`, `language`, `previewModeBanner`
 
-**home.tpl:** `latestPosts`, `readMore`, `noPostsYet`
+**home.tpl:** `latestPosts`, `readMore`, `viewAll`, `noPostsYet`
 
-**post.tpl:** `postedOn`, `views`, `readingTime`, `publishedBy`, `inCategory`, `tags`, `commentsHeading`, `commentFormTitle`, `commentLabel`, `commentPostBtn`, `commentModerated`, `commentLoginRequired`, `commentLoginLink`, `previewModeBanner`
+**post.tpl:** `postedOn`, `views`, `readingTime`, `publishedBy`, `inCategory`, `tags`, `commentsHeading`, `commentFormTitle`, `commentLabel`, `commentPostBtn`, `commentModerated`, `commentLoginRequired`, `commentLoginLink`, `commentAwaitModeration`, `commentPosted`, `commentLoginToComment`, `commentTooFast`
+
+**post.tpl (paywall):** `paywallTitle`, `paywallMessage`, `paywallSignIn`, `paywallCreateAccount`
+
+**post.tpl (author card):** `authorCardLabel`, `unknownAuthor`
 
 **page.tpl:** (uses `render_content`, minimal text needed)
 
@@ -485,22 +660,39 @@ Available `Blog.*` keys organized by view:
 
 **archive.tpl:** `archiveHeading`, `noPostsInPeriod`
 
-**search.tpl:** `searchResultsHeading`, `searchShowingFor`, `searchNoResults`
+**search.tpl:** `searchResultsHeading`, `searchShowingFor`, `searchNoResults`, `searchPostsPlaceholder`
+
+**pagination (partial):** `pageNavLabel`, `prevPage`, `nextPage`
+
+**contact form:** `contactTitle`, `contactName`, `contactEmail`, `contactMessage`, `contactSendBtn`, `contactSent`, `contactCaptchaFail`, `contactSubject`
+
+**404 page:** `pageNotFound`, `pageNotFoundTitle`
+
+**maintenance page:** `maintenanceTitle`, `maintenanceBody`
 
 **Parameterized keys** use `{0}`, `{1}` placeholders:
 ```
 {% lang 'Blog.views' post.views|number_format %}
 {# → "1,234 views" #}
 
+{% lang 'Blog.readingTime' reading_time %}
+{# → "5 min read" #}
+
+{% lang 'Blog.commentsHeading' comments|count %}
+{# → "Comments (3)" #}
+
 {% lang 'Blog.categoryHeading' category.name %}
 {# → "Posts in Technology" #}
+
+{% lang 'Blog.searchNoResults' query %}
+{# → 'No posts found for "example".' #}
 ```
 
 For the full key list, see `app/Language/en/Blog.php`. Translations exist for: `en`, `es`, `fr`, `id`, `pt`, `sk`.
 
 ---
 
-## 12. Multi-Language Support
+## 13. Multi-Language Support
 
 ### Dynamic `<html lang>` Attribute
 
@@ -544,9 +736,64 @@ In `layout.tpl` `<head>`:
 {% endif %}
 ```
 
+Alternatively, the **LanguagePicker** widget provides a drop-in language switcher with configurable style (buttons, dropdown, or list). Assign it to any widget area — no manual markup needed.
+
 ---
 
-## 13. Theme Validation
+## 14. Dark Mode
+
+Dark mode is entirely a theme-level frontend concern. The CMS has no server-side dark mode setting, middleware, or database flag — it serves the same HTML regardless. All dark mode logic lives in the theme's CSS and (optionally) JavaScript.
+
+### Approaches
+
+**No dark mode** — One color scheme, no switching logic. Simplest to build.
+
+**System-preference only** — The user's OS controls light/dark. No toggle in the theme UI. CSS handles everything:
+
+```css
+:root {
+    --bg: #ffffff;
+    --text: #111111;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #1a1a1a;
+        --text: #e0e0e0;
+    }
+}
+```
+
+Zero JavaScript required. The theme just defines two sets of CSS custom property values.
+
+**User toggle** — A visible switch in the theme UI (nav, footer, etc.) lets the visitor choose. This requires:
+
+1. **CSS custom properties** for both palettes, switched via a class or data attribute on `<html>`:
+   ```css
+   :root { --bg: #ffffff; --text: #111111; }
+   [data-theme="dark"] { --bg: #1a1a1a; --text: #e0e0e0; }
+   ```
+2. **Toggle JS** in the theme's assets directory that:
+   - Flips the attribute on click
+   - Persists the choice to `localStorage`
+3. **Inline JS snippet** in `layout.tpl` `<head>` that reads `localStorage` and applies the attribute *before* paint — prevents a flash of the wrong theme on page load
+4. **Toggle UI element** in `layout.tpl` (button/icon)
+
+All of this lives in `theme.css`, `assets/js/`, and `layout.tpl`. Nothing touches the CMS.
+
+**Always dark** — The theme's base design is dark. No light mode, no switching. Same as "no dark mode" but the single palette is dark.
+
+### What the Theme Builder Needs to Know
+
+The chosen approach determines:
+- Whether `theme.css` needs CSS custom properties and a second palette
+- Whether the theme ships JS (toggle + localStorage persistence)
+- Whether `layout.tpl` needs an inline `<script>` in `<head>` and a toggle button
+- Whether the `<html>` tag needs a conditional `data-theme` attribute
+
+---
+
+## 15. Theme Validation
 
 `ThemeService::validateTheme()` runs on every admin themes page load. It recursively scans every file in the theme directory (skipping binary formats) for `<?php`, `<?=`, and `<%`.
 
@@ -554,7 +801,7 @@ Themes that fail: activate button is disabled, warning shown in the admin theme 
 
 ---
 
-## 14. Key Path Constants
+## 16. Key Path Constants
 
 ```
 THEMES_PATH   = ROOTPATH . 'themes/'       e.g. /var/www/html2/themes/
@@ -566,7 +813,7 @@ FCPATH        = public/index.php dir        e.g. /var/www/html2/public/
 
 ---
 
-## 15. Complete Example — Building a Minimal Theme
+## 17. Complete Example — Building a Minimal Theme
 
 A minimal but complete theme demonstrating all patterns.
 
@@ -579,6 +826,12 @@ A minimal but complete theme demonstrating all patterns.
     "author": "Example",
     "description": "A bare-bones starter theme.",
     "screenshot": "screenshot.png",
+    "css_framework": "none",
+    "css_frame_ver": "",
+    "icon_pack": "FontAwesome",
+    "icon_pack_ver": "6.x",
+    "js_framework": "none",
+    "js_framework_ver": "",
     "widget_areas": {
         "sidebar": "Sidebar",
         "footer-1": "Footer"
@@ -602,7 +855,9 @@ A minimal but complete theme demonstrating all patterns.
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ page_title | default(site_name) }}</title>
+    {% if seo.description %}
     <meta name="description" content="{{ seo.description }}">
+    {% endif %}
     {% if seo.og_title %}
     <meta property="og:title" content="{{ seo.og_title }}">
     <meta property="og:description" content="{{ seo.og_description }}">
@@ -620,8 +875,22 @@ A minimal but complete theme demonstrating all patterns.
     <link rel="alternate" type="application/atom+xml" title="{{ site_name }} Atom Feed" href="{% site_url 'atom' %}">
     <link rel="stylesheet" href="{% theme_url 'css/theme.css' %}">
     {% block head_extra %}{% endblock %}
+    {% if json_ld %}
+    <script type="application/ld+json">{! json_ld !}</script>
+    {% endif %}
+    {% if analytics_id %}
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ analytics_id }}"></script>
+    <script>
+        window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+        gtag('js',new Date());gtag('config','{{ analytics_id | raw }}');
+    </script>
+    {% endif %}
 </head>
 <body>
+    {% if preview_mode %}
+        <div class="preview-banner">{% lang 'Blog.previewModeBanner' %}</div>
+    {% endif %}
+
     <header>
         <a href="{% site_url '' %}">{{ site_name }}</a>
         <span>{{ site_tagline }}</span>
@@ -642,6 +911,7 @@ A minimal but complete theme demonstrating all patterns.
     {% endif %}
 
     <div class="container">
+        {% widget_area 'before-content' %}
         <main>
             {% block content %}{% endblock %}
         </main>
@@ -654,20 +924,19 @@ A minimal but complete theme demonstrating all patterns.
 
     <footer>
         {% widget_area 'footer-1' %}
+        {% if footer_nav %}
+        <nav>
+            {% for item in footer_nav %}
+                <a href="{{ item.url }}" target="{{ item.target }}">{{ item.label }}</a>
+            {% endfor %}
+        </nav>
+        {% endif %}
         <p>{{ site_name }} &copy; {{ 'now' | date('Y') }}. {% lang 'Blog.allRightsReserved' %}</p>
         {% if sitemap_enabled %}
             <a href="{% site_url 'sitemap.xml' %}">{% lang 'Blog.sitemap' %}</a>
         {% endif %}
         <a href="{% site_url 'feed' %}">{% lang 'Blog.rssFeed' %}</a>
     </footer>
-
-    {% if analytics_id %}
-    <script async src="https://www.googletagmanager.com/gtag/js?id={{ analytics_id }}"></script>
-    <script>
-        window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
-        gtag('js',new Date());gtag('config','{{ analytics_id | raw }}');
-    </script>
-    {% endif %}
 </body>
 </html>
 ```
@@ -696,16 +965,12 @@ A minimal but complete theme demonstrating all patterns.
 ```
 {% extends 'layout' %}
 {% block content %}
-    {% if preview_mode %}
-        <div class="preview-banner">{% lang 'Blog.previewModeBanner' %}</div>
-    {% endif %}
-
     <article>
         <h1>{{ post.title }}</h1>
         <div class="meta">
             {% lang 'Blog.postedOn' %} {{ post.published_at | date('F j, Y') }}
-            &middot; {% lang 'Blog.readingTime' %} {{ reading_time }}
-            &middot; {{ post.views | number_format }} {% lang 'Blog.views' post.views|number_format %}
+            &middot; {% lang 'Blog.readingTime' reading_time %}
+            &middot; {% lang 'Blog.views' post.views|number_format %}
         </div>
 
         {% if post.featured_image %}
@@ -714,7 +979,8 @@ A minimal but complete theme demonstrating all patterns.
 
         {% if paywall %}
             {{ post.excerpt | excerpt(300) }}
-            {% widget_area 'before-content' %}
+            {# The Paywall widget can be assigned to the before-content area
+               to display a styled sign-in CTA on premium posts #}
         {% else %}
             {% render_content post %}
         {% endif %}
@@ -784,7 +1050,7 @@ A minimal but complete theme demonstrating all patterns.
         {% endif %}
     {% else %}
         {% if query %}
-            <p>{% lang 'Blog.searchNoResults' %}</p>
+            <p>{% lang 'Blog.searchNoResults' query %}</p>
         {% endif %}
     {% endif %}
 {% endblock %}
