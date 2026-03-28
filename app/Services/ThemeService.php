@@ -139,7 +139,7 @@ class ThemeService
 
         // Pre-render pager to HTML if present
         if (isset($pageData['pager'])) {
-            $pageData['pager_links'] = $pageData['pager']->links();
+            $pageData['pager_links'] = $pageData['pager']->links('default', 'theme_pager');
             unset($pageData['pager']);
         }
 
@@ -509,6 +509,42 @@ class ThemeService
         }
 
         rmdir($dir);
+    }
+
+    /**
+     * Return pagination CSS classes from the active theme's widget_classes.
+     *
+     * Themes override these via cls_pager_* keys in theme_info.json widget_classes.
+     * Defaults are framework-agnostic pv-* classes.
+     */
+    public function getPaginationClasses(): array
+    {
+        $defaults = [
+            'cls_pager_list'     => 'pv-pagination',
+            'cls_pager_item'     => 'pv-page-item',
+            'cls_pager_link'     => 'pv-page-link',
+            'cls_pager_active'   => 'pv-page-active',
+            'cls_pager_disabled' => 'pv-page-disabled',
+        ];
+
+        $theme = $this->getActive();
+        if (! $theme) {
+            return $defaults;
+        }
+
+        $jsonPath = THEMES_PATH . $theme->folder . '/theme_info.json';
+        if (! is_file($jsonPath)) {
+            return $defaults;
+        }
+
+        $info = json_decode(file_get_contents($jsonPath), true);
+        $wc   = $info['widget_classes'] ?? [];
+
+        foreach ($defaults as $key => $fallback) {
+            $defaults[$key] = $wc[$key] ?? $fallback;
+        }
+
+        return $defaults;
     }
 
     public function getThemeOption(int $themeId, string $key, mixed $default = null): mixed

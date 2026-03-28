@@ -64,6 +64,11 @@
         "cls_paywall_title": "h5 fw-bold",
         "cls_message": "text-muted mb-3",
         "cls_btn_primary": "btn btn-primary",
-        "cls_btn_secondary": "btn btn-outline-primary"
+        "cls_btn_secondary": "btn btn-outline-primary",
+        "cls_pager_list": "pagination justify-content-center",
+        "cls_pager_item": "page-item",
+        "cls_pager_link": "page-link",
+        "cls_pager_active": "active",
+        "cls_pager_disabled": "disabled"
     }
 }
