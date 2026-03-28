@@ -105,7 +105,7 @@ return [
     'commentLabel'          => 'Comentário *',
     'commentPostBtn'        => 'Publicar Comentário',
     'commentModerated'      => 'Os comentários são moderados antes de aparecer.',
-    'commentLoginRequired'  => '{0} para deixar um comentário.',
+    'commentLoginRequired'  => 'para deixar um comentário.',
     'commentLoginLink'      => 'Entre',
     'commentAwaitModeration'=> 'Seu comentário está aguardando moderação.',
     'commentPosted'         => 'Seu comentário foi publicado.',

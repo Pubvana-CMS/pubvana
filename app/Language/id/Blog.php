@@ -105,7 +105,7 @@ return [
     'commentLabel'          => 'Komentar *',
     'commentPostBtn'        => 'Kirim Komentar',
     'commentModerated'      => 'Komentar dimoderasi sebelum ditampilkan.',
-    'commentLoginRequired'  => '{0} untuk meninggalkan komentar.',
+    'commentLoginRequired'  => 'untuk meninggalkan komentar.',
     'commentLoginLink'      => 'Masuk',
     'commentAwaitModeration'=> 'Komentar Anda sedang menunggu moderasi.',
     'commentPosted'         => 'Komentar Anda telah diposting.',

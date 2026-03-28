@@ -109,7 +109,7 @@ return [
     'commentLabel'          => 'Comment *',
     'commentPostBtn'        => 'Post Comment',
     'commentModerated'      => 'Comments are moderated before appearing.',
-    'commentLoginRequired'  => '{0} to leave a comment.',
+    'commentLoginRequired'  => 'to leave a comment.',
     'commentLoginLink'      => 'Log in',
     'commentAwaitModeration'=> 'Your comment is awaiting moderation.',
     'commentPosted'         => 'Your comment has been posted.',

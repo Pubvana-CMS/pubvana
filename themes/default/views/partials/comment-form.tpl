@@ -4,7 +4,7 @@
         <h4 class="card-title">{% lang 'Blog.commentFormTitle' %}</h4>
         {% if is_logged_in %}
             <form action="{% post_url post.slug %}" method="POST">
-                <input type="hidden" name="csrf_token_name" value="{{ csrf_token }}">
+                {! csrf_field !}
                 <input type="hidden" name="parent_id" value="">
                 <div class="mb-3">
                     <label class="form-label">{% lang 'Blog.commentLabel' %}</label>
