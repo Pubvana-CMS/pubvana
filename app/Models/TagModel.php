@@ -18,14 +18,19 @@ class TagModel extends Model
         return $this->where('slug', $slug)->first();
     }
 
-    public function getWithPostCount(): array
+    public function getWithPostCount(int $limit = 0): array
     {
-        return $this->db->table('tags t')
+        $builder = $this->db->table('tags t')
             ->select('t.*, COUNT(ttp.post_id) as post_count')
             ->join('tags_to_posts ttp', 'ttp.tag_id = t.id', 'left')
             ->join('posts p', 'p.id = ttp.post_id AND p.status = "published" AND p.deleted_at IS NULL', 'left')
             ->groupBy('t.id')
-            ->orderBy('t.name', 'ASC')
-            ->get()->getResultObject();
+            ->orderBy('t.name', 'ASC');
+
+        if ($limit > 0) {
+            $builder->limit($limit);
+        }
+
+        return $builder->get()->getResultObject();
     }
 }
