@@ -105,7 +105,7 @@ return [
     'commentLabel'          => 'Komentár *',
     'commentPostBtn'        => 'Odoslať komentár',
     'commentModerated'      => 'Komentáre sú moderované pred zverejnením.',
-    'commentLoginRequired'  => '{0} pre pridanie komentára.',
+    'commentLoginRequired'  => 'pre pridanie komentára.',
     'commentLoginLink'      => 'Prihláste sa',
     'commentAwaitModeration'=> 'Váš komentár čaká na schválenie.',
     'commentPosted'         => 'Váš komentár bol zverejnený.',

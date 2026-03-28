@@ -105,7 +105,7 @@ return [
     'commentLabel'          => 'Commentaire *',
     'commentPostBtn'        => 'Publier le commentaire',
     'commentModerated'      => 'Les commentaires sont modérés avant d\'apparaître.',
-    'commentLoginRequired'  => '{0} pour laisser un commentaire.',
+    'commentLoginRequired'  => 'pour laisser un commentaire.',
     'commentLoginLink'      => 'Connectez-vous',
     'commentAwaitModeration'=> 'Votre commentaire est en attente de modération.',
     'commentPosted'         => 'Votre commentaire a été publié.',

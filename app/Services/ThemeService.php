@@ -268,6 +268,9 @@ class ThemeService
             'comment_moderation' => $commentModeration,
             'hcaptcha_site_key'  => $hcaptchaSiteKey,
             'is_premium_active'  => $isPremiumActive,
+            'csrf_field'         => csrf_field(),
+            'csrf_token_name'    => csrf_token(),
+            'csrf_token_value'   => csrf_hash(),
             'lang_switcher'      => $this->langSwitcherData,
         ]);
     }
