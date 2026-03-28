@@ -129,7 +129,7 @@ class MarketplaceService
         }
 
         // Folder name must be safe (no path traversal)
-        if (! preg_match('/^[a-z0-9_-]+$/', $folder)) {
+        if (! preg_match('/^[A-Za-z][A-Za-z0-9_-]*$/', $folder)) {
             return false;
         }
 
@@ -169,7 +169,7 @@ class MarketplaceService
         @unlink($zipPath);
 
         if ($type === 'theme') {
-            (new ThemeService())->publishAssets($folder);
+            service('theme')->publishAssets($folder);
         }
 
         $this->registerInstalled($type, $folder);
@@ -179,8 +179,8 @@ class MarketplaceService
     protected function registerInstalled(string $type, string $folder): void
     {
         $dir      = ($type === 'theme') ? THEMES_PATH : WIDGETS_PATH;
-        $infoFile = $dir . $folder . '/' . ($type === 'theme' ? 'theme_info' : 'widget_info') . '.php';
-        $info     = is_file($infoFile) ? require $infoFile : [];
+        $infoFile = $dir . $folder . '/' . ($type === 'theme' ? 'theme_info' : 'widget_info') . '.json';
+        $info     = is_file($infoFile) ? json_decode(file_get_contents($infoFile), true) ?? [] : [];
 
         $table = ($type === 'theme') ? 'themes' : 'widgets';
         $db    = db_connect();
