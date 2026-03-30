@@ -227,6 +227,16 @@ Post, page, and widget content is stored and rendered as raw HTML. This is inten
 
 | Version | Fix |
 |---------|-----|
+| 2.2.3 | DB dump escaping fixed: replaced `escapeLikeString()` with `escape()` — old method could corrupt or expose data in backup SQL dumps |
+| 2.2.2 | Theme and widget sandboxing: custom `.tpl` template engine with whitelisted filters and tag functions replaces raw PHP execution. No PHP files permitted in theme or widget directories — themes and widgets are pure `.tpl` templates + JSON manifests. PHP validation warnings shown in admin if violations detected. Eliminates arbitrary code execution via uploaded or modified themes/widgets. |
+| 2.2.2 | CSRF fields exposed to theme templates; comment form uses proper CSRF tag |
+| 2.2.0 | Honeypot spam protection re-enabled on comment and contact form POST routes; field name changed from `honeypot` to `website_url` to reduce bot evasion |
+| 2.0.4 | Permissions overhaul: explicit `can()` checks on 14 admin controllers |
+| 2.0.4 | Login-gated comments with rate limiting (5 per user per 10 minutes) |
+| 2.0.4 | hCaptcha spam protection on comment and contact forms |
+| 2.0.4 | Revisions: authors restricted to own post revisions only |
+| 2.0.4 | Delete remember tokens on user ban to prevent cookie re-auth |
+| 2.0.4 | Site owner protected from modification/deletion by non-owners |
 | 2.0.2 | Marketplace ZIP installs: download URL restricted to `pubvana.net`; ZIP entries checked for path traversal |
 | 2.0.2 | WordPress importer: switched to `LIBXML_NONET` to block XXE network fetches |
 | 2.0.2 | User profile IDOR: `profile` and `saveProfile` now verify ownership or `users.manage` permission |
@@ -267,6 +277,8 @@ _Translators Wanted!_
 Pubvana ships with 6 languages: English (source), Spanish (Latin American), French, Indonesian, Portuguese, and Slovak. French, Slovak, Indonesian, and Portuguese are partially AI-translated and need verification from native speakers.
 
 If you would like to help verify or add translations, please fork this repo and send a PR.
+
+Many Thanks to the folks who've provided translation. It is very apprciated.
 
 * French — [Paul DUBOT](https://github.com/keeganpa), [Léonard GAURIAU](https://github.com/leoDisjonct), [Clément TRASSOUDAINE](https://github.com/intv0id), [Jean-Baptiste VALLADEAU](https://github.com/ignamarte), [Rhagngahr](https://github.com/Rhagngahr)
 * Indonesian — [Suhindra](https://github.com/suhindra)

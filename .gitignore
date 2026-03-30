@@ -55,12 +55,13 @@ themes/lux/
 themes/sandstone/
 themes/pvdark/
 themes/slate/
+themes/testbad/
 themes/ember.zip
 
 # Premium widgets (local testing only)
-widgets/author_bio/
-widgets/ad_unit/
-widgets/social_links/
+widgets/AuthorBio/
+widgets/AdUnit/
+widgets/SocialLinks/
 public/writable/
 
 # PHPUnit / build output
