@@ -180,6 +180,9 @@ $routes->group('admin', ['filter' => ['admin_auth', 'totp'], 'namespace' => 'App
     // Updates
     $routes->get('updates',                  'Updates::index');
     $routes->post('updates/check',           'Updates::check');
+    $routes->post('updates/apply',           'Updates::apply');
+    $routes->get('updates/stream',           'Updates::stream');
+    $routes->get('updates/status',           'Updates::status');
 
     // Analytics
     $routes->get('analytics',                'Analytics::index');
@@ -188,10 +191,14 @@ $routes->group('admin', ['filter' => ['admin_auth', 'totp'], 'namespace' => 'App
     // Activity Log
     $routes->get('activity-log',             'ActivityLog::index');
 
-    // Backup & Export
-    $routes->get('backup',                   'Backup::index');
-    $routes->post('backup/download',         'Backup::download');
-    $routes->post('backup/delete',           'Backup::deleteFile');
+    // Backups
+    $routes->get('backups',                          'Backups::index');
+    $routes->post('backups/create',                  'Backups::create');
+    $routes->post('backups/restore/(:segment)',       'Backups::restore/$1');
+    $routes->post('backups/(:segment)/delete',        'Backups::delete/$1');
+    $routes->get('backups/download/(:segment)',       'Backups::download/$1');
+    $routes->get('backups/stream',                    'Backups::stream');
+    $routes->get('backups/status',                    'Backups::status');
 
     // Broken Links
     $routes->get('broken-links',                        'BrokenLinks::index');

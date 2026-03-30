@@ -50,7 +50,7 @@
         $contentOpen     = in_array($nav, ['posts','pages','categories','tags','comments','media','schedule','import'], true);
         $appearanceOpen  = in_array($nav, ['themes','widgets','navigation'], true);
         $siteOpen        = in_array($nav, ['users','social','redirects','settings','languages'], true);
-        $toolsOpen       = in_array($nav, ['affiliates','broken_links','analytics','activity_log','backup'], true);
+        $toolsOpen       = in_array($nav, ['affiliates','broken_links','analytics','activity_log','backups','updates'], true);
         $marketplaceOpen = in_array($nav, ['marketplace'], true);
         $pluginsOpen     = false; // plugins set their own nav key; default closed
         ?>
@@ -152,7 +152,8 @@
                     <a class="collapse-item <?= $nav === 'affiliates'   ? 'active' : '' ?>" href="<?= base_url('admin/affiliates') ?>"><i class="fas fa-star fa-xs text-warning mr-1"></i><?= lang('Admin.navAffiliates') ?></a>
                     <a class="collapse-item <?= $nav === 'broken_links' ? 'active' : '' ?>" href="<?= base_url('admin/broken-links') ?>"><i class="fas fa-star fa-xs text-warning mr-1"></i><?= lang('Admin.navBrokenLinks') ?></a>
                     <a class="collapse-item <?= $nav === 'activity_log' ? 'active' : '' ?>" href="<?= base_url('admin/activity-log') ?>"><i class="fas fa-star fa-xs text-warning mr-1"></i><?= lang('Admin.navActivityLog') ?></a>
-                    <a class="collapse-item <?= $nav === 'backup'       ? 'active' : '' ?>" href="<?= base_url('admin/backup') ?>"><i class="fas fa-star fa-xs text-warning mr-1"></i><?= lang('Admin.navBackup') ?></a>
+                    <a class="collapse-item <?= $nav === 'backups'      ? 'active' : '' ?>" href="<?= base_url('admin/backups') ?>"><?= lang('Admin.navBackup') ?></a>
+                    <a class="collapse-item <?= $nav === 'updates'      ? 'active' : '' ?>" href="<?= base_url('admin/updates') ?>"><?= lang('Admin.navUpdates') ?></a>
                 </div>
             </div>
         </li>
