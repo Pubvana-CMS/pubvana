@@ -3,6 +3,7 @@
 namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
+use App\Models\AdminNotificationModel;
 use App\Services\UpdateService;
 
 abstract class BaseAdminController extends BaseController
@@ -17,6 +18,65 @@ abstract class BaseAdminController extends BaseController
         if (! auth()->loggedIn() || ! auth()->user()->can('admin.access')) {
             redirect()->to('/login')->with('error', lang('Admin.adminLoginRequired'))->send();
             exit;
+        }
+
+        $this->checkDirectoryWritability();
+    }
+
+    /**
+     * Check that critical CMS directories are writable.
+     * Inserts a non-dismissable admin notification for each unwritable directory,
+     * and cleans up any resolved notifications when the directory becomes writable.
+     */
+    protected function checkDirectoryWritability(): void
+    {
+        $directories = [
+            THEMES_PATH,
+            WIDGETS_PATH,
+            PLUGINS_PATH,
+            WRITEPATH,
+            WRITEPATH . 'cache/',
+            WRITEPATH . 'logs/',
+        ];
+
+        $model = new AdminNotificationModel();
+
+        foreach ($directories as $path) {
+            $writable = false;
+
+            // Actually try to write — don't trust is_writable()
+            if (is_dir($path)) {
+                $testFile = $path . '.pubvana_write_test_' . mt_rand();
+                if (@file_put_contents($testFile, '') !== false) {
+                    @unlink($testFile);
+                    $writable = true;
+                }
+            }
+
+            if (! $writable) {
+                $existing = $model
+                    ->where('source', 'system')
+                    ->where('source_name', $path)
+                    ->where('dismissed_at', null)
+                    ->first();
+
+                if (! $existing) {
+                    $model->insert([
+                        'source'         => 'system',
+                        'source_name'    => $path,
+                        'severity'       => 'error',
+                        'message'        => lang('Admin.dirNotWritable', [$path]),
+                        'is_dismissable' => 0,
+                    ]);
+                }
+            } else {
+                // Directory is writable — remove any lingering notification for it.
+                $model
+                    ->where('source', 'system')
+                    ->where('source_name', $path)
+                    ->where('dismissed_at', null)
+                    ->delete();
+            }
         }
     }
 

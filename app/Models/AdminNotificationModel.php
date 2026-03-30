@@ -18,6 +18,7 @@ class AdminNotificationModel extends Model
         'message',
         'action_url',
         'action_label',
+        'is_dismissable',
         'dismissed_at',
     ];
 

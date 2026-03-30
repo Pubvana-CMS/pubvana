@@ -25,9 +25,11 @@
                 <?= esc($notification->action_label ?? 'View') ?>
             </a>
         <?php endif; ?>
+        <?php if ((int) $notification->is_dismissable !== 0): ?>
         <button type="button" class="btn-close-notification close" data-id="<?= $notification->id ?>" aria-label="Dismiss">
             <span aria-hidden="true">&times;</span>
         </button>
+        <?php endif; ?>
     </div>
     <?php endforeach; ?>
 </div>
