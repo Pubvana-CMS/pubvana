@@ -380,6 +380,8 @@ return [
     'marketplaceAll'        => 'Todos',
     'marketplaceThemes'     => 'Temas',
     'marketplaceWidgets'    => 'Widgets',
+    'marketplacePlugins'    => 'Plugins',
+    'marketplacePremiumCore' => 'Premium Core',
     'marketplaceUpdatesAvailable' => '{0} actualización(es) disponible(s).',
     'marketplaceBy'         => 'Por',
     'marketplaceFree'       => 'Gratis',
@@ -768,5 +770,6 @@ return [
 
     'adminLoginRequired'        => 'Debes iniciar sesión para acceder al panel de administración.',
     'premiumRequired'           => 'Esta función requiere una licencia de Pubvana Premium Core. Agrega tu clave de licencia a continuación.',
+    'dirNotWritable'            => 'El directorio no tiene permisos de escritura: {0}',
 
 ];

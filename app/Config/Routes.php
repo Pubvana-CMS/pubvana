@@ -169,6 +169,8 @@ $routes->group('admin', ['filter' => ['admin_auth', 'totp'], 'namespace' => 'App
     $routes->get('marketplace',              'Marketplace::index');
     $routes->get('marketplace/themes',       'Marketplace::themes');
     $routes->get('marketplace/widgets',      'Marketplace::widgets');
+    $routes->get('marketplace/plugins',      'Marketplace::plugins');
+    $routes->get('marketplace/premium-core', 'Marketplace::premiumCore');
     $routes->post('marketplace/install',     'Marketplace::install');
     $routes->post('marketplace/refresh',     'Marketplace::refresh');
     $routes->post('marketplace/update/(:segment)', 'Marketplace::update/$1');
@@ -221,6 +223,12 @@ $routes->group('admin', ['filter' => ['admin_auth', 'totp'], 'namespace' => 'App
     // Store
     $routes->get('store',                    'Store::index');
     $routes->post('store/install',           'Store::install');
+
+    // Plugins
+    $routes->get('plugins',              'Plugins::index');
+    $routes->post('plugins/discover',    'Plugins::discover');
+    $routes->post('plugins/activate',    'Plugins::activate');
+    $routes->post('plugins/deactivate',  'Plugins::deactivate');
 });
 
 // ===================================================
@@ -234,7 +242,7 @@ $routes->set404Override(static function (): void {
 // ===================================================
 // PLUGIN ROUTES — each plugin may provide its own Config/Routes.php
 // ===================================================
-foreach (glob(ROOTPATH . 'plugins/*/Config/Routes.php') as $pluginRoutes) {
+foreach (\App\Services\PluginManager::instance()->getRouteFiles() as $pluginRoutes) {
     require $pluginRoutes;
 }
 

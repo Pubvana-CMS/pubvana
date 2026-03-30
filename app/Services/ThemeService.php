@@ -209,11 +209,9 @@ class ThemeService
             $socialLinks = [];
         }
 
-        // Plugin menu items
+        // Plugin menu items (boot already ran at pre_system)
         try {
-            $pm = PluginManager::instance();
-            $pm->loadAll();
-            $pluginMenuItems = $pm->getMenuItems();
+            $pluginMenuItems = PluginManager::instance()->getMenuItems();
         } catch (\Throwable $e) {
             $pluginMenuItems = [];
         }

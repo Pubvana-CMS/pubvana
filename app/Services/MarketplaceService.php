@@ -45,10 +45,13 @@ class MarketplaceService
             log_message('warning', 'MarketplaceService API unreachable: ' . $e->getMessage());
         }
 
-        // Fallback to mock data
-        return $type === 'theme' ? $this->mockThemes()
-             : ($type === 'widget' ? $this->mockWidgets()
-             : array_merge($this->mockThemes(), $this->mockWidgets()));
+        // Fallback to mock data (no mock plugins — only themes/widgets have mock data)
+        return match ($type) {
+            'theme'  => $this->mockThemes(),
+            'widget' => $this->mockWidgets(),
+            'plugin' => [],
+            default  => array_merge($this->mockThemes(), $this->mockWidgets()),
+        };
     }
 
     /**
@@ -59,6 +62,7 @@ class MarketplaceService
         cache()->delete('marketplace_api_all');
         cache()->delete('marketplace_api_theme');
         cache()->delete('marketplace_api_widget');
+        cache()->delete('marketplace_api_plugin');
     }
 
 
@@ -94,6 +98,11 @@ class MarketplaceService
     public function fetchWidgets(): array
     {
         return array_map([$this, 'normalizeItem'], $this->fetchFromApi('widget'));
+    }
+
+    public function fetchPlugins(): array
+    {
+        return array_map([$this, 'normalizeItem'], $this->fetchFromApi('plugin'));
     }
 
     public function fetchAll(): array
@@ -135,7 +144,13 @@ class MarketplaceService
 
         $tmpDir  = WRITEPATH . 'tmp/';
         $zipPath = $tmpDir . $folder . '.zip';
-        $destDir = ($type === 'theme') ? THEMES_PATH : WIDGETS_PATH;
+        if ($type === 'plugin') {
+            $destDir = PLUGINS_PATH;
+        } elseif ($type === 'theme') {
+            $destDir = THEMES_PATH;
+        } else {
+            $destDir = WIDGETS_PATH;
+        }
 
         if (! is_dir($tmpDir)) {
             mkdir($tmpDir, 0755, true);
@@ -173,11 +188,23 @@ class MarketplaceService
         }
 
         $this->registerInstalled($type, $folder);
+
+        // Auto-discover new plugin so it appears in the plugins table
+        if ($type === 'plugin') {
+            \App\Services\PluginManager::instance()->discover();
+        }
+
         return true;
     }
 
     protected function registerInstalled(string $type, string $folder): void
     {
+        if ($type === 'plugin') {
+            // Plugins are managed via the plugins table, not themes/widgets.
+            // PluginManager::discover() handles the DB upsert.
+            return;
+        }
+
         $dir      = ($type === 'theme') ? THEMES_PATH : WIDGETS_PATH;
         $infoFile = $dir . $folder . '/' . ($type === 'theme' ? 'theme_info' : 'widget_info') . '.json';
         $info     = is_file($infoFile) ? json_decode(file_get_contents($infoFile), true) ?? [] : [];
@@ -278,7 +305,7 @@ class MarketplaceService
 
         $db    = db_connect();
         $rows  = $db->table('marketplace_items')
-            ->whereNotNull('license_key')
+            ->where('license_key IS NOT NULL')
             ->where('license_key !=', '')
             ->get()->getResult();
 

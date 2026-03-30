@@ -386,6 +386,8 @@ return [
     'marketplaceAll'        => 'All',
     'marketplaceThemes'     => 'Themes',
     'marketplaceWidgets'    => 'Widgets',
+    'marketplacePlugins'    => 'Plugins',
+    'marketplacePremiumCore' => 'Premium Core',
     'marketplaceUpdatesAvailable' => '{0} update(s) available.',
     'marketplaceBy'         => 'By',
     'marketplaceFree'       => 'Free',
@@ -789,5 +791,6 @@ return [
 
     'adminLoginRequired'        => 'You must be logged in to access the admin panel.',
     'premiumRequired'           => 'This feature requires a Pubvana Premium Core licence. Please add your licence key below.',
+    'dirNotWritable'            => 'Directory is not writable: {0}',
 
 ];

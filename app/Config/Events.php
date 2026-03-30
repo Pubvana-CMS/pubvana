@@ -88,4 +88,16 @@ Events::on('pre_system', static function (): void {
         // Leave supportedLocales at its default value.
         log_message('debug', 'pre_system locale bootstrap skipped: ' . $e->getMessage());
     }
+
+    /*
+     * --------------------------------------------------------------------
+     * Plugin System — boot active plugins so namespaces, routes, and
+     * CSRF exemptions are registered before the request is handled.
+     * --------------------------------------------------------------------
+     */
+    try {
+        \App\Services\PluginManager::instance()->boot();
+    } catch (\Throwable $e) {
+        log_message('debug', 'pre_system plugin boot skipped: ' . $e->getMessage());
+    }
 });

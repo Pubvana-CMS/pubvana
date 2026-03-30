@@ -19,6 +19,8 @@
     <li class="nav-item"><a class="nav-link <?= $filter === '' ? 'active' : '' ?>" href="<?= base_url('admin/marketplace') ?>"><?= lang('Admin.marketplaceAll') ?></a></li>
     <li class="nav-item"><a class="nav-link <?= $filter === 'theme' ? 'active' : '' ?>" href="<?= base_url('admin/marketplace/themes') ?>"><?= lang('Admin.marketplaceThemes') ?></a></li>
     <li class="nav-item"><a class="nav-link <?= $filter === 'widget' ? 'active' : '' ?>" href="<?= base_url('admin/marketplace/widgets') ?>"><?= lang('Admin.marketplaceWidgets') ?></a></li>
+    <li class="nav-item"><a class="nav-link <?= $filter === 'plugin' ? 'active' : '' ?>" href="<?= base_url('admin/marketplace/plugins') ?>"><?= lang('Admin.marketplacePlugins') ?></a></li>
+    <li class="nav-item"><a class="nav-link <?= $filter === 'premium_core' ? 'active' : '' ?>" href="<?= base_url('admin/marketplace/premium-core') ?>"><?= lang('Admin.marketplacePremiumCore') ?></a></li>
 </ul>
 
 <?php if (!empty($updates)): ?>
@@ -42,7 +44,7 @@
                 <img src="<?= esc($item->screenshot_url) ?>" class="card-img-top card-thumb obj-cover" alt="">
             <?php else: ?>
                 <div class="card-img-top bg-gradient-primary d-flex align-items-center justify-content-center card-thumb">
-                    <i class="fas fa-<?= $item->item_type === 'theme' ? 'palette' : 'puzzle-piece' ?> fa-3x text-white-50"></i>
+                    <i class="fas fa-<?= match($item->item_type) { 'theme' => 'palette', 'widget' => 'puzzle-piece', 'plugin' => 'plug', 'premium_core' => 'crown', default => 'box' } ?> fa-3x text-white-50"></i>
                 </div>
             <?php endif; ?>
             <div class="card-body">
@@ -55,7 +57,7 @@
                 <p class="text-muted small mb-2"><?= esc($item->description) ?></p>
                 <p class="text-muted small">
                     By <?= esc($item->author ?? 'Unknown') ?> &middot; v<?= esc($item->version) ?>
-                    &middot; <span class="badge badge-<?= $item->item_type === 'theme' ? 'primary' : 'secondary' ?>"><?= ucfirst($item->item_type) ?></span>
+                    &middot; <span class="badge badge-<?= match($item->item_type) { 'theme' => 'primary', 'plugin' => 'info', 'premium_core' => 'warning', default => 'secondary' } ?>"><?= ucwords(str_replace('_', ' ', $item->item_type)) ?></span>
                 </p>
             </div>
             <div class="card-footer bg-white d-flex justify-content-between align-items-center">

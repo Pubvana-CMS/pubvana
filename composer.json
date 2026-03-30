@@ -22,6 +22,7 @@
         "codeigniter4/queue": "^1.0",
         "codeigniter4/settings": "^2.2",
         "codeigniter4/shield": "^1.2",
+        "codeigniter4/tasks": "^1.0",
         "erusev/parsedown": "^1.8",
         "league/oauth2-client": "^2.9",
         "league/oauth2-facebook": "^2.2",

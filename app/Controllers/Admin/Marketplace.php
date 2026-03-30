@@ -54,6 +54,30 @@ class Marketplace extends BaseAdminController
         ]));
     }
 
+    public function plugins(): string
+    {
+        if (! auth()->user()->can('admin.marketplace')) {
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
+        }
+        return $this->adminView('marketplace/index', array_merge($this->baseData('Plugins — Marketplace', 'marketplace'), [
+            'items'   => $this->service->fetchPlugins(),
+            'filter'  => 'plugin',
+            'updates' => [],
+        ]));
+    }
+
+    public function premiumCore(): string
+    {
+        if (! auth()->user()->can('admin.marketplace')) {
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
+        }
+        return $this->adminView('marketplace/index', array_merge($this->baseData('Premium Core — Marketplace', 'marketplace'), [
+            'items'   => array_filter($this->service->fetchAll(), fn($i) => ($i->item_type ?? '') === 'premium_core'),
+            'filter'  => 'premium_core',
+            'updates' => [],
+        ]));
+    }
+
     public function refresh()
     {
         if (! auth()->user()->can('admin.marketplace')) {
@@ -72,7 +96,7 @@ class Marketplace extends BaseAdminController
         $type   = $this->request->getPost('item_type') ?? $this->request->getPost('type');
         $folder = $this->request->getPost('slug') ?? $this->request->getPost('folder');
 
-        if (! $url || ! in_array($type, ['theme', 'widget'], true) || ! $folder) {
+        if (! $url || ! in_array($type, ['theme', 'widget', 'plugin'], true) || ! $folder) {
             return redirect()->to('/admin/marketplace')->with('error', lang('Admin.marketplaceInvalidRequest'));
         }
 

@@ -380,6 +380,8 @@ return [
     'marketplaceAll'        => 'Semua',
     'marketplaceThemes'     => 'Tema',
     'marketplaceWidgets'    => 'Widget',
+    'marketplacePlugins'    => 'Plugin',
+    'marketplacePremiumCore' => 'Premium Core',
     'marketplaceUpdatesAvailable' => '{0} pembaruan tersedia.',
     'marketplaceBy'         => 'Oleh',
     'marketplaceFree'       => 'Gratis',
@@ -768,5 +770,6 @@ return [
 
     'adminLoginRequired'        => 'Anda harus masuk untuk mengakses panel admin.',
     'premiumRequired'           => 'Fitur ini memerlukan lisensi Pubvana Premium Core. Harap tambahkan kunci lisensi Anda di bawah.',
+    'dirNotWritable'            => 'Direktori tidak dapat ditulis: {0}',
 
 ];

@@ -48,11 +48,11 @@
         // Determine which group is active so the right section stays open
         $nav = $active_nav ?? '';
         $contentOpen     = in_array($nav, ['posts','pages','categories','tags','comments','media','schedule','import'], true);
-        $appearanceOpen  = in_array($nav, ['themes','widgets','navigation'], true);
+        $appearanceOpen  = in_array($nav, ['themes','widgets','navigation','plugins'], true);
         $siteOpen        = in_array($nav, ['users','social','redirects','settings','languages'], true);
         $toolsOpen       = in_array($nav, ['affiliates','broken_links','analytics','activity_log','backups','updates'], true);
         $marketplaceOpen = in_array($nav, ['marketplace'], true);
-        $pluginsOpen     = false; // plugins set their own nav key; default closed
+        // Plugin sections handle their own open/close state via nav_key matching
         ?>
 
         <hr class="sidebar-divider">
@@ -102,6 +102,7 @@
                     <?php if (auth()->user()->can('admin.widgets')): ?>
                     <a class="collapse-item <?= $nav === 'widgets'    ? 'active' : '' ?>" href="<?= base_url('admin/widgets') ?>"><?= lang('Admin.navWidgets') ?></a>
                     <?php endif; ?>
+                    <a class="collapse-item <?= $nav === 'plugins'    ? 'active' : '' ?>" href="<?= base_url('admin/plugins') ?>"><?= lang('Plugins.title') ?></a>
                     <?php if (auth()->user()->can('admin.navigation')): ?>
                     <a class="collapse-item <?= $nav === 'navigation' ? 'active' : '' ?>" href="<?= base_url('admin/navigation') ?>"><?= lang('Admin.navNavigation') ?></a>
                     <?php endif; ?>
@@ -178,27 +179,32 @@
         </li>
         <?php endif; ?>
 
-        <!-- ===== PLUGINS ===== -->
-        <?php if (!empty($plugin_menu_items ?? [])): ?>
-        <?php $pluginsOpen = in_array($nav, array_column($plugin_menu_items, 'nav_key'), true); ?>
+        <!-- ===== PLUGIN SECTIONS (one per active plugin) ===== -->
+        <?php foreach ($plugin_menu_items ?? [] as $idx => $section): ?>
+        <?php
+            $childNavKeys = array_column($section['children'] ?? [], 'nav_key');
+            $sectionOpen  = in_array($nav, $childNavKeys, true);
+            $collapseId   = 'collapsePlugin' . $idx;
+        ?>
         <li class="nav-item">
-            <a class="nav-link <?= $pluginsOpen ? '' : 'collapsed' ?>"
-               href="#collapsePlugins" data-toggle="collapse" data-target="#collapsePlugins"
-               aria-expanded="<?= $pluginsOpen ? 'true' : 'false' ?>">
-                <i class="fas fa-fw fa-plug"></i>
-                <span><?= lang('Admin.navPlugins') ?></span>
+            <a class="nav-link <?= $sectionOpen ? '' : 'collapsed' ?>"
+               href="#<?= $collapseId ?>" data-toggle="collapse" data-target="#<?= $collapseId ?>"
+               aria-expanded="<?= $sectionOpen ? 'true' : 'false' ?>">
+                <i class="<?= esc($section['icon'] ?? 'fas fa-fw fa-plug') ?>"></i>
+                <span><?= esc($section['label']) ?></span>
             </a>
-            <div id="collapsePlugins"
-                 class="collapse <?= $pluginsOpen ? 'show' : '' ?>"
+            <div id="<?= $collapseId ?>"
+                 class="collapse <?= $sectionOpen ? 'show' : '' ?>"
                  data-parent="#accordionSidebar">
                 <div class="bg-white py-2 collapse-inner rounded">
-                    <?php foreach ($plugin_menu_items as $pluginItem): ?>
-                    <a class="collapse-item" href="<?= esc($pluginItem['url']) ?>"><?= esc($pluginItem['label']) ?></a>
+                    <?php foreach ($section['children'] ?? [] as $child): ?>
+                    <a class="collapse-item <?= $nav === ($child['nav_key'] ?? '') ? 'active' : '' ?>"
+                       href="<?= esc($child['url']) ?>"><?= esc($child['label']) ?></a>
                     <?php endforeach; ?>
                 </div>
             </div>
         </li>
-        <?php endif; ?>
+        <?php endforeach; ?>
 
         <!-- ===== UPDATE AVAILABLE ===== -->
         <?php if (!empty($update['available'] ?? false)): ?>

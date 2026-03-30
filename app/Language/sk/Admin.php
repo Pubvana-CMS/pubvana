@@ -380,6 +380,8 @@ return [
     'marketplaceAll'        => 'Všetky',
     'marketplaceThemes'     => 'Témy',
     'marketplaceWidgets'    => 'Widgety',
+    'marketplacePlugins'    => 'Pluginy',
+    'marketplacePremiumCore' => 'Premium Core',
     'marketplaceUpdatesAvailable' => 'Dostupné {0} aktualizácie.',
     'marketplaceBy'         => 'Autor',
     'marketplaceFree'       => 'Zadarmo',
@@ -768,5 +770,6 @@ return [
 
     'adminLoginRequired'        => 'Pre prístup do panela správcu sa musíte prihlásiť.',
     'premiumRequired'           => 'Táto funkcia vyžaduje licenciu Pubvana Premium Core. Pridajte licenčný kľúč nižšie.',
+    'dirNotWritable'            => 'Adresár nie je zapisovateľný: {0}',
 
 ];
