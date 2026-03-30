@@ -3,6 +3,7 @@
 namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
+use App\Services\UpdateService;
 
 abstract class BaseAdminController extends BaseController
 {
@@ -21,10 +22,13 @@ abstract class BaseAdminController extends BaseController
 
     protected function baseData(string $title, string $activeNav = ''): array
     {
+        $update = (new UpdateService())->checkForUpdate();
+
         return array_merge($this->data, [
             'page_title' => $title . ' — Pubvana Admin',
             'active_nav' => $activeNav,
             'user'       => auth()->user(),
+            'update'     => $update,
         ]);
     }
 

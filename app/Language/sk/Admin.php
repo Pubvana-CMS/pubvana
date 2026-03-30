@@ -148,6 +148,7 @@ return [
     'navBrokenLinks'    => 'Nefunkčné odkazy',
     'navActivityLog'    => 'Denník aktivít',
     'navBackup'         => 'Záloha & Export',
+    'navUpdates'        => 'Aktualizácie',
     'navBrowse'         => 'Prehliadať',
     'navPremium'        => 'Premium',
     'navPubvanaStore'   => 'Obchod Pubvana',

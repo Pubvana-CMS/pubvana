@@ -65,3 +65,10 @@ public/writable/
 
 # PHPUnit / build output
 /build/
+.worktrees/
+
+# Release checklist (local only)
+release-checklist.md
+
+# Superpowers docs (local only)
+docs/superpowers/

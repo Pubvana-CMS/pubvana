@@ -1,0 +1,59 @@
+name: Build Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, intl, curl, gd, zip
+
+      - name: Install production dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+
+      - name: Create release zip
+        run: |
+          zip -r release.zip . \
+            -x '.git/*' \
+            -x '.github/*' \
+            -x '.claude/*' \
+            -x '.idea/*' \
+            -x '.vscode/*' \
+            -x '.worktrees/*' \
+            -x 'tests/*' \
+            -x 'docs/*' \
+            -x 'build/*' \
+            -x 'node_modules/*' \
+            -x 'writable/cache/*' \
+            -x 'writable/debugbar/*' \
+            -x 'writable/logs/*' \
+            -x 'writable/session/*' \
+            -x 'writable/tmp/*' \
+            -x 'writable/uploads/*' \
+            -x 'writable/backups/*' \
+            -x 'writable/updates/*' \
+            -x '.env' \
+            -x '.env.*' \
+            -x '.gitignore' \
+            -x '.editorconfig' \
+            -x '.DS_Store' \
+            -x 'Thumbs.db' \
+            -x 'CLAUDE.md' \
+            -x 'phpunit.xml.dist' \
+            -x 'builds'
+
+      - name: Upload release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release.zip

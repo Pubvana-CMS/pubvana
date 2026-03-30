@@ -148,6 +148,7 @@ return [
     'navBrokenLinks'    => 'Enlaces rotos',
     'navActivityLog'    => 'Registro de actividad',
     'navBackup'         => 'Copia de seguridad y exportar',
+    'navUpdates'        => 'Actualizaciones',
     'navBrowse'         => 'Explorar',
     'navPremium'        => 'Premium',
     'navPubvanaStore'   => 'Tienda Pubvana',

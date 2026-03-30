@@ -19,6 +19,7 @@
         "php": "^8.2",
         "abraham/twitteroauth": "^8.1",
         "codeigniter4/framework": "^4.7",
+        "codeigniter4/queue": "^1.0",
         "codeigniter4/settings": "^2.2",
         "codeigniter4/shield": "^1.2",
         "erusev/parsedown": "^1.8",
