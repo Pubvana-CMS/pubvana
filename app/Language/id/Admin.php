@@ -148,6 +148,7 @@ return [
     'navBrokenLinks'    => 'Tautan Rusak',
     'navActivityLog'    => 'Log Aktivitas',
     'navBackup'         => 'Cadangan & Ekspor',
+    'navUpdates'        => 'Pembaruan',
     'navBrowse'         => 'Jelajahi',
     'navPremium'        => 'Premium',
     'navPubvanaStore'   => 'Toko Pubvana',

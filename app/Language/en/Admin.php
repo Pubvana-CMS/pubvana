@@ -150,6 +150,7 @@ return [
     'navBrokenLinks'    => 'Broken Links',
     'navActivityLog'    => 'Activity Log',
     'navBackup'         => 'Backup & Export',
+    'navUpdates'        => 'Updates',
     'navBrowse'         => 'Browse',
     'navPremium'        => 'Premium',
     'navPubvanaStore'   => 'Pubvana Store',
