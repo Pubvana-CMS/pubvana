@@ -34,6 +34,7 @@ abstract class BaseAdminController extends BaseController
             THEMES_PATH,
             WIDGETS_PATH,
             PLUGINS_PATH,
+            FCPATH,
             WRITEPATH,
             WRITEPATH . 'cache/',
             WRITEPATH . 'logs/',

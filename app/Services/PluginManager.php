@@ -315,8 +315,11 @@ class PluginManager
             return 'requires_confirmation';
         }
 
-        // Run any pending migrations for the plugin's namespace
+        // Register namespace so migrations and Installer can be resolved
         $namespace = 'Plugins\\' . $folder;
+        service('autoloader')->addNamespace($namespace, PLUGINS_PATH . $folder . '/');
+
+        // Run any pending migrations for the plugin's namespace
         try {
             $migrate = \Config\Services::migrations();
             $migrate->setNamespace($namespace)->latest();
@@ -328,8 +331,6 @@ class PluginManager
         // Run Installer::up() if the plugin ships one
         $installerPath = PLUGINS_PATH . $folder . '/Installer.php';
         if (is_file($installerPath)) {
-            // Register namespace so Installer class can be autoloaded
-            service('autoloader')->addNamespace('Plugins\\' . $folder, PLUGINS_PATH . $folder . '/');
 
             $installerClass = 'Plugins\\' . $folder . '\\Installer';
             try {

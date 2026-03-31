@@ -114,7 +114,7 @@
                             <?= esc($confirmPlugin->pv_warning_note) ?>
                         </div>
                     <?php endif ?>
-                    <p><?= lang('Plugins.modalNotApproved', ['<strong>' . esc($confirmPlugin->name) . '</strong>']) ?></p>
+                    <p><?= lang('Plugins.modalNotApproved') ?></p>
                     <p><?= lang('Plugins.modalRiskWarning') ?></p>
                     <p><?= lang('Plugins.modalConfirm') ?></p>
                 </div>

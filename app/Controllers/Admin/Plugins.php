@@ -22,7 +22,7 @@ class Plugins extends BaseAdminController
         $result = PluginManager::instance()->discover();
 
         if (! empty($result['discovered'])) {
-            session()->setFlashdata('success', lang('Plugins.discovered', [count($result['discovered']), implode(', ', $result['discovered'])]));
+            session()->setFlashdata('success', lang('Plugins.discovered'));
         } else {
             session()->setFlashdata('info', lang('Plugins.noneFound'));
         }
@@ -47,23 +47,23 @@ class Plugins extends BaseAdminController
 
         switch ($status) {
             case 'activated':
-                session()->setFlashdata('success', lang('Plugins.activated', [$folder]));
+                session()->setFlashdata('success', lang('Plugins.activated'));
                 break;
 
             case 'not_found':
-                session()->setFlashdata('error', lang('Plugins.notFound', [$folder]));
+                session()->setFlashdata('error', lang('Plugins.notFound'));
                 break;
 
             case 'already_active':
-                session()->setFlashdata('info', lang('Plugins.alreadyActive', [$folder]));
+                session()->setFlashdata('info', lang('Plugins.alreadyActive'));
                 break;
 
             case 'migration_failed':
-                session()->setFlashdata('error', lang('Plugins.migrationFailed', [$folder]));
+                session()->setFlashdata('error', lang('Plugins.migrationFailed'));
                 break;
 
             case 'install_failed':
-                session()->setFlashdata('error', lang('Plugins.installFailed', [$folder]));
+                session()->setFlashdata('error', lang('Plugins.installFailed'));
                 break;
 
             case 'requires_confirmation':
@@ -83,9 +83,9 @@ class Plugins extends BaseAdminController
         }
 
         if (PluginManager::instance()->deactivate($folder)) {
-            session()->setFlashdata('success', lang('Plugins.deactivated', [$folder]));
+            session()->setFlashdata('success', lang('Plugins.deactivated'));
         } else {
-            session()->setFlashdata('error', lang('Plugins.notFound', [$folder]));
+            session()->setFlashdata('error', lang('Plugins.notFound'));
         }
 
         return redirect()->to('/admin/plugins');
