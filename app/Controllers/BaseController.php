@@ -20,13 +20,9 @@ abstract class BaseController extends Controller
 
         $this->themeService = service('theme');
 
-        // Locale detection — CI4 automatically calls $request->setLocale() when
-        // a {locale} route segment is matched, so getLocale() returns the correct
-        // locale (or the app defaultLocale when no locale prefix was used).
+        // Locale is set by pre_system event (Events.php) on both the request
+        // and the config. Just read it and apply to the language service.
         $locale = $this->request->getLocale();
-        if (empty($locale)) {
-            $locale = config('App')->defaultLocale;
-        }
         service('language')->setLocale($locale);
 
         try {

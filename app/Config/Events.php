@@ -73,15 +73,34 @@ Events::on('pre_system', static function (): void {
                 $codes[] = 'en';
             }
             $cache->save('active_languages', $codes, 3600);
+
+            // Cache the default locale too
+            $defaultLang = $model->getDefault();
+            if ($defaultLang) {
+                $cache->save('default_locale', $defaultLang->code, 3600);
+            }
         }
 
         if (! empty($codes)) {
             config('App')->supportedLocales = $codes;
 
+            // Set default locale from DB
+            $defaultLocale = $cache->get('default_locale');
+            if ($defaultLocale) {
+                config('App')->defaultLocale = $defaultLocale;
+            }
+
             // The IncomingRequest copied supportedLocales at construction time
             // (before this event), so its internal validLocales is stale.
             // Sync it now so setLocale() accepts the DB-driven codes.
-            service('request')->setValidLocales($codes);
+            $request = service('request');
+            $request->setValidLocales($codes);
+
+            // Set the default locale on the request — the router will override
+            // this if a {locale} segment is matched in the URL.
+            if ($defaultLocale ?? null) {
+                $request->setLocale($defaultLocale);
+            }
         }
     } catch (\Throwable $e) {
         // DB may not be available (e.g. CLI spark commands during install)

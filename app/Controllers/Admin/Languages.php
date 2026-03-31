@@ -36,6 +36,7 @@ class Languages extends BaseAdminController
 
         $model->update($id, ['is_active' => 1]);
         cache()->delete('active_languages');
+        cache()->delete('default_locale');
 
         return redirect()->to('/admin/languages')->with('success', lang('Admin.languageEnabled_msg', [esc($lang->name)]));
     }
@@ -59,6 +60,7 @@ class Languages extends BaseAdminController
 
         $model->update($id, ['is_active' => 0]);
         cache()->delete('active_languages');
+        cache()->delete('default_locale');
 
         return redirect()->to('/admin/languages')->with('success', lang('Admin.languageDisabled_msg', [esc($lang->name)]));
     }
@@ -77,6 +79,7 @@ class Languages extends BaseAdminController
         }
 
         cache()->delete('active_languages');
+        cache()->delete('default_locale');
 
         $lang = $model->find($id);
 

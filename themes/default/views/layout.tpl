@@ -123,6 +123,13 @@
                         <i class="{{ s.icon }}"></i>
                     </a>
                 {% endfor %}
+                {% if footer_nav %}
+                <nav class="mt-3">
+                    {% for item in footer_nav %}
+                    <a href="{% site_url item.url %}" class="text-white-50 d-block small"{% if item.target == '_blank' %} target="_blank" rel="noopener"{% endif %}>{{ item.label }}</a>
+                    {% endfor %}
+                </nav>
+                {% endif %}
             </div>
             <div class="col-md-3 mb-4">
                 {% widget_area 'footer-1' %}
