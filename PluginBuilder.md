@@ -131,6 +131,15 @@ class Plugin implements PluginInterface
         ];
     }
 
+    public function getPublicRoutes(): array
+    {
+        return [
+            ['label' => lang('DigitalStore.store'),      'url' => '/dstore'],
+            ['label' => lang('DigitalStore.categories'), 'url' => '/dstore/categories'],
+            ['label' => lang('DigitalStore.cart'),        'url' => '/dstore/cart'],
+        ];
+    }
+
     public function getCsrfExemptions(): array
     {
         return [
@@ -208,6 +217,22 @@ return view('Plugins\DigitalStore\Views\admin\products\index', array_merge(
 The sidebar checks the current `active_nav` value against each child's `nav_key`. The matching child link gets the `active` class, and the parent section stays open. If none match, the section is collapsed.
 
 **`nav_key` naming convention:** Prefix with your plugin slug to avoid collisions with core nav keys and other plugins. E.g. `dstore_dashboard`, `dstore_products`, not just `dashboard`, `products`.
+
+### `getPublicRoutes(): array`
+
+Returns public-facing routes for the Navigation admin "Quick Add" dropdown. Each entry has a `label` and `url`. Labels should use `lang()` for i18n support. Return an empty array if the plugin has no public pages.
+
+```php
+public function getPublicRoutes(): array
+{
+    return [
+        ['label' => lang('DigitalStore.store'), 'url' => '/dstore'],
+        ['label' => lang('DigitalStore.cart'),  'url' => '/dstore/cart'],
+    ];
+}
+```
+
+For dynamic routes (e.g., store categories), query the database and build entries on the fly. Wrap in try/catch in case the table doesn't exist yet during activation.
 
 ### `getCsrfExemptions(): array`
 
@@ -902,6 +927,7 @@ Before releasing a plugin:
 - [ ] `Plugin.php` implements all 6 `PluginInterface` methods
 - [ ] `getName()`, `getSlug()`, `getVersion()` match `plugin_info.json` values
 - [ ] `getMenuItems()` returns proper structure with `label`, `icon`, and `children` array (or empty array)
+- [ ] `getPublicRoutes()` returns public routes with `label` and `url` (or empty array). Labels use `lang()`
 - [ ] All `nav_key` values prefixed with plugin slug (e.g. `dstore_products`)
 - [ ] All user-visible strings use `lang()`
 - [ ] Translations provided for all 6 locales (`en`, `es`, `fr`, `id`, `pt`, `sk`)

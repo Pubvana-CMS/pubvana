@@ -20,6 +20,7 @@ Developers looking to build themes or widgets for Pubvana can find everything th
 
 - **[ThemeBuilder.md](ThemeBuilder.md)** — Complete theme development guide
 - **[WidgetBuilder.md](WidgetBuilder.md)** — Complete widget development guide
+- **[PluginBuilder.md](PluginBuilder.md)** — Complete plugin development guide
 
 ## Installation
 
