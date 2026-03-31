@@ -58,6 +58,10 @@ themes/slate/
 themes/testbad/
 themes/ember.zip
 
+# Plugins (installed locally, not part of core)
+plugins/*
+!plugins/.gitkeep
+
 # Premium widgets (local testing only)
 widgets/AuthorBio/
 widgets/AdUnit/

@@ -269,6 +269,12 @@ $routes->group('{locale}', static function ($routes): void {
     $routes->post('contact',                 'Contact::send');
     $routes->get('preview/(:segment)',       'Blog::preview/$1');
     $routes->get('go/(:segment)',            'AffiliateRedirect::go/$1');
+
+    // Plugin routes inside locale group too
+    foreach (\App\Services\PluginManager::instance()->getRouteFiles() as $pluginRoutes) {
+        require $pluginRoutes;
+    }
+
     // Catch-all for locale-prefixed static pages — must be last inside the group
     $routes->get('(:segment)',               'Pages::show/$1');
 });
