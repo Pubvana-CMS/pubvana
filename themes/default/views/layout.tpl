@@ -62,11 +62,20 @@
                 <li class="nav-item"><a class="nav-link" href="{% site_url %}">{% lang 'Blog.home' %}</a></li>
                 <li class="nav-item"><a class="nav-link" href="{% site_url 'blog' %}">{% lang 'Blog.blog' %}</a></li>
                 {% for navItem in primary_nav %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ navItem.url }}" target="{{ navItem.target }}">
-                        {{ navItem.label }}
-                    </a>
+                {% if navItem.children %}
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="{{ navItem.url }}" role="button" data-bs-toggle="dropdown" aria-expanded="false">{{ navItem.label }}</a>
+                    <ul class="dropdown-menu">
+                        {% for child in navItem.children %}
+                        <li><a class="dropdown-item" href="{{ child.url }}" target="{{ child.target }}">{{ child.label }}</a></li>
+                        {% endfor %}
+                    </ul>
                 </li>
+                {% else %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ navItem.url }}" target="{{ navItem.target }}">{{ navItem.label }}</a>
+                </li>
+                {% endif %}
                 {% endfor %}
             </ul>
             <form class="d-flex" action="{% site_url 'search' %}" method="GET">

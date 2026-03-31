@@ -203,9 +203,9 @@ class ThemeService
 
         // Navigation
         try {
-            $navModel = new NavigationModel();
-            $primaryNav = $navModel->where('nav_group', 'primary')->orderBy('sort_order')->findAll();
-            $footerNav  = $navModel->where('nav_group', 'footer')->orderBy('sort_order')->findAll();
+            $navService = new \App\Services\NavigationService();
+            $primaryNav = $navService->getTree('primary');
+            $footerNav  = $navService->getTree('footer');
         } catch (\Throwable $e) {
             $primaryNav = [];
             $footerNav  = [];
