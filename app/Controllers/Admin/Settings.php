@@ -4,6 +4,7 @@ namespace App\Controllers\Admin;
 
 use App\Models\PageModel;
 use App\Services\ActivityLogger;
+use App\Services\PluginManager;
 
 class Settings extends BaseAdminController
 {
@@ -15,8 +16,15 @@ class Settings extends BaseAdminController
 
         $pages = (new PageModel())->where('status', 'published')->findAll();
 
+        try {
+            $pluginRoutes = PluginManager::instance()->getPublicRoutes();
+        } catch (\Throwable $e) {
+            $pluginRoutes = [];
+        }
+
         return $this->adminView('settings/index', array_merge($this->baseData('Settings', 'settings'), [
-            'pages' => $pages,
+            'pages'        => $pages,
+            'pluginRoutes' => $pluginRoutes,
         ]));
     }
 
@@ -28,9 +36,16 @@ class Settings extends BaseAdminController
 
         $pages = (new PageModel())->where('status', 'published')->findAll();
 
+        try {
+            $pluginRoutes = PluginManager::instance()->getPublicRoutes();
+        } catch (\Throwable $e) {
+            $pluginRoutes = [];
+        }
+
         return $this->adminView('settings/index', array_merge($this->baseData('Premium', 'premium'), [
-            'pages'       => $pages,
-            'open_tab'    => 'premium',
+            'pages'        => $pages,
+            'pluginRoutes' => $pluginRoutes,
+            'open_tab'     => 'premium',
         ]));
     }
 
@@ -49,12 +64,14 @@ class Settings extends BaseAdminController
         setting()->set('App.pageCacheTtl', (int) $this->request->getPost('page_cache_ttl'));
 
         $fpType = $this->request->getPost('front_page_type');
-        if (! in_array($fpType, ['blog', 'page'], true)) {
+        if (! in_array($fpType, ['blog', 'page', 'plugin_route'], true)) {
             $fpType = 'blog';
         }
-        $fpId = $this->request->getPost('front_page_id');
-        setting()->set('App.frontPageType', $fpType);
-        setting()->set('App.frontPageId',   ($fpType === 'page' && $fpId) ? (int) $fpId : null);
+        $fpId    = $this->request->getPost('front_page_id');
+        $fpRoute = $this->request->getPost('front_page_route');
+        setting()->set('App.frontPageType',  $fpType);
+        setting()->set('App.frontPageId',    ($fpType === 'page' && $fpId) ? (int) $fpId : null);
+        setting()->set('App.frontPageRoute', ($fpType === 'plugin_route' && $fpRoute) ? trim($fpRoute) : null);
 
         ActivityLogger::log('settings.updated', 'setting', null, 'Updated general settings');
         return redirect()->to('/admin/settings')->with('success', lang('Admin.generalSettingsSaved'));

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Pubvana CMS — Admin language strings (French)
+ * Pubvana CMS - Admin language strings (French)
  *
  * AI Translated: verification needed from native speaker
  *
@@ -11,7 +11,7 @@
 return [
 
     // =========================================================================
-    // Common UI — buttons, labels, confirmations, status badges
+    // Common UI - buttons, labels, confirmations, status badges
     // =========================================================================
 
     // Buttons
@@ -214,7 +214,7 @@ return [
     'postRevisions'         => 'Révisions',
     'postRevisionCount'     => '{0} révision(s)',
     'postPreview'           => 'Aperçu',
-    'postBulkAction'        => '— Sélectionner une action —',
+    'postBulkAction'        => '- Sélectionner une action -',
     'postBulkPublish'       => 'Publier',
     'postBulkUnpublish'     => 'Dépublier (mettre en brouillon)',
     'postBulkDelete'        => 'Supprimer',
@@ -348,7 +348,7 @@ return [
     'themeBy'               => 'Par',
     'themeVersion'          => 'Version',
     'themeSaveOptions'      => 'Enregistrer les options',
-    'themeInvalidLicense'   => 'Impossible d\'activer le thème — la licence est invalide. Réinstallez-le ou contactez le support.',
+    'themeInvalidLicense'   => 'Impossible d\'activer le thème - la licence est invalide. Réinstallez-le ou contactez le support.',
 
     // Theme flash messages
     'themeActivated'        => 'Thème activé.',
@@ -462,9 +462,9 @@ return [
     'tfaDisableConfirm'     => 'Entrez votre code 2FA actuel pour désactiver :',
     'tfaEnabled'            => "Authentification à deux facteurs activée.",
     'tfaDisabled'           => "Authentification à deux facteurs désactivée.",
-    'tfaInvalidCode'        => 'Code invalide — veuillez scanner le QR code et réessayer.',
-    'tfaInvalidDisable'     => 'Code invalide — la 2FA n\'a pas été désactivée.',
-    'tfaSessionExpired'     => 'Session de configuration expirée — veuillez recommencer.',
+    'tfaInvalidCode'        => 'Code invalide - veuillez scanner le QR code et réessayer.',
+    'tfaInvalidDisable'     => 'Code invalide - la 2FA n\'a pas été désactivée.',
+    'tfaSessionExpired'     => 'Session de configuration expirée - veuillez recommencer.',
     'tfaNotEnabled'         => 'La 2FA n\'est pas actuellement activée.',
 
     // =========================================================================
@@ -498,7 +498,7 @@ return [
     'redirectDeleted'       => 'Redirection supprimée.',
 
     // =========================================================================
-    // Settings — General
+    // Settings - General
     // =========================================================================
 
     'settingsTitle'         => 'Paramètres',
@@ -524,14 +524,17 @@ return [
     'generalFrontPage'          => "Page d'accueil",
     'generalFrontPageBlog'      => 'Index du blog (derniers articles)',
     'generalFrontPageStatic'    => 'Page statique :',
-    'generalSelectPage'         => '— Sélectionner une page —',
+    'generalFrontPagePlugin'    => 'Page de plugin :',
+    'generalSelectPage'         => '- Sélectionner une page -',
+    'generalSelectRoute'        => '- Sélectionner une route -',
+    'generalFrontPageNoPlugins' => 'Aucune route de plugin disponible',
     'generalSaveBtn'            => 'Enregistrer les paramètres généraux',
 
     // General flash messages
     'generalSettingsSaved'      => 'Paramètres généraux enregistrés.',
 
     // =========================================================================
-    // Settings — SEO
+    // Settings - SEO
     // =========================================================================
 
     'seoSettingsHeading'        => 'Paramètres SEO',
@@ -542,12 +545,12 @@ return [
     'seoSitemapEnable'          => 'Activer sitemap.xml',
     'seoSitemapHelp'            => 'Sitemap standard pour tous les articles et pages publiés.',
     'seoNewsSitemap'            => 'Activer news-sitemap.xml',
-    'seoNewsSitemapHelp'        => 'Sitemap Google News — liste les articles publiés dans les 48 dernières heures.',
+    'seoNewsSitemapHelp'        => 'Sitemap Google News - liste les articles publiés dans les 48 dernières heures.',
     'seoSaveBtn'                => 'Enregistrer les paramètres SEO',
     'seoSettingsSaved'          => 'Paramètres SEO enregistrés.',
 
     // =========================================================================
-    // Settings — Email
+    // Settings - Email
     // =========================================================================
 
     'emailSettingsHeading'      => 'Paramètres e-mail',
@@ -567,7 +570,7 @@ return [
     'emailSettingsSaved'        => 'Paramètres e-mail enregistrés.',
 
     // =========================================================================
-    // Settings — Social Login (OAuth)
+    // Settings - Social Login (OAuth)
     // =========================================================================
 
     'socialLoginHeading'        => 'Connexion sociale (OAuth)',
@@ -581,7 +584,7 @@ return [
     'socialLoginSettingsSaved'  => 'Paramètres de connexion sociale enregistrés.',
 
     // =========================================================================
-    // Settings — Social Sharing
+    // Settings - Social Sharing
     // =========================================================================
 
     'socialSharingHeading'      => 'Partage automatique à la publication',
@@ -600,25 +603,25 @@ return [
     'socialSharingSettingsSaved'=> 'Paramètres de partage social enregistrés.',
 
     // =========================================================================
-    // Settings — Spam Protection (hCaptcha)
+    // Settings - Spam Protection (hCaptcha)
     // =========================================================================
 
     'spamProtectionHeading'     => 'Protection anti-spam (hCaptcha)',
     'spamHcaptchaIntro'         => 'Pubvana utilise hCaptcha (respectueux de la vie privée, non-Google) pour protéger les formulaires de commentaires et de contact contre les robots spam.',
     'spamHcaptchaFree'          => 'hCaptcha est gratuit pour la plupart des sites. Inscrivez-vous sur hcaptcha.com, créez un site et ajoutez les deux clés suivantes à votre fichier .env :',
-    'spamHcaptchaNote'          => 'Si ces clés ne sont pas définies, hCaptcha est silencieusement ignoré — sûr pour le développement local. Une fois les clés présentes dans .env, le widget apparaît automatiquement sur le formulaire de commentaire et la page de contact sans aucune configuration supplémentaire.',
+    'spamHcaptchaNote'          => 'Si ces clés ne sont pas définies, hCaptcha est silencieusement ignoré - sûr pour le développement local. Une fois les clés présentes dans .env, le widget apparaît automatiquement sur le formulaire de commentaire et la page de contact sans aucune configuration supplémentaire.',
 
     // =========================================================================
-    // Settings — Premium / Licence
+    // Settings - Premium / Licence
     // =========================================================================
 
     'premiumHeading'            => 'Pubvana Premium Core',
-    'premiumDevMode'            => 'Mode développement — toujours actif',
+    'premiumDevMode'            => 'Mode développement - toujours actif',
     'premiumStatusValid'        => 'Valide',
     'premiumStatusInvalid'      => 'Invalide',
     'premiumStatusUnreachable'  => 'Inaccessible',
     'premiumStatusUnchecked'    => 'Non vérifié',
-    'premiumDevInfo'            => 'Exécution sur un domaine de développement local — toutes les fonctionnalités Premium Core sont actives sans clé de licence.',
+    'premiumDevInfo'            => 'Exécution sur un domaine de développement local - toutes les fonctionnalités Premium Core sont actives sans clé de licence.',
     'premiumHelp'               => 'Entrez votre clé de licence Pubvana Premium Core pour débloquer les fonctionnalités premium. Achetez sur pubvana.net/store/premium.',
     'premiumLicenceKey'         => 'Clé de licence',
     'premiumLicenceKeyPlaceholder' => 'XXXX-XXXX-XXXX-XXXX',
@@ -671,7 +674,7 @@ return [
     'affiliateDestination'      => 'URL de destination',
     'affiliateActive'           => 'Actif',
     'affiliateClicks'           => 'Clics',
-    'affiliateClicksTitle'      => 'Clics — {0}',
+    'affiliateClicksTitle'      => 'Clics - {0}',
     'affiliateTotal'            => 'Total',
     'affiliateViewClicks'       => 'Voir les clics',
 
@@ -692,7 +695,7 @@ return [
     'brokenLinkShowDismissed'   => 'Afficher les ignorés',
     'brokenLinkHideDismissed'   => 'Masquer les ignorés',
     'brokenLinkNone'            => 'Aucun lien brisé détecté.',
-    'brokenLinkNowReachable'    => 'Le lien est maintenant accessible — retiré des résultats.',
+    'brokenLinkNowReachable'    => 'Le lien est maintenant accessible - retiré des résultats.',
     'brokenLinkStillBroken'     => 'Lien toujours brisé ({0}).',
     'brokenLinkDismissed'       => 'Lien ignoré.',
 
@@ -732,13 +735,13 @@ return [
     'importWpHeading'           => 'Importer depuis WordPress',
     'importWpHelp'              => 'Exportez votre site WordPress via Outils → Exporter, puis téléversez le fichier .xml ci-dessous.',
     'importChooseFile'          => 'Choisir le fichier WXR (.xml)',
-    'importDryRun'              => 'Test à blanc (aperçu uniquement — rien n\'est enregistré)',
+    'importDryRun'              => 'Test à blanc (aperçu uniquement - rien n\'est enregistré)',
     'importRunBtn'              => 'Lancer l\'importation',
     'importNoValidFile'         => 'Veuillez téléverser un fichier d\'export WordPress WXR valide.',
     'importOnlyXml'             => 'Seuls les fichiers .xml sont acceptés.',
     'importFileTooLarge'        => 'Fichier d\'importation trop volumineux. La taille maximale est de 50 Mo.',
     'importResultsHeading'      => 'Résultats de l\'importation',
-    'importDryRunNote'          => 'Test à blanc — aucune donnée n\'a été enregistrée.',
+    'importDryRunNote'          => 'Test à blanc - aucune donnée n\'a été enregistrée.',
 
     // =========================================================================
     // Updates
@@ -750,7 +753,7 @@ return [
     'updatesUpToDate'           => 'Pubvana est à jour.',
     'updatesAvailable'          => 'Mise à jour disponible : {0}',
     'updatesCheckBtn'           => 'Vérifier les mises à jour',
-    'updatesCacheCleared'       => 'Cache des mises à jour effacé — nouvelle vérification en cours.',
+    'updatesCacheCleared'       => 'Cache des mises à jour effacé - nouvelle vérification en cours.',
 
     // =========================================================================
     // Schedule
@@ -763,8 +766,8 @@ return [
     // Post Revisions page header
     // =========================================================================
 
-    'revisionsPageTitle'        => 'Révisions — {0}',
-    'revisionPageTitle'         => 'Révision — {0}',
+    'revisionsPageTitle'        => 'Révisions - {0}',
+    'revisionPageTitle'         => 'Révision - {0}',
 
     // =========================================================================
     // Admin access / gate messages

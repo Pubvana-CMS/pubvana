@@ -59,7 +59,7 @@ class Navigation extends BaseAdminController
         if (! auth()->user()->can('admin.navigation')) {
             return $this->response->setStatusCode(403)->setJSON(['error' => 'Permission denied.']);
         }
-        $order = $this->request->getPost('order') ?? [];
+        $order = $this->request->getJSON(true)['order'] ?? [];
         $model = new NavigationModel();
         foreach ($order as $i => $id) {
             $model->update((int) $id, ['sort_order' => $i]);

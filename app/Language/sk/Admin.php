@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Pubvana CMS — Admin language strings (Slovak)
+ * Pubvana CMS - Admin language strings (Slovak)
  *
  * AI Translated: verification needed from native speaker
  *
@@ -11,7 +11,7 @@
 return [
 
     // =========================================================================
-    // Common UI — buttons, labels, confirmations, status badges
+    // Common UI - buttons, labels, confirmations, status badges
     // =========================================================================
 
     // Buttons
@@ -214,7 +214,7 @@ return [
     'postRevisions'         => 'Revízie',
     'postRevisionCount'     => '{0} revízia(e)',
     'postPreview'           => 'Náhľad',
-    'postBulkAction'        => '— Vybrať akciu —',
+    'postBulkAction'        => '- Vybrať akciu -',
     'postBulkPublish'       => 'Publikovať',
     'postBulkUnpublish'     => 'Zrušiť publikovanie (nastaviť ako koncept)',
     'postBulkDelete'        => 'Vymazať',
@@ -348,7 +348,7 @@ return [
     'themeBy'               => 'Autor',
     'themeVersion'          => 'Verzia',
     'themeSaveOptions'      => 'Uložiť možnosti',
-    'themeInvalidLicense'   => 'Tému nie je možné aktivovať — licencia je neplatná. Preinštalujte alebo kontaktujte podporu.',
+    'themeInvalidLicense'   => 'Tému nie je možné aktivovať - licencia je neplatná. Preinštalujte alebo kontaktujte podporu.',
 
     // Theme flash messages
     'themeActivated'        => 'Téma bola aktivovaná.',
@@ -462,9 +462,9 @@ return [
     'tfaDisableConfirm'     => 'Zadajte aktuálny 2FA kód pre deaktiváciu:',
     'tfaEnabled'            => 'Dvojfaktorové overenie bolo aktivované.',
     'tfaDisabled'           => 'Dvojfaktorové overenie bolo deaktivované.',
-    'tfaInvalidCode'        => 'Neplatný kód — naskenujte QR kód a skúste raz znova.',
-    'tfaInvalidDisable'     => 'Neplatný kód — 2FA nebolo deaktivované.',
-    'tfaSessionExpired'     => 'Relácia nastavenia vypršala — začnite znova.',
+    'tfaInvalidCode'        => 'Neplatný kód - naskenujte QR kód a skúste raz znova.',
+    'tfaInvalidDisable'     => 'Neplatný kód - 2FA nebolo deaktivované.',
+    'tfaSessionExpired'     => 'Relácia nastavenia vypršala - začnite znova.',
     'tfaNotEnabled'         => '2FA momentálne nie je aktívne.',
 
     // =========================================================================
@@ -498,7 +498,7 @@ return [
     'redirectDeleted'       => 'Presmerovanie bolo vymazané.',
 
     // =========================================================================
-    // Settings — General
+    // Settings - General
     // =========================================================================
 
     'settingsTitle'         => 'Nastavenia',
@@ -524,14 +524,17 @@ return [
     'generalFrontPage'          => 'Úvodná stránka',
     'generalFrontPageBlog'      => 'Index blogu (najnovšie príspevky)',
     'generalFrontPageStatic'    => 'Statická stránka:',
-    'generalSelectPage'         => '— Vybrať stránku —',
+    'generalFrontPagePlugin'    => 'Stránka pluginu:',
+    'generalSelectPage'         => '- Vybrať stránku -',
+    'generalSelectRoute'        => '- Vybrať trasu -',
+    'generalFrontPageNoPlugins' => 'Žiadne trasy pluginov nie sú dostupné',
     'generalSaveBtn'            => 'Uložiť všeobecné nastavenia',
 
     // General flash messages
     'generalSettingsSaved'      => 'Všeobecné nastavenia boli uložené.',
 
     // =========================================================================
-    // Settings — SEO
+    // Settings - SEO
     // =========================================================================
 
     'seoSettingsHeading'        => 'Nastavenia SEO',
@@ -542,12 +545,12 @@ return [
     'seoSitemapEnable'          => 'Povoliť sitemap.xml',
     'seoSitemapHelp'            => 'Štandardná sitemap pre všetky publikované príspevky a stránky.',
     'seoNewsSitemap'            => 'Povoliť news-sitemap.xml',
-    'seoNewsSitemapHelp'        => 'Google News sitemap — zobrazuje príspevky publikované za posledných 48 hodín.',
+    'seoNewsSitemapHelp'        => 'Google News sitemap - zobrazuje príspevky publikované za posledných 48 hodín.',
     'seoSaveBtn'                => 'Uložiť nastavenia SEO',
     'seoSettingsSaved'          => 'Nastavenia SEO boli uložené.',
 
     // =========================================================================
-    // Settings — Email
+    // Settings - Email
     // =========================================================================
 
     'emailSettingsHeading'      => 'Nastavenia e-mailu',
@@ -567,7 +570,7 @@ return [
     'emailSettingsSaved'        => 'Nastavenia e-mailu boli uložené.',
 
     // =========================================================================
-    // Settings — Social Login (OAuth)
+    // Settings - Social Login (OAuth)
     // =========================================================================
 
     'socialLoginHeading'        => 'Sociálne prihlásenie (OAuth)',
@@ -581,7 +584,7 @@ return [
     'socialLoginSettingsSaved'  => 'Nastavenia sociálneho prihlásenia boli uložené.',
 
     // =========================================================================
-    // Settings — Social Sharing
+    // Settings - Social Sharing
     // =========================================================================
 
     'socialSharingHeading'      => 'Automatické zdieľanie pri publikovaní',
@@ -600,25 +603,25 @@ return [
     'socialSharingSettingsSaved'=> 'Nastavenia sociálneho zdieľania boli uložené.',
 
     // =========================================================================
-    // Settings — Spam Protection (hCaptcha)
+    // Settings - Spam Protection (hCaptcha)
     // =========================================================================
 
     'spamProtectionHeading'     => 'Ochrana pred spamom (hCaptcha)',
     'spamHcaptchaIntro'         => 'Pubvana používa hCaptcha (ochrana súkromia, nie od Google) na ochranu formulárov komentárov a kontaktného formulára pred spam botmi.',
     'spamHcaptchaFree'          => 'hCaptcha je pre väčšinu stránok zadarmo. Zaregistrujte sa na hcaptcha.com, vytvorte stránku a pridajte nasledujúce dva kľúče do súboru .env:',
-    'spamHcaptchaNote'          => 'Ak tieto kľúče nie sú nastavené, hCaptcha je ticho preskočené — bezpečné pre lokálny vývoj. Po pridaní kľúčov do .env sa widget automaticky zobrazí vo formulári komentárov a na kontaktnej stránke bez ďalšej konfigurácie.',
+    'spamHcaptchaNote'          => 'Ak tieto kľúče nie sú nastavené, hCaptcha je ticho preskočené - bezpečné pre lokálny vývoj. Po pridaní kľúčov do .env sa widget automaticky zobrazí vo formulári komentárov a na kontaktnej stránke bez ďalšej konfigurácie.',
 
     // =========================================================================
-    // Settings — Premium / Licence
+    // Settings - Premium / Licence
     // =========================================================================
 
     'premiumHeading'            => 'Pubvana Premium Core',
-    'premiumDevMode'            => 'Vývojový režim — vždy aktívny',
+    'premiumDevMode'            => 'Vývojový režim - vždy aktívny',
     'premiumStatusValid'        => 'Platný',
     'premiumStatusInvalid'      => 'Neplatný',
     'premiumStatusUnreachable'  => 'Nedostupný',
     'premiumStatusUnchecked'    => 'Neoverený',
-    'premiumDevInfo'            => 'Spustené na lokálnej vývojovej doméne — všetky funkcie Premium Core sú aktívne bez licenčného kľúča.',
+    'premiumDevInfo'            => 'Spustené na lokálnej vývojovej doméne - všetky funkcie Premium Core sú aktívne bez licenčného kľúča.',
     'premiumHelp'               => 'Zadajte licenčný kľúč Pubvana Premium Core na odomknutie prémiových funkcií. Zakúpte na pubvana.net/store/premium.',
     'premiumLicenceKey'         => 'Licenčný kľúč',
     'premiumLicenceKeyPlaceholder' => 'XXXX-XXXX-XXXX-XXXX',
@@ -671,7 +674,7 @@ return [
     'affiliateDestination'      => 'Cieľová URL',
     'affiliateActive'           => 'Aktívny',
     'affiliateClicks'           => 'Kliknutia',
-    'affiliateClicksTitle'      => 'Kliknutia — {0}',
+    'affiliateClicksTitle'      => 'Kliknutia - {0}',
     'affiliateTotal'            => 'Celkom',
     'affiliateViewClicks'       => 'Zobraziť kliknutia',
 
@@ -692,7 +695,7 @@ return [
     'brokenLinkShowDismissed'   => 'Zobraziť zamietnuté',
     'brokenLinkHideDismissed'   => 'Skryť zamietnuté',
     'brokenLinkNone'            => 'Žiadne nefunkčné odkazy.',
-    'brokenLinkNowReachable'    => 'Odkaz je teraz dostupný — odstránený z výsledkov.',
+    'brokenLinkNowReachable'    => 'Odkaz je teraz dostupný - odstránený z výsledkov.',
     'brokenLinkStillBroken'     => 'Odkaz stále nefunguje ({0}).',
     'brokenLinkDismissed'       => 'Odkaz bol zamietnutý.',
 
@@ -732,13 +735,13 @@ return [
     'importWpHeading'           => 'Importovať z WordPress',
     'importWpHelp'              => 'Exportujte stránku WordPress cez Nástroje → Export, potom nahrajte súbor .xml nižšie.',
     'importChooseFile'          => 'Vybrať súbor WXR (.xml)',
-    'importDryRun'              => 'Skúšobný beh (len náhľad — nič sa neuloží)',
+    'importDryRun'              => 'Skúšobný beh (len náhľad - nič sa neuloží)',
     'importRunBtn'              => 'Spustiť import',
     'importNoValidFile'         => 'Nahrajte platný exportný súbor WordPress WXR.',
     'importOnlyXml'             => 'Prijímajú sa iba súbory .xml.',
     'importFileTooLarge'        => 'Importovaný súbor je príliš veľký. Maximálna veľkosť je 50 MB.',
     'importResultsHeading'      => 'Výsledky importu',
-    'importDryRunNote'          => 'Skúšobný beh — žiadne údaje neboli uložené.',
+    'importDryRunNote'          => 'Skúšobný beh - žiadne údaje neboli uložené.',
 
     // =========================================================================
     // Updates
@@ -750,7 +753,7 @@ return [
     'updatesUpToDate'           => 'Pubvana je aktuálne.',
     'updatesAvailable'          => 'Dostupná aktualizácia: {0}',
     'updatesCheckBtn'           => 'Skontrolovať aktualizácie',
-    'updatesCacheCleared'       => 'Cache aktualizácií bol vymazaný — znova sa kontroluje.',
+    'updatesCacheCleared'       => 'Cache aktualizácií bol vymazaný - znova sa kontroluje.',
 
     // =========================================================================
     // Schedule
@@ -763,8 +766,8 @@ return [
     // Post Revisions page header
     // =========================================================================
 
-    'revisionsPageTitle'        => 'Revízie — {0}',
-    'revisionPageTitle'         => 'Revízia — {0}',
+    'revisionsPageTitle'        => 'Revízie - {0}',
+    'revisionPageTitle'         => 'Revízia - {0}',
 
     // =========================================================================
     // Admin access / gate messages

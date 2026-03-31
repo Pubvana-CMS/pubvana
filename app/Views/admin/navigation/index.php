@@ -113,9 +113,11 @@
 </div>
 
 <?php $content = ob_get_clean(); ?>
-<?php $extra_scripts = <<<'SCRIPT'
+<?php ob_start(); ?>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
+var baseUrl = '<?= base_url() ?>';
+var csrfHash = '<?= csrf_hash() ?>';
 var el = document.getElementById('nav-sortable');
 if (el) {
     Sortable.create(el, {
@@ -125,13 +127,15 @@ if (el) {
             var ids = Array.from(el.querySelectorAll('[data-id]')).map(li => li.dataset.id);
             fetch(baseUrl + 'admin/navigation/reorder', {
                 method: 'POST',
-                headers: {'Content-Type':'application/json'},
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfHash
+                },
                 body: JSON.stringify({ order: ids })
             });
         }
     });
 }
-var baseUrl = '<?= base_url() ?>';
 
 // Quick Add fuzzy search
 (function() {
@@ -188,6 +192,5 @@ var baseUrl = '<?= base_url() ?>';
     });
 }());
 </script>
-SCRIPT;
-?>
+<?php $extra_scripts = ob_get_clean(); ?>
 <?= view($layout, array_merge(get_defined_vars(), ['content' => $content, 'extra_scripts' => $extra_scripts])) ?>

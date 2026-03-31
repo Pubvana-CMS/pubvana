@@ -104,6 +104,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
 var baseUrl = '<?= base_url() ?>';
+var csrfHash = '<?= csrf_hash() ?>';
 
 document.querySelectorAll('.widget-sortable').forEach(function(el) {
     Sortable.create(el, {
@@ -114,7 +115,10 @@ document.querySelectorAll('.widget-sortable').forEach(function(el) {
             var ids = Array.from(el.querySelectorAll('[data-id]')).map(li => li.dataset.id);
             fetch(baseUrl + 'admin/widgets/reorder', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfHash
+                },
                 body: JSON.stringify({ order: ids })
             });
         }

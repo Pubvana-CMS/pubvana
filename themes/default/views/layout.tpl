@@ -59,8 +59,6 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarMain">
             <ul class="navbar-nav me-auto">
-                <li class="nav-item"><a class="nav-link" href="{% site_url %}">{% lang 'Blog.home' %}</a></li>
-                <li class="nav-item"><a class="nav-link" href="{% site_url 'blog' %}">{% lang 'Blog.blog' %}</a></li>
                 {% for navItem in primary_nav %}
                 {% if navItem.children %}
                 <li class="nav-item dropdown">

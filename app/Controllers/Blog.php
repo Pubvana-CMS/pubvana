@@ -26,13 +26,20 @@ class Blog extends BaseController
         $this->seoService = new SeoService();
     }
 
-    public function index(): string
+    public function index(): string|\CodeIgniter\HTTP\RedirectResponse
     {
         $this->buildLangSwitcher();
 
-        // Configurable front page
+        // Configurable front page (only applies to homepage, not /blog)
+        $isHomepage    = trim($this->request->getUri()->getPath(), '/') === '';
         $frontPageType = setting('App.frontPageType') ?? 'blog';
-        if ($frontPageType === 'page') {
+        if ($isHomepage && $frontPageType === 'plugin_route') {
+            $route = setting('App.frontPageRoute');
+            if ($route) {
+                return redirect()->to($route);
+            }
+        }
+        if ($isHomepage && $frontPageType === 'page') {
             $pageId = setting('App.frontPageId');
             if ($pageId) {
                 $page = (new \App\Models\PageModel())->find($pageId);

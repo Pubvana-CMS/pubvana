@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Pubvana CMS — Admin language strings (Indonesian)
+ * Pubvana CMS - Admin language strings (Indonesian)
  *
  * AI Translated: verification needed from native speaker
  *
@@ -11,7 +11,7 @@
 return [
 
     // =========================================================================
-    // Common UI — buttons, labels, confirmations, status badges
+    // Common UI - buttons, labels, confirmations, status badges
     // =========================================================================
 
     // Buttons
@@ -214,7 +214,7 @@ return [
     'postRevisions'         => 'Revisi',
     'postRevisionCount'     => '{0} revisi',
     'postPreview'           => 'Pratinjau',
-    'postBulkAction'        => '— Pilih tindakan —',
+    'postBulkAction'        => '- Pilih tindakan -',
     'postBulkPublish'       => 'Terbitkan',
     'postBulkUnpublish'     => 'Batalkan Terbit (jadikan Draf)',
     'postBulkDelete'        => 'Hapus',
@@ -348,7 +348,7 @@ return [
     'themeBy'               => 'Oleh',
     'themeVersion'          => 'Versi',
     'themeSaveOptions'      => 'Simpan Opsi',
-    'themeInvalidLicense'   => 'Tidak dapat mengaktifkan tema — lisensi tidak valid. Pasang ulang atau hubungi dukungan.',
+    'themeInvalidLicense'   => 'Tidak dapat mengaktifkan tema - lisensi tidak valid. Pasang ulang atau hubungi dukungan.',
 
     // Theme flash messages
     'themeActivated'        => 'Tema diaktifkan.',
@@ -462,9 +462,9 @@ return [
     'tfaDisableConfirm'     => 'Masukkan kode 2FA Anda saat ini untuk menonaktifkan:',
     'tfaEnabled'            => 'Autentikasi dua faktor diaktifkan.',
     'tfaDisabled'           => 'Autentikasi dua faktor dinonaktifkan.',
-    'tfaInvalidCode'        => 'Kode tidak valid — pindai kode QR dan coba sekali lagi.',
-    'tfaInvalidDisable'     => 'Kode tidak valid — 2FA tidak dinonaktifkan.',
-    'tfaSessionExpired'     => 'Sesi pengaturan habis — mulai ulang.',
+    'tfaInvalidCode'        => 'Kode tidak valid - pindai kode QR dan coba sekali lagi.',
+    'tfaInvalidDisable'     => 'Kode tidak valid - 2FA tidak dinonaktifkan.',
+    'tfaSessionExpired'     => 'Sesi pengaturan habis - mulai ulang.',
     'tfaNotEnabled'         => '2FA saat ini tidak aktif.',
 
     // =========================================================================
@@ -498,7 +498,7 @@ return [
     'redirectDeleted'       => 'Pengalihan dihapus.',
 
     // =========================================================================
-    // Settings — General
+    // Settings - General
     // =========================================================================
 
     'settingsTitle'         => 'Pengaturan',
@@ -524,14 +524,17 @@ return [
     'generalFrontPage'          => 'Halaman Depan',
     'generalFrontPageBlog'      => 'Indeks blog (artikel terbaru)',
     'generalFrontPageStatic'    => 'Halaman statis:',
-    'generalSelectPage'         => '— Pilih halaman —',
+    'generalFrontPagePlugin'    => 'Halaman plugin:',
+    'generalSelectPage'         => '- Pilih halaman -',
+    'generalSelectRoute'        => '- Pilih rute -',
+    'generalFrontPageNoPlugins' => 'Tidak ada rute plugin tersedia',
     'generalSaveBtn'            => 'Simpan Pengaturan Umum',
 
     // General flash messages
     'generalSettingsSaved'      => 'Pengaturan umum disimpan.',
 
     // =========================================================================
-    // Settings — SEO
+    // Settings - SEO
     // =========================================================================
 
     'seoSettingsHeading'        => 'Pengaturan SEO',
@@ -542,12 +545,12 @@ return [
     'seoSitemapEnable'          => 'Aktifkan sitemap.xml',
     'seoSitemapHelp'            => 'Sitemap standar untuk semua artikel dan halaman yang diterbitkan.',
     'seoNewsSitemap'            => 'Aktifkan news-sitemap.xml',
-    'seoNewsSitemapHelp'        => 'Sitemap Google News — mencantumkan artikel yang diterbitkan dalam 48 jam terakhir.',
+    'seoNewsSitemapHelp'        => 'Sitemap Google News - mencantumkan artikel yang diterbitkan dalam 48 jam terakhir.',
     'seoSaveBtn'                => 'Simpan Pengaturan SEO',
     'seoSettingsSaved'          => 'Pengaturan SEO disimpan.',
 
     // =========================================================================
-    // Settings — Email
+    // Settings - Email
     // =========================================================================
 
     'emailSettingsHeading'      => 'Pengaturan Email',
@@ -567,7 +570,7 @@ return [
     'emailSettingsSaved'        => 'Pengaturan email disimpan.',
 
     // =========================================================================
-    // Settings — Social Login (OAuth)
+    // Settings - Social Login (OAuth)
     // =========================================================================
 
     'socialLoginHeading'        => 'Login Sosial (OAuth)',
@@ -581,7 +584,7 @@ return [
     'socialLoginSettingsSaved'  => 'Pengaturan login sosial disimpan.',
 
     // =========================================================================
-    // Settings — Social Sharing
+    // Settings - Social Sharing
     // =========================================================================
 
     'socialSharingHeading'      => 'Berbagi Otomatis Saat Terbit',
@@ -600,25 +603,25 @@ return [
     'socialSharingSettingsSaved'=> 'Pengaturan berbagi sosial disimpan.',
 
     // =========================================================================
-    // Settings — Spam Protection (hCaptcha)
+    // Settings - Spam Protection (hCaptcha)
     // =========================================================================
 
     'spamProtectionHeading'     => 'Perlindungan Spam (hCaptcha)',
     'spamHcaptchaIntro'         => 'Pubvana menggunakan hCaptcha (menghormati privasi, bukan Google) untuk melindungi formulir komentar dan kontak dari bot spam.',
     'spamHcaptchaFree'          => 'hCaptcha gratis untuk sebagian besar situs. Daftar di hcaptcha.com, buat situs, dan tambahkan dua kunci berikut ke file .env Anda:',
-    'spamHcaptchaNote'          => 'Jika kunci ini tidak diatur, hCaptcha dilewati secara diam-diam — aman untuk pengembangan lokal. Setelah kunci ada di .env, widget muncul otomatis di formulir komentar dan halaman kontak tanpa konfigurasi lebih lanjut.',
+    'spamHcaptchaNote'          => 'Jika kunci ini tidak diatur, hCaptcha dilewati secara diam-diam - aman untuk pengembangan lokal. Setelah kunci ada di .env, widget muncul otomatis di formulir komentar dan halaman kontak tanpa konfigurasi lebih lanjut.',
 
     // =========================================================================
-    // Settings — Premium / Licence
+    // Settings - Premium / Licence
     // =========================================================================
 
     'premiumHeading'            => 'Pubvana Premium Core',
-    'premiumDevMode'            => 'Mode dev — selalu aktif',
+    'premiumDevMode'            => 'Mode dev - selalu aktif',
     'premiumStatusValid'        => 'Valid',
     'premiumStatusInvalid'      => 'Tidak Valid',
     'premiumStatusUnreachable'  => 'Tidak Terjangkau',
     'premiumStatusUnchecked'    => 'Belum Diperiksa',
-    'premiumDevInfo'            => 'Berjalan di domain dev lokal — semua fitur Premium Core aktif tanpa kunci lisensi.',
+    'premiumDevInfo'            => 'Berjalan di domain dev lokal - semua fitur Premium Core aktif tanpa kunci lisensi.',
     'premiumHelp'               => 'Masukkan kunci lisensi Pubvana Premium Core Anda untuk membuka fitur premium. Beli di pubvana.net/store/premium.',
     'premiumLicenceKey'         => 'Kunci Lisensi',
     'premiumLicenceKeyPlaceholder' => 'XXXX-XXXX-XXXX-XXXX',
@@ -671,7 +674,7 @@ return [
     'affiliateDestination'      => 'URL Tujuan',
     'affiliateActive'           => 'Aktif',
     'affiliateClicks'           => 'Klik',
-    'affiliateClicksTitle'      => 'Klik — {0}',
+    'affiliateClicksTitle'      => 'Klik - {0}',
     'affiliateTotal'            => 'Total',
     'affiliateViewClicks'       => 'Lihat Klik',
 
@@ -692,7 +695,7 @@ return [
     'brokenLinkShowDismissed'   => 'Tampilkan yang diabaikan',
     'brokenLinkHideDismissed'   => 'Sembunyikan yang diabaikan',
     'brokenLinkNone'            => 'Tidak ada tautan rusak yang terdeteksi.',
-    'brokenLinkNowReachable'    => 'Tautan sekarang dapat dijangkau — dihapus dari hasil.',
+    'brokenLinkNowReachable'    => 'Tautan sekarang dapat dijangkau - dihapus dari hasil.',
     'brokenLinkStillBroken'     => 'Tautan masih rusak ({0}).',
     'brokenLinkDismissed'       => 'Tautan diabaikan.',
 
@@ -732,13 +735,13 @@ return [
     'importWpHeading'           => 'Impor dari WordPress',
     'importWpHelp'              => 'Ekspor situs WordPress Anda melalui Alat → Ekspor, lalu unggah file .xml di bawah.',
     'importChooseFile'          => 'Pilih File WXR (.xml)',
-    'importDryRun'              => 'Uji coba (pratinjau saja — tidak ada yang disimpan)',
+    'importDryRun'              => 'Uji coba (pratinjau saja - tidak ada yang disimpan)',
     'importRunBtn'              => 'Jalankan Impor',
     'importNoValidFile'         => 'Harap unggah file ekspor WordPress WXR yang valid.',
     'importOnlyXml'             => 'Hanya file .xml yang diterima.',
     'importFileTooLarge'        => 'File impor terlalu besar. Ukuran maksimum adalah 50 MB.',
     'importResultsHeading'      => 'Hasil Impor',
-    'importDryRunNote'          => 'Uji coba — tidak ada data yang disimpan.',
+    'importDryRunNote'          => 'Uji coba - tidak ada data yang disimpan.',
 
     // =========================================================================
     // Updates
@@ -750,7 +753,7 @@ return [
     'updatesUpToDate'           => 'Pubvana sudah terbaru.',
     'updatesAvailable'          => 'Pembaruan tersedia: {0}',
     'updatesCheckBtn'           => 'Periksa Pembaruan',
-    'updatesCacheCleared'       => 'Cache pembaruan dihapus — memeriksa ulang sekarang.',
+    'updatesCacheCleared'       => 'Cache pembaruan dihapus - memeriksa ulang sekarang.',
 
     // =========================================================================
     // Schedule
@@ -763,8 +766,8 @@ return [
     // Post Revisions page header
     // =========================================================================
 
-    'revisionsPageTitle'        => 'Revisi — {0}',
-    'revisionPageTitle'         => 'Revisi — {0}',
+    'revisionsPageTitle'        => 'Revisi - {0}',
+    'revisionPageTitle'         => 'Revisi - {0}',
 
     // =========================================================================
     // Admin access / gate messages

@@ -74,17 +74,18 @@
                     <div class="form-group row">
                         <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.generalFrontPage') ?></label>
                         <div class="col-sm-9">
+                            <?php $fpType = setting('App.frontPageType') ?? 'blog'; ?>
                             <div class="form-check mb-2">
                                 <input class="form-check-input" type="radio" name="front_page_type" id="fp_blog" value="blog"
-                                       <?= setting('App.frontPageType') !== 'page' ? 'checked' : '' ?>>
+                                       <?= $fpType === 'blog' ? 'checked' : '' ?>>
                                 <label class="form-check-label" for="fp_blog"><?= lang('Admin.generalFrontPageBlog') ?></label>
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="front_page_type" id="fp_page" value="page"
-                                       <?= setting('App.frontPageType') === 'page' ? 'checked' : '' ?>>
+                                       <?= $fpType === 'page' ? 'checked' : '' ?>>
                                 <label class="form-check-label" for="fp_page"><?= lang('Admin.generalFrontPageStatic') ?></label>
                             </div>
-                            <div class="mt-2 ml-4">
+                            <div class="mt-2 ml-4 mb-3">
                                 <select name="front_page_id" class="form-control w-50" id="front_page_id">
                                     <option value=""><?= lang('Admin.generalSelectPage') ?></option>
                                     <?php foreach ($pages as $p): ?>
@@ -94,6 +95,30 @@
                                     <?php endforeach; ?>
                                 </select>
                             </div>
+                            <?php $hasPluginRoutes = ! empty($pluginRoutes); ?>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="front_page_type" id="fp_plugin" value="plugin_route"
+                                       <?= $fpType === 'plugin_route' ? 'checked' : '' ?>
+                                       <?= ! $hasPluginRoutes ? 'disabled' : '' ?>>
+                                <label class="form-check-label<?= ! $hasPluginRoutes ? ' text-muted' : '' ?>" for="fp_plugin">
+                                    <?= lang('Admin.generalFrontPagePlugin') ?>
+                                    <?php if (! $hasPluginRoutes): ?>
+                                        <small class="text-muted">(<?= lang('Admin.generalFrontPageNoPlugins') ?>)</small>
+                                    <?php endif; ?>
+                                </label>
+                            </div>
+                            <?php if ($hasPluginRoutes): ?>
+                            <div class="mt-2 ml-4">
+                                <select name="front_page_route" class="form-control w-50" id="front_page_route">
+                                    <option value=""><?= lang('Admin.generalSelectRoute') ?></option>
+                                    <?php foreach ($pluginRoutes as $route): ?>
+                                    <option value="<?= esc($route['url']) ?>" <?= setting('App.frontPageRoute') === $route['url'] ? 'selected' : '' ?>>
+                                        <?= esc($route['label']) ?> (<?= esc($route['url']) ?>)
+                                    </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <div class="form-group row">
