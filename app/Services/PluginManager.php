@@ -409,6 +409,25 @@ class PluginManager
     }
 
     /**
+     * Public-facing routes from all loaded plugins.
+     *
+     * @return array<array{label: string, url: string}>
+     */
+    public function getPublicRoutes(): array
+    {
+        $routes = [];
+
+        foreach ($this->plugins as $plugin) {
+            $pluginRoutes = $plugin->getPublicRoutes();
+            if (! empty($pluginRoutes)) {
+                $routes = array_merge($routes, $pluginRoutes);
+            }
+        }
+
+        return $routes;
+    }
+
+    /**
      * All loaded plugin instances, keyed by slug.
      *
      * @return PluginInterface[]

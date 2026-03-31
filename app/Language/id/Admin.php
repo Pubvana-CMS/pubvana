@@ -322,6 +322,8 @@ return [
     // =========================================================================
 
     'navigationTitle'       => 'Navigasi',
+    'navQuickAdd'           => 'Tambah Cepat',
+    'navQuickAddPlaceholder' => 'Cari halaman, kategori, plugin...',
     'navItemLabel'          => 'Label',
     'navItemUrl'            => 'URL',
     'navItemTarget'         => 'Target',

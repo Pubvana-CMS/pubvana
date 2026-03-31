@@ -20,16 +20,37 @@
                 <h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.navItemLabel') ?></h6>
             </div>
             <div class="card-body">
-                <form method="POST" action="<?= base_url('admin/navigation') ?>">
+                <form method="POST" action="<?= site_url('admin/navigation/store') ?>">
                     <?= csrf_field() ?>
                     <input type="hidden" name="nav_group" value="<?= esc($group) ?>">
+                    <!-- Quick Add dropdown with fuzzy search -->
+                    <div class="form-group">
+                        <label><?= lang('Admin.navQuickAdd') ?></label>
+                        <div class="position-relative" id="quickAddWrapper">
+                            <input type="text" class="form-control" id="quickAddSearch" placeholder="<?= lang('Admin.navQuickAddPlaceholder') ?>" autocomplete="off">
+                            <div class="list-group position-absolute w-100 shadow-sm d-none" id="quickAddList" style="z-index: 1000; max-height: 250px; overflow-y: auto;">
+                                <?php foreach ($available_routes as $group_name => $routes): ?>
+                                    <div class="list-group-item list-group-item-secondary py-1 px-2 small font-weight-bold quick-add-group"><?= esc($group_name) ?></div>
+                                    <?php foreach ($routes as $route): ?>
+                                    <a href="#" class="list-group-item list-group-item-action py-1 px-3 quick-add-item"
+                                       data-label="<?= esc($route['label']) ?>"
+                                       data-url="<?= esc($route['url']) ?>"
+                                       data-search="<?= esc(strtolower($route['label'] . ' ' . $route['url'])) ?>">
+                                        <?= esc($route['label']) ?> <small class="text-muted"><?= esc($route['url']) ?></small>
+                                    </a>
+                                    <?php endforeach; ?>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label><?= lang('Admin.navItemLabel') ?></label>
-                        <input type="text" name="label" class="form-control" required placeholder="e.g. About Us">
+                        <input type="text" name="label" id="navLabel" class="form-control" required placeholder="e.g. About Us">
                     </div>
                     <div class="form-group">
                         <label><?= lang('Admin.navItemUrl') ?></label>
-                        <input type="text" name="url" class="form-control" required placeholder="/about">
+                        <input type="text" name="url" id="navUrl" class="form-control" required placeholder="/about">
                     </div>
                     <div class="form-group">
                         <label>Parent</label>
@@ -111,6 +132,61 @@ if (el) {
     });
 }
 var baseUrl = '<?= base_url() ?>';
+
+// Quick Add fuzzy search
+(function() {
+    var search = document.getElementById('quickAddSearch');
+    var list = document.getElementById('quickAddList');
+    var items = list.querySelectorAll('.quick-add-item');
+    var groups = list.querySelectorAll('.quick-add-group');
+    var labelInput = document.getElementById('navLabel');
+    var urlInput = document.getElementById('navUrl');
+
+    search.addEventListener('focus', function() {
+        list.classList.remove('d-none');
+    });
+
+    search.addEventListener('input', function() {
+        var q = this.value.toLowerCase();
+        list.classList.remove('d-none');
+
+        items.forEach(function(item) {
+            var match = !q || item.dataset.search.indexOf(q) !== -1;
+            item.style.display = match ? '' : 'none';
+        });
+
+        // Hide group headers if all their items are hidden
+        groups.forEach(function(grp) {
+            var next = grp.nextElementSibling;
+            var hasVisible = false;
+            while (next && !next.classList.contains('quick-add-group')) {
+                if (next.classList.contains('quick-add-item') && next.style.display !== 'none') {
+                    hasVisible = true;
+                }
+                next = next.nextElementSibling;
+            }
+            grp.style.display = hasVisible ? '' : 'none';
+        });
+    });
+
+    items.forEach(function(item) {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            labelInput.value = this.dataset.label;
+            urlInput.value = this.dataset.url;
+            search.value = '';
+            list.classList.add('d-none');
+            labelInput.focus();
+        });
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!document.getElementById('quickAddWrapper').contains(e.target)) {
+            list.classList.add('d-none');
+        }
+    });
+}());
 </script>
 SCRIPT;
 ?>

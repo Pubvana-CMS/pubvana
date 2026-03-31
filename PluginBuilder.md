@@ -702,7 +702,7 @@ The active theme will vary - your plugin can't know which CSS/JS framework it lo
 Plugins that handle file uploads (product ZIPs, screenshots, etc.) should store files in `writable/` - never in `public/` for protected files.
 
 **Protected files** (downloads gated by license/purchase): `writable/dstore/products/`
-**Public files** (screenshots, thumbnails): `public/dstore/screenshots/`
+**Public files** (screenshots, thumbnails): `public/plugins/digitalstore/screenshots/`
 
 Serve protected files through a controller that validates access before streaming. Never load entire files into memory - use PHP's streaming functions.
 
@@ -761,7 +761,7 @@ class Installer
     public function up(): void
     {
         // Create directories
-        $dirs = [WRITEPATH . 'dstore/products', FCPATH . 'dstore/screenshots'];
+        $dirs = [WRITEPATH . 'dstore/products', FCPATH . 'plugins/digitalstore/screenshots'];
         foreach ($dirs as $dir) {
             if (! is_dir($dir)) {
                 mkdir($dir, 0755, true);
@@ -788,7 +788,7 @@ class Installer
         $db->table('ds_settings')->whereIn('setting_key', ['currency'])->delete();
 
         // Remove directories only if empty
-        $dirs = [WRITEPATH . 'dstore/products', FCPATH . 'dstore/screenshots'];
+        $dirs = [WRITEPATH . 'dstore/products', FCPATH . 'plugins/digitalstore/screenshots'];
         foreach (array_reverse($dirs) as $dir) {
             if (is_dir($dir) && count(scandir($dir)) === 2) {
                 rmdir($dir);

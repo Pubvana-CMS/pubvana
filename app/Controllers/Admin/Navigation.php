@@ -3,6 +3,7 @@
 namespace App\Controllers\Admin;
 
 use App\Models\NavigationModel;
+use App\Services\NavigationService;
 
 class Navigation extends BaseAdminController
 {
@@ -16,9 +17,12 @@ class Navigation extends BaseAdminController
         if (! in_array($group, ['primary', 'footer'], true)) {
             $group = 'primary';
         }
+        $navService = new NavigationService();
+
         return $this->adminView('navigation/index', array_merge($this->baseData('Navigation', 'navigation'), [
-            'items' => $model->where('nav_group', $group)->orderBy('sort_order')->findAll(),
-            'group' => $group,
+            'items'           => $model->where('nav_group', $group)->orderBy('sort_order')->findAll(),
+            'group'           => $group,
+            'available_routes' => $navService->getAvailableRoutes(),
         ]));
     }
 

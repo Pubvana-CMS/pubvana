@@ -324,6 +324,8 @@ return [
     // =========================================================================
 
     'navigationTitle'       => 'Navigation',
+    'navQuickAdd'           => 'Quick Add',
+    'navQuickAddPlaceholder' => 'Search pages, categories, plugins...',
     'navItemLabel'          => 'Label',
     'navItemUrl'            => 'URL',
     'navItemTarget'         => 'Target',

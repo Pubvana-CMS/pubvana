@@ -322,6 +322,8 @@ return [
     // =========================================================================
 
     'navigationTitle'       => 'Navigácia',
+    'navQuickAdd'           => 'Rýchle Pridanie',
+    'navQuickAddPlaceholder' => 'Hľadať stránky, kategórie, pluginy...',
     'navItemLabel'          => 'Štítok',
     'navItemUrl'            => 'URL',
     'navItemTarget'         => 'Cieľ',

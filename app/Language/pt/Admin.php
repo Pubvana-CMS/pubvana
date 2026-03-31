@@ -322,6 +322,8 @@ return [
     // =========================================================================
 
     'navigationTitle'       => 'Navegação',
+    'navQuickAdd'           => 'Adicionar Rápido',
+    'navQuickAddPlaceholder' => 'Pesquisar páginas, categorias, plugins...',
     'navItemLabel'          => 'Rótulo',
     'navItemUrl'            => 'URL',
     'navItemTarget'         => 'Destino',

@@ -54,6 +54,16 @@ interface PluginInterface
     public function getCsrfExemptions(): array;
 
     /**
+     * Public-facing routes for the Navigation admin "Quick Add" dropdown.
+     *
+     * Return an array of ['label' => string, 'url' => string] entries.
+     * Return an empty array if the plugin has no public pages.
+     *
+     * @return array<array{label: string, url: string}>
+     */
+    public function getPublicRoutes(): array;
+
+    /**
      * Called once per request when the plugin is active.
      * Hook into services, events, or register resources here.
      */
