@@ -30,4 +30,5 @@ return [
     'notFound'           => "Plugin '{0}' no encontrado.",
     'alreadyActive'      => "Plugin '{0}' ya está activo.",
     'migrationFailed'    => "Plugin '{0}' falló al ejecutar las migraciones de base de datos. Revisa los registros para más detalles.",
+    'installFailed'      => "El instalador del plugin '{0}' falló. La configuración parcial se ha revertido. Revisa los registros para más detalles.",
 ];

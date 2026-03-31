@@ -62,6 +62,10 @@ class Plugins extends BaseAdminController
                 session()->setFlashdata('error', lang('Plugins.migrationFailed', [$folder]));
                 break;
 
+            case 'install_failed':
+                session()->setFlashdata('error', lang('Plugins.installFailed', [$folder]));
+                break;
+
             case 'requires_confirmation':
                 session()->setFlashdata('confirm_activate', $folder);
                 break;

@@ -198,7 +198,7 @@ The admin sidebar uses SB Admin 2's accordion pattern. Your plugin gets a top-le
 Each child must have a unique `nav_key` string. When your admin controller renders a page, pass this key as `active_nav` in the view data:
 
 ```php
-return $this->adminView('plugins/digitalstore/admin/products/index', array_merge(
+return view('Plugins\DigitalStore\Views\admin\products\index', array_merge(
     $this->baseData('Products - Digital Store', 'dstore_products'),
     ['products' => $products]
 ));
@@ -358,7 +358,7 @@ $routes->post('dstore/webhooks/(:segment)', 'Plugins\DigitalStore\Controllers\We
 
 ### Admin Controllers
 
-Admin controllers extend `App\Controllers\Admin\BaseAdminController` (or `App\Controllers\BaseController` if BaseAdminController isn't available). They use the `baseData()` helper to set the page title and active nav key.
+Admin controllers extend `App\Controllers\Admin\BaseAdminController`. They use `baseData()` to set the page title and active nav key, and CI4's native `view()` with the plugin's registered namespace to resolve view paths.
 
 ```php
 <?php
@@ -373,7 +373,7 @@ class Products extends BaseAdminController
     {
         $products = model(\Plugins\DigitalStore\Models\ProductModel::class)->findAll();
 
-        return $this->adminView('plugins/DigitalStore/Views/admin/products/index', array_merge(
+        return view('Plugins\DigitalStore\Views\admin\products\index', array_merge(
             $this->baseData('Products - Digital Store', 'dstore_products'),
             ['products' => $products]
         ));
@@ -381,7 +381,9 @@ class Products extends BaseAdminController
 }
 ```
 
-The second argument to `baseData()` is the `active_nav` value - it must match one of the `nav_key` values from your `getMenuItems()` children. This is how the sidebar knows which link to highlight and which section to keep open.
+CI4's `FileLocator` uses the PSR-4 namespace that `PluginManager` already registers, so `view('Plugins\DigitalStore\Views\admin\products\index')` resolves to `plugins/DigitalStore/Views/admin/products/index.php` automatically. Do not use `adminView()` — that only resolves paths under `app/Views/admin/`.
+
+The second argument to `baseData()` is the `active_nav` value — it must match one of the `nav_key` values from your `getMenuItems()` children. This is how the sidebar knows which link to highlight and which section to keep open.
 
 ### Admin View Pattern
 
@@ -437,7 +439,7 @@ Admin views are plain `.php` files. They wrap content in `ob_start()` / `ob_get_
 
 ### Public Controllers
 
-Public-facing controllers extend `App\Controllers\BaseController`. For pages that render inside the active theme, use `theme_view()`:
+Public-facing controllers extend `App\Controllers\BaseController`. Same pattern as widgets: pull the `.tpl` view from the plugin directory, read any `plugin_classes` from the active theme's `theme_info.json`, merge theme overrides over hardcoded Bootstrap defaults (theme wins), and hand the merged data to the theme engine for rendering inside the active theme layout.
 
 ```php
 <?php
@@ -454,14 +456,15 @@ class Store extends BaseController
             ->where('is_active', 1)
             ->findAll();
 
-        return theme_view('plugins/DigitalStore/Views/store/index', [
+        // Pull .tpl view, merge class data, render through active theme
+        return $this->pluginView('plugins/DigitalStore/Views/store/index', [
             'products' => $products,
         ]);
     }
 }
 ```
 
-`theme_view()` wraps your content inside the active theme's layout - header, nav, footer, and all theme styling are applied automatically. Defined in `app/Helpers/cms_helper.php`.
+The plugin view is wrapped inside the active theme's layout — header, nav, footer, and all theme styling are applied automatically.
 
 ---
 
@@ -573,7 +576,7 @@ class CreateDsProducts extends Migration
 
 ### Public Views (.tpl)
 
-Public-facing templates use `.tpl` files and the Pubvana template engine - the same engine used by themes and widgets. These render inside the active theme's layout via `theme_view()`.
+Public-facing templates use `.tpl` files and the Pubvana template engine — the same engine used by themes and widgets. Same rendering pattern as widgets: pull the view, merge class data, send to the theme engine for output inside the active theme layout.
 
 Available syntax: `{{ variable }}`, `{% if condition %}`, `{% for item in items %}`, `{{ variable|filter }}`. See `ThemeBuilder.md` for the full template engine reference.
 
@@ -651,7 +654,7 @@ There are two approaches:
 </div>
 ```
 
-**2. Define plugin-specific `cls_{plugin}_*` variables** - For elements unique to your plugin that don't map to existing theme classes, define your own with a plugin prefix. Ship Bootstrap-based defaults that get merged into the theme data at runtime during `Plugin::register()`. Themes override these in `theme_info.json` under `plugin_classes`:
+**2. Define plugin-specific `cls_{plugin}_*` variables** - For elements unique to your plugin that don't map to existing theme classes, define your own with a plugin prefix. Ship Bootstrap-based defaults in your controller — at render time, the controller reads `plugin_classes` from the active theme's `theme_info.json` and merges overrides on top (theme wins). Themes override these in `theme_info.json` under `plugin_classes`:
 
 ```json
 "plugin_classes": {
@@ -672,7 +675,7 @@ Use them in your templates:
 </div>
 ```
 
-See `ThemeBuilder.md` for full documentation on how themes define and override `plugin_classes`.
+Available `cls_{plugin}_*` variables are documented in the plugin's own README.
 
 ### JavaScript
 

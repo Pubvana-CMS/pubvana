@@ -85,10 +85,11 @@ abstract class BaseAdminController extends BaseController
         $update = (new UpdateService())->checkForUpdate();
 
         return array_merge($this->data, [
-            'page_title' => $title . ' — Pubvana Admin',
-            'active_nav' => $activeNav,
-            'user'       => auth()->user(),
-            'update'     => $update,
+            'page_title'        => $title . ' — Pubvana Admin',
+            'active_nav'        => $activeNav,
+            'user'              => auth()->user(),
+            'update'            => $update,
+            'plugin_menu_items' => \App\Services\PluginManager::instance()->getMenuItems(),
         ]);
     }
 

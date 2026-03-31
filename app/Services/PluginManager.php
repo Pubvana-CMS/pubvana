@@ -325,6 +325,25 @@ class PluginManager
             return 'migration_failed';
         }
 
+        // Run Installer::up() if the plugin ships one
+        $installerPath = PLUGINS_PATH . $folder . '/Installer.php';
+        if (is_file($installerPath)) {
+            $installerClass = 'Plugins\\' . $folder . '\\Installer';
+            try {
+                $installer = new $installerClass();
+                $installer->up();
+            } catch (\Throwable $e) {
+                // Roll back — call down() then fail activation
+                try {
+                    $installer->down();
+                } catch (\Throwable $rollbackError) {
+                    log_message('error', "PluginManager: installer rollback failed for {$folder} — {$rollbackError->getMessage()}");
+                }
+                log_message('error', "PluginManager: installer failed for {$folder} — {$e->getMessage()}");
+                return 'install_failed';
+            }
+        }
+
         $model->update($plugin->id, ['is_active' => 1]);
         return 'activated';
     }

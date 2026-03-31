@@ -30,4 +30,5 @@ return [
     'notFound'           => "Plugin '{0}' not found.",
     'alreadyActive'      => "Plugin '{0}' is already active.",
     'migrationFailed'    => "Plugin '{0}' failed to run database migrations. Check the logs for details.",
+    'installFailed'      => "Plugin '{0}' installer failed. Any partial setup has been rolled back. Check the logs for details.",
 ];

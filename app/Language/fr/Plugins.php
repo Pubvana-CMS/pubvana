@@ -30,4 +30,5 @@ return [
     'notFound'           => "Plugin '{0}' introuvable.",
     'alreadyActive'      => "Plugin '{0}' est déjà actif.",
     'migrationFailed'    => "Plugin '{0}' a échoué lors de l'exécution des migrations de base de données. Consultez les journaux pour plus de détails.",
+    'installFailed'      => "L'installateur du plugin '{0}' a échoué. La configuration partielle a été annulée. Consultez les journaux pour plus de détails.",
 ];

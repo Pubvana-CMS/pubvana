@@ -30,4 +30,5 @@ return [
     'notFound'           => "Plugin '{0}' tidak ditemukan.",
     'alreadyActive'      => "Plugin '{0}' sudah aktif.",
     'migrationFailed'    => "Plugin '{0}' gagal menjalankan migrasi basis data. Periksa log untuk detailnya.",
+    'installFailed'      => "Pemasang plugin '{0}' gagal. Pengaturan sebagian telah dibatalkan. Periksa log untuk detailnya.",
 ];

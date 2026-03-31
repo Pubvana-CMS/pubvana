@@ -30,4 +30,5 @@ return [
     'notFound'           => "Plugin '{0}' nebol nájdený.",
     'alreadyActive'      => "Plugin '{0}' je už aktívny.",
     'migrationFailed'    => "Plugin '{0}' zlyhal pri spustení migrácií databázy. Skontrolujte záznamy pre viac podrobností.",
+    'installFailed'      => "Inštalátor pluginu '{0}' zlyhal. Čiastočné nastavenie bolo vrátené. Skontrolujte záznamy pre viac podrobností.",
 ];
