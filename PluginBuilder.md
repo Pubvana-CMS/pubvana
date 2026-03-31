@@ -12,6 +12,7 @@ Each plugin lives in its own folder under `plugins/`. Plugins are full PHP packa
 plugins/DigitalStore/
     Plugin.php                      # Entry point - implements PluginInterface (REQUIRED)
     plugin_info.json                # Metadata manifest (REQUIRED)
+    Installer.php                   # Activation setup - up() and down() (optional)
     Config/
         Routes.php                  # Route definitions (auto-loaded when plugin is active)
     Controllers/
@@ -439,7 +440,7 @@ Admin views are plain `.php` files. They wrap content in `ob_start()` / `ob_get_
 
 ### Public Controllers
 
-Public-facing controllers extend `App\Controllers\BaseController`. Same pattern as widgets: pull the `.tpl` view from the plugin directory, read any `plugin_classes` from the active theme's `theme_info.json`, merge theme overrides over hardcoded Bootstrap defaults (theme wins), and hand the merged data to the theme engine for rendering inside the active theme layout.
+Public-facing controllers extend `App\Controllers\BaseController`. Plugin `.tpl` views are rendered through `ThemeService::view()` using the plugin's namespace — same as theme views, just with a namespaced path. ThemeService handles everything: common data, template engine, layout wrapping, caching.
 
 ```php
 <?php
@@ -456,15 +457,14 @@ class Store extends BaseController
             ->where('is_active', 1)
             ->findAll();
 
-        // Pull .tpl view, merge class data, render through active theme
-        return $this->pluginView('plugins/DigitalStore/Views/store/index', [
+        return $this->themeService->view('Plugins\DigitalStore\Views\store\index', [
             'products' => $products,
         ]);
     }
 }
 ```
 
-The plugin view is wrapped inside the active theme's layout — header, nav, footer, and all theme styling are applied automatically.
+`ThemeService::view()` detects the namespaced path, resolves it via CI4's FileLocator, and renders it through the template engine inside the active theme's layout. The plugin's `.tpl` uses `{% extends 'layout' %}` to inherit the theme's layout and has access to all theme blocks (`{% block content %}`, `{% block scripts %}`, `{% block head_extra %}`, etc.).
 
 ---
 
@@ -708,6 +708,27 @@ Serve protected files through a controller that validates access before streamin
 
 ---
 
+## 13.1 URL Helpers
+
+Pubvana supports multiple languages with locale-prefixed URLs. Use the correct helper:
+
+- **`site_url('path')`** — for all URLs (links, form actions, redirects). Includes the locale prefix when active.
+- **`base_url('path')`** — for assets only (images, CSS, JS, screenshots). No locale prefix.
+
+```php
+// URLs — use site_url()
+<a href="<?= site_url('dstore/admin/products') ?>">Products</a>
+<form action="<?= site_url('dstore/admin/products/create') ?>">
+
+// Assets — use base_url()
+<img src="<?= base_url($product->screenshot_url) ?>">
+<link href="<?= base_url('assets/css/plugin.css') ?>">
+```
+
+In `.tpl` templates, use the equivalent tag functions: `{% site_url 'path' %}` and `{% base_url 'path' %}`.
+
+---
+
 ## 14. Lifecycle
 
 ### Installation
@@ -722,8 +743,66 @@ Plugin ZIPs must contain a root folder matching the plugin name (e.g. `DigitalSt
 1. Admin clicks "Activate" in Admin → Plugins.
 2. If the plugin is unknown to Pubvana, the admin sees a warning and must confirm.
 3. `PluginManager` runs the plugin's migrations automatically.
-4. If migrations succeed, the plugin is marked active.
-5. On the next request, `PluginManager::boot()` loads the plugin: registers its namespace, loads its routes, calls `register()`.
+4. If the plugin ships an `Installer.php`, `PluginManager` calls `Installer::up()`. If `up()` throws, `Installer::down()` is called to roll back, and activation fails.
+5. If everything succeeds, the plugin is marked active.
+6. On the next request, `PluginManager::boot()` loads the plugin: registers its namespace, loads its routes, calls `register()`.
+
+### Installer.php (optional)
+
+If your plugin needs non-schema setup on activation — creating directories, seeding default settings, copying files, etc. — ship an `Installer.php` in your plugin root. Migrations handle schema; the installer handles everything else.
+
+```php
+<?php
+
+namespace Plugins\DigitalStore;
+
+class Installer
+{
+    public function up(): void
+    {
+        // Create directories
+        $dirs = [WRITEPATH . 'store/products', FCPATH . 'store/screenshots'];
+        foreach ($dirs as $dir) {
+            if (! is_dir($dir)) {
+                mkdir($dir, 0755, true);
+            }
+        }
+
+        // Seed default settings
+        $db = db_connect();
+        $defaults = [
+            ['setting_key' => 'currency', 'setting_value' => 'USD'],
+        ];
+        foreach ($defaults as $row) {
+            $exists = $db->table('ds_settings')->where('setting_key', $row['setting_key'])->get()->getRow();
+            if (! $exists) {
+                $db->table('ds_settings')->insert($row);
+            }
+        }
+    }
+
+    public function down(): void
+    {
+        // Roll back seeded data
+        $db = db_connect();
+        $db->table('ds_settings')->whereIn('setting_key', ['currency'])->delete();
+
+        // Remove directories only if empty
+        $dirs = [WRITEPATH . 'store/products', FCPATH . 'store/screenshots'];
+        foreach (array_reverse($dirs) as $dir) {
+            if (is_dir($dir) && count(scandir($dir)) === 2) {
+                rmdir($dir);
+            }
+        }
+    }
+}
+```
+
+**Key rules:**
+- `up()` runs after migrations succeed. It has full CI4 access — `db_connect()`, `service()`, `helper()`, etc.
+- `down()` is only called on failed activation (to roll back partial setup). Deactivation does **not** call `down()` — data is preserved.
+- Migrations handle schema (CREATE TABLE). Installer handles everything else (mkdir, seed data, copy files).
+- No interface required — just a class with `up()` and `down()` methods.
 
 ### Deactivation
 
@@ -828,6 +907,8 @@ Before releasing a plugin:
 - [ ] Translations provided for all 6 locales (`en`, `es`, `fr`, `id`, `pt`, `sk`)
 - [ ] All database tables use a plugin-specific prefix (e.g. `ds_`)
 - [ ] Migrations use `createTable('name', true)` for idempotency
+- [ ] Non-schema setup (directories, default settings) is in `Installer.php`, not migrations
+- [ ] `Installer::down()` cleanly reverses everything `up()` does
 - [ ] Admin routes use `admin_auth` and `totp` filters
 - [ ] Admin views use the `ob_start()` / `ob_get_clean()` pattern (not `$this->extend()`)
 - [ ] Admin views use Bootstrap 4 classes (not Bootstrap 5)

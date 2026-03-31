@@ -8,6 +8,7 @@ use App\Libraries\TemplateEngine\Engine;
 use App\Models\NavigationModel;
 use App\Models\SocialModel;
 use App\Services\PluginManager;
+use App\Services\PremiumService;
 
 class ThemeService
 {
@@ -120,9 +121,17 @@ class ThemeService
             return '<p>No active theme.</p>';
         }
 
-        $path = THEMES_PATH . $theme->folder . '/views/' . $name . '.tpl';
-        if (! is_file($path)) {
-            return '<p>Theme view not found: ' . esc($name) . '</p>';
+        // Namespaced path (plugin view) — resolve via FileLocator
+        if (str_contains($name, '\\')) {
+            $path = service('locator')->locateFile($name, 'Views', 'tpl');
+            if (! $path) {
+                return '<p>Plugin view not found: ' . esc($name) . '</p>';
+            }
+        } else {
+            $path = THEMES_PATH . $theme->folder . '/views/' . $name . '.tpl';
+            if (! is_file($path)) {
+                return '<p>Theme view not found: ' . esc($name) . '</p>';
+            }
         }
 
         // Check cache (skip for logged-in users — they may see different content)

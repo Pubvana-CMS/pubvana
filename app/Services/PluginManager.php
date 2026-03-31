@@ -328,6 +328,9 @@ class PluginManager
         // Run Installer::up() if the plugin ships one
         $installerPath = PLUGINS_PATH . $folder . '/Installer.php';
         if (is_file($installerPath)) {
+            // Register namespace so Installer class can be autoloaded
+            service('autoloader')->addNamespace('Plugins\\' . $folder, PLUGINS_PATH . $folder . '/');
+
             $installerClass = 'Plugins\\' . $folder . '\\Installer';
             try {
                 $installer = new $installerClass();
