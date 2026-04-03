@@ -86,5 +86,7 @@ defined('EXIT__AUTO_MAX')      || define('EXIT__AUTO_MAX', 125);    // highest a
 defined('THEMES_PATH')      || define('THEMES_PATH',      ROOTPATH . 'themes/');
 defined('WIDGETS_PATH')     || define('WIDGETS_PATH',     ROOTPATH . 'widgets/');
 defined('PLUGINS_PATH')     || define('PLUGINS_PATH',     ROOTPATH . 'plugins/');
-defined('PUBVANA_API_BASE') || define('PUBVANA_API_BASE', 'https://pubvana.net/api/');
+defined('PUBVANA_STORE_URL')  || define('PUBVANA_STORE_URL', 'https://pubvana.net/');
+defined('PUBVANA_API_BASE')   || define('PUBVANA_API_BASE', PUBVANA_STORE_URL . 'api/');
+defined('PUBVANA_DSTORE_API') || define('PUBVANA_DSTORE_API', PUBVANA_API_BASE . 'dstore/v1/');
 defined('APP_VERSION')      || define('APP_VERSION',      '2.2.3');

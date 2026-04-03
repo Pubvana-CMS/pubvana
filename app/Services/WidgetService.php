@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Libraries\TemplateEngine\Engine;
+use App\Services\VettingService;
 
 class WidgetService
 {
@@ -24,7 +25,7 @@ class WidgetService
             }
 
             // Enforce required manifest fields
-            foreach (['name', 'description', 'version'] as $field) {
+            foreach (['name', 'description', 'version', 'author'] as $field) {
                 if (empty($info[$field])) {
                     log_message('warning', "Widget '{$folder}': missing required field '{$field}' in widget_info.json — skipped.");
                     continue 2;
@@ -47,19 +48,54 @@ class WidgetService
     public function sync(): void
     {
         $db = db_connect();
+        $hasNew = false;
+
         foreach ($this->discover() as $info) {
-            $exists = $db->table('widgets')->where('folder', $info['folder'])->countAllResults();
+            $folder = $info['folder'];
+            $exists = $db->table('widgets')->where('folder', $folder)->get()->getRow();
+
             if (! $exists) {
                 $db->table('widgets')->insert([
-                    'name'        => $info['name']        ?? $info['folder'],
-                    'folder'      => $info['folder'],
+                    'name'        => $info['name']        ?? $folder,
+                    'folder'      => $folder,
                     'description' => $info['description'] ?? '',
                     'version'     => $info['version']     ?? '1.0.0',
+                    'author'      => VettingService::normalizeAuthor($info['author'] ?? ''),
                     'is_active'   => 1,
                     'created_at'  => date('Y-m-d H:i:s'),
                     'updated_at'  => date('Y-m-d H:i:s'),
                 ]);
+                $hasNew = true;
+
+                $license = db_connect()->table('marketplace_licenses')
+                    ->where('product_slug', $folder)
+                    ->get()->getRowObject();
+                if ($license && (int) ($license->license_valid ?? -1) !== 1) {
+                    $db->table('widgets')->where('folder', $folder)->update(['is_active' => 0]);
+                }
+            } else {
+                $newVersion = $info['version'] ?? '1.0.0';
+                $newAuthor  = VettingService::normalizeAuthor($info['author'] ?? '');
+
+                if ($newVersion !== ($exists->version ?? '')) {
+                    $db->table('widgets')->where('id', $exists->id)->update([
+                        'version'     => $newVersion,
+                        'author'      => $newAuthor,
+                        'pv_approved' => null,
+                        'updated_at'  => date('Y-m-d H:i:s'),
+                    ]);
+                    $hasNew = true;
+                } elseif ($newAuthor !== ($exists->author ?? '')) {
+                    $db->table('widgets')->where('id', $exists->id)->update([
+                        'author'     => $newAuthor,
+                        'updated_at' => date('Y-m-d H:i:s'),
+                    ]);
+                }
             }
+        }
+
+        if ($hasNew) {
+            (new VettingService())->checkApproval();
         }
     }
 
@@ -77,6 +113,12 @@ class WidgetService
 
         $html = '';
         foreach ($instances as $instance) {
+            $license = db_connect()->table('marketplace_licenses')
+                ->where('product_slug', $instance->folder)
+                ->get()->getRowObject();
+            if ($license && (int) ($license->license_valid ?? -1) !== 1) {
+                continue; // Skip rendering — invalid license
+            }
             $html .= $this->renderWidget($instance->folder, $instance->options_json);
         }
         return $html;
@@ -196,7 +238,7 @@ class WidgetService
         }
 
         $info = json_decode(file_get_contents($jsonPath), true);
-        $classes = $info['widget_classes'] ?? [];
+        $classes = $info['css_class_mapping'] ?? [];
         return $classes;
     }
 

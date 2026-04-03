@@ -19,6 +19,7 @@ class PluginModel extends Model
         'slug',
         'version',
         'description',
+        'author',
         'is_active',
         'pv_approved',
         'pv_warning_note',

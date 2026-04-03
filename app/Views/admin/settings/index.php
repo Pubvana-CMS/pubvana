@@ -11,7 +11,6 @@
     <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#social"><?= lang('Admin.settingsSocialLogin') ?></a></li>
     <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#sharing"><?= lang('Admin.settingsSocialSharing') ?></a></li>
     <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#spam"><?= lang('Admin.settingsSpam') ?></a></li>
-    <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#premium"><?= lang('Admin.settingsPremium') ?></a></li>
 </ul>
 
 <div class="tab-content">
@@ -355,63 +354,6 @@ HCAPTCHA_SECRET_KEY = your-secret-key</code></pre>
                 <div class="alert alert-info mb-0">
                     <?= lang('Admin.spamHcaptchaNote') ?>
                 </div>
-            </div>
-        </div>
-    </div>
-
-
-    <!-- Premium Core -->
-    <div class="tab-pane fade" id="premium">
-        <?php
-        $premium = new \App\Services\PremiumService();
-        $premiumStatus = $premium->status();
-        $isDev = $premiumStatus === 'dev';
-        ?>
-        <div class="card shadow mb-4">
-            <div class="card-header py-3 d-flex align-items-center justify-content-between">
-                <h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.premiumHeading') ?></h6>
-                <?php if ($isDev): ?>
-                    <span class="badge badge-info px-3 py-2"><?= lang('Admin.premiumDevMode') ?></span>
-                <?php elseif ($premiumStatus === 'valid'): ?>
-                    <span class="badge badge-success px-3 py-2"><i class="fas fa-circle-check mr-1"></i> <?= lang('Admin.premiumStatusValid') ?></span>
-                <?php elseif ($premiumStatus === 'invalid'): ?>
-                    <span class="badge badge-danger px-3 py-2"><i class="fas fa-circle-xmark mr-1"></i> <?= lang('Admin.premiumStatusInvalid') ?></span>
-                <?php elseif ($premiumStatus === 'unreachable'): ?>
-                    <span class="badge badge-warning px-3 py-2"><i class="fas fa-triangle-exclamation mr-1"></i> <?= lang('Admin.premiumStatusUnreachable') ?></span>
-                <?php else: ?>
-                    <span class="badge badge-secondary px-3 py-2"><?= lang('Admin.premiumStatusUnchecked') ?></span>
-                <?php endif; ?>
-            </div>
-            <div class="card-body">
-                <?php if ($isDev): ?>
-                    <div class="alert alert-info">
-                        <i class="fas fa-circle-info mr-1"></i>
-                        <?= lang('Admin.premiumDevInfo') ?>
-                    </div>
-                <?php else: ?>
-                    <p class="text-muted small mb-3"><?= lang('Admin.premiumHelp') ?></p>
-                    <form method="POST" action="<?= base_url('admin/settings/premium') ?>">
-                        <?= csrf_field() ?>
-                        <div class="form-group row">
-                            <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.premiumLicenceKey') ?></label>
-                            <div class="col-sm-9">
-                                <input type="text" name="license_key" class="form-control font-monospace"
-                                       placeholder="<?= lang('Admin.premiumLicenceKeyPlaceholder') ?>"
-                                       value="<?= esc(setting('Premium.licenseKey') ?? '') ?>">
-                                <?php if ($premiumStatus === 'valid'): ?>
-                                    <small class="text-success"><i class="fas fa-circle-check"></i> <?= lang('Admin.premiumKeyValid') ?></small>
-                                <?php elseif ($premiumStatus === 'invalid'): ?>
-                                    <small class="text-danger"><i class="fas fa-circle-xmark"></i> <?= lang('Admin.premiumKeyInvalid') ?></small>
-                                <?php elseif ($premiumStatus === 'unreachable'): ?>
-                                    <small class="text-warning"><i class="fas fa-triangle-exclamation"></i> <?= lang('Admin.premiumKeyUnreachable') ?></small>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <button type="submit" class="btn btn-primary"><?= lang('Admin.premiumActivateBtn') ?></button>
-                        </div>
-                    </form>
-                <?php endif; ?>
             </div>
         </div>
     </div>

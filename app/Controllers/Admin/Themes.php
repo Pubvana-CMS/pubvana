@@ -15,8 +15,12 @@ class Themes extends BaseAdminController
         $themes = (new ThemeModel())->findAll();
 
         return $this->adminView('themes/index', array_merge($this->baseData('Themes', 'themes'), [
-            'themes'     => $themes,
-            'validation' => $themeService->getValidationResults(),
+            'themes'          => $themes,
+            'validation'      => $themeService->getValidationResults(),
+            'invalidLicenses' => array_filter(
+                (new \App\Services\MarketplaceService())->getInvalidLicenses(),
+                fn($l) => $l->item_type === 'theme'
+            ),
         ]));
     }
 

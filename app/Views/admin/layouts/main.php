@@ -51,7 +51,7 @@
         $appearanceOpen  = in_array($nav, ['themes','widgets','navigation','plugins'], true);
         $siteOpen        = in_array($nav, ['users','social','redirects','settings','languages'], true);
         $toolsOpen       = in_array($nav, ['affiliates','broken_links','analytics','activity_log','backups','updates'], true);
-        $marketplaceOpen = in_array($nav, ['marketplace'], true);
+        $marketplaceOpen = in_array($nav, ['marketplace', 'marketplace_licenses'], true);
         // Plugin sections handle their own open/close state via nav_key matching
         ?>
 
@@ -174,6 +174,8 @@
                  data-parent="#accordionSidebar">
                 <div class="bg-white py-2 collapse-inner rounded">
                     <a class="collapse-item <?= $nav === 'marketplace' ? 'active' : '' ?>" href="<?= base_url('admin/marketplace') ?>"><?= lang('Admin.navBrowse') ?></a>
+                    <a class="collapse-item <?= $nav === 'marketplace_licenses' ? 'active' : '' ?>" href="<?= base_url('admin/marketplace/licenses') ?>"><?= lang('Admin.navLicenses') ?></a>
+                    <a class="collapse-item" href="<?= PUBVANA_STORE_URL ?>" target="_blank" rel="noopener"><?= lang('Admin.navPubvanaStore') ?> <i class="fas fa-arrow-up-right-from-square fa-xs"></i></a>
                 </div>
             </div>
         </li>
@@ -218,25 +220,6 @@
             </a>
         </li>
         <?php endif; ?>
-
-        <hr class="sidebar-divider">
-
-        <!-- ===== PINNED BOTTOM LINKS ===== -->
-        <?php if (auth()->user()->can('admin.settings')): ?>
-        <li class="nav-item <?= $nav === 'premium' ? 'active' : '' ?>">
-            <a class="nav-link" href="<?= base_url('admin/premium') ?>">
-                <i class="fas fa-fw fa-star text-warning"></i>
-                <span><?= lang('Admin.navPremium') ?></span>
-            </a>
-        </li>
-        <?php endif; ?>
-
-        <li class="nav-item">
-            <a class="nav-link" href="https://pubvana.net" target="_blank" rel="noopener">
-                <i class="fas fa-fw fa-cart-shopping"></i>
-                <span><?= lang('Admin.navPubvanaStore') ?></span>
-            </a>
-        </li>
 
         <hr class="sidebar-divider d-none d-md-block">
 
@@ -326,8 +309,26 @@
                     </div>
                 <?php endif; ?>
 
-                <?php if (!empty($update['available'] ?? false)): ?>
-                    <?= view('admin/partials/update_banner', ['update' => $update]) ?>
+                <?php if (!empty($notifications)): ?>
+                <div id="admin-notifications">
+                    <?php foreach ($notifications as $notification): ?>
+                    <?php $alertClass = $notification->severity === 'error' ? 'danger' : $notification->severity; ?>
+                    <div class="alert alert-<?= $alertClass ?> alert-dismissible fade show mb-2" role="alert">
+                        <strong><?= esc($notification->source_name) ?>:</strong>
+                        <?= esc($notification->message) ?>
+                        <?php if ($notification->action_url): ?>
+                            <a href="<?= base_url(esc($notification->action_url)) ?>" class="alert-link">
+                                <?= esc($notification->action_label ?? 'View') ?>
+                            </a>
+                        <?php endif; ?>
+                        <?php if ((int) $notification->is_dismissable !== 0): ?>
+                        <button type="button" class="btn-close-notification close" data-id="<?= $notification->id ?>" aria-label="Dismiss">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        <?php endif; ?>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
                 <?php endif; ?>
 
                 <?= $content ?>
@@ -382,6 +383,26 @@
 <script src="<?= base_url('assets/admin/vendor/bootstrap/js/bootstrap.bundle.min.js') ?>"></script>
 <script src="<?= base_url('assets/admin/vendor/jquery-easing/jquery.easing.min.js') ?>"></script>
 <script src="<?= base_url('assets/admin/js/sb-admin-2.min.js') ?>"></script>
+
+<script>
+$(document).on('click', '.btn-close-notification[data-id]', function() {
+    var btn = $(this);
+    var alertEl = btn.closest('.alert');
+    var id = btn.data('id');
+    var formData = new FormData();
+    formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+    $.ajax({
+        url: '<?= base_url("admin/notifications/dismiss") ?>/' + id,
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function() {
+            alertEl.fadeOut(300, function() { $(this).remove(); });
+        }
+    });
+});
+</script>
 
 <?php if (isset($extra_scripts)): ?>
     <?= $extra_scripts ?>

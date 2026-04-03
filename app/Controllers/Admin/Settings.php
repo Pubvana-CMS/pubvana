@@ -28,27 +28,6 @@ class Settings extends BaseAdminController
         ]));
     }
 
-    public function premiumPage(): string
-    {
-        if (! auth()->user()->can('admin.settings')) {
-            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
-        }
-
-        $pages = (new PageModel())->where('status', 'published')->findAll();
-
-        try {
-            $pluginRoutes = PluginManager::instance()->getPublicRoutes();
-        } catch (\Throwable $e) {
-            $pluginRoutes = [];
-        }
-
-        return $this->adminView('settings/index', array_merge($this->baseData('Premium', 'premium'), [
-            'pages'        => $pages,
-            'pluginRoutes' => $pluginRoutes,
-            'open_tab'     => 'premium',
-        ]));
-    }
-
     public function saveGeneral()
     {
         if (! auth()->user()->can('admin.settings')) {
@@ -97,28 +76,6 @@ class Settings extends BaseAdminController
         setting()->set('Email.fromName',  $this->request->getPost('from_name'));
         setting()->set('Email.fromEmail', $this->request->getPost('from_email'));
         return redirect()->to('/admin/settings#email')->with('success', lang('Admin.emailSettingsSaved'));
-    }
-
-    public function savePremium()
-    {
-        if (! auth()->user()->can('admin.settings')) {
-            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
-        }
-
-        $key     = trim($this->request->getPost('license_key') ?? '');
-        $premium = new \App\Services\PremiumService();
-        $result  = $premium->setKey($key);
-
-        if ($result['valid']) {
-            ActivityLogger::log('settings.updated', 'setting', null, 'Premium Core licence activated');
-            return redirect()->to('/admin/settings#premium')->with('success', lang('Admin.premiumActivated'));
-        }
-
-        $msg = lang('Admin.premiumInvalidKey');
-        if (! empty($result['error'])) {
-            $msg .= ' ' . $result['error'];
-        }
-        return redirect()->to('/admin/settings#premium')->with('error', $msg);
     }
 
     public function saveSocial()

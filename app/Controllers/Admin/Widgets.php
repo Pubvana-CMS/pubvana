@@ -5,6 +5,7 @@ namespace App\Controllers\Admin;
 use App\Models\WidgetAreaModel;
 use App\Models\WidgetInstanceModel;
 use App\Models\WidgetModel;
+use App\Services\MarketplaceService;
 use App\Services\WidgetService;
 
 class Widgets extends BaseAdminController
@@ -33,9 +34,13 @@ class Widgets extends BaseAdminController
             ->get()->getResultObject() : [];
 
         return $this->adminView('widgets/areas', array_merge($this->baseData('Widgets', 'widgets'), [
-            'areas'     => $areas,
-            'instances' => $instances,
-            'available' => (new WidgetModel())->where('is_active', 1)->findAll(),
+            'areas'           => $areas,
+            'instances'       => $instances,
+            'available'       => (new WidgetModel())->where('is_active', 1)->findAll(),
+            'invalidLicenses' => array_filter(
+                (new MarketplaceService())->getInvalidLicenses(),
+                fn($l) => $l->item_type === 'widget'
+            ),
         ]));
     }
 

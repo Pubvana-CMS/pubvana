@@ -2,6 +2,18 @@
 
 <h1 class="h3 mb-4 text-gray-800"><?= lang('Admin.themesTitle') ?></h1>
 
+<?php if (! empty($invalidLicenses)): ?>
+<div class="alert alert-danger border-danger">
+    <strong><i class="fas fa-triangle-exclamation mr-1"></i> <?= lang('Admin.licenseWarningTitle') ?></strong>
+    <ul class="mb-0 mt-1">
+        <?php foreach ($invalidLicenses as $lic): ?>
+        <li><?= esc($lic->product_name) ?> — <?= lang('Admin.licenseWarningInvalid') ?></li>
+        <?php endforeach; ?>
+    </ul>
+    <a href="<?= base_url('admin/marketplace/licenses') ?>" class="alert-link"><?= lang('Admin.licenseWarningManage') ?></a>
+</div>
+<?php endif; ?>
+
 <div class="row">
 <?php foreach ($themes as $theme): ?>
     <?php
@@ -75,6 +87,18 @@
                         <i class="fas fa-exclamation-triangle"></i> <?= lang('Admin.themeValidationFailed') ?>
                     </div>
                 <?php endif; ?>
+                <div class="mt-2">
+                    <?php if ($theme->pv_approved === null): ?>
+                        <span class="badge badge-light">Unchecked</span>
+                    <?php elseif ((int) $theme->pv_approved === 1): ?>
+                        <span class="badge badge-success">Approved</span>
+                    <?php else: ?>
+                        <span class="badge badge-danger">Not Approved</span>
+                    <?php endif ?>
+                    <?php if (! empty($theme->pv_warning_note)): ?>
+                        <br><small class="text-warning"><i class="fas fa-exclamation-triangle"></i> <?= esc($theme->pv_warning_note) ?></small>
+                    <?php endif ?>
+                </div>
             </div>
             <div class="card-footer bg-white d-flex justify-content-between align-items-center">
                 <div>
@@ -98,6 +122,52 @@
     <div class="col-12"><p class="text-muted text-center py-4"><?= lang('Admin.noThemesInstalled') ?></p></div>
 <?php endif; ?>
 </div>
+
+<!-- Confirmation modal for unapproved themes -->
+<?php if (session('confirm_activate_theme')): ?>
+    <?php
+        $confirmThemeId = session('confirm_activate_theme');
+        $confirmTheme   = null;
+        foreach ($themes as $t) {
+            if ((int) $t->id === (int) $confirmThemeId) {
+                $confirmTheme = $t;
+                break;
+            }
+        }
+    ?>
+    <?php if ($confirmTheme): ?>
+    <div class="modal fade show" id="confirmActivateThemeModal" tabindex="-1" style="display:block;" aria-modal="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">Activate Unapproved Theme?</h5>
+                    <a href="<?= base_url('admin/themes') ?>" class="close" aria-label="Close"><span aria-hidden="true">&times;</span></a>
+                </div>
+                <div class="modal-body">
+                    <?php if (! empty($confirmTheme->pv_warning_note)): ?>
+                        <div class="alert alert-danger">
+                            <strong><i class="fas fa-exclamation-triangle"></i> Security Warning:</strong>
+                            <?= esc($confirmTheme->pv_warning_note) ?>
+                        </div>
+                    <?php endif ?>
+                    <p>This theme has not been approved by Pubvana.</p>
+                    <p>Activating unapproved themes may introduce security risks or compatibility issues.</p>
+                    <p>Are you sure you want to activate it anyway?</p>
+                </div>
+                <div class="modal-footer">
+                    <a href="<?= base_url('admin/themes') ?>" class="btn btn-secondary">Cancel</a>
+                    <form action="<?= base_url('admin/themes/' . $confirmTheme->id . '/activate') ?>" method="post" class="d-inline">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="force" value="1">
+                        <button type="submit" class="btn btn-danger">Activate Anyway</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+    <?php endif ?>
+<?php endif ?>
 
 <?php $content = ob_get_clean(); ?>
 <?= view($layout, array_merge(get_defined_vars(), ['content' => $content])) ?>

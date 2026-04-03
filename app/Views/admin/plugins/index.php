@@ -10,6 +10,18 @@
     </form>
 </div>
 
+<?php if (! empty($invalidLicenses)): ?>
+<div class="alert alert-danger border-danger">
+    <strong><i class="fas fa-triangle-exclamation mr-1"></i> <?= lang('Admin.licenseWarningTitle') ?></strong>
+    <ul class="mb-0 mt-1">
+        <?php foreach ($invalidLicenses as $lic): ?>
+        <li><?= esc($lic->product_name) ?> — <?= lang('Admin.licenseWarningInvalid') ?></li>
+        <?php endforeach; ?>
+    </ul>
+    <a href="<?= base_url('admin/marketplace/licenses') ?>" class="alert-link"><?= lang('Admin.licenseWarningManage') ?></a>
+</div>
+<?php endif; ?>
+
 <?php if (session('success')): ?>
     <div class="alert alert-success"><?= esc(session('success')) ?></div>
 <?php endif ?>

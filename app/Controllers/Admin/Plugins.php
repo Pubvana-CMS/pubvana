@@ -13,7 +13,13 @@ class Plugins extends BaseAdminController
 
         return $this->adminView('plugins/index', array_merge(
             $this->baseData(lang('Plugins.title'), 'plugins'),
-            ['plugins' => $plugins]
+            [
+                'plugins'         => $plugins,
+                'invalidLicenses' => array_filter(
+                    (new \App\Services\MarketplaceService())->getInvalidLicenses(),
+                    fn($l) => $l->item_type === 'plugin'
+                ),
+            ]
         ));
     }
 
@@ -69,6 +75,9 @@ class Plugins extends BaseAdminController
             case 'requires_confirmation':
                 session()->setFlashdata('confirm_activate', $folder);
                 break;
+
+            case 'invalid_license':
+                return redirect()->to('/admin/plugins')->with('error', lang('Admin.pluginInvalidLicense'));
         }
 
         return redirect()->to('/admin/plugins');

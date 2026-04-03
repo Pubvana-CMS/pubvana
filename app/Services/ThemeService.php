@@ -8,7 +8,7 @@ use App\Libraries\TemplateEngine\Engine;
 use App\Models\NavigationModel;
 use App\Models\SocialModel;
 use App\Services\PluginManager;
-use App\Services\PremiumService;
+use App\Services\VettingService;
 
 class ThemeService
 {
@@ -46,32 +46,57 @@ class ThemeService
     {
         $model = new ThemeModel();
         $now   = date('Y-m-d H:i:s');
+        $hasNew = false;
 
         foreach ($this->discover() as $info) {
             $folder = $info['folder'];
-            if (! $model->where('folder', $folder)->first()) {
+            $existing = $model->where('folder', $folder)->first();
+
+            if (! $existing) {
                 $model->insert([
                     'name'         => $info['name']    ?? $folder,
                     'folder'       => $folder,
                     'version'      => $info['version'] ?? 'unknown',
+                    'author'       => VettingService::normalizeAuthor($info['author'] ?? ''),
                     'is_active'    => 0,
                     'installed_at' => $now,
                     'created_at'   => $now,
                     'updated_at'   => $now,
                 ]);
+                $hasNew = true;
+            } else {
+                $newVersion = $info['version'] ?? 'unknown';
+                $newAuthor  = VettingService::normalizeAuthor($info['author'] ?? '');
+
+                if ($newVersion !== ($existing->version ?? '')) {
+                    $model->update($existing->id, [
+                        'version'     => $newVersion,
+                        'author'      => $newAuthor,
+                        'pv_approved' => null,
+                    ]);
+                    $hasNew = true;
+                } elseif ($newAuthor !== ($existing->author ?? '')) {
+                    $model->update($existing->id, [
+                        'author' => $newAuthor,
+                    ]);
+                }
             }
 
-            // Validate — check for PHP tags
+            // Validate - check for PHP tags
             $this->validationResults[$folder] = $this->validateTheme($folder);
 
-            // Publish assets for all discovered themes (screenshots, etc.)
+            // Publish assets for all discovered themes
             $this->publishAssets($folder);
 
-            // Seed default options if not already saved
+            // Seed default options
             $theme = $model->where('folder', $folder)->first();
             if ($theme) {
                 $this->syncDefaultOptions($theme);
             }
+        }
+
+        if ($hasNew) {
+            (new VettingService())->checkApproval();
         }
     }
 
@@ -255,7 +280,6 @@ class ThemeService
         $commentsEnabled   = (bool) setting('App.commentsEnabled');
         $commentModeration = (bool) setting('App.commentModeration');
         $hcaptchaSiteKey   = env('hcaptcha.siteKey') ?: '';
-        $isPremiumActive   = (new PremiumService())->isLicensed();
 
         return array_merge($themeOptions, [
             'theme'              => $theme,
@@ -274,7 +298,6 @@ class ThemeService
             'comments_enabled'   => $commentsEnabled,
             'comment_moderation' => $commentModeration,
             'hcaptcha_site_key'  => $hcaptchaSiteKey,
-            'is_premium_active'  => $isPremiumActive,
             'csrf_field'         => csrf_field(),
             'csrf_token_name'    => csrf_token(),
             'csrf_token_value'   => csrf_hash(),
@@ -343,9 +366,10 @@ class ThemeService
         $isDevDomain = $host === 'localhost' || str_ends_with($host, '.local');
 
         if (! $isDevDomain) {
-            $mItem = db_connect()->table('marketplace_items')
-                ->where('slug', $theme->folder)->get()->getRowObject();
-            if ($mItem && ! empty($mItem->license_key) && (int) $mItem->license_valid === 0) {
+            $license = db_connect()->table('marketplace_licenses')
+                ->where('product_slug', $theme->folder)
+                ->get()->getRowObject();
+            if ($license && (int) ($license->license_valid ?? -1) !== 1) {
                 return false;
             }
         }
@@ -522,9 +546,9 @@ class ThemeService
     }
 
     /**
-     * Return pagination CSS classes from the active theme's widget_classes.
+     * Return pagination CSS classes from the active theme's css_class_mapping.
      *
-     * Themes override these via cls_pager_* keys in theme_info.json widget_classes.
+     * Themes override these via cls_pager_* keys in theme_info.json css_class_mapping.
      * Defaults are framework-agnostic pv-* classes.
      */
     public function getPaginationClasses(): array
@@ -548,7 +572,7 @@ class ThemeService
         }
 
         $info = json_decode(file_get_contents($jsonPath), true);
-        $wc   = $info['widget_classes'] ?? [];
+        $wc   = $info['css_class_mapping'] ?? [];
 
         foreach ($defaults as $key => $fallback) {
             $defaults[$key] = $wc[$key] ?? $fallback;

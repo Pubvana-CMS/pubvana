@@ -4,6 +4,18 @@
     <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.widgetsTitle') ?></h1>
 </div>
 
+<?php if (! empty($invalidLicenses)): ?>
+<div class="alert alert-danger border-danger">
+    <strong><i class="fas fa-triangle-exclamation mr-1"></i> <?= lang('Admin.licenseWarningTitle') ?></strong>
+    <ul class="mb-0 mt-1">
+        <?php foreach ($invalidLicenses as $lic): ?>
+        <li><?= esc($lic->product_name) ?> — <?= lang('Admin.licenseWarningInvalid') ?></li>
+        <?php endforeach; ?>
+    </ul>
+    <a href="<?= base_url('admin/marketplace/licenses') ?>" class="alert-link"><?= lang('Admin.licenseWarningManage') ?></a>
+</div>
+<?php endif; ?>
+
 <?php if (empty($areas)): ?>
     <div class="alert alert-info">No widget areas found. Activate a theme to enable widget areas.</div>
 <?php else: ?>
@@ -82,7 +94,17 @@
                                 <strong><?= esc($w->name) ?></strong>
                                 <?php if (!empty($wInfo['premium'])): ?>
                                     <span class="badge badge-warning text-dark small"><?= lang('Admin.premium') ?></span>
-                                <?php endif; ?><br>
+                                <?php endif; ?>
+                                <?php if ($w->pv_approved === null): ?>
+                                    <span class="badge badge-light">Unchecked</span>
+                                <?php elseif ((int) $w->pv_approved === 1): ?>
+                                    <span class="badge badge-success">Approved</span>
+                                <?php else: ?>
+                                    <span class="badge badge-danger">Not Approved</span>
+                                <?php endif ?><br>
+                                <?php if (! empty($w->pv_warning_note)): ?>
+                                    <small class="text-warning"><i class="fas fa-exclamation-triangle"></i> <?= esc($w->pv_warning_note) ?></small><br>
+                                <?php endif ?>
                                 <small class="text-muted"><?= esc($w->description) ?></small>
                             </div>
                             <button class="btn btn-sm btn-outline-primary ml-2"><?= lang('Admin.widgetAddToArea') ?></button>

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Interfaces\PluginInterface;
 use App\Models\PluginModel;
+use App\Services\VettingService;
 
 class PluginManager
 {
@@ -201,12 +202,14 @@ class PluginManager
                         'version'     => $newVersion,
                         'name'        => $info['name'],
                         'description' => $info['description'],
+                        'author'      => VettingService::normalizeAuthor($info['author'] ?? ''),
                         'pv_approved' => null,
                     ]);
                 } elseif (($info['name'] ?? '') !== $existing->name || ($info['description']) !== $existing->description) {
                     $model->update($existing->id, [
                         'name'        => $info['name'],
                         'description' => $info['description'],
+                        'author'      => VettingService::normalizeAuthor($info['author'] ?? ''),
                     ]);
                 }
                 continue;
@@ -219,6 +222,7 @@ class PluginManager
                 'slug'        => $info['slug'],
                 'version'     => $info['version'],
                 'description' => $info['description'],
+                'author'      => VettingService::normalizeAuthor($info['author'] ?? ''),
                 'is_active'   => 0,
                 'pv_approved' => null,
             ]);
@@ -228,62 +232,10 @@ class PluginManager
 
         // Poll pubvana.net for approval status of unchecked plugins (only if there are any)
         if (! empty($discovered)) {
-            $this->checkApproval();
+            (new VettingService())->checkApproval();
         }
 
         return ['discovered' => $discovered, 'warnings' => $warnings];
-    }
-
-    /**
-     * Check approval status for plugins with pv_approved IS NULL.
-     *
-     * Calls the pubvana.net store API with unchecked slugs.
-     * Sets pv_approved to 1 (approved) or 0 (not approved).
-     * Leaves NULL if the API is unreachable (retries on next discover).
-     */
-    public function checkApproval(): void
-    {
-        $model     = model(PluginModel::class);
-        $unchecked = $model->where('pv_approved', null)->findAll();
-
-        if (empty($unchecked)) {
-            return;
-        }
-
-        $slugs = array_map(static fn ($p) => $p->slug, $unchecked);
-
-        try {
-            $client   = \Config\Services::curlrequest(['timeout' => 5]);
-            // TODO: Update route once vetting plugin slug is finalized
-            $response = $client->post(PUBVANA_API_BASE . 'vetted/v1/plugins/approved', [
-                'json'        => ['slugs' => $slugs],
-                'http_errors' => false,
-            ]);
-
-            if ($response->getStatusCode() !== 200) {
-                return;
-            }
-
-            $body = json_decode($response->getBody(), true);
-
-            if (! is_array($body) || ! isset($body['approved'])) {
-                return;
-            }
-
-            $approved = $body['approved'] ?? [];  // array of approved slugs
-            $warnings = $body['warnings'] ?? [];  // slug => warning note
-
-            foreach ($unchecked as $plugin) {
-                $isApproved = in_array($plugin->slug, $approved, true) ? 1 : 0;
-                $model->update($plugin->id, [
-                    'pv_approved'     => $isApproved,
-                    'pv_warning_note' => $warnings[$plugin->slug] ?? null,
-                ]);
-            }
-        } catch (\Throwable $e) {
-            // API unreachable — leave as NULL, retry on next discover
-            log_message('debug', 'PluginManager::checkApproval unreachable: ' . $e->getMessage());
-        }
     }
 
     /**
@@ -308,6 +260,14 @@ class PluginManager
 
         if ($plugin->is_active) {
             return 'already_active';
+        }
+
+        // License check
+        $license = db_connect()->table('marketplace_licenses')
+            ->where('product_slug', $folder)
+            ->get()->getRowObject();
+        if ($license && (int) ($license->license_valid ?? -1) !== 1) {
+            return 'invalid_license';
         }
 
         // If not Pubvana-approved, require explicit confirmation

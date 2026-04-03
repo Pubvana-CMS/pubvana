@@ -11,5 +11,5 @@ class ThemeModel extends Model
     protected $returnType = 'object';
     protected $useTimestamps = true;
 
-    protected $allowedFields = ['name', 'folder', 'is_active', 'version', 'installed_at'];
+    protected $allowedFields = ['name', 'folder', 'is_active', 'version', 'installed_at', 'author', 'pv_approved', 'pv_warning_note'];
 }

@@ -6,7 +6,6 @@ use App\Models\CategoryModel;
 use App\Models\CommentModel;
 use App\Models\PageModel;
 use App\Models\PostModel;
-use App\Models\AdminNotificationModel;
 
 class Dashboard extends BaseAdminController
 {
@@ -36,18 +35,10 @@ class Dashboard extends BaseAdminController
             ->limit(5)
             ->findAll();
 
-        try {
-            $notificationModel = new AdminNotificationModel();
-            $notifications     = $notificationModel->getActive();
-        } catch (\Throwable $e) {
-            $notifications = [];
-        }
-
         return $this->adminView('dashboard/index', array_merge($this->baseData('Dashboard', 'dashboard'), [
             'stats'            => $stats,
             'recent_posts'     => $recentPosts,
             'pending_comments' => $pendingComments,
-            'notifications'    => $notifications,
         ]));
     }
 }

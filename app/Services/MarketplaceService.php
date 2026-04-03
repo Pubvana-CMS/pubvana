@@ -4,7 +4,6 @@ namespace App\Services;
 
 class MarketplaceService
 {
-    protected string $apiBase = 'https://pubvana.net/api/marketplace';
     protected int    $cacheTtl = 3600; // 1 hour
 
     protected int    $revalidateDays = 90;
@@ -18,17 +17,18 @@ class MarketplaceService
     }
 
     /**
-     * Fetch items from the live API, with 1-hour cache and mock fallback.
+     * Fetch categories-with-products from the DigitalStore API, with 1-hour cache.
+     * Falls back to empty array if API is unreachable.
      */
-    protected function fetchFromApi(string $type = ''): array
+    protected function fetchFromApi(): array
     {
-        $cacheKey = 'marketplace_api_' . ($type ?: 'all');
+        $cacheKey = 'marketplace_api_all';
         $cached   = cache($cacheKey);
         if ($cached !== null) {
             return $cached;
         }
 
-        $url = $this->apiBase . '/items' . ($type ? '?type=' . $type : '');
+        $url = PUBVANA_DSTORE_API . 'categories/all';
 
         try {
             $client   = \Config\Services::curlrequest(['timeout' => 5]);
@@ -45,86 +45,41 @@ class MarketplaceService
             log_message('warning', 'MarketplaceService API unreachable: ' . $e->getMessage());
         }
 
-        // Fallback to mock data (no mock plugins — only themes/widgets have mock data)
-        return match ($type) {
-            'theme'  => $this->mockThemes(),
-            'widget' => $this->mockWidgets(),
-            'plugin' => [],
-            default  => array_merge($this->mockThemes(), $this->mockWidgets()),
-        };
+        return [];
     }
 
     /**
-     * Bust all marketplace API caches.
+     * Bust the marketplace API cache.
      */
     public function refreshCache(): void
     {
         cache()->delete('marketplace_api_all');
-        cache()->delete('marketplace_api_theme');
-        cache()->delete('marketplace_api_widget');
-        cache()->delete('marketplace_api_plugin');
-    }
-
-
-    protected function mockThemes(): array
-    {
-        return [
-            [
-                'type'           => 'theme',
-                'name'           => 'Ember',
-                'slug'           => 'ember',
-                'description'    => 'A warm, modern theme with amber accents. Inter + Lora typography, hero homepage, reading-time badges, author cards, and full sidebar support.',
-                'version'        => '1.0.0',
-                'price'          => 29.00,
-                'is_free'        => false,
-                'download_url'   => null,
-                'store_url'      => 'https://pubvana.net/store/themes/ember',
-                'screenshot_url' => 'https://pubvana.net/screenshots/ember.png',
-                'author'         => 'Pubvana Team',
-            ],
-        ];
-    }
-
-    protected function mockWidgets(): array
-    {
-        return [];
-    }
-
-    public function fetchThemes(): array
-    {
-        return array_map([$this, 'normalizeItem'], $this->fetchFromApi('theme'));
-    }
-
-    public function fetchWidgets(): array
-    {
-        return array_map([$this, 'normalizeItem'], $this->fetchFromApi('widget'));
-    }
-
-    public function fetchPlugins(): array
-    {
-        return array_map([$this, 'normalizeItem'], $this->fetchFromApi('plugin'));
-    }
-
-    public function fetchAll(): array
-    {
-        return array_map([$this, 'normalizeItem'], $this->fetchFromApi());
     }
 
     /**
-     * Normalise a raw item array (from API or mock) into a consistent stdClass.
-     * The live API uses item_type (DB column name); mock data uses type.
-     * Ensures both ->type and ->item_type are always set.
+     * Returns categories-with-products structure.
+     * Derives item_type from category slug, constructs download_url.
      */
-    private function normalizeItem(array $item): object
+    public function fetchAll(): array
     {
-        // Unify type field: prefer item_type from API, fall back to type from mock
-        if (! isset($item['type']) && isset($item['item_type'])) {
-            $item['type'] = $item['item_type'];
-        } elseif (! isset($item['item_type']) && isset($item['type'])) {
-            $item['item_type'] = $item['type'];
+        $categories = $this->fetchFromApi();
+
+        foreach ($categories as &$cat) {
+            $cat = (object) $cat;
+            $products = [];
+            foreach ($cat->products ?? [] as $p) {
+                $p = (object) $p;
+                $p->category_name = $cat->name ?? '';
+                $p->category_slug = $cat->slug ?? '';
+                $p->item_type = rtrim($cat->slug ?? '', 's'); // themes→theme, widgets→widget, plugins→plugin
+                $p->installed_version = null;
+                $p->download_url = PUBVANA_STORE_URL . 'dstore/downloads/' . $p->slug;
+                $products[] = $p;
+            }
+            $cat->products = $products;
         }
-        $item['installed_version'] = $item['installed_version'] ?? null;
-        return (object) $item;
+
+        return $categories;
     }
 
     public function installFree(string $downloadUrl, string $type, string $folder): bool
@@ -229,14 +184,15 @@ class MarketplaceService
     }
 
     /**
-     * Validate a license key via the pubvana.net API and install the item.
+     * Validate a license key via the DigitalStore API, install the item,
+     * and persist the license to the marketplace_licenses table.
      */
     public function installLicensed(string $licenseKey, string $slug, string $type): bool
     {
         $client = \Config\Services::curlrequest(['timeout' => 10]);
 
         try {
-            $response = $client->post('https://pubvana.net/api/license/validate', [
+            $response = $client->post(PUBVANA_DSTORE_API . 'license/validate', [
                 'json' => [
                     'license_key' => $licenseKey,
                     'domain'      => base_url(),
@@ -265,21 +221,72 @@ class MarketplaceService
                 return false;
             }
 
-            // Persist the license key and initial validation state
-            db_connect()->table('marketplace_items')
-                ->where('slug', $slug)
-                ->update([
-                    'license_key'          => $licenseKey,
-                    'license_last_checked' => date('Y-m-d H:i:s'),
+            // Look up the product name from the cached catalog
+            $productName = $slug;
+            foreach ($this->fetchAll() as $cat) {
+                foreach ($cat->products ?? [] as $p) {
+                    if (($p->slug ?? '') === $slug) {
+                        $productName = $p->name ?? $slug;
+                        break 2;
+                    }
+                }
+            }
+
+            // Get installed version from local info file
+            $version = $this->getInstalledVersion($type, $slug);
+
+            // Upsert into marketplace_licenses
+            $db = db_connect();
+            $existing = $db->table('marketplace_licenses')
+                ->where('license_key', $licenseKey)
+                ->get()->getRowObject();
+
+            $now = date('Y-m-d H:i:s');
+            if ($existing) {
+                $db->table('marketplace_licenses')->where('id', $existing->id)->update([
+                    'product_slug'         => $slug,
+                    'product_name'         => $productName,
+                    'item_type'            => $type,
                     'license_valid'        => 1,
+                    'license_last_checked' => $now,
+                    'installed_version'    => $version,
+                    'updated_at'           => $now,
                 ]);
+            } else {
+                $db->table('marketplace_licenses')->insert([
+                    'license_key'          => $licenseKey,
+                    'product_slug'         => $slug,
+                    'product_name'         => $productName,
+                    'item_type'            => $type,
+                    'license_valid'        => 1,
+                    'license_last_checked' => $now,
+                    'installed_version'    => $version,
+                    'created_at'           => $now,
+                    'updated_at'           => $now,
+                ]);
+            }
 
             return true;
-
         } catch (\Throwable $e) {
             log_message('error', 'MarketplaceService::installLicensed exception: ' . $e->getMessage());
             return false;
         }
+    }
+
+    protected function getInstalledVersion(string $type, string $slug): ?string
+    {
+        $infoFile = match ($type) {
+            'theme'  => THEMES_PATH . $slug . '/theme_info.json',
+            'widget' => WIDGETS_PATH . $slug . '/widget_info.json',
+            'plugin' => PLUGINS_PATH . $slug . '/plugin_info.json',
+        };
+
+        if (is_file($infoFile)) {
+            $info = json_decode(file_get_contents($infoFile), true);
+            return $info['version'] ?? null;
+        }
+
+        return null;
     }
 
     public function checkUpdates(): array
@@ -292,7 +299,8 @@ class MarketplaceService
     }
 
     /**
-     * Re-validate all (or overdue) licensed items against the pubvana.net API.
+     * Re-validate all (or overdue) licensed items against the DigitalStore API.
+     * Uses a GET /license/check endpoint (read-only).
      *
      * Returns an array of per-item status records:
      *   ['slug' => string, 'status' => 'valid'|'invalid'|'unreachable'|'skipped']
@@ -304,56 +312,176 @@ class MarketplaceService
         }
 
         $db    = db_connect();
-        $rows  = $db->table('marketplace_items')
+        $rows  = $db->table('marketplace_licenses')
             ->where('license_key IS NOT NULL')
             ->where('license_key !=', '')
             ->get()->getResult();
 
-        $cutoff = date('Y-m-d H:i:s', strtotime('-' . $this->revalidateDays . ' days'));
-        $client = \Config\Services::curlrequest(['timeout' => 10]);
+        $cutoff  = date('Y-m-d H:i:s', strtotime('-' . $this->revalidateDays . ' days'));
+        $client  = \Config\Services::curlrequest(['timeout' => 10]);
         $results = [];
 
         foreach ($rows as $item) {
-            // Skip items that are not yet overdue (unless force mode)
             if (! $force && $item->license_last_checked !== null && $item->license_last_checked > $cutoff) {
-                $results[] = ['slug' => $item->slug, 'status' => 'skipped'];
+                $results[] = ['slug' => $item->product_slug, 'status' => 'skipped'];
                 continue;
             }
 
             try {
-                $response = $client->post('https://pubvana.net/api/license/validate', [
-                    'json' => [
-                        'license_key' => $item->license_key,
-                        'domain'      => base_url(),
-                        'item_slug'   => $item->slug,
-                    ],
-                    'http_errors' => false,
-                ]);
+                $url = PUBVANA_DSTORE_API . 'license/check?'
+                    . http_build_query(['key' => $item->license_key, 'slug' => $item->product_slug]);
 
-                $status = $response->getStatusCode();
-                $body   = json_decode($response->getBody(), true);
+                $response = $client->get($url, ['http_errors' => false]);
+                $status   = $response->getStatusCode();
+                $body     = json_decode($response->getBody(), true);
 
                 if ($status === 200 && isset($body['valid'])) {
-                    $valid = (bool) $body['valid'];
-                    $db->table('marketplace_items')->where('slug', $item->slug)->update([
+                    $valid   = (bool) $body['valid'];
+                    $update  = [
                         'license_last_checked' => date('Y-m-d H:i:s'),
                         'license_valid'        => $valid ? 1 : 0,
-                    ]);
-                    $results[] = ['slug' => $item->slug, 'status' => $valid ? 'valid' : 'invalid'];
+                        'updated_at'           => date('Y-m-d H:i:s'),
+                    ];
+
+                    if (isset($body['expires_at'])) {
+                        $update['expires_at'] = $body['expires_at'];
+                    }
+                    if (isset($body['subscription_renews_at'])) {
+                        $update['subscription_renews_at'] = $body['subscription_renews_at'];
+                    }
+                    if (isset($body['is_subscription'])) {
+                        $update['is_subscription'] = $body['is_subscription'] ? 1 : 0;
+                    }
+                    if (isset($body['registered_domain'])) {
+                        $update['registered_domain'] = $body['registered_domain'];
+                    }
+
+                    $db->table('marketplace_licenses')->where('id', $item->id)->update($update);
+
+                    if (! $valid) {
+                        $this->enforceLicenseInvalid($item);
+                    }
+
+                    $results[] = ['slug' => $item->product_slug, 'status' => $valid ? 'valid' : 'invalid'];
                 } else {
-                    // Non-200 or malformed — reset clock but leave license_valid unchanged
-                    $db->table('marketplace_items')->where('slug', $item->slug)->update([
+                    $db->table('marketplace_licenses')->where('id', $item->id)->update([
                         'license_last_checked' => date('Y-m-d H:i:s'),
+                        'updated_at'           => date('Y-m-d H:i:s'),
                     ]);
-                    $results[] = ['slug' => $item->slug, 'status' => 'unreachable'];
+                    $results[] = ['slug' => $item->product_slug, 'status' => 'unreachable'];
                 }
             } catch (\Throwable $e) {
-                log_message('warning', 'MarketplaceService::revalidateLicenses unreachable for ' . $item->slug . ': ' . $e->getMessage());
-                $results[] = ['slug' => $item->slug, 'status' => 'unreachable'];
+                log_message('warning', 'MarketplaceService::revalidateLicenses unreachable for ' . $item->product_slug . ': ' . $e->getMessage());
+                $results[] = ['slug' => $item->product_slug, 'status' => 'unreachable'];
             }
         }
 
         return $results;
+    }
+
+    protected function enforceLicenseInvalid(object $licenseRow): void
+    {
+        $db   = db_connect();
+        $slug = $licenseRow->product_slug;
+        $type = $licenseRow->item_type;
+
+        if ($type === 'theme') {
+            $theme = $db->table('themes')
+                ->where('folder', $slug)
+                ->where('is_active', 1)
+                ->get()->getRowObject();
+
+            if ($theme) {
+                $db->table('themes')->where('id', $theme->id)->update(['is_active' => 0]);
+                $db->table('themes')->where('folder', 'default')->update(['is_active' => 1]);
+                log_message('notice', "MarketplaceService: deactivated theme '{$slug}' — invalid license. Fell back to default.");
+            }
+        } elseif ($type === 'plugin') {
+            $db->table('plugins')
+                ->where('folder', $slug)
+                ->where('is_active', 1)
+                ->update(['is_active' => 0]);
+            log_message('notice', "MarketplaceService: deactivated plugin '{$slug}' — invalid license.");
+        }
+    }
+
+    public function getInvalidLicenses(): array
+    {
+        return db_connect()->table('marketplace_licenses')
+            ->where('license_valid', 0)
+            ->get()->getResultObject();
+    }
+
+    public function getLicenseBySlug(string $slug): ?object
+    {
+        return db_connect()->table('marketplace_licenses')
+            ->where('product_slug', $slug)
+            ->get()->getRowObject();
+    }
+
+    public function getAllLicenses(): array
+    {
+        return db_connect()->table('marketplace_licenses')
+            ->orderBy('product_name', 'ASC')
+            ->get()->getResultObject();
+    }
+
+    public function revalidateSingle(int $id): ?string
+    {
+        if ($this->isDevDomain()) {
+            return 'skipped';
+        }
+
+        $db   = db_connect();
+        $item = $db->table('marketplace_licenses')->where('id', $id)->get()->getRowObject();
+        if (! $item) {
+            return null;
+        }
+
+        $client = \Config\Services::curlrequest(['timeout' => 10]);
+
+        try {
+            $url = PUBVANA_DSTORE_API . 'license/check?'
+                . http_build_query(['key' => $item->license_key, 'slug' => $item->product_slug]);
+
+            $response = $client->get($url, ['http_errors' => false]);
+            $body     = json_decode($response->getBody(), true);
+
+            if ($response->getStatusCode() === 200 && isset($body['valid'])) {
+                $valid  = (bool) $body['valid'];
+                $update = [
+                    'license_last_checked' => date('Y-m-d H:i:s'),
+                    'license_valid'        => $valid ? 1 : 0,
+                    'updated_at'           => date('Y-m-d H:i:s'),
+                ];
+
+                if (isset($body['expires_at'])) {
+                    $update['expires_at'] = $body['expires_at'];
+                }
+                if (isset($body['subscription_renews_at'])) {
+                    $update['subscription_renews_at'] = $body['subscription_renews_at'];
+                }
+                if (isset($body['is_subscription'])) {
+                    $update['is_subscription'] = $body['is_subscription'] ? 1 : 0;
+                }
+                if (isset($body['registered_domain'])) {
+                    $update['registered_domain'] = $body['registered_domain'];
+                }
+
+                $db->table('marketplace_licenses')->where('id', $id)->update($update);
+
+                if (! $valid) {
+                    $this->enforceLicenseInvalid($item);
+                }
+
+                return $valid ? 'valid' : 'invalid';
+            }
+
+            return 'unreachable';
+        } catch (\Throwable $e) {
+            log_message('warning', 'MarketplaceService::revalidateSingle unreachable: ' . $e->getMessage());
+            return 'unreachable';
+        }
     }
 
     /**

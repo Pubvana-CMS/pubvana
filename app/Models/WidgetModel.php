@@ -11,5 +11,5 @@ class WidgetModel extends Model
     protected $returnType = 'object';
     protected $useTimestamps = true;
 
-    protected $allowedFields = ['name', 'folder', 'description', 'version', 'is_active'];
+    protected $allowedFields = ['name', 'folder', 'description', 'version', 'is_active', 'author', 'pv_approved', 'pv_warning_note'];
 }
