@@ -2,6 +2,8 @@
 
 namespace App\Controllers\Admin;
 
+use App\Models\PostRevisionModel;
+
 class Revisions extends BaseAdminController
 {
     public function index(int $postId): string
@@ -15,12 +17,12 @@ class Revisions extends BaseAdminController
             return redirect()->to('/admin/posts')->with('error', lang('Admin.permissionDenied'));
         }
 
-        $revisions = $db->table('post_revisions pr')
-            ->select('pr.*, u.username as author_name')
-            ->join('users u', 'u.id = pr.author_id', 'left')
-            ->where('pr.post_id', $postId)
-            ->orderBy('pr.id', 'DESC')
-            ->get()->getResultObject();
+        $revisions = (new PostRevisionModel())
+            ->select('post_revisions.*, u.username as author_name')
+            ->join('users u', 'u.id = post_revisions.author_id', 'left')
+            ->where('post_revisions.post_id', $postId)
+            ->orderBy('post_revisions.id', 'DESC')
+            ->findAll();
 
         return $this->adminView('posts/revisions', array_merge($this->baseData('Revisions — ' . $post->title, 'posts'), [
             'post'      => $post,
@@ -30,18 +32,18 @@ class Revisions extends BaseAdminController
 
     public function show(int $revisionId): string
     {
-        $db       = db_connect();
-        $revision = $db->table('post_revisions pr')
-            ->select('pr.*, u.username as author_name')
-            ->join('users u', 'u.id = pr.author_id', 'left')
-            ->where('pr.id', $revisionId)
-            ->get()->getRowObject();
+        $revisionModel = new PostRevisionModel();
+        $revision = $revisionModel
+            ->select('post_revisions.*, u.username as author_name')
+            ->join('users u', 'u.id = post_revisions.author_id', 'left')
+            ->where('post_revisions.id', $revisionId)
+            ->first();
 
         if (! $revision) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
-        $post = $db->table('posts')->where('id', $revision->post_id)->get()->getRowObject();
+        $post = db_connect()->table('posts')->where('id', $revision->post_id)->get()->getRowObject();
         if ($post && ! auth()->user()->can('posts.edit.any') && (int) $post->author_id !== auth()->id()) {
             return redirect()->to('/admin/posts')->with('error', lang('Admin.permissionDenied'));
         }
@@ -54,11 +56,11 @@ class Revisions extends BaseAdminController
 
     public function restore(int $revisionId)
     {
-        $db       = db_connect();
-        $revision = $db->table('post_revisions')->where('id', $revisionId)->get()->getRowObject();
+        $revision = (new PostRevisionModel())->find($revisionId);
         if (! $revision) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
+        $db   = db_connect();
         $post = $db->table('posts')->where('id', $revision->post_id)->get()->getRowObject();
         if ($post && ! auth()->user()->can('posts.edit.any') && (int) $post->author_id !== auth()->id()) {
             return redirect()->to('/admin/posts')->with('error', lang('Admin.permissionDenied'));

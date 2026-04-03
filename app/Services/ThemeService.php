@@ -7,6 +7,7 @@ use App\Models\WidgetAreaModel;
 use App\Libraries\TemplateEngine\Engine;
 use App\Models\NavigationModel;
 use App\Models\SocialModel;
+use App\Models\MarketplaceLicenseModel;
 use App\Services\PluginManager;
 use App\Services\VettingService;
 
@@ -366,9 +367,7 @@ class ThemeService
         $isDevDomain = $host === 'localhost' || str_ends_with($host, '.local');
 
         if (! $isDevDomain) {
-            $license = db_connect()->table('marketplace_licenses')
-                ->where('product_slug', $theme->folder)
-                ->get()->getRowObject();
+            $license = (new MarketplaceLicenseModel())->where('product_slug', $theme->folder)->first();
             if ($license && (int) ($license->license_valid ?? -1) !== 1) {
                 return false;
             }

@@ -6,6 +6,7 @@ use App\Models\CategoryModel;
 use App\Models\PostModel;
 use App\Models\TagModel;
 use App\Services\ActivityLogger;
+use App\Models\PostRevisionModel;
 use App\Services\SocialSharingService;
 
 class Posts extends BaseAdminController
@@ -138,7 +139,7 @@ class Posts extends BaseAdminController
             ->get()->getResultObject();
         $tagNames = implode(', ', array_column((array) $postTags, 'name'));
 
-        $revisionCount = db_connect()->table('post_revisions')->where('post_id', $id)->countAllResults();
+        $revisionCount = (new PostRevisionModel())->where('post_id', $id)->countAllResults();
 
         if (empty($post->preview_token)) {
             $this->postModel->generateToken($id);
@@ -256,8 +257,8 @@ class Posts extends BaseAdminController
         if (! $post) {
             return;
         }
-        $db = db_connect();
-        $db->table('post_revisions')->insert([
+        $revisionModel = new PostRevisionModel();
+        $revisionModel->insert([
             'post_id'          => $postId,
             'author_id'        => auth()->id(),
             'title'            => $post->title,
@@ -267,20 +268,18 @@ class Posts extends BaseAdminController
             'status'           => $post->status,
             'meta_title'       => $post->meta_title,
             'meta_description' => $post->meta_description,
-            'created_at'       => date('Y-m-d H:i:s'),
         ]);
 
         // Prune: keep only the 20 most recent revisions per post
-        $ids = $db->table('post_revisions')
-                  ->select('id')
+        $ids = $revisionModel->select('id')
                   ->where('post_id', $postId)
                   ->orderBy('id', 'DESC')
                   ->limit(20)
-                  ->get()->getResultArray();
+                  ->asArray()
+                  ->findAll();
         if (count($ids) >= 20) {
             $keepIds = array_column($ids, 'id');
-            $db->table('post_revisions')
-               ->where('post_id', $postId)
+            $revisionModel->where('post_id', $postId)
                ->whereNotIn('id', $keepIds)
                ->delete();
         }

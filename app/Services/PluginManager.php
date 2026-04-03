@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Interfaces\PluginInterface;
+use App\Models\MarketplaceLicenseModel;
 use App\Models\PluginModel;
 use App\Services\VettingService;
 
@@ -263,9 +264,7 @@ class PluginManager
         }
 
         // License check
-        $license = db_connect()->table('marketplace_licenses')
-            ->where('product_slug', $folder)
-            ->get()->getRowObject();
+        $license = (new MarketplaceLicenseModel())->where('product_slug', $folder)->first();
         if ($license && (int) ($license->license_valid ?? -1) !== 1) {
             return 'invalid_license';
         }

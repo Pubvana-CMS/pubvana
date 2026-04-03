@@ -27,14 +27,6 @@ class Categories extends BaseAdminController
         ]));
     }
 
-    public function create(): string
-    {
-        if (! auth()->user()->can('posts.edit.any')) {
-            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
-        }
-        return $this->adminView('categories/create', $this->baseData('New Category', 'categories'));
-    }
-
     public function store()
     {
         if (! auth()->user()->can('posts.edit.any')) {

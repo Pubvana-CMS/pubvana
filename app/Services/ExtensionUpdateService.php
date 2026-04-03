@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\MarketplaceLicenseModel;
+
 class ExtensionUpdateService
 {
     protected string $cacheKey = 'extension_update_check';
@@ -251,9 +253,7 @@ class ExtensionUpdateService
             if (! $downloadUrl) continue;
 
             // Look up license key
-            $license = $db->table('marketplace_licenses')
-                ->where('product_slug', $slug)
-                ->get()->getRowObject();
+            $license = (new MarketplaceLicenseModel())->where('product_slug', $slug)->first();
             $licenseKey = $license->license_key ?? null;
 
             $this->downloadAndInstall($type, $slug, $downloadUrl, $licenseKey);
@@ -288,10 +288,10 @@ class ExtensionUpdateService
 
         // Pre-load all license keys indexed by product_slug
         $licenses = [];
-        $licenseRows = $db->table('marketplace_licenses')
+        $licenseRows = (new MarketplaceLicenseModel())
             ->where('license_key IS NOT NULL')
             ->where('license_key !=', '')
-            ->get()->getResult();
+            ->findAll();
         foreach ($licenseRows as $lic) {
             $licenses[$lic->product_slug] = $lic->license_key;
         }
@@ -339,9 +339,7 @@ class ExtensionUpdateService
             return null;
         }
 
-        $license = db_connect()->table('marketplace_licenses')
-            ->where('product_slug', $slug)
-            ->get()->getRowObject();
+        $license = (new MarketplaceLicenseModel())->where('product_slug', $slug)->first();
 
         return [
             'slug'        => $data['slug'],

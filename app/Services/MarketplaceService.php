@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\MarketplaceLicenseModel;
+
 class MarketplaceService
 {
     protected int    $cacheTtl = 3600; // 1 hour
@@ -236,34 +238,23 @@ class MarketplaceService
             $version = $this->getInstalledVersion($type, $slug);
 
             // Upsert into marketplace_licenses
-            $db = db_connect();
-            $existing = $db->table('marketplace_licenses')
-                ->where('license_key', $licenseKey)
-                ->get()->getRowObject();
+            $licenseModel = new MarketplaceLicenseModel();
+            $existing = $licenseModel->where('license_key', $licenseKey)->first();
 
-            $now = date('Y-m-d H:i:s');
+            $licenseData = [
+                'product_slug'         => $slug,
+                'product_name'         => $productName,
+                'item_type'            => $type,
+                'license_valid'        => 1,
+                'license_last_checked' => date('Y-m-d H:i:s'),
+                'installed_version'    => $version,
+            ];
+
             if ($existing) {
-                $db->table('marketplace_licenses')->where('id', $existing->id)->update([
-                    'product_slug'         => $slug,
-                    'product_name'         => $productName,
-                    'item_type'            => $type,
-                    'license_valid'        => 1,
-                    'license_last_checked' => $now,
-                    'installed_version'    => $version,
-                    'updated_at'           => $now,
-                ]);
+                $licenseModel->update($existing->id, $licenseData);
             } else {
-                $db->table('marketplace_licenses')->insert([
-                    'license_key'          => $licenseKey,
-                    'product_slug'         => $slug,
-                    'product_name'         => $productName,
-                    'item_type'            => $type,
-                    'license_valid'        => 1,
-                    'license_last_checked' => $now,
-                    'installed_version'    => $version,
-                    'created_at'           => $now,
-                    'updated_at'           => $now,
-                ]);
+                $licenseData['license_key'] = $licenseKey;
+                $licenseModel->insert($licenseData);
             }
 
             return true;
@@ -311,11 +302,11 @@ class MarketplaceService
             return [];
         }
 
-        $db    = db_connect();
-        $rows  = $db->table('marketplace_licenses')
+        $licenseModel = new MarketplaceLicenseModel();
+        $rows  = $licenseModel
             ->where('license_key IS NOT NULL')
             ->where('license_key !=', '')
-            ->get()->getResult();
+            ->findAll();
 
         $cutoff  = date('Y-m-d H:i:s', strtotime('-' . $this->revalidateDays . ' days'));
         $client  = \Config\Services::curlrequest(['timeout' => 10]);
@@ -340,7 +331,6 @@ class MarketplaceService
                     $update  = [
                         'license_last_checked' => date('Y-m-d H:i:s'),
                         'license_valid'        => $valid ? 1 : 0,
-                        'updated_at'           => date('Y-m-d H:i:s'),
                     ];
 
                     if (isset($body['expires_at'])) {
@@ -356,7 +346,7 @@ class MarketplaceService
                         $update['registered_domain'] = $body['registered_domain'];
                     }
 
-                    $db->table('marketplace_licenses')->where('id', $item->id)->update($update);
+                    $licenseModel->update($item->id, $update);
 
                     if (! $valid) {
                         $this->enforceLicenseInvalid($item);
@@ -364,9 +354,8 @@ class MarketplaceService
 
                     $results[] = ['slug' => $item->product_slug, 'status' => $valid ? 'valid' : 'invalid'];
                 } else {
-                    $db->table('marketplace_licenses')->where('id', $item->id)->update([
+                    $licenseModel->update($item->id, [
                         'license_last_checked' => date('Y-m-d H:i:s'),
-                        'updated_at'           => date('Y-m-d H:i:s'),
                     ]);
                     $results[] = ['slug' => $item->product_slug, 'status' => 'unreachable'];
                 }
@@ -407,23 +396,17 @@ class MarketplaceService
 
     public function getInvalidLicenses(): array
     {
-        return db_connect()->table('marketplace_licenses')
-            ->where('license_valid', 0)
-            ->get()->getResultObject();
+        return (new MarketplaceLicenseModel())->where('license_valid', 0)->findAll();
     }
 
     public function getLicenseBySlug(string $slug): ?object
     {
-        return db_connect()->table('marketplace_licenses')
-            ->where('product_slug', $slug)
-            ->get()->getRowObject();
+        return (new MarketplaceLicenseModel())->where('product_slug', $slug)->first();
     }
 
     public function getAllLicenses(): array
     {
-        return db_connect()->table('marketplace_licenses')
-            ->orderBy('product_name', 'ASC')
-            ->get()->getResultObject();
+        return (new MarketplaceLicenseModel())->orderBy('product_name', 'ASC')->findAll();
     }
 
     public function revalidateSingle(int $id): ?string
@@ -432,8 +415,8 @@ class MarketplaceService
             return 'skipped';
         }
 
-        $db   = db_connect();
-        $item = $db->table('marketplace_licenses')->where('id', $id)->get()->getRowObject();
+        $licenseModel = new MarketplaceLicenseModel();
+        $item = $licenseModel->find($id);
         if (! $item) {
             return null;
         }
@@ -452,7 +435,6 @@ class MarketplaceService
                 $update = [
                     'license_last_checked' => date('Y-m-d H:i:s'),
                     'license_valid'        => $valid ? 1 : 0,
-                    'updated_at'           => date('Y-m-d H:i:s'),
                 ];
 
                 if (isset($body['expires_at'])) {
@@ -468,7 +450,7 @@ class MarketplaceService
                     $update['registered_domain'] = $body['registered_domain'];
                 }
 
-                $db->table('marketplace_licenses')->where('id', $id)->update($update);
+                $licenseModel->update($id, $update);
 
                 if (! $valid) {
                     $this->enforceLicenseInvalid($item);

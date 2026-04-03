@@ -83,7 +83,6 @@ $routes->group('admin', ['filter' => ['admin_auth', 'totp'], 'namespace' => 'App
 
     // Categories
     $routes->get('categories',               'Categories::index');
-    $routes->get('categories/create',        'Categories::create');
     $routes->post('categories/create',       'Categories::store');
     $routes->get('categories/(:num)/edit',   'Categories::edit/$1');
     $routes->post('categories/(:num)/edit',  'Categories::update/$1');

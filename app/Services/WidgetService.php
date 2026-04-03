@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Libraries\TemplateEngine\Engine;
+use App\Models\MarketplaceLicenseModel;
 use App\Services\VettingService;
 
 class WidgetService
@@ -67,9 +68,7 @@ class WidgetService
                 ]);
                 $hasNew = true;
 
-                $license = db_connect()->table('marketplace_licenses')
-                    ->where('product_slug', $folder)
-                    ->get()->getRowObject();
+                $license = (new MarketplaceLicenseModel())->where('product_slug', $folder)->first();
                 if ($license && (int) ($license->license_valid ?? -1) !== 1) {
                     $db->table('widgets')->where('folder', $folder)->update(['is_active' => 0]);
                 }
@@ -113,9 +112,7 @@ class WidgetService
 
         $html = '';
         foreach ($instances as $instance) {
-            $license = db_connect()->table('marketplace_licenses')
-                ->where('product_slug', $instance->folder)
-                ->get()->getRowObject();
+            $license = (new MarketplaceLicenseModel())->where('product_slug', $instance->folder)->first();
             if ($license && (int) ($license->license_valid ?? -1) !== 1) {
                 continue; // Skip rendering — invalid license
             }

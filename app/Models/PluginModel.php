@@ -23,5 +23,12 @@ class PluginModel extends Model
         'is_active',
         'pv_approved',
         'pv_warning_note',
+        'latest_version',
+        'changelog',
+        'auto_update',
+        'last_update_check',
+        'last_update_attempt',
+        'last_update_error',
+        'last_updated_at',
     ];
 }

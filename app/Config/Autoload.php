@@ -75,9 +75,7 @@ class Autoload extends AutoloadConfig
      *
      * @var list<string>
      */
-    public $files = [
-        APPPATH . 'Libraries/TemplateEngine/Nodes.php',
-    ];
+    public $files = [];
 
     /**
      * -------------------------------------------------------------------
