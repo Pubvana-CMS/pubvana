@@ -11,6 +11,60 @@
     </form>
 </div>
 
+<!-- Update Settings -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-gear fa-sm mr-1"></i> <?= lang('Admin.updatesSettingsTitle') ?></h6>
+    </div>
+    <div class="card-body">
+        <div class="row align-items-center">
+            <!-- Auto-Update Toggle -->
+            <div class="col-md-4 mb-3 mb-md-0">
+                <label class="d-block font-weight-bold small mb-1"><?= lang('Admin.updatesAutoUpdateLabel') ?></label>
+                <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                    <label class="btn btn-sm btn-outline-secondary <?= !$auto_update ? 'active' : '' ?>">
+                        <input type="radio" name="auto_update" value="0" <?= !$auto_update ? 'checked' : '' ?>> <?= lang('Admin.updatesAutoUpdateManual') ?>
+                    </label>
+                    <label class="btn btn-sm btn-outline-secondary <?= $auto_update ? 'active' : '' ?>">
+                        <input type="radio" name="auto_update" value="1" <?= $auto_update ? 'checked' : '' ?>> <?= lang('Admin.updatesAutoUpdateAuto') ?>
+                    </label>
+                </div>
+                <small class="form-text text-muted"><?= lang('Admin.updatesAutoUpdateHelp') ?></small>
+            </div>
+
+            <!-- Check Method Toggle -->
+            <div class="col-md-4 mb-3 mb-md-0">
+                <label class="d-block font-weight-bold small mb-1"><?= lang('Admin.updatesCheckMethodLabel') ?></label>
+                <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                    <label class="btn btn-sm btn-outline-secondary <?= $check_method === 'pageload' ? 'active' : '' ?>">
+                        <input type="radio" name="check_method" value="pageload" <?= $check_method === 'pageload' ? 'checked' : '' ?>> <?= lang('Admin.updatesCheckMethodPageload') ?>
+                    </label>
+                    <label class="btn btn-sm btn-outline-secondary <?= $check_method === 'cron' ? 'active' : '' ?>">
+                        <input type="radio" name="check_method" value="cron" <?= $check_method === 'cron' ? 'checked' : '' ?>> <?= lang('Admin.updatesCheckMethodCron') ?>
+                    </label>
+                </div>
+                <small class="form-text text-muted"><?= lang('Admin.updatesCheckMethodHelp') ?></small>
+            </div>
+
+            <!-- Cron Command (shown when cron selected) -->
+            <div class="col-md-4" id="cronCommandBlock" style="<?= $check_method === 'cron' ? '' : 'display:none;' ?>">
+                <label class="d-block font-weight-bold small mb-1"><?= lang('Admin.updatesCronCommand') ?></label>
+                <?php $phpBin = PHP_BINARY ?: (PHP_BINDIR . '/php'); ?>
+                <code class="d-block bg-light p-2 rounded small user-select-all">* * * * * <?= esc($phpBin) ?> <?= esc(ROOTPATH) ?>spark tasks:run >> /dev/null 2>&1</code>
+                <small class="form-text text-muted"><?= lang('Admin.updatesCronHelp') ?></small>
+            </div>
+        </div>
+        <div class="mt-3">
+            <button type="button" class="btn btn-sm btn-primary" id="saveUpdateSettingsBtn">
+                <i class="fas fa-save fa-sm mr-1"></i> <?= lang('Admin.save') ?>
+            </button>
+            <span class="ml-2 small text-success" id="settingsSavedMsg" style="display:none;">
+                <i class="fas fa-check-circle"></i> <?= lang('Admin.updatesSettingsSaved') ?>
+            </span>
+        </div>
+    </div>
+</div>
+
 <!-- Progress bar (hidden by default) -->
 <div id="update-progress" class="card shadow mb-4" style="display:none;">
     <div class="card-body">
@@ -359,6 +413,7 @@ function renderExtensionTable(string $label, string $type, array $rows, array $m
 
 <?php $content = ob_get_clean(); ?>
 <?php
+$_settingsUrl   = base_url('admin/updates/save-settings');
 $_applyUrl      = base_url('admin/updates/apply');
 $_statusUrl     = base_url('admin/updates/status');
 $_showModal     = (!empty($incompatible) && $update['safe_target'] === null) ? 'true' : 'false';
@@ -591,6 +646,49 @@ $extra_scripts = <<<SCRIPT
 
     // Init Bootstrap popovers for changelogs
     $('[data-toggle="popover"]').popover();
+})();
+
+// ============================================================
+// Update Settings (auto-update + check method toggles)
+// ============================================================
+(function() {
+    var csrfName   = '{$_csrfName}';
+    var csrfHash   = '{$_csrfHash}';
+    var settingsUrl = '{$_settingsUrl}';
+    var cronBlock   = document.getElementById('cronCommandBlock');
+    var saveBtn     = document.getElementById('saveUpdateSettingsBtn');
+    var savedMsg    = document.getElementById('settingsSavedMsg');
+
+    // Show/hide cron command when check method changes
+    document.querySelectorAll('input[name="check_method"]').forEach(function(el) {
+        el.addEventListener('change', function() {
+            cronBlock.style.display = this.value === 'cron' ? '' : 'none';
+        });
+    });
+
+    // Save settings
+    if (saveBtn) {
+        saveBtn.addEventListener('click', function() {
+            var autoUpdate  = document.querySelector('input[name="auto_update"]:checked').value;
+            var checkMethod = document.querySelector('input[name="check_method"]:checked').value;
+
+            var fd = new FormData();
+            fd.append(csrfName, csrfHash);
+            fd.append('auto_update', autoUpdate);
+            fd.append('check_method', checkMethod);
+
+            saveBtn.disabled = true;
+            fetch(settingsUrl, { method: 'POST', body: fd })
+                .then(function(r) { return r.json(); })
+                .then(function(json) {
+                    if (json.csrf_hash) csrfHash = json.csrf_hash;
+                    saveBtn.disabled = false;
+                    savedMsg.style.display = 'inline';
+                    setTimeout(function() { savedMsg.style.display = 'none'; }, 3000);
+                })
+                .catch(function() { saveBtn.disabled = false; });
+        });
+    }
 })();
 </script>
 SCRIPT;

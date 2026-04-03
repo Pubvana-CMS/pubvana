@@ -3,6 +3,12 @@
 namespace App\Services;
 
 use App\Models\AdminNotificationModel;
+use App\Services\ActivityLogger;
+use App\Services\BackupService;
+use App\Services\DownloadService;
+use App\Services\ExtractService;
+use App\Services\ApplyService;
+use App\Services\ProgressReporter;
 
 class UpdateService
 {
@@ -312,6 +318,152 @@ class UpdateService
         }
 
         return $incompatible;
+    }
+
+    // ---------------------------------------------------------------
+    // Daily auto-update chain (pseudo-cron / cron entry point)
+    // ---------------------------------------------------------------
+
+    /**
+     * Single entry point for the daily update chain.
+     * Cache-gated to run at most once per 24 hours.
+     *
+     * 1. Check for CMS update
+     * 2. If auto-update enabled + update available + no breaking changes → apply
+     * 3. Always: check addons + run addon auto-updates
+     */
+    public function checkAndAutoUpdateIfDue(): void
+    {
+        if ($this->isDevDomain()) {
+            return;
+        }
+
+        $chainCacheKey = 'pubvana_daily_update_chain';
+        if (cache($chainCacheKey) !== null) {
+            return;
+        }
+        cache()->save($chainCacheKey, true, $this->cacheTtl);
+
+        // Step 1: CMS update check (uses its own cache internally)
+        $this->clearCache();
+        $update = $this->checkForUpdate();
+
+        // Step 2: Auto-apply CMS update if conditions are met
+        if (
+            ! empty($update['available'])
+            && (bool) setting('App.autoUpdate')
+            && ! empty($update['zipball_url'])
+        ) {
+            $target = $update['safe_target'] ?? $update['latest_version'];
+            if ($target !== null) {
+                $changes = $this->getChanges(APP_VERSION, $target, $update['versions_data'] ?? []);
+                $hasBreaking = false;
+                foreach ($changes as $entry) {
+                    if (! empty($entry['breaking_changes'])) {
+                        $hasBreaking = true;
+                        break;
+                    }
+                }
+                if (! $hasBreaking) {
+                    $this->performAutoUpdate($update, $target);
+                } else {
+                    log_message('info', 'Auto-update skipped: breaking changes between ' . APP_VERSION . ' and ' . $target);
+                }
+            }
+        }
+
+        // Step 3: Always check addons + run addon auto-updates
+        try {
+            $extService = new ExtensionUpdateService();
+            $results = $extService->checkAllAddons();
+            $extService->runAutoUpdates($results);
+        } catch (\Throwable $e) {
+            log_message('error', 'Addon update chain failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Silently apply a CMS update (no UI, no progress reporter).
+     * Used by the daily auto-update chain.
+     */
+    protected function performAutoUpdate(array $update, string $target): void
+    {
+        $downloadService = new DownloadService();
+        if (! $downloadService->canDownload()) {
+            log_message('warning', 'Auto-update: no download method available.');
+            return;
+        }
+
+        if (ProgressReporter::isLocked()) {
+            log_message('warning', 'Auto-update: another operation is in progress.');
+            return;
+        }
+
+        try {
+            // Backup
+            $backupService = new BackupService();
+            $backupService->createBackup('pre-auto-update');
+
+            // Download
+            $zipPath = WRITEPATH . 'updates/pubvana-' . $target . '.zip';
+            if (! is_dir(WRITEPATH . 'updates/')) {
+                mkdir(WRITEPATH . 'updates/', 0755, true);
+            }
+            if (! $downloadService->download($update['zipball_url'], $zipPath)) {
+                log_message('error', 'Auto-update: download failed.');
+                return;
+            }
+
+            // Extract
+            $extractService = new ExtractService();
+            $extractDir = WRITEPATH . 'updates/pubvana-' . $target . '/';
+            if (! $extractService->extract($zipPath, $extractDir)) {
+                log_message('error', 'Auto-update: extraction failed.');
+                @unlink($zipPath);
+                return;
+            }
+            $innerDir = $extractService->detectInnerDir($extractDir);
+
+            // Apply files + migrations
+            $applyService = new ApplyService();
+            $applyService->applyFiles($innerDir);
+            $applyService->runMigrations();
+
+            // Cleanup
+            @unlink($zipPath);
+            $this->removeDirectory($extractDir);
+            cache()->clean();
+            $this->clearCache();
+
+            ActivityLogger::log('settings.updated', 'setting', null, 'Auto-updated Pubvana to v' . $target);
+            log_message('info', 'Auto-update: successfully updated to v' . $target);
+        } catch (\Throwable $e) {
+            log_message('error', 'Auto-update failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Clear the daily chain cache so the next request re-runs the full chain.
+     */
+    public function clearChainCache(): void
+    {
+        cache()->delete('pubvana_daily_update_chain');
+    }
+
+    private function isDevDomain(): bool
+    {
+        $host = strtolower(parse_url(base_url(), PHP_URL_HOST) ?? '');
+        return $host === 'localhost' || str_ends_with($host, '.local');
+    }
+
+    private function removeDirectory(string $dir): void
+    {
+        if (! is_dir($dir)) return;
+        foreach (array_diff(scandir($dir), ['.', '..']) as $item) {
+            $path = $dir . $item;
+            is_dir($path) ? $this->removeDirectory($path . '/') : @unlink($path);
+        }
+        @rmdir($dir);
     }
 
     /**

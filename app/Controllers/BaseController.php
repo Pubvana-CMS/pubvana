@@ -31,10 +31,14 @@ abstract class BaseController extends Controller
             log_message('error', 'BaseController: license revalidation error: ' . $e->getMessage());
         }
 
-        try {
-            (new \App\Services\ExtensionUpdateService())->checkAndUpdateIfDue();
-        } catch (\Throwable $e) {
-            log_message('error', 'BaseController: extension update check error: ' . $e->getMessage());
+        // Daily update chain (CMS auto-update + addon updates)
+        // Only runs in pageload mode; cron mode falls back to admin-only
+        if ((setting('App.updateCheckMethod') ?? 'pageload') === 'pageload') {
+            try {
+                (new \App\Services\UpdateService())->checkAndAutoUpdateIfDue();
+            } catch (\Throwable $e) {
+                log_message('error', 'BaseController: update chain error: ' . $e->getMessage());
+            }
         }
     }
 

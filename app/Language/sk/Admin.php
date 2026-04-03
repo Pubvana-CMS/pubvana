@@ -608,8 +608,11 @@ return [
 
     'spamProtectionHeading'     => 'Ochrana pred spamom (hCaptcha)',
     'spamHcaptchaIntro'         => 'Pubvana používa hCaptcha (ochrana súkromia, nie od Google) na ochranu formulárov komentárov a kontaktného formulára pred spam botmi.',
-    'spamHcaptchaFree'          => 'hCaptcha je pre väčšinu stránok zadarmo. Zaregistrujte sa na hcaptcha.com, vytvorte stránku a pridajte nasledujúce dva kľúče do súboru .env:',
-    'spamHcaptchaNote'          => 'Ak tieto kľúče nie sú nastavené, hCaptcha je ticho preskočené - bezpečné pre lokálny vývoj. Po pridaní kľúčov do .env sa widget automaticky zobrazí vo formulári komentárov a na kontaktnej stránke bez ďalšej konfigurácie.',
+    'spamHcaptchaFree'          => 'hCaptcha je pre väčšinu stránok zadarmo. Zaregistrujte sa na hcaptcha.com, vytvorte stránku a zadajte svoje kľúče nižšie.',
+    'spamHcaptchaSiteKey'       => 'Kľúč stránky',
+    'spamHcaptchaSecretKey'     => 'Tajný kľúč',
+    'spamHcaptchaNote'          => 'Ak tieto kľúče nie sú nastavené, hCaptcha je ticho preskočené — bezpečné pre lokálny vývoj. Po uložení sa widget automaticky zobrazí vo formulári komentárov a na kontaktnej stránke.',
+    'spamSettingsSaved'         => 'Nastavenia ochrany pred spamom uložené.',
 
     // =========================================================================
     // Settings - Premium / Licence
@@ -794,6 +797,20 @@ return [
 
     'updatesExtBadge'               => 'Aktualizácia: v{0}',
     'updatesExtGoToUpdates'         => 'Aktualizácie',
+
+    // Update Settings
+    'updatesSettingsTitle'          => 'Nastavenia aktualizácií',
+    'updatesAutoUpdateLabel'        => 'Automatická aktualizácia Pubvana',
+    'updatesAutoUpdateManual'       => 'Manuálna',
+    'updatesAutoUpdateAuto'         => 'Automatická',
+    'updatesAutoUpdateHelp'         => 'Ak je povolené, aktualizácie Pubvana bez zásadných zmien sa použijú automaticky.',
+    'updatesCheckMethodLabel'       => 'Metóda kontroly',
+    'updatesCheckMethodPageload'    => 'Načítanie stránky',
+    'updatesCheckMethodCron'        => 'Cron úloha',
+    'updatesCheckMethodHelp'        => 'Načítanie stránky kontroluje pri každej požiadavke (cache 24h). Cron vyžaduje cron úlohu na serveri.',
+    'updatesCronCommand'            => 'Príkaz Cron',
+    'updatesCronHelp'               => 'Pridajte toto do crontab vášho servera na denné spustenie kontroly aktualizácií:',
+    'updatesSettingsSaved'          => 'Nastavenia aktualizácií uložené.',
 
     // =========================================================================
     // Schedule

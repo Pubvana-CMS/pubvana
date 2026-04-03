@@ -608,8 +608,11 @@ return [
 
     'spamProtectionHeading'     => 'Proteção contra Spam (hCaptcha)',
     'spamHcaptchaIntro'         => 'O Pubvana usa o hCaptcha (que respeita a privacidade, não-Google) para proteger os formulários de comentários e de contato de bots de spam.',
-    'spamHcaptchaFree'          => 'O hCaptcha é gratuito para a maioria dos sites. Cadastre-se em hcaptcha.com, crie um site e adicione as seguintes duas chaves ao seu arquivo .env:',
-    'spamHcaptchaNote'          => 'Se essas chaves não forem definidas, o hCaptcha é silenciosamente ignorado - seguro para desenvolvimento local. Assim que as chaves estiverem presentes no .env, o widget aparece automaticamente no formulário de comentários e na página de contato sem nenhuma configuração adicional.',
+    'spamHcaptchaFree'          => 'O hCaptcha é gratuito para a maioria dos sites. Cadastre-se em hcaptcha.com, crie um site e insira suas chaves abaixo.',
+    'spamHcaptchaSiteKey'       => 'Chave do Site',
+    'spamHcaptchaSecretKey'     => 'Chave Secreta',
+    'spamHcaptchaNote'          => 'Se essas chaves não forem definidas, o hCaptcha é silenciosamente ignorado — seguro para desenvolvimento local. Após salvar, o widget aparece automaticamente no formulário de comentários e na página de contato.',
+    'spamSettingsSaved'         => 'Configurações de proteção contra spam salvas.',
 
     // =========================================================================
     // Settings - Premium / Licence
@@ -794,6 +797,20 @@ return [
 
     'updatesExtBadge'               => 'Atualização: v{0}',
     'updatesExtGoToUpdates'         => 'Atualizações',
+
+    // Update Settings
+    'updatesSettingsTitle'          => 'Configurações de Atualização',
+    'updatesAutoUpdateLabel'        => 'Atualização Automática do Pubvana',
+    'updatesAutoUpdateManual'       => 'Manual',
+    'updatesAutoUpdateAuto'         => 'Automática',
+    'updatesAutoUpdateHelp'         => 'Quando ativado, atualizações do Pubvana sem alterações incompatíveis são aplicadas automaticamente.',
+    'updatesCheckMethodLabel'       => 'Método de Verificação',
+    'updatesCheckMethodPageload'    => 'Carregamento de Página',
+    'updatesCheckMethodCron'        => 'Cron Job',
+    'updatesCheckMethodHelp'        => 'Carregamento de página verifica em cada requisição (cache 24h). Cron requer um cron job no servidor.',
+    'updatesCronCommand'            => 'Comando Cron',
+    'updatesCronHelp'               => 'Adicione isso ao crontab do seu servidor para executar a verificação de atualizações diariamente:',
+    'updatesSettingsSaved'          => 'Configurações de atualização salvas.',
 
     // =========================================================================
     // Schedule

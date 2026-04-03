@@ -21,6 +21,16 @@ abstract class BaseAdminController extends BaseController
         }
 
         $this->checkDirectoryWritability();
+
+        // Cron fallback: if check method is 'cron' but the scheduler hasn't
+        // run, the admin page load picks it up as a safety net.
+        if ((setting('App.updateCheckMethod') ?? 'pageload') === 'cron') {
+            try {
+                (new UpdateService())->checkAndAutoUpdateIfDue();
+            } catch (\Throwable $e) {
+                log_message('error', 'BaseAdminController: update chain fallback error: ' . $e->getMessage());
+            }
+        }
     }
 
     /**

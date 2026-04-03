@@ -608,8 +608,11 @@ return [
 
     'spamProtectionHeading'     => 'Perlindungan Spam (hCaptcha)',
     'spamHcaptchaIntro'         => 'Pubvana menggunakan hCaptcha (menghormati privasi, bukan Google) untuk melindungi formulir komentar dan kontak dari bot spam.',
-    'spamHcaptchaFree'          => 'hCaptcha gratis untuk sebagian besar situs. Daftar di hcaptcha.com, buat situs, dan tambahkan dua kunci berikut ke file .env Anda:',
-    'spamHcaptchaNote'          => 'Jika kunci ini tidak diatur, hCaptcha dilewati secara diam-diam - aman untuk pengembangan lokal. Setelah kunci ada di .env, widget muncul otomatis di formulir komentar dan halaman kontak tanpa konfigurasi lebih lanjut.',
+    'spamHcaptchaFree'          => 'hCaptcha gratis untuk sebagian besar situs. Daftar di hcaptcha.com, buat situs, dan masukkan kunci Anda di bawah.',
+    'spamHcaptchaSiteKey'       => 'Kunci Situs',
+    'spamHcaptchaSecretKey'     => 'Kunci Rahasia',
+    'spamHcaptchaNote'          => 'Jika kunci ini tidak diatur, hCaptcha dilewati secara diam-diam — aman untuk pengembangan lokal. Setelah disimpan, widget muncul otomatis di formulir komentar dan halaman kontak.',
+    'spamSettingsSaved'         => 'Pengaturan perlindungan spam disimpan.',
 
     // =========================================================================
     // Settings - Premium / Licence
@@ -794,6 +797,20 @@ return [
 
     'updatesExtBadge'               => 'Pembaruan: v{0}',
     'updatesExtGoToUpdates'         => 'Pembaruan',
+
+    // Update Settings
+    'updatesSettingsTitle'          => 'Pengaturan Pembaruan',
+    'updatesAutoUpdateLabel'        => 'Pembaruan Otomatis Pubvana',
+    'updatesAutoUpdateManual'       => 'Manual',
+    'updatesAutoUpdateAuto'         => 'Otomatis',
+    'updatesAutoUpdateHelp'         => 'Jika diaktifkan, pembaruan Pubvana tanpa perubahan yang merusak akan diterapkan secara otomatis.',
+    'updatesCheckMethodLabel'       => 'Metode Pemeriksaan',
+    'updatesCheckMethodPageload'    => 'Muat Halaman',
+    'updatesCheckMethodCron'        => 'Cron Job',
+    'updatesCheckMethodHelp'        => 'Muat Halaman memeriksa setiap permintaan (cache 24j). Cron memerlukan cron job di server.',
+    'updatesCronCommand'            => 'Perintah Cron',
+    'updatesCronHelp'               => 'Tambahkan ini ke crontab server Anda untuk menjalankan pemeriksaan pembaruan harian:',
+    'updatesSettingsSaved'          => 'Pengaturan pembaruan disimpan.',
 
     // =========================================================================
     // Schedule

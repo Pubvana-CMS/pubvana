@@ -70,7 +70,7 @@
                  data-parent="#accordionSidebar">
                 <div class="bg-white py-2 collapse-inner rounded">
                     <a class="collapse-item <?= $nav === 'posts'      ? 'active' : '' ?>" href="<?= base_url('admin/posts') ?>"><?= lang('Admin.navPosts') ?></a>
-                    <a class="collapse-item <?= $nav === 'schedule'   ? 'active' : '' ?>" href="<?= base_url('admin/schedule') ?>"><i class="fas fa-star fa-xs text-warning mr-1"></i><?= lang('Admin.navSchedule') ?></a>
+                    <a class="collapse-item <?= $nav === 'schedule'   ? 'active' : '' ?>" href="<?= base_url('admin/schedule') ?>"><?= lang('Admin.navSchedule') ?></a>
                     <a class="collapse-item <?= $nav === 'pages'      ? 'active' : '' ?>" href="<?= base_url('admin/pages') ?>"><?= lang('Admin.navPages') ?></a>
                     <a class="collapse-item <?= $nav === 'categories' ? 'active' : '' ?>" href="<?= base_url('admin/categories') ?>"><?= lang('Admin.navCategories') ?></a>
                     <a class="collapse-item <?= $nav === 'tags'       ? 'active' : '' ?>" href="<?= base_url('admin/tags') ?>"><?= lang('Admin.navTags') ?></a>
@@ -149,10 +149,10 @@
                  class="collapse <?= $toolsOpen ? 'show' : '' ?>"
                  data-parent="#accordionSidebar">
                 <div class="bg-white py-2 collapse-inner rounded">
-                    <a class="collapse-item <?= $nav === 'analytics'    ? 'active' : '' ?>" href="<?= base_url('admin/analytics') ?>"><i class="fas fa-star fa-xs text-warning mr-1"></i><?= lang('Admin.navAnalytics') ?></a>
-                    <a class="collapse-item <?= $nav === 'affiliates'   ? 'active' : '' ?>" href="<?= base_url('admin/affiliates') ?>"><i class="fas fa-star fa-xs text-warning mr-1"></i><?= lang('Admin.navAffiliates') ?></a>
-                    <a class="collapse-item <?= $nav === 'broken_links' ? 'active' : '' ?>" href="<?= base_url('admin/broken-links') ?>"><i class="fas fa-star fa-xs text-warning mr-1"></i><?= lang('Admin.navBrokenLinks') ?></a>
-                    <a class="collapse-item <?= $nav === 'activity_log' ? 'active' : '' ?>" href="<?= base_url('admin/activity-log') ?>"><i class="fas fa-star fa-xs text-warning mr-1"></i><?= lang('Admin.navActivityLog') ?></a>
+                    <a class="collapse-item <?= $nav === 'analytics'    ? 'active' : '' ?>" href="<?= base_url('admin/analytics') ?>"><?= lang('Admin.navAnalytics') ?></a>
+                    <a class="collapse-item <?= $nav === 'affiliates'   ? 'active' : '' ?>" href="<?= base_url('admin/affiliates') ?>"><?= lang('Admin.navAffiliates') ?></a>
+                    <a class="collapse-item <?= $nav === 'broken_links' ? 'active' : '' ?>" href="<?= base_url('admin/broken-links') ?>"><?= lang('Admin.navBrokenLinks') ?></a>
+                    <a class="collapse-item <?= $nav === 'activity_log' ? 'active' : '' ?>" href="<?= base_url('admin/activity-log') ?>"><?= lang('Admin.navActivityLog') ?></a>
                     <a class="collapse-item <?= $nav === 'backups'      ? 'active' : '' ?>" href="<?= base_url('admin/backups') ?>"><?= lang('Admin.navBackup') ?></a>
                     <a class="collapse-item <?= $nav === 'updates'      ? 'active' : '' ?>" href="<?= base_url('admin/updates') ?>"><?= lang('Admin.navUpdates') ?></a>
                 </div>

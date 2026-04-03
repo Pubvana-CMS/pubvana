@@ -219,16 +219,28 @@ class ExtensionUpdateService
     /**
      * Run auto-updates using download_urls from a previous checkAllAddons() call.
      * Only updates extensions with auto_update = 1.
+     * Skips any addon flagged as incompatible with the current Pubvana version.
      */
     public function runAutoUpdates(array $checkResults): void
     {
         $db = db_connect();
+
+        // Build a set of incompatible slugs to skip
+        $incompatibleSlugs = [];
+        foreach ($checkResults['incompatible'] ?? [] as $inc) {
+            $incompatibleSlugs[] = $inc['slug'] ?? '';
+        }
 
         foreach ($checkResults['updates'] ?? [] as $upd) {
             $type  = $upd['type'] ?? '';
             $slug  = $upd['slug'] ?? '';
             $table = $this->tableForType($type);
             if (! $table) continue;
+
+            if (in_array($slug, $incompatibleSlugs, true)) {
+                log_message('info', "Addon auto-update skipped: {$type}/{$slug} is incompatible with current Pubvana version.");
+                continue;
+            }
 
             $row = $db->table($table)->where('folder', $slug)->get()->getRowObject();
             if (! $row || ! (int) $row->auto_update) {
@@ -246,25 +258,6 @@ class ExtensionUpdateService
 
             $this->downloadAndInstall($type, $slug, $downloadUrl, $licenseKey);
         }
-    }
-
-    /**
-     * Daily cache-gated check. Called from BaseController.
-     */
-    public function checkAndUpdateIfDue(): void
-    {
-        if ($this->isDevDomain()) {
-            return;
-        }
-
-        if (cache($this->cacheKey) !== null) {
-            return;
-        }
-
-        cache()->save($this->cacheKey, true, $this->cacheTtl);
-
-        $results = $this->checkAllAddons();
-        $this->runAutoUpdates($results);
     }
 
     /**

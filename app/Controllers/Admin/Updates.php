@@ -111,6 +111,8 @@ class Updates extends BaseAdminController
                 'ext_widgets'         => $widgets,
                 'ext_plugins'         => $plugins,
                 'ext_meta'            => $extensionMeta,
+                'auto_update'         => (bool) setting('App.autoUpdate'),
+                'check_method'        => setting('App.updateCheckMethod') ?? 'pageload',
             ]
         ));
     }
@@ -334,6 +336,27 @@ class Updates extends BaseAdminController
         }
 
         return $this->response->setJSON(['status' => 'ok', 'results' => $results]);
+    }
+
+    public function saveUpdateSettings()
+    {
+        $autoUpdate      = (bool) $this->request->getPost('auto_update');
+        $checkMethod     = $this->request->getPost('check_method');
+
+        if (! in_array($checkMethod, ['pageload', 'cron'], true)) {
+            $checkMethod = 'pageload';
+        }
+
+        setting()->set('App.autoUpdate', $autoUpdate);
+        setting()->set('App.updateCheckMethod', $checkMethod);
+
+        // Clear the chain cache so the new settings take effect on the next check
+        $this->updateService->clearChainCache();
+
+        return $this->response->setJSON([
+            'status'  => 'ok',
+            'message' => lang('Admin.updatesSettingsSaved'),
+        ]);
     }
 
     public function toggleAutoUpdate()

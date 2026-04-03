@@ -657,8 +657,11 @@ return [
 
     'spamProtectionHeading'     => 'Spam Protection (hCaptcha)',
     'spamHcaptchaIntro'         => 'Pubvana uses hCaptcha (privacy-respecting, non-Google) to protect comment forms and the contact form from spam bots.',
-    'spamHcaptchaFree'          => 'hCaptcha is free for most sites. Sign up at hcaptcha.com, create a site, and add the following two keys to your .env file:',
-    'spamHcaptchaNote'          => 'If these keys are not set, hCaptcha is silently skipped - safe for local development. Once keys are present in .env, the widget appears automatically on the comment form and contact page without any further configuration.',
+    'spamHcaptchaFree'          => 'hCaptcha is free for most sites. Sign up at hcaptcha.com, create a site, and enter your keys below.',
+    'spamHcaptchaSiteKey'       => 'Site Key',
+    'spamHcaptchaSecretKey'     => 'Secret Key',
+    'spamHcaptchaNote'          => 'If these keys are not set, hCaptcha is silently skipped — safe for local development. Once saved, the widget appears automatically on the comment form and contact page.',
+    'spamSettingsSaved'         => 'Spam protection settings saved.',
 
     // =========================================================================
     // Languages
@@ -830,6 +833,20 @@ return [
 
     'updatesExtBadge'               => 'Update: v{0}',
     'updatesExtGoToUpdates'         => 'Updates',
+
+    // Update Settings
+    'updatesSettingsTitle'          => 'Update Settings',
+    'updatesAutoUpdateLabel'        => 'Pubvana Auto-Update',
+    'updatesAutoUpdateManual'       => 'Manual',
+    'updatesAutoUpdateAuto'         => 'Automatic',
+    'updatesAutoUpdateHelp'         => 'When enabled, Pubvana updates without breaking changes are applied automatically.',
+    'updatesCheckMethodLabel'       => 'Update Check Method',
+    'updatesCheckMethodPageload'    => 'Page Load',
+    'updatesCheckMethodCron'        => 'Cron Job',
+    'updatesCheckMethodHelp'        => 'Page Load checks on every request (cached 24h). Cron requires a server cron job.',
+    'updatesCronCommand'            => 'Cron Command',
+    'updatesCronHelp'               => 'Add this to your server\'s crontab to run the update check daily:',
+    'updatesSettingsSaved'          => 'Update settings saved.',
 
     // =========================================================================
     // Schedule

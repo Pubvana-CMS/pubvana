@@ -608,8 +608,11 @@ return [
 
     'spamProtectionHeading'     => 'Protección contra spam (hCaptcha)',
     'spamHcaptchaIntro'         => 'Pubvana usa hCaptcha (respetuoso de la privacidad, no de Google) para proteger los formularios de comentarios y de contacto de bots de spam.',
-    'spamHcaptchaFree'          => 'hCaptcha es gratuito para la mayoría de los sitios. Regístrate en hcaptcha.com, crea un sitio y agrega las siguientes dos claves a tu archivo .env:',
-    'spamHcaptchaNote'          => 'Si estas claves no están definidas, hCaptcha se omite silenciosamente - seguro para desarrollo local. Una vez que las claves estén en .env, el widget aparece automáticamente en el formulario de comentarios y la página de contacto sin ninguna configuración adicional.',
+    'spamHcaptchaFree'          => 'hCaptcha es gratuito para la mayoría de los sitios. Regístrate en hcaptcha.com, crea un sitio e ingresa tus claves a continuación.',
+    'spamHcaptchaSiteKey'       => 'Clave del sitio',
+    'spamHcaptchaSecretKey'     => 'Clave secreta',
+    'spamHcaptchaNote'          => 'Si estas claves no están definidas, hCaptcha se omite silenciosamente — seguro para desarrollo local. Una vez guardadas, el widget aparece automáticamente en el formulario de comentarios y la página de contacto.',
+    'spamSettingsSaved'         => 'Configuración de protección contra spam guardada.',
 
     // =========================================================================
     // Settings - Premium / Licence
@@ -794,6 +797,20 @@ return [
 
     'updatesExtBadge'               => 'Actualización: v{0}',
     'updatesExtGoToUpdates'         => 'Actualizaciones',
+
+    // Update Settings
+    'updatesSettingsTitle'          => 'Configuración de actualizaciones',
+    'updatesAutoUpdateLabel'        => 'Actualización automática de Pubvana',
+    'updatesAutoUpdateManual'       => 'Manual',
+    'updatesAutoUpdateAuto'         => 'Automática',
+    'updatesAutoUpdateHelp'         => 'Cuando está habilitado, las actualizaciones de Pubvana sin cambios incompatibles se aplican automáticamente.',
+    'updatesCheckMethodLabel'       => 'Método de verificación',
+    'updatesCheckMethodPageload'    => 'Carga de página',
+    'updatesCheckMethodCron'        => 'Cron Job',
+    'updatesCheckMethodHelp'        => 'Carga de página verifica en cada solicitud (caché 24h). Cron requiere un cron job en el servidor.',
+    'updatesCronCommand'            => 'Comando Cron',
+    'updatesCronHelp'               => 'Agregue esto al crontab de su servidor para ejecutar la verificación de actualizaciones diariamente:',
+    'updatesSettingsSaved'          => 'Configuración de actualizaciones guardada.',
 
     // =========================================================================
     // Schedule

@@ -145,6 +145,7 @@ $routes->group('admin', ['filter' => ['admin_auth', 'totp'], 'namespace' => 'App
     $routes->post('settings/email',          'Settings::saveEmail');
     $routes->post('settings/social',         'Settings::saveSocial');
     $routes->post('settings/sharing',        'Settings::saveSocialSharing');
+    $routes->post('settings/spam',           'Settings::saveSpam');
 
     // Social
     $routes->get('social',                   'Social::index');
@@ -189,6 +190,7 @@ $routes->group('admin', ['filter' => ['admin_auth', 'totp'], 'namespace' => 'App
     $routes->post('updates/update-addon',      'Updates::updateAddon');
     $routes->post('updates/update-all-addons', 'Updates::updateAllAddons');
     $routes->post('updates/toggle-auto-update','Updates::toggleAutoUpdate');
+    $routes->post('updates/save-settings',   'Updates::saveUpdateSettings');
 
     // Analytics
     $routes->get('analytics',                'Analytics::index');
