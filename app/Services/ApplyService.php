@@ -12,7 +12,7 @@ class ApplyService
     ];
 
     /** Directories to copy from the release. */
-    protected array $copyDirs = ['app', 'public', 'vendor', 'themes', 'widgets', 'plugins'];
+    protected array $copyDirs = ['app', 'vendor', 'themes', 'widgets', 'plugins'];
 
     /**
      * Apply the extracted release files to the live site.

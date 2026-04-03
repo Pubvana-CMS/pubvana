@@ -107,6 +107,7 @@ class UpdateService
                 'safe_target'     => $safeTarget,
                 'capped_by'       => $incompatible,
                 'versions_data'   => $data['versions'],
+                'zipball_url'     => 'https://github.com/enlivenapp/pubvana/releases/download/v' . ($safeTarget ?? $latest) . '/release.zip',
                 'error'           => null,
             ];
 

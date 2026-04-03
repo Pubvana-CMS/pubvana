@@ -4,6 +4,24 @@ All notable changes to Pubvana CMS, starting from the v2.0.0 rewrite.
 
 ---
 
+## v2.2.4 - 2026-04-03
+
+### Fixed
+- Stale `Autoload.php` reference to non-existent `TemplateEngine/Nodes.php`
+- Removed dropped columns (`license_key`, `license_last_checked`, `license_valid`) from `MarketplaceItemModel` allowedFields
+- Added missing update-tracking fields to `ThemeModel`, `WidgetModel`, `PluginModel` allowedFields
+- Removed unused `categories/create` GET route and controller method
+- Deleted orphaned `admin/partials/update_banner.php` view
+
+### Added
+- `MarketplaceLicenseModel` and `PostRevisionModel` — replaced all raw `$db->table()` calls with proper model usage
+- `zipball_url` now populated in `UpdateService::checkForUpdate()` result — CMS updater can now download releases
+
+### Changed
+- Removed `public/` from `ApplyService` copy directories — `index.php` changes documented as breaking changes instead
+
+---
+
 ## v2.2.3 - 2026-04-02
 
 ### Added

@@ -49,9 +49,7 @@ jobs:
             -x '.editorconfig' \
             -x '.DS_Store' \
             -x 'Thumbs.db' \
-            -x 'CLAUDE.md' \
-            -x 'phpunit.xml.dist' \
-            -x 'builds'
+            -x 'CLAUDE.md'
 
       - name: Upload release
         uses: softprops/action-gh-release@v2

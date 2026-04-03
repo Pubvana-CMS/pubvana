@@ -4,7 +4,7 @@
     "description": "Displays a language switcher in buttons, dropdown, or list format.",
     "version": "2.0.0",
     "min_pubvana_version": "2.2.3",
-    "max_pubvana_version": "2.2.3",
+    "max_pubvana_version": "2.2.4",
     "update_url": "https://pubvana.net/api/dstore/v1/update/check",
     "support_url": "https://pubvana.net/contact",
     "author": "Pubvana Team",

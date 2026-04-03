@@ -68,11 +68,12 @@ widgets/DstoreCart/
 public/writable/
 
 # PHPUnit / build output
+/tests/
 /build/
 .worktrees/
 
 # Release checklist (local only)
 release-checklist.md
 
-# Superpowers docs (local only)
-docs/superpowers/
+# Docs (replaced by PvDocs plugin)
+docs/
