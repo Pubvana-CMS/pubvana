@@ -6,7 +6,7 @@
 
 <ul class="nav nav-tabs mb-3" id="settingsTabs" role="tablist">
     <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#general"><?= lang('Admin.settingsGeneral') ?></a></li>
-    <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#seo"><i class="fas fa-star fa-xs text-warning mr-1"></i><?= lang('Admin.settingsSeo') ?></a></li>
+    <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#seo"><?= lang('Admin.settingsSeo') ?></a></li>
     <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#email"><?= lang('Admin.settingsEmail') ?></a></li>
     <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#social"><?= lang('Admin.settingsSocialLogin') ?></a></li>
     <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#sharing"><?= lang('Admin.settingsSocialSharing') ?></a></li>
@@ -349,11 +349,25 @@
             <div class="card-body">
                 <p><?= lang('Admin.spamHcaptchaIntro') ?></p>
                 <p><?= lang('Admin.spamHcaptchaFree') ?></p>
-                <pre class="bg-light p-3 rounded"><code>HCAPTCHA_SITE_KEY = your-site-key
-HCAPTCHA_SECRET_KEY = your-secret-key</code></pre>
-                <div class="alert alert-info mb-0">
-                    <?= lang('Admin.spamHcaptchaNote') ?>
-                </div>
+                <form method="POST" action="<?= base_url('admin/settings/spam') ?>">
+                    <?= csrf_field() ?>
+                    <div class="form-group">
+                        <label for="hcaptcha_site_key"><?= lang('Admin.spamHcaptchaSiteKey') ?></label>
+                        <input type="text" class="form-control" id="hcaptcha_site_key" name="hcaptcha_site_key"
+                               value="<?= esc(setting('App.hcaptchaSiteKey') ?? '') ?>"
+                               placeholder="0x0000000000000000000000000000000000000000">
+                    </div>
+                    <div class="form-group">
+                        <label for="hcaptcha_secret_key"><?= lang('Admin.spamHcaptchaSecretKey') ?></label>
+                        <input type="password" class="form-control" id="hcaptcha_secret_key" name="hcaptcha_secret_key"
+                               value="<?= esc(setting('App.hcaptchaSecretKey') ?? '') ?>"
+                               placeholder="0x0000000000000000000000000000000000000000">
+                    </div>
+                    <div class="alert alert-info">
+                        <?= lang('Admin.spamHcaptchaNote') ?>
+                    </div>
+                    <button type="submit" class="btn btn-primary"><?= lang('Admin.saveChanges') ?></button>
+                </form>
             </div>
         </div>
     </div>

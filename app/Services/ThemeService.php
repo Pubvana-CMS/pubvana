@@ -279,7 +279,7 @@ class ThemeService
         $sitemapEnabled    = (bool) setting('Seo.sitemapEnabled');
         $commentsEnabled   = (bool) setting('App.commentsEnabled');
         $commentModeration = (bool) setting('App.commentModeration');
-        $hcaptchaSiteKey   = env('hcaptcha.siteKey') ?: '';
+        $hcaptchaSiteKey   = setting('App.hcaptchaSiteKey') ?? '';
 
         return array_merge($themeOptions, [
             'theme'              => $theme,

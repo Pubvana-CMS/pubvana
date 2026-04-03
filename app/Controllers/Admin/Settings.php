@@ -78,6 +78,17 @@ class Settings extends BaseAdminController
         return redirect()->to('/admin/settings#email')->with('success', lang('Admin.emailSettingsSaved'));
     }
 
+    public function saveSpam()
+    {
+        if (! auth()->user()->can('admin.settings')) {
+            return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
+        }
+        setting()->set('App.hcaptchaSiteKey',   trim($this->request->getPost('hcaptcha_site_key') ?? ''));
+        setting()->set('App.hcaptchaSecretKey',  trim($this->request->getPost('hcaptcha_secret_key') ?? ''));
+        ActivityLogger::log('settings.updated', 'setting', null, 'Updated spam protection settings');
+        return redirect()->to('/admin/settings#spam')->with('success', lang('Admin.spamSettingsSaved'));
+    }
+
     public function saveSocial()
     {
         if (! auth()->user()->can('admin.settings')) {
