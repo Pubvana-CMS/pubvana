@@ -26,15 +26,44 @@
 <?php if (!empty($update['error'])): ?>
     <div class="alert alert-warning">
         <i class="fas fa-triangle-exclamation mr-1"></i>
-        <strong>Could not contact GitHub:</strong> <?= esc($update['error']) ?>
+        <strong>Update check:</strong> <?= esc($update['error']) ?>
     </div>
 
 <?php elseif (!empty($update['available'])): ?>
-    <div class="alert alert-info">
-        <i class="fas fa-circle-arrow-up mr-1"></i>
-        <strong>Pubvana <?= esc($update['latest_version']) ?> is available!</strong>
-        You are running <?= esc($update['current_version']) ?>.
-    </div>
+    <?php if ($update['safe_target'] === null): ?>
+        <!-- State 3: No safe target — all paths have incompatible extensions -->
+        <div class="alert alert-warning">
+            <i class="fas fa-circle-arrow-up mr-1"></i>
+            <strong>Pubvana <?= esc($update['latest_version']) ?> is available</strong>
+            — you are running <?= esc($update['current_version']) ?>.
+            Some installed extensions are not compatible with this version.
+        </div>
+    <?php elseif ($capped_by_extensions): ?>
+        <!-- State 2: Safe target is lower than latest -->
+        <div class="alert alert-info">
+            <i class="fas fa-circle-arrow-up mr-1"></i>
+            <strong>Pubvana <?= esc($effective_target) ?> is available!</strong>
+            You are running <?= esc($update['current_version']) ?>.
+        </div>
+        <div class="alert alert-secondary">
+            <i class="fas fa-info-circle mr-1"></i>
+            <strong>Pubvana <?= esc($update['latest_version']) ?> is also available</strong>
+            but requires the following extensions to be updated first:
+            <ul class="mb-0 mt-1">
+                <?php foreach ($incompatible as $ext): ?>
+                    <li><?= esc(ucfirst($ext['type'])) ?>: <strong><?= esc($ext['name']) ?></strong>
+                        (supports up to <?= esc($ext['max_version']) ?>)</li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    <?php else: ?>
+        <!-- State 1: Safe target = latest, no issues -->
+        <div class="alert alert-info">
+            <i class="fas fa-circle-arrow-up mr-1"></i>
+            <strong>Pubvana <?= esc($effective_target) ?> is available!</strong>
+            You are running <?= esc($update['current_version']) ?>.
+        </div>
+    <?php endif; ?>
 
     <?php if (!empty($breaking_changes)): ?>
     <div class="alert alert-danger">
@@ -102,62 +131,21 @@
     </div>
     <?php endif; ?>
 
-    <div class="row">
-        <div class="col-lg-8">
-            <!-- Update Now -->
-            <button type="button" class="btn btn-primary btn-lg mb-3" id="updateBtn"
-                    <?= (!$all_hard_pass || !empty($is_locked)) ? 'disabled' : '' ?>>
-                <i class="fas fa-rocket mr-1"></i> Update to Pubvana <?= esc($update['latest_version']) ?>
-            </button>
-            <?php if (!$all_hard_pass): ?>
-                <p class="text-danger small">One or more required pre-flight checks failed. Please resolve them before updating.</p>
-            <?php endif; ?>
+    <!-- Update Now -->
+    <button type="button" class="btn btn-primary btn-lg mb-3" id="updateBtn"
+            <?= (!$all_hard_pass || !empty($is_locked)) ? 'disabled' : '' ?>>
+        <i class="fas fa-rocket mr-1"></i> Update to Pubvana <?= esc($effective_target) ?>
+    </button>
+    <?php if (!$all_hard_pass): ?>
+        <p class="text-danger small">One or more required pre-flight checks failed. Please resolve them before updating.</p>
+    <?php endif; ?>
 
-            <?php if (!$can_download): ?>
-            <div class="alert alert-warning">
-                <i class="fas fa-upload mr-1"></i>
-                <strong>No download method available.</strong> Neither cURL nor allow_url_fopen is enabled.
-                Please download the update manually and upload it:
-                <ol class="mt-2 mb-0 small">
-                    <li>Download from <a href="<?= esc($update['release_url']) ?>" target="_blank">GitHub</a></li>
-                    <li>Upload the ZIP to <code>writable/updates/</code></li>
-                    <li>Run <code>php spark pubvana:update</code> from CLI</li>
-                </ol>
-            </div>
-            <?php endif; ?>
-
-            <!-- Release Notes -->
-            <?php if (!empty($update['release_notes'])): ?>
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Release Notes</h6>
-                </div>
-                <div class="card-body">
-                    <pre class="ws-pre-wrap" style="font-family:inherit;margin:0"><?= esc($update['release_notes']) ?></pre>
-                </div>
-            </div>
-            <?php endif; ?>
-        </div>
-
-        <div class="col-lg-4">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Update Process</h6>
-                </div>
-                <div class="card-body small text-muted">
-                    <p class="mb-2">Clicking "Update" will:</p>
-                    <ol class="pl-3 mb-0">
-                        <li>Create a full backup</li>
-                        <li>Download the release ZIP</li>
-                        <li>Extract and apply files</li>
-                        <li>Run database migrations</li>
-                        <li>Clear caches</li>
-                    </ol>
-                    <p class="mt-2 mb-0">Your <code>.env</code>, <code>App.php</code>, and <code>Database.php</code> are never overwritten.</p>
-                </div>
-            </div>
-        </div>
+    <?php if (!$can_download): ?>
+    <div class="alert alert-warning">
+        <i class="fas fa-upload mr-1"></i>
+        <strong><?= lang('Admin.updatesNoDownloadMethod') ?? 'No download method available.' ?></strong>
     </div>
+    <?php endif; ?>
 
 <?php else: ?>
     <div class="alert alert-success">
@@ -167,35 +155,261 @@
     </div>
 <?php endif; ?>
 
+<!-- Compatibility Warning Modal (State 3: no safe target) -->
+<?php if (!empty($incompatible) && $update['safe_target'] === null): ?>
+<div class="modal fade" id="compatibilityModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle mr-1"></i> Compatibility Warning</h5>
+                <button class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <p>The following extensions have not declared compatibility with Pubvana <?= esc($effective_target) ?>. They may stop working after the update:</p>
+                <table class="table table-sm mb-3">
+                    <thead class="bg-light">
+                        <tr><th>Type</th><th>Name</th><th>Max Version</th></tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($incompatible as $ext): ?>
+                        <tr>
+                            <td><span class="badge badge-secondary"><?= esc(ucfirst($ext['type'])) ?></span></td>
+                            <td><?= esc($ext['name']) ?></td>
+                            <td><?= esc($ext['max_version']) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <p class="small text-muted mb-0">You can remove incompatible extensions or switch to the default theme if issues occur. A backup is created before every update.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button class="btn btn-warning" id="confirmUpdateBtn">Update Anyway</button>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- CMS Update Confirmation Modal (normal path, no incompatible extensions) -->
+<div class="modal fade" id="confirmUpdateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-rocket mr-1"></i> <?= lang('Admin.updatesConfirmTitle') ?></h5>
+                <button class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <p><?= lang('Admin.updatesConfirmBody') ?></p>
+                <p class="small text-muted mb-0"><?= lang('Admin.updatesConfirmSafe') ?></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-dismiss="modal"><?= lang('Admin.cancel') ?></button>
+                <button class="btn btn-primary" id="confirmCmsUpdateBtn"><i class="fas fa-rocket mr-1"></i> <?= lang('Admin.updatesConfirmBtn') ?></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Extension Update All Confirmation Modal -->
+<div class="modal fade" id="updateAllAddonsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-download mr-1"></i> <?= lang('Admin.updatesExtAllTitle') ?></h5>
+                <button class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <p><?= lang('Admin.updatesExtAllBody') ?></p>
+                <p class="small text-muted mb-0"><?= lang('Admin.updatesExtAllNote') ?></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-dismiss="modal"><?= lang('Admin.cancel') ?></button>
+                <button class="btn btn-primary" id="confirmUpdateAllAddonsBtn"><i class="fas fa-download mr-1"></i> <?= lang('Admin.updatesExtAllBtn') ?></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- Extension Updates -->
+<!-- ============================================================ -->
+<hr class="my-5">
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h2 class="h4 mb-0 text-gray-800"><?= lang('Admin.updatesExtTitle') ?></h2>
+    <div>
+        <button class="btn btn-sm btn-outline-primary mr-1" id="checkAllAddonsBtn">
+            <i class="fas fa-arrows-rotate fa-sm"></i> <?= lang('Admin.updatesExtCheckAll') ?>
+        </button>
+        <button class="btn btn-sm btn-primary" id="updateAllAddonsBtn">
+            <i class="fas fa-download fa-sm"></i> <?= lang('Admin.updatesExtUpdateAll') ?>
+        </button>
+    </div>
+</div>
+
+<?php
+function renderExtensionTable(string $label, string $type, array $rows, array $meta): void {
+    $lcType = strtolower($type);
+?>
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary"><?= $label ?></h6>
+        <div>
+            <button class="btn btn-xs btn-outline-secondary ext-check-type" data-type="<?= $lcType ?>">
+                <i class="fas fa-arrows-rotate fa-xs"></i> <?= lang('Admin.updatesExtCheckAllType', [$label]) ?>
+            </button>
+            <button class="btn btn-xs btn-outline-primary ext-update-type" data-type="<?= $lcType ?>">
+                <i class="fas fa-download fa-xs"></i> <?= lang('Admin.updatesExtUpdateAllType', [$label]) ?>
+            </button>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <?php if (empty($rows)): ?>
+            <p class="text-muted text-center py-3 mb-0"><?= lang('Admin.updatesExtNoInstalled', [strtolower($label)]) ?></p>
+        <?php else: ?>
+        <table class="table table-sm table-hover mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="pl-3"><?= lang('Admin.updatesExtColName') ?></th>
+                    <th><?= lang('Admin.updatesExtColVersion') ?></th>
+                    <th><?= lang('Admin.updatesExtColLatest') ?></th>
+                    <th><?= lang('Admin.updatesExtColAutoUpdate') ?></th>
+                    <th><?= lang('Admin.updatesExtColStatus') ?></th>
+                    <th class="text-right pr-3"><?= lang('Admin.updatesExtColActions') ?></th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($rows as $row):
+                $folder    = $row->folder;
+                $hasMeta   = isset($meta[$folder]);
+                $hasUrl    = ! empty($meta[$folder]['update_url'] ?? null);
+                $supportUrl = $meta[$folder]['support_url'] ?? null;
+                $hasUpdate = $hasUrl && ! empty($row->latest_version) && version_compare($row->latest_version, $row->version ?? '0.0.0', '>');
+            ?>
+                <tr id="ext-row-<?= esc($lcType) ?>-<?= esc($folder) ?>" data-type="<?= $lcType ?>" data-slug="<?= esc($folder) ?>">
+                    <td class="pl-3 align-middle"><?= esc($row->name) ?></td>
+                    <td class="align-middle"><?= esc($row->version ?? '-') ?></td>
+                    <td class="align-middle">
+                        <?php if ($hasUpdate): ?>
+                            <span class="text-success font-weight-bold"><?= esc($row->latest_version) ?></span>
+                            <?php if (! empty($row->changelog)): ?>
+                            <a href="#" class="ml-1 text-muted" data-toggle="popover" data-trigger="hover"
+                               data-content="<?= esc($row->changelog) ?>" title="Changelog">
+                                <i class="fas fa-file-lines fa-xs"></i>
+                            </a>
+                            <?php endif; ?>
+                        <?php else: ?>
+                            -
+                        <?php endif; ?>
+                    </td>
+                    <td class="align-middle">
+                        <?php if ($hasUrl): ?>
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input ext-auto-toggle"
+                                   id="auto-<?= esc($lcType) ?>-<?= esc($folder) ?>"
+                                   data-type="<?= $lcType ?>" data-slug="<?= esc($folder) ?>"
+                                   <?= (int)($row->auto_update ?? 0) ? 'checked' : '' ?>>
+                            <label class="custom-control-label" for="auto-<?= esc($lcType) ?>-<?= esc($folder) ?>"></label>
+                        </div>
+                        <?php endif; ?>
+                    </td>
+                    <td class="align-middle ext-status">
+                        <?php if (! $hasUrl): ?>
+                            <span class="text-muted small"><?= lang('Admin.updatesExtNoSource') ?></span>
+                        <?php elseif (($row->last_update_attempt ?? '') === 'fail'): ?>
+                            <span class="text-danger small" title="<?= esc($row->last_update_error ?? '') ?>">
+                                <i class="fas fa-times-circle"></i> <?= lang('Admin.updatesExtFailed') ?>
+                            </span>
+                        <?php elseif (($row->last_update_attempt ?? '') === 'success' && ! empty($row->last_updated_at)): ?>
+                            <span class="text-success small">
+                                <i class="fas fa-check-circle"></i> <?= lang('Admin.updatesExtUpdatedAt', [esc($row->last_updated_at)]) ?>
+                            </span>
+                        <?php elseif ($hasUpdate): ?>
+                            <span class="text-info small"><i class="fas fa-circle-arrow-up"></i> <?= lang('Admin.updatesExtAvailable') ?></span>
+                        <?php else: ?>
+                            <span class="text-muted small"><?= lang('Admin.updatesExtUpToDate') ?></span>
+                        <?php endif; ?>
+                    </td>
+                    <td class="text-right pr-3 align-middle">
+                        <?php if ($hasUrl): ?>
+                        <button class="btn btn-xs btn-outline-secondary ext-check-btn"
+                                data-type="<?= $lcType ?>" data-slug="<?= esc($folder) ?>">
+                            <i class="fas fa-arrows-rotate fa-xs"></i>
+                        </button>
+                        <?php if ($hasUpdate): ?>
+                        <button class="btn btn-xs btn-primary ext-update-btn"
+                                data-type="<?= $lcType ?>" data-slug="<?= esc($folder) ?>">
+                            <i class="fas fa-download fa-xs"></i> <?= lang('Admin.updatesExtUpdate') ?>
+                        </button>
+                        <?php endif; ?>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php endif; ?>
+    </div>
+</div>
+<?php } ?>
+
+<?php renderExtensionTable('Themes', 'theme', $ext_themes, $ext_meta); ?>
+<?php renderExtensionTable('Widgets', 'widget', $ext_widgets, $ext_meta); ?>
+<?php renderExtensionTable('Plugins', 'plugin', $ext_plugins, $ext_meta); ?>
+
 <?php $content = ob_get_clean(); ?>
 <?php
-$_applyUrl  = base_url('admin/updates/apply');
-$_statusUrl = base_url('admin/updates/status');
-$_csrfName  = csrf_token();
-$_csrfHash  = csrf_hash();
+$_applyUrl      = base_url('admin/updates/apply');
+$_statusUrl     = base_url('admin/updates/status');
+$_showModal     = (!empty($incompatible) && $update['safe_target'] === null) ? 'true' : 'false';
+$_csrfName      = csrf_token();
+$_csrfHash      = csrf_hash();
+$_addonBaseUrl  = base_url('admin/updates/');
+$_langChecking  = lang('Admin.updatesExtChecking');
+$_langUpdating  = lang('Admin.updatesExtUpdating');
+$_langUpdated   = lang('Admin.updatesExtUpdated');
+$_langFailed    = lang('Admin.updatesExtFailed');
 $extra_scripts = <<<SCRIPT
 <script>
 (function() {
     var btn  = document.getElementById('updateBtn');
     if (!btn) return;
 
-    var prog = document.getElementById('update-progress');
-    var applyUrl  = '{$_applyUrl}';
-    var statusUrl = '{$_statusUrl}';
-    var csrfName  = '{$_csrfName}';
-    var csrfHash  = '{$_csrfHash}';
+    var prog         = document.getElementById('update-progress');
+    var applyUrl     = '{$_applyUrl}';
+    var statusUrl    = '{$_statusUrl}';
+    var showModal    = {$_showModal};
 
     btn.addEventListener('click', function() {
-        if (!confirm('This will backup your site, download the update, and apply it. Continue?')) return;
+        if (showModal) {
+            $('#compatibilityModal').modal('show');
+        } else {
+            $('#confirmUpdateModal').modal('show');
+        }
+    });
 
+    var confirmBtn = document.getElementById('confirmUpdateBtn');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', function() {
+            $('#compatibilityModal').modal('hide');
+            startUpdate();
+        });
+    }
+
+    var confirmCmsBtn = document.getElementById('confirmCmsUpdateBtn');
+    if (confirmCmsBtn) {
+        confirmCmsBtn.addEventListener('click', function() {
+            $('#confirmUpdateModal').modal('hide');
+            startUpdate();
+        });
+    }
+
+    function startUpdate() {
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Starting update...';
         prog.style.display = 'block';
 
-        var body = new FormData();
-        body.append(csrfName, csrfHash);
-
-        fetch(applyUrl, { method: 'POST', body: body })
+        fetch(applyUrl, { method: 'POST' })
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (data.status === 'error') {
@@ -211,7 +425,7 @@ $extra_scripts = <<<SCRIPT
             .catch(function(err) {
                 showError('Request failed: ' + err.message);
             });
-    });
+    }
 
     function pollUpdateStatus() {
         var interval = setInterval(function() {
@@ -251,6 +465,132 @@ $extra_scripts = <<<SCRIPT
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-rocket mr-1"></i> Retry Update';
     }
+})();
+
+// ============================================================
+// Extension addon updates
+// ============================================================
+(function() {
+    var csrfName  = '{$_csrfName}';
+    var csrfHash  = '{$_csrfHash}';
+    var baseUrl   = '{$_addonBaseUrl}';
+
+    function post(endpoint, data, callback) {
+        data[csrfName] = csrfHash;
+        var fd = new FormData();
+        for (var k in data) fd.append(k, data[k]);
+
+        fetch(baseUrl + endpoint, { method: 'POST', body: fd })
+            .then(function(r) { return r.json(); })
+            .then(function(json) {
+                // Update CSRF hash for next request
+                if (json.csrf_hash) csrfHash = json.csrf_hash;
+                callback(json);
+            })
+            .catch(function(err) { console.error(endpoint, err); });
+    }
+
+    function setRowStatus(type, slug, html) {
+        var row = document.getElementById('ext-row-' + type + '-' + slug);
+        if (row) {
+            var cell = row.querySelector('.ext-status');
+            if (cell) cell.innerHTML = html;
+        }
+    }
+
+    function setRowSpinner(type, slug) {
+        setRowStatus(type, slug, '<i class="fas fa-spinner fa-spin text-muted"></i>');
+    }
+
+    // Auto-update toggles
+    document.querySelectorAll('.ext-auto-toggle').forEach(function(el) {
+        el.addEventListener('change', function() {
+            post('toggle-auto-update', {
+                type: this.dataset.type,
+                slug: this.dataset.slug,
+                enabled: this.checked ? '1' : '0'
+            }, function() {});
+        });
+    });
+
+    // Per-row Check button
+    document.querySelectorAll('.ext-check-btn').forEach(function(el) {
+        el.addEventListener('click', function() {
+            var type = this.dataset.type, slug = this.dataset.slug;
+            setRowSpinner(type, slug);
+            post('check-addon', { type: type, slug: slug }, function() {
+                location.reload();
+            });
+        });
+    });
+
+    // Per-row Update button
+    document.querySelectorAll('.ext-update-btn').forEach(function(el) {
+        el.addEventListener('click', function() {
+            var type = this.dataset.type, slug = this.dataset.slug;
+            setRowSpinner(type, slug);
+            this.disabled = true;
+            post('update-addon', { type: type, slug: slug }, function(json) {
+                if (json.status === 'ok') {
+                    setRowStatus(type, slug, '<span class="text-success small"><i class="fas fa-check-circle"></i> {$_langUpdated}</span>');
+                } else {
+                    setRowStatus(type, slug, '<span class="text-danger small"><i class="fas fa-times-circle"></i> ' + (json.message || '{$_langFailed}') + '</span>');
+                }
+                setTimeout(function() { location.reload(); }, 1500);
+            });
+        });
+    });
+
+    // Check All (global)
+    var checkAllBtn = document.getElementById('checkAllAddonsBtn');
+    if (checkAllBtn) {
+        checkAllBtn.addEventListener('click', function() {
+            checkAllBtn.disabled = true;
+            checkAllBtn.innerHTML = '<i class="fas fa-spinner fa-spin fa-sm"></i> {$_langChecking}';
+            post('check-all-addons', {}, function() {
+                location.reload();
+            });
+        });
+    }
+
+    // Update All (global)
+    var updateAllBtn = document.getElementById('updateAllAddonsBtn');
+    if (updateAllBtn) {
+        updateAllBtn.addEventListener('click', function() {
+            $('#updateAllAddonsModal').modal('show');
+        });
+    }
+
+    var confirmUpdateAllBtn = document.getElementById('confirmUpdateAllAddonsBtn');
+    if (confirmUpdateAllBtn) {
+        confirmUpdateAllBtn.addEventListener('click', function() {
+            $('#updateAllAddonsModal').modal('hide');
+            updateAllBtn.disabled = true;
+            updateAllBtn.innerHTML = '<i class="fas fa-spinner fa-spin fa-sm"></i> {$_langUpdating}';
+            post('update-all-addons', {}, function() {
+                location.reload();
+            });
+        });
+    }
+
+    // Per-type Check All / Update All
+    document.querySelectorAll('.ext-check-type').forEach(function(el) {
+        el.addEventListener('click', function() {
+            // For per-type, we just do a full check and reload
+            el.disabled = true;
+            post('check-all-addons', {}, function() { location.reload(); });
+        });
+    });
+
+    document.querySelectorAll('.ext-update-type').forEach(function(el) {
+        el.addEventListener('click', function() {
+            el.disabled = true;
+            post('update-all-addons', {}, function() { location.reload(); });
+        });
+    });
+
+    // Init Bootstrap popovers for changelogs
+    $('[data-toggle="popover"]').popover();
 })();
 </script>
 SCRIPT;

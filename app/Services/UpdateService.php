@@ -6,20 +6,22 @@ use App\Models\AdminNotificationModel;
 
 class UpdateService
 {
-    protected string $apiUrl   = 'https://api.github.com/repos/enlivenapp/pubvana/releases/latest';
-    protected string $cacheKey = 'pubvana_update_check';
-    protected int    $cacheTtl = 21600; // 6 hours
+    protected string $changesUrl = 'https://raw.githubusercontent.com/enlivenapp/pubvana/master/CHANGES.json';
+    protected string $cacheKey   = 'pubvana_update_check';
+    protected int    $cacheTtl   = 86400; // 24 hours
 
     /**
-     * Check GitHub for the latest release.
+     * Check CHANGES.json for available updates.
+     * Gated by cache so we only hit GitHub once per TTL period.
+     * If a newer version is found, inserts an admin notification.
      *
      * Returns an array with keys:
      *   available        bool
      *   current_version  string
      *   latest_version   string
-     *   release_url      string
-     *   release_notes    string
-     *   zipball_url      string
+     *   safe_target      string|null  (highest version all extensions support, null if none safe)
+     *   capped_by        array        (extensions blocking the jump to latest)
+     *   versions_data    array        (raw CHANGES.json versions for downstream use)
      *   error            string|null
      */
     public function checkForUpdate(): array
@@ -28,9 +30,9 @@ class UpdateService
             'available'       => false,
             'current_version' => APP_VERSION,
             'latest_version'  => APP_VERSION,
-            'release_url'     => '',
-            'release_notes'   => '',
-            'zipball_url'     => '',
+            'safe_target'     => null,
+            'capped_by'       => [],
+            'versions_data'   => [],
             'error'           => null,
         ];
 
@@ -41,63 +43,85 @@ class UpdateService
 
         try {
             $client   = \Config\Services::curlrequest(['timeout' => 5]);
-            $response = $client->get($this->apiUrl, [
+            $response = $client->get($this->changesUrl, [
                 'http_errors' => false,
-                'headers'     => [
-                    'User-Agent' => 'Pubvana-CMS/' . APP_VERSION,
-                    'Accept'     => 'application/vnd.github.v3+json',
-                ],
+                'headers'     => ['User-Agent' => 'Pubvana-CMS/' . APP_VERSION],
             ]);
 
             if ($response->getStatusCode() !== 200) {
-                $base['error'] = 'GitHub returned HTTP ' . $response->getStatusCode();
+                $base['error'] = 'Could not fetch version info from GitHub (HTTP ' . $response->getStatusCode() . ').';
+                cache()->save($this->cacheKey, $base, $this->cacheTtl);
                 return $base;
             }
 
             $data = json_decode($response->getBody(), true);
-            if (! is_array($data) || empty($data['tag_name'])) {
-                $base['error'] = 'Unexpected response from GitHub.';
+            if (! is_array($data) || empty($data['versions'])) {
+                $base['error'] = 'Invalid version data from GitHub.';
+                cache()->save($this->cacheKey, $base, $this->cacheTtl);
                 return $base;
             }
 
-            $latest = ltrim($data['tag_name'], 'v');
-
-            // Find the uploaded release asset (includes vendor/)
-            $downloadUrl = '';
-            foreach ($data['assets'] ?? [] as $asset) {
-                if (str_ends_with($asset['name'] ?? '', '.zip')) {
-                    $downloadUrl = $asset['browser_download_url'];
-                    break;
+            // Find the highest version in CHANGES.json
+            $latest = '0.0.0';
+            foreach ($data['versions'] as $entry) {
+                $v = $entry['version'] ?? '0.0.0';
+                if (version_compare($v, $latest, '>')) {
+                    $latest = $v;
                 }
             }
 
-            if ($downloadUrl === '') {
-                $base['error'] = 'Release has no download asset. Update not available yet.';
+            // If local is equal or ahead, we're up to date
+            if (version_compare(APP_VERSION, $latest, '>=')) {
+                $base['versions_data'] = $data['versions'];
+                cache()->save($this->cacheKey, $base, $this->cacheTtl);
                 return $base;
             }
 
+            // Check extension compatibility against the latest version
+            $incompatible = $this->checkExtensionCompatibility($latest);
+
+            // Determine safe target
+            $safeTarget = $latest;
+            if (! empty($incompatible)) {
+                // Safe ceiling = lowest max_pubvana_version among incompatible extensions
+                $ceiling = $latest;
+                foreach ($incompatible as $ext) {
+                    if (version_compare($ext['max_version'], $ceiling, '<')) {
+                        $ceiling = $ext['max_version'];
+                    }
+                }
+                // Only valid if ceiling is above current version
+                $safeTarget = version_compare($ceiling, APP_VERSION, '>') ? $ceiling : null;
+            }
+
             $result = [
-                'available'       => version_compare($latest, APP_VERSION, '>'),
+                'available'       => true,
                 'current_version' => APP_VERSION,
                 'latest_version'  => $latest,
-                'release_url'     => $data['html_url']    ?? '',
-                'release_notes'   => $data['body']        ?? '',
-                'zipball_url'     => $downloadUrl,
+                'safe_target'     => $safeTarget,
+                'capped_by'       => $incompatible,
+                'versions_data'   => $data['versions'],
                 'error'           => null,
             ];
 
             cache()->save($this->cacheKey, $result, $this->cacheTtl);
 
-            // Insert admin notification if update is available
-            if ($result['available']) {
-                $notifModel = new AdminNotificationModel();
+            // Insert admin notification for the effective target version
+            $effectiveVersion = $safeTarget ?? $latest;
+            $notifModel = new AdminNotificationModel();
+            $existing = $notifModel->where('source', 'system')
+                ->where('action_url', 'admin/updates')
+                ->like('message', "v{$effectiveVersion}")
+                ->first();
+
+            if (! $existing) {
                 $notifModel->insert([
                     'source'       => 'system',
-                    'source_name'  => 'Pubvana Update',
+                    'source_name'  => 'Pubvana ' . lang('Admin.updatesTitle'),
                     'severity'     => 'info',
-                    'message'      => "Pubvana v{$latest} is available. You are running v" . APP_VERSION . ".",
+                    'message'      => lang('Admin.updatesAvailable', ["v{$effectiveVersion}"]),
                     'action_url'   => 'admin/updates',
-                    'action_label' => 'View Update',
+                    'action_label' => lang('Admin.view'),
                 ]);
             }
 
@@ -115,38 +139,40 @@ class UpdateService
     }
 
     /**
-     * Fetch and parse CHANGES.json from the GitHub repo.
-     * Returns all version entries between $fromVersion and $toVersion.
+     * Get CHANGES.json version entries between $fromVersion and $toVersion.
+     * Accepts pre-fetched versions data to avoid duplicate HTTP calls.
      */
-    public function getChanges(string $fromVersion, string $toVersion): array
+    public function getChanges(string $fromVersion, string $toVersion, array $versionsData = []): array
     {
-        $url = 'https://raw.githubusercontent.com/enlivenapp/pubvana/master/CHANGES.json';
+        if (empty($versionsData)) {
+            // Fallback: fetch from GitHub if no pre-fetched data provided
+            try {
+                $client   = \Config\Services::curlrequest(['timeout' => 5]);
+                $response = $client->get($this->changesUrl, [
+                    'http_errors' => false,
+                    'headers'     => ['User-Agent' => 'Pubvana-CMS/' . APP_VERSION],
+                ]);
 
-        try {
-            $client   = \Config\Services::curlrequest(['timeout' => 5]);
-            $response = $client->get($url, [
-                'http_errors' => false,
-                'headers'     => ['User-Agent' => 'Pubvana-CMS/' . APP_VERSION],
-            ]);
+                if ($response->getStatusCode() !== 200) {
+                    return [];
+                }
 
-            if ($response->getStatusCode() !== 200) {
+                $data = json_decode($response->getBody(), true);
+                if (! is_array($data) || empty($data['versions'])) {
+                    return [];
+                }
+
+                $versionsData = $data['versions'];
+            } catch (\Throwable $e) {
+                log_message('warning', 'UpdateService::getChanges: ' . $e->getMessage());
                 return [];
             }
-
-            $data = json_decode($response->getBody(), true);
-            if (! is_array($data) || empty($data['versions'])) {
-                return [];
-            }
-
-            // Filter versions between current and target
-            return array_filter($data['versions'], function (array $entry) use ($fromVersion, $toVersion) {
-                $v = $entry['version'] ?? '';
-                return version_compare($v, $fromVersion, '>') && version_compare($v, $toVersion, '<=');
-            });
-        } catch (\Throwable $e) {
-            log_message('warning', 'UpdateService::getChanges: ' . $e->getMessage());
-            return [];
         }
+
+        return array_values(array_filter($versionsData, function (array $entry) use ($fromVersion, $toVersion) {
+            $v = $entry['version'] ?? '';
+            return version_compare($v, $fromVersion, '>') && version_compare($v, $toVersion, '<=');
+        }));
     }
 
     /**
@@ -155,7 +181,7 @@ class UpdateService
      * Returns an array of check results:
      *   ['name' => string, 'pass' => bool, 'message' => string, 'hard' => bool]
      */
-    public function preFlightChecks(array $changes): array
+    public function preFlightChecks(array $changes, string $targetVersion = '', array $knownIncompatible = []): array
     {
         $checks = [];
 
@@ -231,7 +257,61 @@ class UpdateService
             'hard'    => false,
         ];
 
+        // Extension compatibility (soft checks)
+        $extIncompat = ! empty($knownIncompatible) ? $knownIncompatible
+            : ($targetVersion !== '' ? $this->checkExtensionCompatibility($targetVersion) : []);
+        foreach ($extIncompat as $ext) {
+            $checks[] = [
+                'name'    => ucfirst($ext['type']) . ': ' . $ext['name'],
+                'pass'    => false,
+                'message' => 'Max compatible version: ' . $ext['max_version'],
+                'hard'    => false,
+            ];
+        }
+
         return $checks;
+    }
+
+    /**
+     * Check installed themes, widgets, and plugins for compatibility
+     * with the target Pubvana version.
+     *
+     * Returns an array of incompatible extensions:
+     *   ['type' => string, 'name' => string, 'max_version' => string]
+     */
+    public function checkExtensionCompatibility(string $targetVersion): array
+    {
+        $incompatible = [];
+
+        $sources = [
+            'theme'  => [THEMES_PATH, 'theme_info.json'],
+            'widget' => [WIDGETS_PATH, 'widget_info.json'],
+            'plugin' => [PLUGINS_PATH, 'plugin_info.json'],
+        ];
+
+        foreach ($sources as $type => [$basePath, $infoFile]) {
+            if (! is_dir($basePath)) {
+                continue;
+            }
+
+            foreach (glob($basePath . '*/' . $infoFile) as $file) {
+                $data = json_decode(file_get_contents($file), true);
+                if (! is_array($data) || empty($data['name'])) {
+                    continue;
+                }
+
+                $maxVersion = $data['max_pubvana_version'] ?? null;
+                if ($maxVersion !== null && version_compare($targetVersion, $maxVersion, '>')) {
+                    $incompatible[] = [
+                        'type'        => $type,
+                        'name'        => $data['name'],
+                        'max_version' => $maxVersion,
+                    ];
+                }
+            }
+        }
+
+        return $incompatible;
     }
 
     /**

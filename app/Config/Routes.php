@@ -140,13 +140,11 @@ $routes->group('admin', ['filter' => ['admin_auth', 'totp'], 'namespace' => 'App
 
     // Settings
     $routes->get('settings',                 'Settings::index');
-    $routes->get('premium',                  'Settings::premiumPage');
     $routes->post('settings/general',        'Settings::saveGeneral');
     $routes->post('settings/seo',            'Settings::saveSeo');
     $routes->post('settings/email',          'Settings::saveEmail');
     $routes->post('settings/social',         'Settings::saveSocial');
     $routes->post('settings/sharing',        'Settings::saveSocialSharing');
-    $routes->post('settings/premium',        'Settings::savePremium');
 
     // Social
     $routes->get('social',                   'Social::index');
@@ -166,14 +164,13 @@ $routes->group('admin', ['filter' => ['admin_auth', 'totp'], 'namespace' => 'App
     $routes->post('languages/make-default/(:num)',    'Languages::makeDefault/$1');
 
     // Marketplace
-    $routes->get('marketplace',              'Marketplace::index');
-    $routes->get('marketplace/themes',       'Marketplace::themes');
-    $routes->get('marketplace/widgets',      'Marketplace::widgets');
-    $routes->get('marketplace/plugins',      'Marketplace::plugins');
-    $routes->get('marketplace/premium-core', 'Marketplace::premiumCore');
-    $routes->post('marketplace/install',     'Marketplace::install');
-    $routes->post('marketplace/refresh',     'Marketplace::refresh');
-    $routes->post('marketplace/update/(:segment)', 'Marketplace::update/$1');
+    $routes->get('marketplace',                              'Marketplace::index');
+    $routes->get('marketplace/licenses',                     'Marketplace::licenses');
+    $routes->post('marketplace/install',                     'Marketplace::install');
+    $routes->post('marketplace/install-licensed',            'Marketplace::installLicensed');
+    $routes->post('marketplace/refresh',                     'Marketplace::refresh');
+    $routes->post('marketplace/update/(:segment)',           'Marketplace::update/$1');
+    $routes->post('marketplace/licenses/revalidate/(:num)',  'Marketplace::revalidate/$1');
 
     // Schedule
     $routes->get('schedule',                 'Schedule::view');
@@ -185,6 +182,13 @@ $routes->group('admin', ['filter' => ['admin_auth', 'totp'], 'namespace' => 'App
     $routes->post('updates/apply',           'Updates::apply');
     $routes->get('updates/stream',           'Updates::stream');
     $routes->get('updates/status',           'Updates::status');
+
+    // Extension addon updates (AJAX)
+    $routes->post('updates/check-all-addons',  'Updates::checkAllAddons');
+    $routes->post('updates/check-addon',       'Updates::checkAddon');
+    $routes->post('updates/update-addon',      'Updates::updateAddon');
+    $routes->post('updates/update-all-addons', 'Updates::updateAllAddons');
+    $routes->post('updates/toggle-auto-update','Updates::toggleAutoUpdate');
 
     // Analytics
     $routes->get('analytics',                'Analytics::index');
@@ -219,10 +223,6 @@ $routes->group('admin', ['filter' => ['admin_auth', 'totp'], 'namespace' => 'App
     // Import
     $routes->get('import',                   'Import::index');
     $routes->post('import',                  'Import::upload');
-
-    // Store
-    $routes->get('store',                    'Store::index');
-    $routes->post('store/install',           'Store::install');
 
     // Plugins
     $routes->get('plugins',              'Plugins::index');

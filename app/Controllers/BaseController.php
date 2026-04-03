@@ -30,6 +30,12 @@ abstract class BaseController extends Controller
         } catch (\Throwable $e) {
             log_message('error', 'BaseController: license revalidation error: ' . $e->getMessage());
         }
+
+        try {
+            (new \App\Services\ExtensionUpdateService())->checkAndUpdateIfDue();
+        } catch (\Throwable $e) {
+            log_message('error', 'BaseController: extension update check error: ' . $e->getMessage());
+        }
     }
 
     /**

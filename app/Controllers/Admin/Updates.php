@@ -31,13 +31,18 @@ class Updates extends BaseAdminController
 
     public function index(): string
     {
+        // Always fetch fresh on the updates page
+        $this->updateService->clearCache();
         $update  = $this->updateService->checkForUpdate();
         $changes = [];
         $checks  = [];
 
+        $effectiveTarget = $update['safe_target'] ?? $update['latest_version'];
+        $incompatible    = $update['capped_by'] ?? [];
+
         if (! empty($update['available'])) {
-            $changes = $this->updateService->getChanges(APP_VERSION, $update['latest_version']);
-            $checks  = $this->updateService->preFlightChecks($changes);
+            $changes = $this->updateService->getChanges(APP_VERSION, $effectiveTarget, $update['versions_data'] ?? []);
+            $checks  = $this->updateService->preFlightChecks($changes, $effectiveTarget, $incompatible);
         }
 
         // Collect breaking changes from all applicable versions
@@ -53,17 +58,59 @@ class Updates extends BaseAdminController
         $allHardPass = empty(array_filter($checks, fn($c) => $c['hard'] && ! $c['pass']));
         $download    = new DownloadService();
 
+        $db = db_connect();
+        $themes  = $db->table('themes')->orderBy('name')->get()->getResultObject();
+        $widgets = $db->table('widgets')->orderBy('name')->get()->getResultObject();
+        $plugins = $db->table('plugins')->orderBy('name')->get()->getResultObject();
+
+        // Read update_url and support_url from local info files for each extension
+        $extensionMeta = [];
+        foreach ($themes as $t) {
+            $infoFile = THEMES_PATH . $t->folder . '/theme_info.json';
+            $info = is_file($infoFile) ? json_decode(file_get_contents($infoFile), true) : [];
+            $extensionMeta[$t->folder] = [
+                'update_url'  => $info['update_url'] ?? null,
+                'support_url' => $info['support_url'] ?? $info['author_url'] ?? null,
+            ];
+        }
+        foreach ($widgets as $w) {
+            $infoFile = WIDGETS_PATH . $w->folder . '/widget_info.json';
+            $info = is_file($infoFile) ? json_decode(file_get_contents($infoFile), true) : [];
+            $extensionMeta[$w->folder] = [
+                'update_url'  => $info['update_url'] ?? null,
+                'support_url' => $info['support_url'] ?? $info['author_url'] ?? null,
+            ];
+        }
+        foreach ($plugins as $p) {
+            $infoFile = PLUGINS_PATH . $p->folder . '/plugin_info.json';
+            $info = is_file($infoFile) ? json_decode(file_get_contents($infoFile), true) : [];
+            $extensionMeta[$p->folder] = [
+                'update_url'  => $info['update_url'] ?? null,
+                'support_url' => $info['support_url'] ?? $info['author_url'] ?? null,
+            ];
+        }
+
+        $cappedByExt = $update['safe_target'] !== null
+            && $update['safe_target'] !== $update['latest_version'];
+
         return $this->adminView('updates/index', array_merge(
             $this->baseData('Updates', 'updates'),
             [
-                'update'          => $update,
-                'checks'          => $checks,
-                'all_hard_pass'   => $allHardPass,
-                'breaking_changes'=> $breakingChanges,
-                'migration_notes' => $migrationNotes,
-                'notices'         => $notices,
-                'can_download'    => $download->canDownload(),
-                'is_locked'       => ProgressReporter::isLocked(),
+                'update'              => $update,
+                'effective_target'    => $effectiveTarget,
+                'capped_by_extensions'=> $cappedByExt,
+                'checks'              => $checks,
+                'all_hard_pass'       => $allHardPass,
+                'breaking_changes'    => $breakingChanges,
+                'migration_notes'     => $migrationNotes,
+                'notices'             => $notices,
+                'can_download'        => $download->canDownload(),
+                'is_locked'           => ProgressReporter::isLocked(),
+                'incompatible'        => $incompatible,
+                'ext_themes'          => $themes,
+                'ext_widgets'         => $widgets,
+                'ext_plugins'         => $plugins,
+                'ext_meta'            => $extensionMeta,
             ]
         ));
     }
@@ -154,6 +201,17 @@ class Updates extends BaseAdminController
             $reporter->releaseLock();
 
             cache()->clean();
+
+            // Trigger extension update check + auto-updates after CMS version change
+            try {
+                $extService = new \App\Services\ExtensionUpdateService();
+                $extService->clearCache();
+                $extResults = $extService->checkAllAddons();
+                $extService->runAutoUpdates($extResults);
+            } catch (\Throwable $e) {
+                log_message('error', 'Post-CMS-update extension check failed: ' . $e->getMessage());
+            }
+
             ActivityLogger::log('settings.updated', 'setting', null, 'Updated Pubvana to v' . $update['latest_version']);
 
             return $this->response->setJSON(['status' => 'completed', 'message' => 'Updated to Pubvana v' . $update['latest_version']]);
@@ -204,6 +262,103 @@ class Updates extends BaseAdminController
     {
         $reporter = new ProgressReporter('update');
         return $this->response->setJSON($reporter->read() ?? ['status' => 'idle']);
+    }
+
+    // ---------------------------------------------------------------
+    // Extension addon update endpoints (AJAX, JSON responses)
+    // ---------------------------------------------------------------
+
+    public function checkAllAddons()
+    {
+        $service = new \App\Services\ExtensionUpdateService();
+        $service->clearCache();
+        $results = $service->checkAllAddons();
+
+        return $this->response->setJSON(['status' => 'ok', 'results' => $results]);
+    }
+
+    public function checkAddon()
+    {
+        $type = $this->request->getPost('type');
+        $slug = $this->request->getPost('slug');
+
+        if (! $type || ! $slug) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'type and slug required.']);
+        }
+
+        $service = new \App\Services\ExtensionUpdateService();
+        $results = $service->checkSingleAddon($type, $slug);
+
+        return $this->response->setJSON(['status' => 'ok', 'results' => $results]);
+    }
+
+    public function updateAddon()
+    {
+        $type = $this->request->getPost('type');
+        $slug = $this->request->getPost('slug');
+
+        if (! $type || ! $slug) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'type and slug required.']);
+        }
+
+        $service = new \App\Services\ExtensionUpdateService();
+        $ok = $service->updateAddon($type, $slug);
+
+        // Read current state from DB for the UI
+        $table = match ($type) {
+            'theme' => 'themes', 'widget' => 'widgets', 'plugin' => 'plugins', default => null
+        };
+        $row = $table ? db_connect()->table($table)->where('folder', $slug)->get()->getRowObject() : null;
+
+        return $this->response->setJSON([
+            'status'  => $ok ? 'ok' : 'error',
+            'message' => $ok ? 'Updated successfully.' : ($row->last_update_error ?? 'Update failed.'),
+            'row'     => $row,
+        ]);
+    }
+
+    public function updateAllAddons()
+    {
+        $service = new \App\Services\ExtensionUpdateService();
+        $service->clearCache();
+        $checkResults = $service->checkAllAddons();
+
+        $results = [];
+        foreach ($checkResults['updates'] ?? [] as $upd) {
+            $ok = $service->updateAddon($upd['type'], $upd['slug']);
+            $results[] = [
+                'slug'   => $upd['slug'],
+                'type'   => $upd['type'],
+                'status' => $ok ? 'success' : 'fail',
+            ];
+        }
+
+        return $this->response->setJSON(['status' => 'ok', 'results' => $results]);
+    }
+
+    public function toggleAutoUpdate()
+    {
+        $type    = $this->request->getPost('type');
+        $slug    = $this->request->getPost('slug');
+        $enabled = (int) $this->request->getPost('enabled');
+
+        if (! $type || ! $slug) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'type and slug required.']);
+        }
+
+        $table = match ($type) {
+            'theme' => 'themes', 'widget' => 'widgets', 'plugin' => 'plugins', default => null
+        };
+
+        if (! $table) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Invalid type.']);
+        }
+
+        db_connect()->table($table)->where('folder', $slug)->update([
+            'auto_update' => $enabled ? 1 : 0,
+        ]);
+
+        return $this->response->setJSON(['status' => 'ok']);
     }
 
     /**
