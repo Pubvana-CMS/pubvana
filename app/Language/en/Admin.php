@@ -152,7 +152,7 @@ return [
     'navBackup'         => 'Backup & Export',
     'navUpdates'        => 'Updates',
     'navBrowse'         => 'Browse',
-    'navPremium'        => 'Premium',
+    'navLicenses'       => 'Licenses',
     'navPubvanaStore'   => 'Pubvana Store',
     'navUpdateAvailable'=> 'Update Available',
 
@@ -409,17 +409,54 @@ return [
     'marketplaceCannotUpdate'   => 'Cannot update this item.',
 
     // =========================================================================
+    // Licenses
+    // =========================================================================
+
+    // Licenses page
+    'licensesTitle'               => 'Licenses',
+    'licensesNone'                => 'No Licenses',
+    'licensesProduct'             => 'Product',
+    'licensesKey'                 => 'License Key',
+    'licensesStatus'              => 'Status',
+    'licensesType'                => 'Type',
+    'licensesExpires'             => 'Expires',
+    'licensesDomain'              => 'Domain',
+    'licensesInstalled'           => 'Installed',
+    'licensesLastChecked'         => 'Last Checked',
+    'licensesActions'             => 'Actions',
+    'licensesStatusValid'         => 'Valid',
+    'licensesStatusInvalid'       => 'Invalid',
+    'licensesStatusExpired'       => 'Expired',
+    'licensesStatusSubExpired'    => 'Subscription Expired',
+    'licensesStatusUnchecked'     => 'Unchecked',
+    'licensesSubscription'        => 'Subscription',
+    'licensesOneTime'             => 'One-time',
+    'licensesPerpetual'           => 'Perpetual',
+    'licensesNotInstalled'        => 'Not installed',
+    'licensesNever'               => 'Never',
+    'licensesRevalidate'          => 'Revalidate',
+    'licenseKeyPlaceholder'       => 'Enter license key...',
+
+    // License revalidation flash messages
+    'licenseRevalidateValid'       => 'License validated successfully.',
+    'licenseRevalidateInvalid'     => 'License is invalid or expired.',
+    'licenseRevalidateUnreachable' => 'Could not reach the license server. Please try again later.',
+    'licenseRevalidateSkipped'     => 'License check was skipped (dev mode).',
+    'licenseRevalidateNotFound'    => 'License not found.',
+
+    // License warning banners
+    'licenseWarningTitle'   => 'License Issues',
+    'licenseWarningInvalid' => 'license is invalid or expired',
+    'licenseWarningManage'  => 'Manage Licenses',
+
+    // Plugin license
+    'pluginInvalidLicense' => 'This plugin has an invalid or expired license and cannot be activated.',
+
+    // =========================================================================
     // Pubvana Store
     // =========================================================================
 
-    'storeTitle'            => 'Pubvana Store',
-    'storeInstallBtn'       => 'Install with License',
     'storeLicenseKey'       => 'License Key',
-    'storeLicenseKeyPlaceholder' => 'Paste your license key',
-    'storeItemNotFound'     => 'Item not found or not a free item.',
-    'storeSlugTypeRequired' => 'Item slug and item type are required.',
-    'storeInstallFail'      => 'Installation failed. Please check your license key and try again. See application logs for details.',
-    'storeInstallSuccess'   => '{0} "{1}" installed successfully.',
     'storeBrowseFull'       => 'Browse Full Store',
     'storeBackToMarketplace'=> 'Back to Marketplace',
     'storeNoProducts'       => 'No products available.',
@@ -520,7 +557,6 @@ return [
     'settingsSocialLogin'   => 'Social Login',
     'settingsSocialSharing' => 'Social Sharing',
     'settingsSpam'          => 'Spam Protection',
-    'settingsPremium'       => 'Premium',
 
     'generalSettingsHeading'    => 'General Settings',
     'generalSiteName'           => 'Site Name',
@@ -623,27 +659,6 @@ return [
     'spamHcaptchaIntro'         => 'Pubvana uses hCaptcha (privacy-respecting, non-Google) to protect comment forms and the contact form from spam bots.',
     'spamHcaptchaFree'          => 'hCaptcha is free for most sites. Sign up at hcaptcha.com, create a site, and add the following two keys to your .env file:',
     'spamHcaptchaNote'          => 'If these keys are not set, hCaptcha is silently skipped - safe for local development. Once keys are present in .env, the widget appears automatically on the comment form and contact page without any further configuration.',
-
-    // =========================================================================
-    // Settings - Premium / Licence
-    // =========================================================================
-
-    'premiumHeading'            => 'Pubvana Premium Core',
-    'premiumDevMode'            => 'Dev mode - always active',
-    'premiumStatusValid'        => 'Valid',
-    'premiumStatusInvalid'      => 'Invalid',
-    'premiumStatusUnreachable'  => 'Unreachable',
-    'premiumStatusUnchecked'    => 'Unchecked',
-    'premiumDevInfo'            => 'Running on a local dev domain - all Premium Core features are active without a licence key.',
-    'premiumHelp'               => 'Enter your Pubvana Premium Core licence key to unlock premium features. Purchase at pubvana.net/store/premium.',
-    'premiumLicenceKey'         => 'Licence Key',
-    'premiumLicenceKeyPlaceholder' => 'XXXX-XXXX-XXXX-XXXX',
-    'premiumKeyValid'           => 'Licence verified.',
-    'premiumKeyInvalid'         => 'This key was not accepted. Check the key and try again.',
-    'premiumKeyUnreachable'     => 'Could not reach the licence server during last check.',
-    'premiumActivateBtn'        => 'Activate Licence',
-    'premiumActivated'          => 'Licence key is valid. Pubvana Premium Core is active.',
-    'premiumInvalidKey'         => 'Licence key is invalid or could not be verified.',
 
     // =========================================================================
     // Languages
@@ -775,6 +790,46 @@ return [
     'updatesReleaseNotes'       => 'Release Notes',
     'updatesHowToApply'         => 'How to Apply an Update',
     'updatesCacheCleared'       => 'Update cache cleared - re-checking now.',
+    'updatesExtCapped'          => 'Update available: {0} (extension-safe)',
+    'updatesNewerAvailable'     => 'Pubvana {0} is also available — update the extensions listed below to unlock it.',
+
+    // Extension Updates
+    'updatesExtTitle'               => 'Addons',
+    'updatesExtCheckAll'            => 'Check All',
+    'updatesExtUpdateAll'           => 'Update All',
+    'updatesExtCheckAllType'        => 'Check All {0}',
+    'updatesExtUpdateAllType'       => 'Update All {0}',
+    'updatesExtNoInstalled'         => 'No {0} installed.',
+    'updatesExtColName'             => 'Name',
+    'updatesExtColVersion'          => 'Version',
+    'updatesExtColLatest'           => 'Latest',
+    'updatesExtColAutoUpdate'       => 'Auto-Update',
+    'updatesExtColStatus'           => 'Status',
+    'updatesExtColActions'          => 'Actions',
+    'updatesExtNoSource'            => 'No update source',
+    'updatesExtFailed'              => 'Failed',
+    'updatesExtUpdatedAt'           => 'Updated {0}',
+    'updatesExtAvailable'           => 'Update available',
+    'updatesExtUpToDate'            => 'Up to date',
+    'updatesExtUpdate'              => 'Update',
+    'updatesExtChecking'            => 'Checking...',
+    'updatesExtUpdating'            => 'Updating...',
+    'updatesExtUpdated'             => 'Updated',
+
+    // CMS Update Confirmation Modal
+    'updatesConfirmTitle'           => 'Confirm Update',
+    'updatesConfirmBody'            => 'This will backup your site, download the update, and apply it.',
+    'updatesConfirmSafe'            => 'Your <code>.env</code>, <code>App.php</code>, and <code>Database.php</code> are never overwritten.',
+    'updatesConfirmBtn'             => 'Update Now',
+
+    // Extension Update All Modal
+    'updatesExtAllTitle'            => 'Update All Extensions',
+    'updatesExtAllBody'             => 'This will update all extensions that have pending updates.',
+    'updatesExtAllNote'             => 'Extensions with auto-update disabled will also be updated.',
+    'updatesExtAllBtn'              => 'Update All',
+
+    'updatesExtBadge'               => 'Update: v{0}',
+    'updatesExtGoToUpdates'         => 'Updates',
 
     // =========================================================================
     // Schedule
@@ -795,7 +850,6 @@ return [
     // =========================================================================
 
     'adminLoginRequired'        => 'You must be logged in to access the admin panel.',
-    'premiumRequired'           => 'This feature requires a Pubvana Premium Core licence. Please add your licence key below.',
     'dirNotWritable'            => 'Directory is not writable: {0}',
 
 ];

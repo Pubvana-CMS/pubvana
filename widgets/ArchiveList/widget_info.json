@@ -1,7 +1,13 @@
 {
     "name": "Archive List",
+    "slug": "archive_list",
     "description": "Displays a list of monthly or yearly archive links.",
-    "version": "1.0.0",
+    "version": "2.0.0",
+    "min_pubvana_version": "2.2.3",
+    "max_pubvana_version": "2.2.3",
+    "update_url": "https://pubvana.net/api/dstore/v1/update/check",
+    "support_url": "https://pubvana.net/contact",
+    "author": "Pubvana Team",
     "admin": {
         "options": {
             "title": {

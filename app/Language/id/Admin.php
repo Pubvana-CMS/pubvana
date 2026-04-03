@@ -754,6 +754,46 @@ return [
     'updatesAvailable'          => 'Pembaruan tersedia: {0}',
     'updatesCheckBtn'           => 'Periksa Pembaruan',
     'updatesCacheCleared'       => 'Cache pembaruan dihapus - memeriksa ulang sekarang.',
+    'updatesExtCapped'          => 'Pembaruan tersedia: {0} (aman untuk ekstensi)',
+    'updatesNewerAvailable'     => 'Pubvana {0} juga tersedia — perbarui ekstensi di bawah ini untuk membukanya.',
+
+    // Extension Updates
+    'updatesExtTitle'               => 'Pengaya',
+    'updatesExtCheckAll'            => 'Periksa Semua',
+    'updatesExtUpdateAll'           => 'Perbarui Semua',
+    'updatesExtCheckAllType'        => 'Periksa Semua {0}',
+    'updatesExtUpdateAllType'       => 'Perbarui Semua {0}',
+    'updatesExtNoInstalled'         => 'Tidak ada {0} yang terpasang.',
+    'updatesExtColName'             => 'Nama',
+    'updatesExtColVersion'          => 'Versi',
+    'updatesExtColLatest'           => 'Terbaru',
+    'updatesExtColAutoUpdate'       => 'Pembaruan Otomatis',
+    'updatesExtColStatus'           => 'Status',
+    'updatesExtColActions'          => 'Tindakan',
+    'updatesExtNoSource'            => 'Tidak ada sumber pembaruan',
+    'updatesExtFailed'              => 'Gagal',
+    'updatesExtUpdatedAt'           => 'Diperbarui {0}',
+    'updatesExtAvailable'           => 'Pembaruan tersedia',
+    'updatesExtUpToDate'            => 'Terkini',
+    'updatesExtUpdate'              => 'Perbarui',
+    'updatesExtChecking'            => 'Memeriksa...',
+    'updatesExtUpdating'            => 'Memperbarui...',
+    'updatesExtUpdated'             => 'Diperbarui',
+
+    // CMS Update Confirmation Modal
+    'updatesConfirmTitle'           => 'Konfirmasi Pembaruan',
+    'updatesConfirmBody'            => 'Ini akan mencadangkan situs Anda, mengunduh pembaruan, dan menerapkannya.',
+    'updatesConfirmSafe'            => 'File <code>.env</code>, <code>App.php</code>, dan <code>Database.php</code> Anda tidak akan pernah ditimpa.',
+    'updatesConfirmBtn'             => 'Perbarui Sekarang',
+
+    // Extension Update All Modal
+    'updatesExtAllTitle'            => 'Perbarui Semua Ekstensi',
+    'updatesExtAllBody'             => 'Ini akan memperbarui semua ekstensi yang memiliki pembaruan tertunda.',
+    'updatesExtAllNote'             => 'Ekstensi dengan pembaruan otomatis dinonaktifkan juga akan diperbarui.',
+    'updatesExtAllBtn'              => 'Perbarui Semua',
+
+    'updatesExtBadge'               => 'Pembaruan: v{0}',
+    'updatesExtGoToUpdates'         => 'Pembaruan',
 
     // =========================================================================
     // Schedule

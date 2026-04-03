@@ -83,13 +83,16 @@ abstract class BaseAdminController extends BaseController
 
     protected function baseData(string $title, string $activeNav = ''): array
     {
-        $update = (new UpdateService())->checkForUpdate();
+        (new UpdateService())->checkForUpdate();
+
+        $notifModel = new AdminNotificationModel();
+
 
         return array_merge($this->data, [
             'page_title'        => $title . ' — Pubvana Admin',
             'active_nav'        => $activeNav,
             'user'              => auth()->user(),
-            'update'            => $update,
+            'notifications'     => $notifModel->getActive(),
             'plugin_menu_items' => \App\Services\PluginManager::instance()->getMenuItems(),
         ]);
     }
@@ -99,20 +102,4 @@ abstract class BaseAdminController extends BaseController
         return view('admin/' . $view, $data);
     }
 
-    /**
-     * Gate a controller action behind the Premium Core licence.
-     * On dev domains this is always a no-op. On production it redirects
-     * to the Settings → Premium tab when no valid licence is found.
-     */
-    protected function requirePremium(): void
-    {
-        $premium = new \App\Services\PremiumService();
-        if (! $premium->isLicensed()) {
-            redirect()
-                ->to('/admin/settings#premium')
-                ->with('error', lang('Admin.premiumRequired'))
-                ->send();
-            exit;
-        }
-    }
 }

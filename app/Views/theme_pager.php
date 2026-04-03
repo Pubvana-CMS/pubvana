@@ -5,7 +5,7 @@ use CodeIgniter\Pager\PagerRenderer;
 /**
  * Theme-aware pagination template.
  *
- * Reads cls_pager_* classes from the active theme's widget_classes.
+ * Reads cls_pager_* classes from the active theme's css_class_mapping.
  * Defaults to framework-agnostic pv-* classes when no theme overrides exist.
  *
  * @var PagerRenderer $pager

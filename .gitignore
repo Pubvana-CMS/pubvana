@@ -62,10 +62,9 @@ themes/ember.zip
 plugins/*
 !plugins/.gitkeep
 
-# Premium widgets (local testing only)
-widgets/AuthorBio/
+# Local-only widgets
 widgets/AdUnit/
-widgets/SocialLinks/
+widgets/DstoreCart/
 public/writable/
 
 # PHPUnit / build output

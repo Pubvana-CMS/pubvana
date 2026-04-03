@@ -22,7 +22,7 @@ widgets/RecentPosts/
 
 `WidgetService` enforces these rules when scanning widget directories. Widgets that fail validation are skipped and logged as warnings:
 
-1. **Required manifest fields** — `widget_info.json` must contain non-empty `name`, `description`, and `version` fields. Missing any of these causes the widget to be skipped.
+1. **Required manifest fields** — `widget_info.json` must contain non-empty `name`, `slug`, `description`, `version`, and `author` fields. Missing any of these causes the widget to be skipped.
 2. **No PHP files** — The widget directory must not contain any `.php` files. Widgets are JSON + templates only. If a `.php` file is found in the widget's root directory, the widget is skipped entirely. This is a security measure — all data access goes through the whitelisted provider system (see Section 2), never through arbitrary PHP.
 
 ---
@@ -34,8 +34,10 @@ The manifest has three top-level sections: metadata, `admin`, and `output`.
 ```json
 {
     "name": "Recent Posts",
+    "slug": "recent_posts",
     "description": "Displays a list of the most recent published posts.",
     "version": "1.0.0",
+    "author": "Your Name",
     "admin": {
         "notice": "",
         "options": {
@@ -75,9 +77,31 @@ The manifest has three top-level sections: metadata, `admin`, and `output`.
 | Key | Required | Description |
 |-----|----------|-------------|
 | `name` | yes | Human-readable widget name |
+| `slug` | yes | Lowercase underscore identifier (e.g. `recent_posts`, `tag_cloud`) |
 | `description` | yes | Short description |
 | `version` | yes | Semantic version |
+| `author` | yes | Widget author name |
 | `premium` | no | Set to `true` to display a "Premium" badge in the admin widget list |
+| `min_pubvana_version` | no | Minimum Pubvana version required |
+| `max_pubvana_version` | no | Maximum Pubvana version this widget is compatible with |
+| `update_url` | no | API endpoint for update checks |
+| `support_url` | no | Developer contact URL shown when incompatible |
+| `author_url` | no | Author's website URL |
+
+Optional fields example:
+
+```json
+    "min_pubvana_version": "2.2.0",
+    "max_pubvana_version": "2.3.0",
+    "update_url": "https://pubvana.net/api/dstore/v1/update/check",
+    "support_url": "https://pubvana.net/contact",
+    "author_url": "https://example.com"
+```
+
+- `min_pubvana_version` / `max_pubvana_version` — The range of Pubvana versions this widget is compatible with. Used by the CMS update system to prevent incompatible core updates and to find the right widget release version.
+- `update_url` — The API endpoint the CMS will POST to when checking for updates. Extensions without this field cannot be updated through the admin UI. Pubvana-built addons use `https://pubvana.net/api/dstore/v1/update/check`. Third-party developers provide their own endpoint implementing the same protocol.
+- `support_url` — Displayed in the admin UI when the widget is incompatible with the current Pubvana version ("Contact the developer").
+- `author_url` — Optional URL to the widget author's website.
 
 ### `admin` Section
 
@@ -253,7 +277,7 @@ Every CSS class in a widget `.tpl` is a variable with a semantic default:
 - If the theme passes `cls_widget`, that value is used
 - If not, the default `'widget widget-categories'` applies
 
-Themes declare their class overrides in `theme_info.json` under `widget_classes`. These are injected into every widget automatically at render time.
+Themes declare their class overrides in `theme_info.json` under `css_class_mapping`. These are injected into every widget automatically at render time.
 
 ### Standard `cls_` Variables
 
@@ -524,8 +548,10 @@ Here is a complete "Popular Tags" widget that displays the most-used tags with p
 ```json
 {
     "name": "Popular Tags",
+    "slug": "popular_tags",
     "description": "Displays the most popular tags by post count.",
     "version": "1.0.0",
+    "author": "Your Name",
     "admin": {
         "options": {
             "title": {
@@ -593,3 +619,26 @@ Here is a complete "Popular Tags" widget that displays the most-used tags with p
 6. Engine renders `views/widget.tpl` with merged options + provider data
 7. The engine resolves `cls_` variables (from theme or defaults), `{% tag_url %}` calls, `{% lang %}` strings
 8. Final HTML is returned and inserted into the page
+
+---
+
+## 11. Vetting
+
+Widgets are checked against the Pubvana vetting service during discovery. This is a non-blocking background check -- widgets that have not been vetted can still be assigned and rendered, but the admin sees a status badge next to each widget in the management UI.
+
+### Four States
+
+| Status | Badge | Meaning |
+|--------|-------|---------|
+| `unknown` | Gray "Unknown" | Widget has not been checked yet (new install or network error) |
+| `approved` | Green "Approved" | Widget is in the Pubvana registry and has been reviewed |
+| `known` | Yellow "Known Issues" | Widget is in the registry but has a noted limitation or caution |
+| `malicious` | Red "Malicious" | Widget has been flagged as harmful -- a warning is displayed prominently |
+
+### Author Normalization
+
+The `author` field in `widget_info.json` is normalized before it is sent to the vetting service: converted to lowercase and spaces replaced with underscores. For example, `"Pubvana Team"` becomes `pubvana_team`. Use a consistent author name across all your widgets so the vetting registry can group them correctly.
+
+### Submitting for Vetting
+
+To have your widget reviewed and listed in the Pubvana registry, submit it at **pubvana.net/vetted/submit**. You will need to provide a ZIP containing a valid `widget_info.json`. The Pubvana team will review the code and notify you by email when a decision is made.

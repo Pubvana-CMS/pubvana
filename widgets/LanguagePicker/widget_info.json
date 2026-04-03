@@ -1,7 +1,13 @@
 {
     "name": "Language Picker",
+    "slug": "language_picker",
     "description": "Displays a language switcher in buttons, dropdown, or list format.",
-    "version": "1.0.0",
+    "version": "2.0.0",
+    "min_pubvana_version": "2.2.3",
+    "max_pubvana_version": "2.2.3",
+    "update_url": "https://pubvana.net/api/dstore/v1/update/check",
+    "support_url": "https://pubvana.net/contact",
+    "author": "Pubvana Team",
     "admin": {
         "options": {
             "style": {

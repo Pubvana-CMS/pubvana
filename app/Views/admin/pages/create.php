@@ -7,7 +7,7 @@
 
 <form method="POST" action="<?= base_url('admin/pages/create') ?>">
 <?= csrf_field() ?>
-<input type="hidden" name="content_type" id="content_type" value="html">
+<input type="hidden" name="content_type" id="content_type" value="markdown">
 <div class="row">
     <div class="col-lg-8">
         <div class="card shadow mb-4">
@@ -21,18 +21,16 @@
                     <input type="text" name="slug" class="form-control" value="<?= esc(old('slug')) ?>" placeholder="auto-generated from title if left blank">
                 </div>
                 <div class="form-group">
-                    <label class="font-weight-bold d-block">Editor</label>
-                    <div class="btn-group btn-group-sm">
-                        <input type="radio" class="btn-check" name="editor_type" id="et_html" value="html" checked>
-                        <label class="btn btn-outline-primary" for="et_html">HTML</label>
-                        <input type="radio" class="btn-check" name="editor_type" id="et_md" value="markdown">
-                        <label class="btn btn-outline-secondary" for="et_md">Markdown</label>
+                    <label class="font-weight-bold d-block"><?= lang('Admin.postEditor') ?></label>
+                    <div id="editor-toggle">
+                        <button type="button" class="btn btn-sm mr-1 btn-outline-secondary" data-editor="html"><i class="fas fa-code"></i> <?= lang('Admin.postHtmlEditor') ?></button>
+                        <button type="button" class="btn btn-sm btn-primary" data-editor="markdown"><i class="fab fa-markdown"></i> <?= lang('Admin.postMarkdown') ?></button>
                     </div>
                 </div>
-                <div id="editor-html">
+                <div id="editor-html" style="display:none">
                     <textarea name="content" id="content-html" class="form-control" rows="15"><?= esc(old('content')) ?></textarea>
                 </div>
-                <div id="editor-md" style="display:none">
+                <div id="editor-md">
                     <textarea name="content_md" id="content-md" class="form-control" rows="15"></textarea>
                 </div>
             </div>
@@ -67,20 +65,29 @@
 <?php $extra_scripts = <<<'HTML'
 <link href="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-bs4.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-bs4.min.js"></script>
-<script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
+<script src="https://cdn.jsdelivr.net/npm/easymde@2.20.0/dist/easymde.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde@2.20.0/dist/easymde.min.css">
 <script>
 var mdeInit = false; var sme = null;
 function switchEditor(t) {
     document.getElementById('content_type').value = t;
+    document.querySelectorAll('#editor-toggle button').forEach(function(btn) {
+        if (btn.dataset.editor === t) {
+            btn.className = 'btn btn-sm mr-1 btn-primary';
+        } else {
+            btn.className = 'btn btn-sm mr-1 btn-outline-secondary';
+        }
+    });
     document.getElementById('editor-html').style.display = t==='html'?'block':'none';
     document.getElementById('editor-md').style.display  = t==='markdown'?'block':'none';
     if(t==='html' && !mdeInit){ var _c=document.getElementById('content-html').value; $('#content-html').summernote({height:400,toolbar:[['style',['bold','italic','underline','clear']],['para',['ul','ol','paragraph']],['insert',['link','picture','hr']],['view',['codeview','fullscreen']]]}); if(_c) $('#content-html').summernote('code',_c); mdeInit=true; }
-    if(t==='markdown' && !sme){ sme=new SimpleMDE({element:document.getElementById('content-md')}); }
+    if(t==='markdown' && !sme){ sme=new EasyMDE({element:document.getElementById('content-md')}); }
 }
 document.addEventListener('DOMContentLoaded',function(){
-    switchEditor('html');
-    document.querySelectorAll('input[name="editor_type"]').forEach(r=>r.addEventListener('change',function(){switchEditor(this.value);}));
+    switchEditor('markdown');
+    document.querySelectorAll('#editor-toggle button').forEach(function(btn) {
+        btn.addEventListener('click', function() { switchEditor(this.dataset.editor); });
+    });
     var slugEdited = false;
     var titleEl = document.querySelector('[name="title"]');
     var slugEl  = document.querySelector('[name="slug"]');

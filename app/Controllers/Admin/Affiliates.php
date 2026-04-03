@@ -21,8 +21,6 @@ class Affiliates extends BaseAdminController
 
     public function index(): string
     {
-        $this->requirePremium();
-
         return $this->adminView('affiliates/index', array_merge(
             $this->baseData('Affiliate Links', 'affiliates'),
             ['links' => $this->linkModel->withClickCounts()]
@@ -31,8 +29,6 @@ class Affiliates extends BaseAdminController
 
     public function create(): string
     {
-        $this->requirePremium();
-
         return $this->adminView('affiliates/form', array_merge(
             $this->baseData('New Affiliate Link', 'affiliates'),
             ['link' => null]
@@ -41,8 +37,6 @@ class Affiliates extends BaseAdminController
 
     public function store()
     {
-        $this->requirePremium();
-
         if (! $this->validate([
             'name'            => 'required|max_length[150]',
             'slug'            => 'required|max_length[100]|alpha_dash|is_unique[affiliate_links.slug]',
@@ -65,8 +59,6 @@ class Affiliates extends BaseAdminController
 
     public function edit(int $id): string
     {
-        $this->requirePremium();
-
         $link = $this->linkModel->find($id);
         if (! $link) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
@@ -80,8 +72,6 @@ class Affiliates extends BaseAdminController
 
     public function update(int $id)
     {
-        $this->requirePremium();
-
         $link = $this->linkModel->find($id);
         if (! $link) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
@@ -109,8 +99,6 @@ class Affiliates extends BaseAdminController
 
     public function delete(int $id)
     {
-        $this->requirePremium();
-
         $link = $this->linkModel->find($id);
         if (! $link) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
@@ -127,8 +115,6 @@ class Affiliates extends BaseAdminController
 
     public function clicks(int $id): string
     {
-        $this->requirePremium();
-
         $link = $this->linkModel->find($id);
         if (! $link) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();

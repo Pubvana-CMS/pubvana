@@ -754,6 +754,46 @@ return [
     'updatesAvailable'          => 'Actualización disponible: {0}',
     'updatesCheckBtn'           => 'Buscar actualizaciones',
     'updatesCacheCleared'       => 'Caché de actualizaciones borrado - verificando de nuevo.',
+    'updatesExtCapped'          => 'Actualización disponible: {0} (segura para extensiones)',
+    'updatesNewerAvailable'     => 'Pubvana {0} también está disponible — actualice las extensiones listadas abajo para desbloquearla.',
+
+    // Extension Updates
+    'updatesExtTitle'               => 'Complementos',
+    'updatesExtCheckAll'            => 'Verificar todo',
+    'updatesExtUpdateAll'           => 'Actualizar todo',
+    'updatesExtCheckAllType'        => 'Verificar todos los {0}',
+    'updatesExtUpdateAllType'       => 'Actualizar todos los {0}',
+    'updatesExtNoInstalled'         => 'No hay {0} instalados.',
+    'updatesExtColName'             => 'Nombre',
+    'updatesExtColVersion'          => 'Versión',
+    'updatesExtColLatest'           => 'Última',
+    'updatesExtColAutoUpdate'       => 'Auto-actualización',
+    'updatesExtColStatus'           => 'Estado',
+    'updatesExtColActions'          => 'Acciones',
+    'updatesExtNoSource'            => 'Sin fuente de actualización',
+    'updatesExtFailed'              => 'Falló',
+    'updatesExtUpdatedAt'           => 'Actualizado {0}',
+    'updatesExtAvailable'           => 'Actualización disponible',
+    'updatesExtUpToDate'            => 'Al día',
+    'updatesExtUpdate'              => 'Actualizar',
+    'updatesExtChecking'            => 'Verificando...',
+    'updatesExtUpdating'            => 'Actualizando...',
+    'updatesExtUpdated'             => 'Actualizado',
+
+    // CMS Update Confirmation Modal
+    'updatesConfirmTitle'           => 'Confirmar actualización',
+    'updatesConfirmBody'            => 'Esto creará una copia de seguridad, descargará la actualización y la aplicará.',
+    'updatesConfirmSafe'            => 'Sus archivos <code>.env</code>, <code>App.php</code> y <code>Database.php</code> nunca se sobrescriben.',
+    'updatesConfirmBtn'             => 'Actualizar ahora',
+
+    // Extension Update All Modal
+    'updatesExtAllTitle'            => 'Actualizar todas las extensiones',
+    'updatesExtAllBody'             => 'Esto actualizará todas las extensiones con actualizaciones pendientes.',
+    'updatesExtAllNote'             => 'Las extensiones con auto-actualización desactivada también se actualizarán.',
+    'updatesExtAllBtn'              => 'Actualizar todo',
+
+    'updatesExtBadge'               => 'Actualización: v{0}',
+    'updatesExtGoToUpdates'         => 'Actualizaciones',
 
     // =========================================================================
     // Schedule

@@ -8,15 +8,11 @@ class Schedule extends BaseAdminController
 {
     public function view(): string
     {
-        $this->requirePremium();
-
         return $this->adminView('schedule/index', $this->baseData('Post Schedule', 'schedule'));
     }
 
     public function index()
     {
-        $this->requirePremium();
-
         $model = new PostModel();
         $posts = $model->where('status', 'scheduled')
                        ->where('deleted_at IS NULL')

@@ -754,6 +754,46 @@ return [
     'updatesAvailable'          => 'Atualização disponível: {0}',
     'updatesCheckBtn'           => 'Verificar Atualizações',
     'updatesCacheCleared'       => 'Cache de atualizações limpo - verificando novamente.',
+    'updatesExtCapped'          => 'Atualização disponível: {0} (segura para extensões)',
+    'updatesNewerAvailable'     => 'Pubvana {0} também está disponível — atualize as extensões listadas abaixo para desbloqueá-la.',
+
+    // Extension Updates
+    'updatesExtTitle'               => 'Complementos',
+    'updatesExtCheckAll'            => 'Verificar tudo',
+    'updatesExtUpdateAll'           => 'Atualizar tudo',
+    'updatesExtCheckAllType'        => 'Verificar todos os {0}',
+    'updatesExtUpdateAllType'       => 'Atualizar todos os {0}',
+    'updatesExtNoInstalled'         => 'Nenhum {0} instalado.',
+    'updatesExtColName'             => 'Nome',
+    'updatesExtColVersion'          => 'Versão',
+    'updatesExtColLatest'           => 'Última',
+    'updatesExtColAutoUpdate'       => 'Atualização automática',
+    'updatesExtColStatus'           => 'Status',
+    'updatesExtColActions'          => 'Ações',
+    'updatesExtNoSource'            => 'Sem fonte de atualização',
+    'updatesExtFailed'              => 'Falhou',
+    'updatesExtUpdatedAt'           => 'Atualizado {0}',
+    'updatesExtAvailable'           => 'Atualização disponível',
+    'updatesExtUpToDate'            => 'Atualizado',
+    'updatesExtUpdate'              => 'Atualizar',
+    'updatesExtChecking'            => 'Verificando...',
+    'updatesExtUpdating'            => 'Atualizando...',
+    'updatesExtUpdated'             => 'Atualizado',
+
+    // CMS Update Confirmation Modal
+    'updatesConfirmTitle'           => 'Confirmar atualização',
+    'updatesConfirmBody'            => 'Isso fará backup do seu site, baixará a atualização e a aplicará.',
+    'updatesConfirmSafe'            => 'Seus arquivos <code>.env</code>, <code>App.php</code> e <code>Database.php</code> nunca são sobrescritos.',
+    'updatesConfirmBtn'             => 'Atualizar agora',
+
+    // Extension Update All Modal
+    'updatesExtAllTitle'            => 'Atualizar todas as extensões',
+    'updatesExtAllBody'             => 'Isso atualizará todas as extensões com atualizações pendentes.',
+    'updatesExtAllNote'             => 'Extensões com atualização automática desativada também serão atualizadas.',
+    'updatesExtAllBtn'              => 'Atualizar tudo',
+
+    'updatesExtBadge'               => 'Atualização: v{0}',
+    'updatesExtGoToUpdates'         => 'Atualizações',
 
     // =========================================================================
     // Schedule

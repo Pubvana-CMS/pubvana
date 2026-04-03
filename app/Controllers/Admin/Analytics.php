@@ -8,8 +8,6 @@ class Analytics extends BaseAdminController
 {
     public function index(): string
     {
-        $this->requirePremium();
-
         $days  = $this->validDays($this->request->getGet('days'));
         $model = new PageViewModel();
 
@@ -21,8 +19,6 @@ class Analytics extends BaseAdminController
 
     public function data()
     {
-        $this->requirePremium();
-
         $days  = $this->validDays($this->request->getGet('days'));
         $model = new PageViewModel();
 

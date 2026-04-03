@@ -754,6 +754,46 @@ return [
     'updatesAvailable'          => 'Mise à jour disponible : {0}',
     'updatesCheckBtn'           => 'Vérifier les mises à jour',
     'updatesCacheCleared'       => 'Cache des mises à jour effacé - nouvelle vérification en cours.',
+    'updatesExtCapped'          => 'Mise à jour disponible : {0} (compatible avec les extensions)',
+    'updatesNewerAvailable'     => 'Pubvana {0} est également disponible — mettez à jour les extensions ci-dessous pour y accéder.',
+
+    // Extension Updates
+    'updatesExtTitle'               => 'Extensions',
+    'updatesExtCheckAll'            => 'Tout vérifier',
+    'updatesExtUpdateAll'           => 'Tout mettre à jour',
+    'updatesExtCheckAllType'        => 'Vérifier tous les {0}',
+    'updatesExtUpdateAllType'       => 'Mettre à jour tous les {0}',
+    'updatesExtNoInstalled'         => 'Aucun {0} installé.',
+    'updatesExtColName'             => 'Nom',
+    'updatesExtColVersion'          => 'Version',
+    'updatesExtColLatest'           => 'Dernière',
+    'updatesExtColAutoUpdate'       => 'Mise à jour auto',
+    'updatesExtColStatus'           => 'Statut',
+    'updatesExtColActions'          => 'Actions',
+    'updatesExtNoSource'            => 'Aucune source de mise à jour',
+    'updatesExtFailed'              => 'Échoué',
+    'updatesExtUpdatedAt'           => 'Mis à jour {0}',
+    'updatesExtAvailable'           => 'Mise à jour disponible',
+    'updatesExtUpToDate'            => 'À jour',
+    'updatesExtUpdate'              => 'Mettre à jour',
+    'updatesExtChecking'            => 'Vérification...',
+    'updatesExtUpdating'            => 'Mise à jour...',
+    'updatesExtUpdated'             => 'Mis à jour',
+
+    // CMS Update Confirmation Modal
+    'updatesConfirmTitle'           => 'Confirmer la mise à jour',
+    'updatesConfirmBody'            => 'Cela sauvegardera votre site, téléchargera la mise à jour et l\'appliquera.',
+    'updatesConfirmSafe'            => 'Vos fichiers <code>.env</code>, <code>App.php</code> et <code>Database.php</code> ne sont jamais écrasés.',
+    'updatesConfirmBtn'             => 'Mettre à jour maintenant',
+
+    // Extension Update All Modal
+    'updatesExtAllTitle'            => 'Mettre à jour toutes les extensions',
+    'updatesExtAllBody'             => 'Cela mettra à jour toutes les extensions ayant des mises à jour en attente.',
+    'updatesExtAllNote'             => 'Les extensions avec la mise à jour automatique désactivée seront également mises à jour.',
+    'updatesExtAllBtn'              => 'Tout mettre à jour',
+
+    'updatesExtBadge'               => 'Mise à jour : v{0}',
+    'updatesExtGoToUpdates'         => 'Mises à jour',
 
     // =========================================================================
     // Schedule

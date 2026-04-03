@@ -150,11 +150,11 @@
 <?php $extra_scripts = <<<'HTML'
 <link href="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-bs4.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-bs4.min.js"></script>
-<script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
+<script src="https://cdn.jsdelivr.net/npm/easymde@2.20.0/dist/easymde.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde@2.20.0/dist/easymde.min.css">
 <script>
 var summernoteInitialized = false;
-var simplemdeEditor = null;
+var easymdeEditor = null;
 
 function switchEditor(type) {
     document.getElementById('content_type').value = type;
@@ -184,8 +184,8 @@ function switchEditor(type) {
         }
         document.getElementById('editor-html').style.display = 'none';
         document.getElementById('editor-md').style.display = 'block';
-        if (!simplemdeEditor) {
-            simplemdeEditor = new SimpleMDE({ element: document.getElementById('content-md') });
+        if (!easymdeEditor) {
+            easymdeEditor = new EasyMDE({ element: document.getElementById('content-md') });
         }
     }
 }
@@ -198,8 +198,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Sync active editor content into the 'content' field before form submission
     document.querySelector('form').addEventListener('submit', function() {
         var type = document.getElementById('content_type').value;
-        if (type === 'markdown' && simplemdeEditor) {
-            document.getElementById('content-html').value = simplemdeEditor.value();
+        if (type === 'markdown' && easymdeEditor) {
+            document.getElementById('content-html').value = easymdeEditor.value();
         } else if (summernoteInitialized) {
             $('#content-html').val($('#content-html').summernote('code'));
         }

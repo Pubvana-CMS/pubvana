@@ -4,9 +4,13 @@ All notable changes to Pubvana CMS, starting from the v2.0.0 rewrite.
 
 ---
 
-## v2.2.3 - 2026-03-29
+## v2.2.3 - 2026-04-02
 
 ### Added
+- **Marketplace & Licenses Redesign**: Store merged into Marketplace; new Licenses page; DigitalStore API integration; marketplace_licenses table; license enforcement (themes/plugins/widgets); non-dismissable warning banners; API-driven category tabs
+- **Premium Core removed** — scheduling, analytics, affiliates, broken links, and activity log now free for all users
+- AuthorBio and SocialLinks widgets included in core distribution
+- Constants: `PUBVANA_STORE_URL`, `PUBVANA_API_BASE`, `PUBVANA_DSTORE_API`
 - Web-based auto-updater with one-click update from admin panel
 - Full backup system: site files + gzipped DB dump + metadata, 15-backup retention
 - Rollback from any backup (backup current → restore selected → backup restored state)
@@ -42,7 +46,7 @@ All notable changes to Pubvana CMS, starting from the v2.0.0 rewrite.
 ## v2.2.2 - 2026-03-28
 
 ### Added
-- Theme-aware pagination via `cls_pager_*` keys in theme_info.json widget_classes - themes declare CSS classes in JSON, injected safely into templates with framework-agnostic `pv-*` defaults
+- Theme-aware pagination via `cls_pager_*` keys in theme_info.json css_class_mapping - themes declare CSS classes in JSON, injected safely into templates with framework-agnostic `pv-*` defaults
 - Icon pack abstraction: themes declare `icon_pack` and `icon_pack_ver` in theme_info.json; IconService auto-converts icon classes on theme switch
 - ThemeService registered as shared service via `Config\Services::theme()`
 
@@ -92,7 +96,7 @@ All notable changes to Pubvana CMS, starting from the v2.0.0 rewrite.
   - `.tpl` templates for all widget output - no PHP execution
   - WidgetDataService with whitelisted Model.method provider registry - widgets can only access data through approved providers
   - Auto-generated admin forms from JSON option definitions
-  - `cls_*` pattern: themes declare CSS classes in `widget_classes` JSON, injected into widget templates
+  - `cls_*` pattern: themes declare CSS classes in `css_class_mapping` JSON, injected into widget templates
   - BaseWidget PHP class deleted - widgets are pure data + templates
 - All 12 built-in widgets converted to PascalCase folders + JSON + `.tpl` format
 - All themes converted to `.tpl` views with layout inheritance

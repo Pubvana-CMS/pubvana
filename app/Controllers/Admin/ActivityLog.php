@@ -8,8 +8,6 @@ class ActivityLog extends BaseAdminController
 {
     public function index(): string
     {
-        $this->requirePremium();
-
         if (! auth()->user()->can('admin.settings')) {
             return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }

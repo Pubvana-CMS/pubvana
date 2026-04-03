@@ -8,8 +8,6 @@ class BrokenLinks extends BaseAdminController
 {
     public function index(): string
     {
-        $this->requirePremium();
-
         if (! auth()->user()->can('admin.settings')) {
             return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
@@ -45,8 +43,6 @@ class BrokenLinks extends BaseAdminController
 
     public function recheck(int $id)
     {
-        $this->requirePremium();
-
         $model = new BrokenLinkModel();
         $row   = $model->find($id);
 
@@ -77,8 +73,6 @@ class BrokenLinks extends BaseAdminController
 
     public function dismiss(int $id)
     {
-        $this->requirePremium();
-
         $model = new BrokenLinkModel();
         $row   = $model->find($id);
 

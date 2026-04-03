@@ -754,6 +754,46 @@ return [
     'updatesAvailable'          => 'Dostupná aktualizácia: {0}',
     'updatesCheckBtn'           => 'Skontrolovať aktualizácie',
     'updatesCacheCleared'       => 'Cache aktualizácií bol vymazaný - znova sa kontroluje.',
+    'updatesExtCapped'          => 'Dostupná aktualizácia: {0} (bezpečná pre rozšírenia)',
+    'updatesNewerAvailable'     => 'Pubvana {0} je tiež k dispozícii — aktualizujte rozšírenia uvedené nižšie na jej odomknutie.',
+
+    // Extension Updates
+    'updatesExtTitle'               => 'Doplnky',
+    'updatesExtCheckAll'            => 'Skontrolovať všetko',
+    'updatesExtUpdateAll'           => 'Aktualizovať všetko',
+    'updatesExtCheckAllType'        => 'Skontrolovať všetky {0}',
+    'updatesExtUpdateAllType'       => 'Aktualizovať všetky {0}',
+    'updatesExtNoInstalled'         => 'Žiadne {0} nie sú nainštalované.',
+    'updatesExtColName'             => 'Názov',
+    'updatesExtColVersion'          => 'Verzia',
+    'updatesExtColLatest'           => 'Najnovšia',
+    'updatesExtColAutoUpdate'       => 'Automatická aktualizácia',
+    'updatesExtColStatus'           => 'Stav',
+    'updatesExtColActions'          => 'Akcie',
+    'updatesExtNoSource'            => 'Žiadny zdroj aktualizácie',
+    'updatesExtFailed'              => 'Zlyhalo',
+    'updatesExtUpdatedAt'           => 'Aktualizované {0}',
+    'updatesExtAvailable'           => 'Aktualizácia k dispozícii',
+    'updatesExtUpToDate'            => 'Aktuálne',
+    'updatesExtUpdate'              => 'Aktualizovať',
+    'updatesExtChecking'            => 'Kontrolujem...',
+    'updatesExtUpdating'            => 'Aktualizujem...',
+    'updatesExtUpdated'             => 'Aktualizované',
+
+    // CMS Update Confirmation Modal
+    'updatesConfirmTitle'           => 'Potvrdiť aktualizáciu',
+    'updatesConfirmBody'            => 'Toto zálohuje váš web, stiahne aktualizáciu a aplikuje ju.',
+    'updatesConfirmSafe'            => 'Vaše súbory <code>.env</code>, <code>App.php</code> a <code>Database.php</code> sa nikdy neprepíšu.',
+    'updatesConfirmBtn'             => 'Aktualizovať teraz',
+
+    // Extension Update All Modal
+    'updatesExtAllTitle'            => 'Aktualizovať všetky rozšírenia',
+    'updatesExtAllBody'             => 'Toto aktualizuje všetky rozšírenia s čakajúcimi aktualizáciami.',
+    'updatesExtAllNote'             => 'Rozšírenia s vypnutou automatickou aktualizáciou budú tiež aktualizované.',
+    'updatesExtAllBtn'              => 'Aktualizovať všetko',
+
+    'updatesExtBadge'               => 'Aktualizácia: v{0}',
+    'updatesExtGoToUpdates'         => 'Aktualizácie',
 
     // =========================================================================
     // Schedule

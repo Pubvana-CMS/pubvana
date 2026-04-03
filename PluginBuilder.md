@@ -76,14 +76,21 @@ Every plugin must have a `plugin_info.json` in its root. All five fields are **r
 | `description` | string | One-line summary. Shown in the admin plugin list under the name. Max 255 characters. |
 | `author` | string | Plugin author name. |
 
-Optional fields (not used by the core, but available for future use):
+Optional fields:
 
 ```json
 {
-    "author_url":  "https://example.com",
-    "min_pubvana": "2.2.0"
+    "author_url":          "https://example.com",
+    "support_url":         "https://example.com/support",
+    "min_pubvana_version": "2.2.0",
+    "max_pubvana_version": "2.3.0",
+    "update_url":          "https://pubvana.net/api/dstore/v1/update/check"
 }
 ```
+
+- `min_pubvana_version` / `max_pubvana_version` — The range of Pubvana versions this plugin is compatible with. Used by the CMS update system to prevent incompatible core updates and to find the right plugin release version.
+- `update_url` — The API endpoint the CMS will POST to when checking for updates. Extensions without this field cannot be updated through the admin UI. Pubvana-built addons use `https://pubvana.net/api/dstore/v1/update/check`. Third-party developers provide their own endpoint implementing the same protocol.
+- `support_url` — Displayed in the admin UI when the plugin is incompatible with the current Pubvana version ("Contact the developer").
 
 ---
 
@@ -670,7 +677,7 @@ All HTML elements in your `.tpl` views must use `cls_` class variables instead o
 
 There are two approaches:
 
-**1. Use existing `cls_*` variables** - The theme system already defines common classes like `cls_card`, `cls_btn_primary`, `cls_badge`, etc. Use these for standard UI elements. See `ThemeBuilder.md` Section 10 for how `cls_` variables work and which ones themes define in `widget_classes`.
+**1. Use existing `cls_*` variables** - The theme system already defines common classes like `cls_card`, `cls_btn_primary`, `cls_badge`, etc. Use these for standard UI elements. See `ThemeBuilder.md` Section 10 for how `cls_` variables work and which ones themes define in `css_class_mapping`.
 
 ```html
 <div class="{{ cls_card }}">
@@ -839,23 +846,24 @@ Remove the plugin folder from disk. Next time "Scan for Plugins" runs (or on nex
 
 ### Version Updates
 
-When a new version is detected (version in `plugin_info.json` changes), the plugin's Pubvana approval status is reset to "Unchecked" and re-verified against pubvana.net. This ensures new code is re-vetted before the approval badge returns.
+When a new version is detected (version in `plugin_info.json` changes), the plugin's vetting status is reset to `unknown` and re-verified against pubvana.net. This ensures new code is re-vetted before the approval badge returns.
 
 ---
 
 ## 15. Approval System
 
-We take Pubvana users' data security seriously. We use several technolegies to test and limit the destructive scope of plugins, themes, and widgets from unknown sources.  
+We take Pubvana users' data security seriously. We use several technologies to test and limit the destructive scope of plugins, themes, and widgets from unknown sources.
 
-Pubvana checks all installed plugins to decide if it's a known safe plugin. This happens automatically during plugin discovery. We use "Approved" and "Not Approved" terminolegy. We only test and determine if a theme, widget, or plugin is safe to use. The decision to use is soley up to the site operator.  If we find your project on our own we'll likely vet it and add it to the system. If you'd like us to vet your project, let us know and we'll add it to the system. 
+Pubvana checks all installed plugins against the Pubvana vetting service during discovery. This check is handled by `VettingService`. We only test and determine if a plugin is safe to use. The decision to use it is solely up to the site operator. If we find your project on our own we will likely vet it and add it to the system. To request vetting, submit at pubvana.net/vetted/submit.
 
 | Status | Badge | Meaning |
 |--------|-------|---------|
-| Approved | Green "Approved" | Plugin is listed and vetted on pubvana.net |
-| Not Approved | Red "Not Approved" | Plugin was checked but is not in the registry |
-| Unchecked | Gray "Unchecked" | Approval check hasn't completed (new plugin or network error) |
+| `unknown` | Gray "Unknown" | Check has not completed yet (new plugin or network error) |
+| `approved` | Green "Approved" | Plugin is in the Pubvana registry and has been reviewed |
+| `known` | Yellow "Known Issues" | Plugin is in the registry but has a noted limitation or caution |
+| `malicious` | Red "Malicious" | Plugin has been flagged as harmful |
 
-**Unapproved plugins can still be activated** - the admin must explicitly confirm via a modal dialog. If the plugin has a security warning from Pubvana, it is displayed prominently in red in the confirmation modal.
+**Non-approved plugins can still be activated** - the admin must explicitly confirm via a modal dialog. If the plugin has a `malicious` status or a warning note from Pubvana, it is displayed prominently in red in the confirmation modal.
 
 Approved plugins from the Pubvana Marketplace activate without the confirmation step.
 
@@ -878,26 +886,34 @@ Approved plugins from the Pubvana Marketplace activate without the confirmation 
 
 The Pubvana Marketplace distributes Pubvana's own products and **free** third-party plugins. Paid third-party plugins are not sold on the Pubvana Marketplace - if you want to charge for your plugin, you can sell it on your own site and provide users with a ZIP to install manually.
 
-**To submit a paid plugin to our vetting system:** You'll need to send us a copy (and subsequent version changes). We will only vet your product and when done destroy the copy. We will never distribute your product.
+**To submit a paid plugin to our vetting system:** Submit your ZIP at pubvana.net/vetted/submit. We will only vet your product and when done destroy the copy. We will never distribute your product.
 
-**To submit a free plugin to the Marketplace:** Contact the Pubvana team. Your plugin will go through a vetting process (see below) before it's listed.
+**To submit a free plugin to the Marketplace:** Contact the Pubvana team. Your plugin will go through the vetting process (see Section 18) before it's listed.
 
 ### Standalone Distribution
 
-You're free to distribute your plugin independently - on your own website, GitHub, etc. Users install it by dropping the folder into `plugins/` and activating from Admin → Plugins. Standalone plugins show as "Not Approved" or "Unchecked" in the admin until they go through the Pubvana vetting process.
+You're free to distribute your plugin independently - on your own website, GitHub, etc. Users install it by dropping the folder into `plugins/` and activating from Admin → Plugins. Standalone plugins show as "Unknown" in the admin until they go through the Pubvana vetting process.
 
 ---
 
 ## 18. Vetting Process
 
-All plugins - whether submitted to the Marketplace or installed manually - are checked against the Pubvana vetting service. This is a non-blocking check: unapproved plugins can still be activated, but the admin must explicitly confirm.
+All plugins - whether submitted to the Marketplace or installed manually - are checked against the Pubvana vetting service. This is a non-blocking check: plugins that are not yet approved can still be activated, but the admin must explicitly confirm.
 
 ### How it works
 
-1. When a plugin is discovered (Scan for Plugins), Pubvana checks the plugin's slug against our API.
-2. If the plugin is in the registry and has been reviewed, it's marked **Approved** (green badge).
-3. If the plugin is not in the registry, it's marked **Not Approved** (red badge).
-4. If the check fails (network error), it stays **Unchecked** (gray badge) and retries on the next scan.
+1. When a plugin is discovered (Scan for Plugins), `VettingService` sends the plugin's slug, version, and normalized author to the `vetted/v1/check` API endpoint.
+2. The API response includes a status (`unknown`, `approved`, `known`, or `malicious`) and an optional warning note.
+3. The status and warning are stored locally and displayed as badges in Admin → Plugins.
+4. If the network check fails, the plugin stays `unknown` and retries on the next scan.
+
+### Author normalization
+
+The `author` field from `plugin_info.json` is normalized before the vetting lookup: converted to lowercase and spaces replaced with underscores. For example, `"Pubvana Team"` becomes `pubvana_team`. Use a consistent author name across releases so your vetting history carries over.
+
+### Wildcard version support
+
+Official Pubvana releases use a wildcard version (`*`) in the registry, meaning all versions of that plugin are approved as a group. Third-party plugins are registered per-version - each new version must be re-vetted individually.
 
 ### What gets vetted
 
@@ -906,16 +922,29 @@ All plugins - whether submitted to the Marketplace or installed manually - are c
 - Follows the PluginInterface contract correctly
 - Does not conflict with core CMS functionality
 
+### Status meanings
+
+| Status | Meaning |
+|--------|---------|
+| `unknown` | Not yet checked, or check failed (network error) |
+| `approved` | Reviewed and cleared by the Pubvana team |
+| `known` | In the registry with a noted limitation or caution -- warning note is shown to the admin |
+| `malicious` | Flagged as harmful -- warning is displayed prominently in red and activation requires explicit confirmation |
+
 ### Security warnings
 
-If the Pubvana team discovers malicious or dangerous code in a plugin, a `pv_warning_note` is set. This warning is:
+If the Pubvana team discovers malicious or dangerous code in a plugin, a warning note is set in the registry. This warning is:
 - Displayed in red in the Admin → Plugins list next to the plugin name
 - Shown prominently in the activation confirmation modal
-- Persisted locally so it's visible even if the network is unavailable
+- Persisted locally so it is visible even if the network is unavailable
 
 ### Version re-vetting
 
-When a plugin's version changes (new `version` in `plugin_info.json`), its approval status is automatically reset to "Unchecked". The new version must be re-vetted. Approval of v1.0.0 does not carry over to v1.1.0 - new code means new review.
+When a plugin's version changes (new `version` in `plugin_info.json`), its vetting status is automatically reset to `unknown`. The new version must be re-vetted. Approval of v1.0.0 does not carry over to v1.1.0 - new code means new review.
+
+### Submitting for vetting
+
+To request vetting of your plugin - whether free or paid - submit it at **pubvana.net/vetted/submit**. Provide a ZIP containing a valid `plugin_info.json`. The Pubvana team will review the code and notify you by email when a decision is made. Subsequent versions must be resubmitted.
 
 ---
 

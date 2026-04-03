@@ -28,7 +28,7 @@
         </div>
     {% endif %}
 
-    {% if is_premium_active and author_profile %}
+    {% if author_profile %}
         {% include 'partials/author-card' with {author_profile: author_profile, post: post} %}
     {% endif %}
 </article>
