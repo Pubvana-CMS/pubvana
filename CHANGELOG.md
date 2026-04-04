@@ -4,6 +4,24 @@ All notable changes to Pubvana CMS, starting from the v2.0.0 rewrite.
 
 ---
 
+## v2.2.6 - 2026-04-04
+
+### Fixed
+- Theme and admin asset URLs now resolve correctly for subdirectory installs via new `theme_url()` and `admin_theme_url()` helpers
+- `.htaccess` static file routing fixed for subdirectory installs using `%{CONTEXT_PREFIX}`
+- `theme_url()` fallback no longer generates incorrect `assets/` path segment
+
+### Added
+- Default theme public assets gitkeep'd so CSS/JS available immediately after clone
+- Welcome post and page seeder for fresh installs
+- `admin_theme_url()` helper for admin asset paths
+- `public/.htaccess` with CI4 routing fallback
+
+### Removed
+- `UserSeeder` removed — installer handles initial user creation
+
+---
+
 ## v2.2.5 - 2026-04-04
 
 ### Fixed

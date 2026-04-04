@@ -9,6 +9,6 @@ class DatabaseSeeder extends Seeder
         $this->call('SettingsSeeder');
         $this->call('ThemeSeeder');
         $this->call('WidgetSeeder');
-        $this->call('UserSeeder');
+        $this->call('WelcomePostSeeder');
     }
 }

@@ -8,10 +8,10 @@
     <title><?= esc($page_title ?? 'Admin - Pubvana') ?></title>
 
     <!-- SB Admin 2 CSS -->
-    <link href="<?= base_url('assets/admin/vendor/fontawesome-free/css/all.min.css') ?>" rel="stylesheet">
-    <link href="<?= base_url('assets/admin/css/sb-admin-2.min.css') ?>" rel="stylesheet">
+    <link href="<?= admin_theme_url('admin/vendor/fontawesome-free/css/all.min.css') ?>" rel="stylesheet">
+    <link href="<?= admin_theme_url('admin/css/sb-admin-2.min.css') ?>" rel="stylesheet">
     <!-- Pubvana Admin overrides -->
-    <link href="<?= base_url('assets/cms/admin.css') ?>" rel="stylesheet">
+    <link href="<?= admin_theme_url('cms/admin.css') ?>" rel="stylesheet">
 
     <?php if (isset($extra_styles)): ?>
         <?= $extra_styles ?>
@@ -379,10 +379,10 @@
 </div>
 
 <!-- JS -->
-<script src="<?= base_url('assets/admin/vendor/jquery/jquery.min.js') ?>"></script>
-<script src="<?= base_url('assets/admin/vendor/bootstrap/js/bootstrap.bundle.min.js') ?>"></script>
-<script src="<?= base_url('assets/admin/vendor/jquery-easing/jquery.easing.min.js') ?>"></script>
-<script src="<?= base_url('assets/admin/js/sb-admin-2.min.js') ?>"></script>
+<script src="<?= admin_theme_url('admin/vendor/jquery/jquery.min.js') ?>"></script>
+<script src="<?= admin_theme_url('admin/vendor/bootstrap/js/bootstrap.bundle.min.js') ?>"></script>
+<script src="<?= admin_theme_url('admin/vendor/jquery-easing/jquery.easing.min.js') ?>"></script>
+<script src="<?= admin_theme_url('admin/js/sb-admin-2.min.js') ?>"></script>
 
 <script>
 $(document).on('click', '.btn-close-notification[data-id]', function() {

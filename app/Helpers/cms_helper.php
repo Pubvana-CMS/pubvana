@@ -24,11 +24,27 @@ if (! function_exists('widget_area')) {
 if (! function_exists('theme_url')) {
     function theme_url(string $path = ''): string
     {
-        $theme = active_theme();
-        if (! $theme) {
-            return base_url('themes/default/assets/' . ltrim($path, '/'));
-        }
-        return base_url('themes/' . $theme->folder . '/' . ltrim($path, '/'));
+        $theme  = active_theme();
+        $folder = $theme ? $theme->folder : 'default';
+
+        // When FCPATH (public/) is not the document root (e.g. subdirectory install),
+        // include public/ in the URL so the browser reaches the actual file.
+        $docRoot = rtrim($_SERVER['DOCUMENT_ROOT'] ?? '', '/\\');
+        $fcPath  = rtrim(FCPATH, '/\\');
+        $prefix  = ($docRoot !== $fcPath) ? 'public/' : '';
+
+        return base_url($prefix . 'themes/' . $folder . '/' . ltrim($path, '/'));
+    }
+}
+
+if (! function_exists('admin_theme_url')) {
+    function admin_theme_url(string $path = ''): string
+    {
+        $docRoot = rtrim($_SERVER['DOCUMENT_ROOT'] ?? '', '/\\');
+        $fcPath  = rtrim(FCPATH, '/\\');
+        $prefix  = ($docRoot !== $fcPath) ? 'public/' : '';
+
+        return base_url($prefix . 'assets/' . ltrim($path, '/'));
     }
 }
 

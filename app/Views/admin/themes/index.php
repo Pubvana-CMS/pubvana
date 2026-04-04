@@ -32,7 +32,10 @@
     $isValid = $validation[$folder] ?? true;
     $screenshotUrl = '';
     if (! empty($info['screenshot'])) {
-        $screenshotUrl = base_url('themes/' . $folder . '/' . $info['screenshot']);
+        $docRoot = rtrim($_SERVER['DOCUMENT_ROOT'] ?? '', '/\\');
+        $fcPath  = rtrim(FCPATH, '/\\');
+        $prefix  = ($docRoot !== $fcPath) ? 'public/' : '';
+        $screenshotUrl = base_url($prefix . 'themes/' . $folder . '/' . $info['screenshot']);
     }
     ?>
     <div class="col-md-4 mb-4">
