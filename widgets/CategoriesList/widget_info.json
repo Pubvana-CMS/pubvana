@@ -4,7 +4,7 @@
     "description": "Displays a list of post categories with optional post counts.",
     "version": "2.0.0",
     "min_pubvana_version": "2.2.3",
-    "max_pubvana_version": "2.2.4",
+    "max_pubvana_version": "2.2.5",
     "update_url": "https://pubvana.net/api/dstore/v1/update/check",
     "support_url": "https://pubvana.net/contact",
     "author": "Pubvana Team",

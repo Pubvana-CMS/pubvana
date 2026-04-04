@@ -26,6 +26,13 @@ Options -Indexes
 	RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
 	RewriteRule ^ http://%1%{REQUEST_URI} [R=301,L]
 
+	# Route root request to front controller
+	RewriteRule ^$ public/index.php [L]
+
+	# Serve static files from public/ (assets, favicon, etc.)
+	RewriteCond %{DOCUMENT_ROOT}/public/%{REQUEST_URI} -f
+	RewriteRule ^(.+)$ public/$1 [L]
+
 	# Checks to see if the user is attempting to access a valid file,
 	# such as an image or css document, if this isn't true it sends the
 	# request to the front controller, index.php

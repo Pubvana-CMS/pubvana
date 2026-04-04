@@ -73,8 +73,20 @@ class Settings extends BaseAdminController
         if (! auth()->user()->can('admin.settings')) {
             return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
-        setting()->set('Email.fromName',  $this->request->getPost('from_name'));
-        setting()->set('Email.fromEmail', $this->request->getPost('from_email'));
+        setting()->set('Email.fromName',  $this->request->getPost('email_from_name'));
+        setting()->set('Email.fromAddress', $this->request->getPost('email_from_address'));
+        setting()->set('Email.protocol',  $this->request->getPost('email_protocol'));
+        setting()->set('Email.SMTPHost',  $this->request->getPost('smtp_host'));
+        setting()->set('Email.SMTPPort',  (int) ($this->request->getPost('smtp_port') ?: 587));
+        setting()->set('Email.SMTPCrypto', $this->request->getPost('smtp_crypto'));
+        setting()->set('Email.SMTPUser',  $this->request->getPost('smtp_user'));
+
+        $pass = $this->request->getPost('smtp_pass');
+        if ($pass !== null && $pass !== '') {
+            setting()->set('Email.SMTPPass', $pass);
+        }
+
+        ActivityLogger::log('settings.updated', 'setting', null, 'Updated email settings');
         return redirect()->to('/admin/settings#email')->with('success', lang('Admin.emailSettingsSaved'));
     }
 
@@ -95,12 +107,19 @@ class Settings extends BaseAdminController
             return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
 
-        // OAuth login credentials
-        $this->writeEnvKey('oauth.google.clientId',         $this->request->getPost('google_client_id') ?? '');
-        $this->writeEnvKey('oauth.google.clientSecret',     $this->request->getPost('google_client_secret') ?? '');
-        $this->writeEnvKey('oauth.facebook.clientId',       $this->request->getPost('facebook_client_id') ?? '');
-        $this->writeEnvKey('oauth.facebook.clientSecret',   $this->request->getPost('facebook_client_secret') ?? '');
+        setting()->set('Social.googleClientId',      $this->request->getPost('google_client_id') ?? '');
+        setting()->set('Social.facebookClientId',    $this->request->getPost('facebook_client_id') ?? '');
 
+        $googleSecret = $this->request->getPost('google_client_secret');
+        if ($googleSecret !== null && $googleSecret !== '') {
+            setting()->set('Social.googleClientSecret', $googleSecret);
+        }
+        $fbSecret = $this->request->getPost('facebook_client_secret');
+        if ($fbSecret !== null && $fbSecret !== '') {
+            setting()->set('Social.facebookClientSecret', $fbSecret);
+        }
+
+        ActivityLogger::log('settings.updated', 'setting', null, 'Updated social login settings');
         return redirect()->to('/admin/settings#social')->with('success', lang('Admin.socialLoginSettingsSaved'));
     }
 
@@ -110,60 +129,23 @@ class Settings extends BaseAdminController
             return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
 
-        // Twitter / X sharing credentials
-        $this->writeEnvKey('oauth.twitter.apiKey',      $this->request->getPost('twitter_api_key') ?? '');
-        $this->writeEnvKey('oauth.twitter.apiSecret',   $this->request->getPost('twitter_api_secret') ?? '');
-        $this->writeEnvKey('oauth.twitter.accessToken', $this->request->getPost('twitter_access_token') ?? '');
-        $this->writeEnvKey('oauth.twitter.accessSecret',$this->request->getPost('twitter_access_secret') ?? '');
+        setting()->set('Social.facebookPageId', $this->request->getPost('fb_page_id') ?? '');
 
-        // Facebook sharing page credentials
-        $this->writeEnvKey('sharing.facebook.pageId',       $this->request->getPost('fb_page_id') ?? '');
-        $this->writeEnvKey('sharing.facebook.pageToken',    $this->request->getPost('fb_page_token') ?? '');
-
-        return redirect()->to('/admin/settings#sharing')->with('success', lang('Admin.socialSharingSettingsSaved'));
-    }
-
-    /**
-     * Write or update a key=value line in the .env file.
-     * Only permitted keys may be written; values are stripped of newlines.
-     * Skips write if value is empty, preserving any existing secret.
-     */
-    protected function writeEnvKey(string $key, string $value): void
-    {
-        static $allowedKeys = [
-            'oauth.google.clientId',       'oauth.google.clientSecret',
-            'oauth.facebook.clientId',     'oauth.facebook.clientSecret',
-            'oauth.twitter.apiKey',        'oauth.twitter.apiSecret',
-            'oauth.twitter.accessToken',   'oauth.twitter.accessSecret',
-            'sharing.facebook.pageId',     'sharing.facebook.pageToken',
+        $fields = [
+            'twitter_api_key'      => 'Social.twitterApiKey',
+            'twitter_api_secret'   => 'Social.twitterApiSecret',
+            'twitter_access_token' => 'Social.twitterAccessToken',
+            'twitter_access_secret'=> 'Social.twitterAccessSecret',
+            'fb_page_token'        => 'Social.facebookPageToken',
         ];
-        if (! in_array($key, $allowedKeys, true)) {
-            return;
+        foreach ($fields as $formField => $settingKey) {
+            $val = $this->request->getPost($formField);
+            if ($val !== null && $val !== '') {
+                setting()->set($settingKey, $val);
+            }
         }
 
-        // Strip newlines — prevents an attacker from injecting extra .env lines
-        $value = str_replace(["\r", "\n"], '', $value);
-
-        // Never blank-out an existing secret via an empty form submission
-        if ($value === '') {
-            return;
-        }
-
-        $envPath = ROOTPATH . '.env';
-        if (! file_exists($envPath)) {
-            return;
-        }
-
-        $contents = file_get_contents($envPath);
-        $escaped  = preg_quote($key, '/');
-        $line     = $key . ' = ' . $value;
-
-        if (preg_match('/^' . $escaped . '\s*=.*/m', $contents)) {
-            $contents = preg_replace('/^' . $escaped . '\s*=.*/m', $line, $contents);
-        } else {
-            $contents .= PHP_EOL . $line;
-        }
-
-        file_put_contents($envPath, $contents);
+        ActivityLogger::log('settings.updated', 'setting', null, 'Updated social sharing settings');
+        return redirect()->to('/admin/settings#sharing')->with('success', lang('Admin.socialSharingSettingsSaved'));
     }
 }

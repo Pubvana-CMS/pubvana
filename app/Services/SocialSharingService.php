@@ -3,17 +3,9 @@
 namespace App\Services;
 
 use Abraham\TwitterOAuth\TwitterOAuth;
-use Config\Social as SocialConfig;
 
 class SocialSharingService
 {
-    protected SocialConfig $config;
-
-    public function __construct()
-    {
-        $this->config = new SocialConfig();
-    }
-
     /**
      * Share a post to all configured social networks.
      */
@@ -32,10 +24,10 @@ class SocialSharingService
 
     public function shareToTwitter(string $title, string $url): bool
     {
-        $key    = $this->config->twitterApiKey;
-        $secret = $this->config->twitterApiSecret;
-        $token  = $this->config->twitterAccessToken;
-        $tsecret= $this->config->twitterAccessSecret;
+        $key     = setting('Social.twitterApiKey') ?? '';
+        $secret  = setting('Social.twitterApiSecret') ?? '';
+        $token   = setting('Social.twitterAccessToken') ?? '';
+        $tsecret = setting('Social.twitterAccessSecret') ?? '';
 
         if (! $key || ! $secret || ! $token || ! $tsecret) {
             log_message('info', 'SocialSharingService: Twitter credentials not configured, skipping.');
@@ -57,8 +49,8 @@ class SocialSharingService
 
     public function shareToFacebook(string $title, string $url): bool
     {
-        $pageId    = env('sharing.facebook.pageId', '');
-        $pageToken = env('sharing.facebook.pageToken', '');
+        $pageId    = setting('Social.facebookPageId') ?? '';
+        $pageToken = setting('Social.facebookPageToken') ?? '';
 
         if (! $pageId || ! $pageToken) {
             log_message('info', 'SocialSharingService: Facebook credentials not configured, skipping.');

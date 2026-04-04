@@ -70,9 +70,8 @@
             </form>
 
             <?php
-            $socialConfig = new \Config\Social();
-            $hasGoogle    = (bool) $socialConfig->googleClientId;
-            $hasFacebook  = (bool) $socialConfig->facebookClientId;
+            $hasGoogle    = (bool) (setting('Social.googleClientId') ?? '');
+            $hasFacebook  = (bool) (setting('Social.facebookClientId') ?? '');
             if ($hasGoogle || $hasFacebook):
             ?>
             <hr>

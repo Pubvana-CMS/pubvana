@@ -51,6 +51,17 @@ jobs:
             -x 'Thumbs.db' \
             -x 'CLAUDE.md'
 
+      - name: Add .gitkeep files back to zip
+        run: |
+          zip release.zip \
+            writable/cache/.gitkeep \
+            writable/logs/.gitkeep \
+            writable/session/.gitkeep \
+            writable/tmp/.gitkeep \
+            writable/uploads/.gitkeep \
+            writable/backups/.gitkeep \
+            writable/updates/.gitkeep
+
       - name: Upload release
         uses: softprops/action-gh-release@v2
         with:

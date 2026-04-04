@@ -3,7 +3,7 @@
     "slug": "default",
     "version": "2.1.0",
     "min_pubvana_version": "2.2.3",
-    "max_pubvana_version": "2.2.4",
+    "max_pubvana_version": "2.2.5",
     "update_url": "https://pubvana.net/api/dstore/v1/update/check",
     "author": "Pubvana",
     "author_url": "https://pubvana.net",

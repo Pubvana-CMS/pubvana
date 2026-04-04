@@ -2,7 +2,6 @@
 
 namespace App\Controllers;
 
-use Config\Social as SocialConfig;
 use League\OAuth2\Client\Provider\Google;
 use League\OAuth2\Client\Provider\Facebook;
 
@@ -150,23 +149,27 @@ class SocialAuth extends BaseController
 
     protected function makeProvider(string $provider): ?object
     {
-        $config      = new SocialConfig();
         $baseUrl     = rtrim(config('App')->baseURL, '/');
         $callbackUrl = $baseUrl . '/auth/social/' . $provider . '/callback';
 
+        $googleId     = setting('Social.googleClientId') ?? '';
+        $googleSecret = setting('Social.googleClientSecret') ?? '';
+        $fbId         = setting('Social.facebookClientId') ?? '';
+        $fbSecret     = setting('Social.facebookClientSecret') ?? '';
+
         return match ($provider) {
-            'google' => ($config->googleClientId && $config->googleClientSecret)
+            'google' => ($googleId && $googleSecret)
                 ? new Google([
-                    'clientId'     => $config->googleClientId,
-                    'clientSecret' => $config->googleClientSecret,
+                    'clientId'     => $googleId,
+                    'clientSecret' => $googleSecret,
                     'redirectUri'  => $callbackUrl,
                 ])
                 : null,
 
-            'facebook' => ($config->facebookClientId && $config->facebookClientSecret)
+            'facebook' => ($fbId && $fbSecret)
                 ? new Facebook([
-                    'clientId'        => $config->facebookClientId,
-                    'clientSecret'    => $config->facebookClientSecret,
+                    'clientId'        => $fbId,
+                    'clientSecret'    => $fbSecret,
                     'redirectUri'     => $callbackUrl,
                     'graphApiVersion' => 'v18.0',
                 ])

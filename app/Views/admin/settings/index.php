@@ -258,7 +258,7 @@
                     <div class="form-group row">
                         <label class="col-sm-3 col-form-label"><?= lang('Admin.socialLoginGoogleId') ?></label>
                         <div class="col-sm-9"><input type="text" name="google_client_id" class="form-control"
-                            value="<?= esc(env('oauth.google.clientId')) ?>"></div>
+                            value="<?= esc(setting('Social.googleClientId')) ?>"></div>
                     </div>
                     <div class="form-group row">
                         <label class="col-sm-3 col-form-label"><?= lang('Admin.socialLoginGoogleSecret') ?></label>
@@ -271,7 +271,7 @@
                     <div class="form-group row">
                         <label class="col-sm-3 col-form-label"><?= lang('Admin.socialLoginFbAppId') ?></label>
                         <div class="col-sm-9"><input type="text" name="facebook_client_id" class="form-control"
-                            value="<?= esc(env('oauth.facebook.clientId')) ?>"></div>
+                            value="<?= esc(setting('Social.facebookClientId')) ?>"></div>
                     </div>
                     <div class="form-group row">
                         <label class="col-sm-3 col-form-label"><?= lang('Admin.socialLoginFbAppSecret') ?></label>
@@ -325,7 +325,7 @@
                     <div class="form-group row">
                         <label class="col-sm-3 col-form-label"><?= lang('Admin.socialSharingFbPageId') ?></label>
                         <div class="col-sm-9"><input type="text" name="fb_page_id" class="form-control"
-                            value="<?= esc(env('sharing.facebook.pageId')) ?>"></div>
+                            value="<?= esc(setting('Social.facebookPageId')) ?>"></div>
                     </div>
                     <div class="form-group row">
                         <label class="col-sm-3 col-form-label"><?= lang('Admin.socialSharingFbPageToken') ?></label>

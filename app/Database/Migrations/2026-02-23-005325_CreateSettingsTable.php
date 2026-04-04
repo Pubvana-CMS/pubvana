@@ -14,12 +14,10 @@ class CreateSettingsTable extends Migration
             'key'        => ['type' => 'VARCHAR', 'constraint' => 255],
             'value'      => ['type' => 'TEXT', 'null' => true],
             'type'       => ['type' => 'VARCHAR', 'constraint' => 31],
-            'context'    => ['type' => 'VARCHAR', 'constraint' => 255, 'null' => true],
             'created_at' => ['type' => 'DATETIME', 'null' => true],
             'updated_at' => ['type' => 'DATETIME', 'null' => true],
         ]);
         $this->forge->addKey('id', true);
-        $this->forge->addUniqueKey(['class', 'key', 'context']);
         $this->forge->createTable('settings', true);
     }
 

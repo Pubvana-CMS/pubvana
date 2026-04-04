@@ -4,6 +4,27 @@ All notable changes to Pubvana CMS, starting from the v2.0.0 rewrite.
 
 ---
 
+## v2.2.5 - 2026-04-04
+
+### Fixed
+- Social login and sharing credentials now saved to database via Settings library — previously wrote directly to `.env` file which fails on production servers
+- Email settings form field names mismatched controller (`email_from_name` vs `from_name`) — full SMTP config now saves correctly
+- `CreateSettingsTable` migration removed duplicate `context` column that conflicted with vendor Settings package on fresh installs
+- `spark` file removed from `.gitignore` — was missing from all releases
+- `testbad` test theme untracked from git — was shipping in releases
+- Root `.htaccess` now routes static files from `public/` and handles root request for non-DocumentRoot deployments
+
+### Changed
+- All social/OAuth credentials stored in database settings, not `.env` — `writeEnvKey()` method removed entirely
+- `Config\Social` reads from `setting()` instead of `env()`
+- `SocialSharingService` reads Facebook page credentials from `Config\Social` instead of `env()`
+- ThemeSeeder no longer seeds Flatly/Cyborg (premium marketplace themes)
+
+### Security
+- Removed `.env` file writing from admin panel — production `.env` files should never be writable by the application
+
+---
+
 ## v2.2.4 - 2026-04-03
 
 ### Fixed

@@ -18,19 +18,6 @@ class ThemeSeeder extends Seeder
         ]);
         $themeId = $this->db->insertID();
 
-        // Flatly and Cyborg ship installed but not active
-        foreach (['flatly' => 'Flatly', 'cyborg' => 'Cyborg'] as $folder => $name) {
-            $this->db->table('themes')->ignore(true)->insert([
-                'name'         => $name,
-                'folder'       => $folder,
-                'is_active'    => 0,
-                'version'      => '1.0.0',
-                'installed_at' => $now,
-                'created_at'   => $now,
-                'updated_at'   => $now,
-            ]);
-        }
-
         $areas = [
             ['slug' => 'sidebar',       'name' => 'Main Sidebar'],
             ['slug' => 'footer-1',      'name' => 'Footer Column 1'],

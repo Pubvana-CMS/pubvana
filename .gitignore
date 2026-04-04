@@ -13,12 +13,15 @@
 /writable/session/*
 /writable/tmp/*
 /writable/uploads/*
+/writable/backups/*
+/writable/updates/*
 !/writable/cache/.gitkeep
-!/writable/debugbar/.gitkeep
 !/writable/logs/.gitkeep
 !/writable/session/.gitkeep
 !/writable/tmp/.gitkeep
 !/writable/uploads/.gitkeep
+!/writable/backups/.gitkeep
+!/writable/updates/.gitkeep
 
 # Node (if ever used)
 node_modules/
@@ -42,9 +45,6 @@ CLAUDE.md
 
 # Generated OG images (built at runtime by OgImageService)
 /public/og/
-
-# Spark (generated)
-/spark
 
 # Premium themes (distributed via pubvana.net store)
 themes/cyborg/
