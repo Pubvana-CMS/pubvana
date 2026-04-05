@@ -337,8 +337,9 @@ function renderExtensionTable(string $label, string $type, array $rows, array $m
                 $folder    = $row->folder;
                 $hasMeta   = isset($meta[$folder]);
                 $hasUrl    = ! empty($meta[$folder]['update_url'] ?? null);
+                $isBundled = ! empty($meta[$folder]['bundled'] ?? false);
                 $supportUrl = $meta[$folder]['support_url'] ?? null;
-                $hasUpdate = $hasUrl && ! empty($row->latest_version) && version_compare($row->latest_version, $row->version ?? '0.0.0', '>');
+                $hasUpdate = $hasUrl && ! $isBundled && ! empty($row->latest_version) && version_compare($row->latest_version, $row->version ?? '0.0.0', '>');
             ?>
                 <tr id="ext-row-<?= esc($lcType) ?>-<?= esc($folder) ?>" data-type="<?= $lcType ?>" data-slug="<?= esc($folder) ?>">
                     <td class="pl-3 align-middle"><?= esc($row->name) ?></td>
@@ -357,7 +358,9 @@ function renderExtensionTable(string $label, string $type, array $rows, array $m
                         <?php endif; ?>
                     </td>
                     <td class="align-middle">
-                        <?php if ($hasUrl): ?>
+                        <?php if ($isBundled): ?>
+                            <span class="badge badge-secondary"><?= lang('Admin.updatesExtBundled') ?></span>
+                        <?php elseif ($hasUrl): ?>
                         <div class="custom-control custom-switch">
                             <input type="checkbox" class="custom-control-input ext-auto-toggle"
                                    id="auto-<?= esc($lcType) ?>-<?= esc($folder) ?>"
@@ -385,7 +388,7 @@ function renderExtensionTable(string $label, string $type, array $rows, array $m
                         <?php endif; ?>
                     </td>
                     <td class="text-right pr-3 align-middle">
-                        <?php if ($hasUrl): ?>
+                        <?php if (! $isBundled && $hasUrl): ?>
                         <button class="btn btn-xs btn-outline-secondary ext-check-btn"
                                 data-type="<?= $lcType ?>" data-slug="<?= esc($folder) ?>">
                             <i class="fas fa-arrows-rotate fa-xs"></i>

@@ -760,7 +760,7 @@ return [
     'updatesExtCapped'          => 'Dostupná aktualizácia: {0} (bezpečná pre rozšírenia)',
     'updatesNewerAvailable'     => 'Pubvana {0} je tiež k dispozícii — aktualizujte rozšírenia uvedené nižšie na jej odomknutie.',
 
-    // Extension Updates
+    // Addon Updates
     'updatesExtTitle'               => 'Doplnky',
     'updatesExtCheckAll'            => 'Skontrolovať všetko',
     'updatesExtUpdateAll'           => 'Aktualizovať všetko',
@@ -773,6 +773,7 @@ return [
     'updatesExtColAutoUpdate'       => 'Automatická aktualizácia',
     'updatesExtColStatus'           => 'Stav',
     'updatesExtColActions'          => 'Akcie',
+    'updatesExtBundled'             => 'Core Bundled',
     'updatesExtNoSource'            => 'Žiadny zdroj aktualizácie',
     'updatesExtFailed'              => 'Zlyhalo',
     'updatesExtUpdatedAt'           => 'Aktualizované {0}',
@@ -789,7 +790,7 @@ return [
     'updatesConfirmSafe'            => 'Vaše súbory <code>.env</code>, <code>App.php</code> a <code>Database.php</code> sa nikdy neprepíšu.',
     'updatesConfirmBtn'             => 'Aktualizovať teraz',
 
-    // Extension Update All Modal
+    // Addon Update All Modal
     'updatesExtAllTitle'            => 'Aktualizovať všetky rozšírenia',
     'updatesExtAllBody'             => 'Toto aktualizuje všetky rozšírenia s čakajúcimi aktualizáciami.',
     'updatesExtAllNote'             => 'Rozšírenia s vypnutou automatickou aktualizáciou budú tiež aktualizované.',

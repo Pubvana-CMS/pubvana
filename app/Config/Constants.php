@@ -89,4 +89,4 @@ defined('PLUGINS_PATH')     || define('PLUGINS_PATH',     ROOTPATH . 'plugins/')
 defined('PUBVANA_STORE_URL')  || define('PUBVANA_STORE_URL', 'https://pubvana.net/');
 defined('PUBVANA_API_BASE')   || define('PUBVANA_API_BASE', PUBVANA_STORE_URL . 'api/');
 defined('PUBVANA_DSTORE_API') || define('PUBVANA_DSTORE_API', PUBVANA_API_BASE . 'dstore/v1/');
-defined('APP_VERSION')      || define('APP_VERSION',      '2.2.8');
+defined('APP_VERSION')      || define('APP_VERSION',      '2.2.9');

@@ -2,7 +2,7 @@
     "name": "Default",
     "slug": "default",
     "bundled": true,
-    "version": "2.1.1",
+    "version": "2.1.2",
     "min_pubvana_version": "2.2.3",
     "max_pubvana_version": "2.2.15",
     "update_url": "https://pubvana.net/api/dstore/v1/update/check",
@@ -37,7 +37,6 @@
         }
     },
     "css_class_mapping": {
-
         "_comment_widget": "--- Widget Shell ---",
         "cls_widget": "widget mb-4",
         "cls_title": "h6 fw-bold mb-3 pb-2 border-bottom",
@@ -45,7 +44,6 @@
         "cls_empty": "text-muted fst-italic",
         "cls_meta": "text-muted small",
         "cls_link": "text-decoration-none",
-
         "_comment_layout": "--- Layout ---",
         "cls_container": "container",
         "cls_row": "row",
@@ -53,7 +51,6 @@
         "cls_col_half": "col-md-6",
         "cls_col_third": "col-md-4",
         "cls_col_quarter": "col-md-3",
-
         "_comment_typography": "--- Typography ---",
         "cls_h1": "h1",
         "cls_h2": "h2",
@@ -63,7 +60,6 @@
         "cls_h6": "h6",
         "cls_lead": "lead",
         "cls_blockquote": "blockquote",
-
         "_comment_text_color": "--- Text Color ---",
         "cls_text_muted": "text-muted",
         "cls_text_primary": "text-primary",
@@ -73,12 +69,10 @@
         "cls_text_warning": "text-warning",
         "cls_text_info": "text-info",
         "cls_text_light": "text-light",
-
         "_comment_text_align": "--- Text Alignment ---",
         "cls_text_left": "text-start",
         "cls_text_center": "text-center",
         "cls_text_right": "text-end",
-
         "_comment_bg": "--- Background ---",
         "cls_bg_primary": "bg-primary text-white",
         "cls_bg_secondary": "bg-secondary text-white",
@@ -87,7 +81,6 @@
         "cls_bg_warning": "bg-warning",
         "cls_bg_light": "bg-light",
         "cls_bg_dark": "bg-dark text-white",
-
         "_comment_cards": "--- Cards ---",
         "cls_card": "d-flex gap-3 p-3 bg-light rounded",
         "cls_card_header": "card-header",
@@ -96,13 +89,11 @@
         "cls_card_image": "rounded-circle",
         "cls_card_title": "fw-bold",
         "cls_card_text": "text-muted small",
-
         "_comment_lists": "--- Lists ---",
         "cls_list": "list-group list-group-flush",
         "cls_list_item": "list-group-item d-flex justify-content-between align-items-center",
         "cls_list_plain": "list-unstyled",
         "cls_list_inline": "list-inline",
-
         "_comment_tables": "--- Tables ---",
         "cls_table": "table",
         "cls_table_striped": "table-striped",
@@ -110,7 +101,6 @@
         "cls_table_head": "table-light",
         "cls_table_cell": "",
         "cls_table_header_cell": "",
-
         "_comment_forms": "--- Forms ---",
         "cls_form": "d-flex gap-2",
         "cls_form_group": "mb-3",
@@ -120,7 +110,6 @@
         "cls_textarea": "form-control",
         "cls_checkbox": "form-check-input",
         "cls_form_help": "form-text text-muted",
-
         "_comment_buttons": "--- Buttons ---",
         "cls_button": "btn btn-sm btn-primary",
         "cls_btn_primary": "btn btn-primary",
@@ -132,14 +121,12 @@
         "cls_btn_sm": "btn btn-sm",
         "cls_btn_lg": "btn btn-lg",
         "cls_btn_block": "btn w-100",
-
         "_comment_alerts": "--- Alerts ---",
         "cls_alert": "alert",
         "cls_alert_success": "alert-success",
         "cls_alert_danger": "alert-danger",
         "cls_alert_warning": "alert-warning",
         "cls_alert_info": "alert-info",
-
         "_comment_nav": "--- Navigation ---",
         "cls_nav": "nav",
         "cls_nav_item": "nav-item",
@@ -147,47 +134,39 @@
         "cls_nav_active": "active",
         "cls_dropdown": "dropdown-menu",
         "cls_dropdown_item": "dropdown-item",
-
         "_comment_breadcrumb": "--- Breadcrumbs ---",
         "cls_breadcrumb": "breadcrumb",
         "cls_breadcrumb_item": "breadcrumb-item",
         "cls_breadcrumb_active": "active",
-
         "_comment_badges_tags": "--- Badges & Tags ---",
         "cls_badge": "badge bg-secondary rounded-pill",
         "cls_tags": "d-flex flex-wrap gap-1",
         "cls_tag": "badge bg-light text-decoration-none",
-
         "_comment_images": "--- Images ---",
         "cls_thumbnail": "rounded float-start me-3",
         "cls_img_fluid": "img-fluid",
         "cls_img_rounded": "rounded",
         "cls_img_circle": "rounded-circle",
-
         "_comment_social": "--- Social ---",
         "cls_social_links": "d-flex gap-3",
         "cls_social_link": "text-muted text-decoration-none fs-5",
-
         "_comment_toc": "--- Table of Contents ---",
         "cls_toc_nav": "small",
         "cls_toc_list": "list-unstyled",
         "cls_toc_item": "py-1",
         "cls_toc_link": "text-decoration-none",
-
         "_comment_paywall": "--- Paywall ---",
         "cls_fade": "position-relative",
         "cls_cta": "text-center p-4 bg-light rounded",
         "cls_icon": "fs-1 text-muted mb-3",
         "cls_paywall_title": "h5 fw-bold",
         "cls_message": "text-muted mb-3",
-
         "_comment_pagination": "--- Pagination ---",
         "cls_pager_list": "pagination justify-content-center",
         "cls_pager_item": "page-item",
         "cls_pager_link": "page-link",
         "cls_pager_active": "active",
         "cls_pager_disabled": "disabled",
-
         "_comment_display": "--- Display & Flex ---",
         "cls_hidden": "d-none",
         "cls_flex": "d-flex",
@@ -195,22 +174,18 @@
         "cls_flex_between": "d-flex justify-content-between",
         "cls_flex_col": "d-flex flex-column",
         "cls_flex_wrap": "d-flex flex-wrap",
-
         "_comment_borders": "--- Borders & Shape ---",
         "cls_rounded": "rounded",
         "cls_rounded_lg": "rounded-3",
         "cls_rounded_circle": "rounded-circle",
         "cls_shadow": "shadow",
         "cls_shadow_sm": "shadow-sm",
-
         "_comment_float": "--- Float & Alignment ---",
         "cls_left": "float-start",
         "cls_right": "float-end",
-
         "_comment_misc": "--- Miscellaneous ---",
         "cls_divider": "border-bottom my-3",
         "cls_sr_only": "visually-hidden",
-
         "_comment_margin": "--- Margin ---",
         "cls_m_0": "m-0",
         "cls_m_1": "m-1",
@@ -255,7 +230,6 @@
         "cls_my_3": "my-3",
         "cls_my_4": "my-4",
         "cls_my_5": "my-5",
-
         "_comment_padding": "--- Padding ---",
         "cls_p_0": "p-0",
         "cls_p_1": "p-1",

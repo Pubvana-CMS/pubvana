@@ -368,9 +368,11 @@ class ThemeService
         $isDevDomain = $host === 'localhost' || str_ends_with($host, '.local');
 
         if (! $isDevDomain) {
-            $license = (new MarketplaceLicenseModel())->where('product_slug', $theme->folder)->first();
-            if ($license && (int) ($license->license_valid ?? -1) !== 1) {
-                return false;
+            if ($theme->store_product_id) {
+                $license = (new MarketplaceLicenseModel())->where('store_product_id', $theme->store_product_id)->first();
+                if ($license && (int) ($license->license_valid ?? -1) !== 1) {
+                    return false;
+                }
             }
         }
 

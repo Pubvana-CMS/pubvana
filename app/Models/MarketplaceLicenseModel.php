@@ -13,7 +13,7 @@ class MarketplaceLicenseModel extends Model
 
     protected $allowedFields = [
         'license_key',
-        'product_slug',
+        'store_product_id',
         'product_name',
         'item_type',
         'registered_domain',

@@ -15,6 +15,10 @@ abstract class BaseAdminController extends BaseController
     ) {
         parent::initController($request, $response, $logger);
 
+        // Prevent server-level caching (LiteSpeed, Varnish, etc.) on admin pages
+        $this->response->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+        $this->response->setHeader('X-LiteSpeed-Cache-Control', 'no-cache');
+
         if (! auth()->loggedIn() || ! auth()->user()->can('admin.access')) {
             redirect()->to('/login')->with('error', lang('Admin.adminLoginRequired'))->send();
             exit;

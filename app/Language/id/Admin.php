@@ -760,7 +760,7 @@ return [
     'updatesExtCapped'          => 'Pembaruan tersedia: {0} (aman untuk ekstensi)',
     'updatesNewerAvailable'     => 'Pubvana {0} juga tersedia — perbarui ekstensi di bawah ini untuk membukanya.',
 
-    // Extension Updates
+    // Addon Updates
     'updatesExtTitle'               => 'Pengaya',
     'updatesExtCheckAll'            => 'Periksa Semua',
     'updatesExtUpdateAll'           => 'Perbarui Semua',
@@ -773,6 +773,7 @@ return [
     'updatesExtColAutoUpdate'       => 'Pembaruan Otomatis',
     'updatesExtColStatus'           => 'Status',
     'updatesExtColActions'          => 'Tindakan',
+    'updatesExtBundled'             => 'Core Bundled',
     'updatesExtNoSource'            => 'Tidak ada sumber pembaruan',
     'updatesExtFailed'              => 'Gagal',
     'updatesExtUpdatedAt'           => 'Diperbarui {0}',
@@ -789,7 +790,7 @@ return [
     'updatesConfirmSafe'            => 'File <code>.env</code>, <code>App.php</code>, dan <code>Database.php</code> Anda tidak akan pernah ditimpa.',
     'updatesConfirmBtn'             => 'Perbarui Sekarang',
 
-    // Extension Update All Modal
+    // Addon Update All Modal
     'updatesExtAllTitle'            => 'Perbarui Semua Ekstensi',
     'updatesExtAllBody'             => 'Ini akan memperbarui semua ekstensi yang memiliki pembaruan tertunda.',
     'updatesExtAllNote'             => 'Ekstensi dengan pembaruan otomatis dinonaktifkan juga akan diperbarui.',

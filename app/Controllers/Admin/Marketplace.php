@@ -33,7 +33,9 @@ class Marketplace extends BaseAdminController
                 ->get()->getResult();
             foreach ($rows as $r) {
                 if (! empty($r->latest_version) && version_compare($r->latest_version, $r->version ?? '0.0.0', '>')) {
-                    $pendingUpdates[$r->folder] = $r->latest_version;
+                    if ($r->store_product_id) {
+                        $pendingUpdates[$r->store_product_id] = $r->latest_version;
+                    }
                 }
             }
         }
@@ -82,15 +84,16 @@ class Marketplace extends BaseAdminController
             return redirect()->to('/admin/marketplace')->with('error', lang('Admin.permissionDenied'));
         }
 
-        $url    = $this->request->getPost('download_url');
-        $type   = $this->request->getPost('item_type') ?? $this->request->getPost('type');
-        $folder = $this->request->getPost('slug') ?? $this->request->getPost('folder');
+        $url            = $this->request->getPost('download_url');
+        $type           = $this->request->getPost('item_type') ?? $this->request->getPost('type');
+        $folder         = $this->request->getPost('slug') ?? $this->request->getPost('folder');
+        $storeProductId = (int) ($this->request->getPost('store_product_id') ?? 0);
 
         if (! $url || ! in_array($type, ['theme', 'widget', 'plugin'], true) || ! $folder) {
             return redirect()->to('/admin/marketplace')->with('error', lang('Admin.marketplaceInvalidRequest'));
         }
 
-        $ok = $this->service->installFree($url, $type, $folder);
+        $ok = $this->service->installFree($url, $type, $folder, $storeProductId);
         if ($ok) {
             ActivityLogger::log('marketplace.installed', 'marketplace', null, 'Installed ' . $type . ': ' . $folder);
             return redirect()->to('/admin/marketplace')->with('success', lang('Admin.marketplaceInstallSuccess', [$folder]));
@@ -108,18 +111,18 @@ class Marketplace extends BaseAdminController
             return redirect()->to('/admin/marketplace')->with('error', lang('Admin.permissionDenied'));
         }
 
-        $licenseKey = trim($this->request->getPost('license_key') ?? '');
-        $slug       = trim($this->request->getPost('slug') ?? '');
-        $itemType   = trim($this->request->getPost('item_type') ?? '');
+        $licenseKey     = trim($this->request->getPost('license_key') ?? '');
+        $storeProductId = (int) ($this->request->getPost('store_product_id') ?? 0);
+        $itemType       = trim($this->request->getPost('item_type') ?? '');
 
-        if (! $licenseKey || ! $slug || ! $itemType) {
+        if (! $licenseKey || ! $storeProductId || ! $itemType) {
             return redirect()->to('/admin/marketplace')->with('error', lang('Admin.marketplaceInvalidRequest'));
         }
 
-        $ok = $this->service->installLicensed($licenseKey, $slug, $itemType);
+        $ok = $this->service->installLicensed($licenseKey, $storeProductId, $itemType);
         if ($ok) {
-            ActivityLogger::log('marketplace.installed', 'marketplace', null, 'Installed licensed ' . $itemType . ': ' . $slug);
-            return redirect()->to('/admin/marketplace')->with('success', lang('Admin.marketplaceInstallSuccess', [$slug]));
+            ActivityLogger::log('marketplace.installed', 'marketplace', null, 'Installed licensed ' . $itemType . ': store ID ' . $storeProductId);
+            return redirect()->to('/admin/marketplace')->with('success', lang('Admin.marketplaceInstallSuccess', [$itemType]));
         }
 
         return redirect()->to('/admin/marketplace')->with('error', lang('Admin.marketplaceInstallFail'));

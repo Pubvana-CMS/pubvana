@@ -757,10 +757,10 @@ return [
     'updatesAvailable'          => 'Actualización disponible: {0}',
     'updatesCheckBtn'           => 'Buscar actualizaciones',
     'updatesCacheCleared'       => 'Caché de actualizaciones borrado - verificando de nuevo.',
-    'updatesExtCapped'          => 'Actualización disponible: {0} (segura para extensiones)',
-    'updatesNewerAvailable'     => 'Pubvana {0} también está disponible — actualice las extensiones listadas abajo para desbloquearla.',
+    'updatesExtCapped'          => 'Actualización disponible: {0} (segura para addons)',
+    'updatesNewerAvailable'     => 'Pubvana {0} también está disponible - actualice los addons listados abajo para desbloquearla.',
 
-    // Extension Updates
+    // Addon Updates
     'updatesExtTitle'               => 'Complementos',
     'updatesExtCheckAll'            => 'Verificar todo',
     'updatesExtUpdateAll'           => 'Actualizar todo',
@@ -773,6 +773,7 @@ return [
     'updatesExtColAutoUpdate'       => 'Auto-actualización',
     'updatesExtColStatus'           => 'Estado',
     'updatesExtColActions'          => 'Acciones',
+    'updatesExtBundled'             => 'Core Bundled',
     'updatesExtNoSource'            => 'Sin fuente de actualización',
     'updatesExtFailed'              => 'Falló',
     'updatesExtUpdatedAt'           => 'Actualizado {0}',
@@ -789,10 +790,10 @@ return [
     'updatesConfirmSafe'            => 'Sus archivos <code>.env</code>, <code>App.php</code> y <code>Database.php</code> nunca se sobrescriben.',
     'updatesConfirmBtn'             => 'Actualizar ahora',
 
-    // Extension Update All Modal
-    'updatesExtAllTitle'            => 'Actualizar todas las extensiones',
-    'updatesExtAllBody'             => 'Esto actualizará todas las extensiones con actualizaciones pendientes.',
-    'updatesExtAllNote'             => 'Las extensiones con auto-actualización desactivada también se actualizarán.',
+    // Addon Update All Modal
+    'updatesExtAllTitle'            => 'Actualizar todos los addons',
+    'updatesExtAllBody'             => 'Esto actualizará todos los addons con actualizaciones pendientes.',
+    'updatesExtAllNote'             => 'Los addons con auto-actualización desactivada también se actualizarán.',
     'updatesExtAllBtn'              => 'Actualizar todo',
 
     'updatesExtBadge'               => 'Actualización: v{0}',

@@ -84,7 +84,7 @@ class MarketplaceService
         return $categories;
     }
 
-    public function installFree(string $downloadUrl, string $type, string $folder): bool
+    public function installFree(string $downloadUrl, string $type, string $folder, int $storeProductId = 0): bool
     {
         // Only allow downloads from pubvana.net
         $parsed = parse_url($downloadUrl);
@@ -144,21 +144,26 @@ class MarketplaceService
             service('theme')->publishAssets($folder);
         }
 
-        $this->registerInstalled($type, $folder);
-
         // Auto-discover new plugin so it appears in the plugins table
         if ($type === 'plugin') {
             \App\Services\PluginManager::instance()->discover();
         }
 
+        $this->registerInstalled($type, $folder, $storeProductId);
+
         return true;
     }
 
-    protected function registerInstalled(string $type, string $folder): void
+    protected function registerInstalled(string $type, string $folder, int $storeProductId = 0): void
     {
         if ($type === 'plugin') {
-            // Plugins are managed via the plugins table, not themes/widgets.
-            // PluginManager::discover() handles the DB upsert.
+            // PluginManager::discover() handles the DB upsert for plugins.
+            // Just update store_product_id if we have one.
+            if ($storeProductId) {
+                db_connect()->table('plugins')->where('folder', $folder)->update([
+                    'store_product_id' => $storeProductId,
+                ]);
+            }
             return;
         }
 
@@ -172,16 +177,24 @@ class MarketplaceService
 
         $existing = $db->table($table)->where('folder', $folder)->get()->getRowObject();
         if ($existing) {
-            $db->table($table)->where('folder', $folder)->update(['version' => $info['version'] ?? null, 'updated_at' => $now]);
+            $update = ['version' => $info['version'] ?? null, 'updated_at' => $now];
+            if ($storeProductId) {
+                $update['store_product_id'] = $storeProductId;
+            }
+            $db->table($table)->where('folder', $folder)->update($update);
         } else {
-            $db->table($table)->insert([
+            $insert = [
                 'name'       => $info['name'] ?? $folder,
                 'folder'     => $folder,
                 'version'    => $info['version'] ?? null,
                 'is_active'  => 0,
                 'created_at' => $now,
                 'updated_at' => $now,
-            ]);
+            ];
+            if ($storeProductId) {
+                $insert['store_product_id'] = $storeProductId;
+            }
+            $db->table($table)->insert($insert);
         }
     }
 
@@ -189,7 +202,7 @@ class MarketplaceService
      * Validate a license key via the DigitalStore API, install the item,
      * and persist the license to the marketplace_licenses table.
      */
-    public function installLicensed(string $licenseKey, string $slug, string $type): bool
+    public function installLicensed(string $licenseKey, int $storeProductId, string $type): bool
     {
         $client = \Config\Services::curlrequest(['timeout' => 10]);
 
@@ -198,7 +211,7 @@ class MarketplaceService
                 'json' => [
                     'license_key' => $licenseKey,
                     'domain'      => base_url(),
-                    'item_slug'   => $slug,
+                    'product_id'  => $storeProductId,
                 ],
                 'http_errors' => false,
             ]);
@@ -218,31 +231,38 @@ class MarketplaceService
                 return false;
             }
 
-            $installed = $this->installFree($downloadUrl, $type, $slug);
-            if (! $installed) {
-                return false;
-            }
-
-            // Look up the product name from the cached catalog
-            $productName = $slug;
+            // Look up the folder (slug) and product name from the cached catalog
+            $folder      = null;
+            $productName = null;
             foreach ($this->fetchAll() as $cat) {
                 foreach ($cat->products ?? [] as $p) {
-                    if (($p->slug ?? '') === $slug) {
-                        $productName = $p->name ?? $slug;
+                    if ((int) ($p->id ?? 0) === $storeProductId) {
+                        $folder      = $p->slug;
+                        $productName = $p->name ?? $p->slug;
                         break 2;
                     }
                 }
             }
 
+            if (! $folder) {
+                log_message('warning', 'MarketplaceService::installLicensed: could not determine folder for product ID ' . $storeProductId);
+                return false;
+            }
+
+            $installed = $this->installFree($downloadUrl, $type, $folder, $storeProductId);
+            if (! $installed) {
+                return false;
+            }
+
             // Get installed version from local info file
-            $version = $this->getInstalledVersion($type, $slug);
+            $version = $this->getInstalledVersion($type, $folder);
 
             // Upsert into marketplace_licenses
             $licenseModel = new MarketplaceLicenseModel();
             $existing = $licenseModel->where('license_key', $licenseKey)->first();
 
             $licenseData = [
-                'product_slug'         => $slug,
+                'store_product_id'     => $storeProductId,
                 'product_name'         => $productName,
                 'item_type'            => $type,
                 'license_valid'        => 1,
@@ -314,13 +334,13 @@ class MarketplaceService
 
         foreach ($rows as $item) {
             if (! $force && $item->license_last_checked !== null && $item->license_last_checked > $cutoff) {
-                $results[] = ['slug' => $item->product_slug, 'status' => 'skipped'];
+                $results[] = ['store_product_id' => $item->store_product_id, 'status' => 'skipped'];
                 continue;
             }
 
             try {
                 $url = PUBVANA_DSTORE_API . 'license/check?'
-                    . http_build_query(['key' => $item->license_key, 'slug' => $item->product_slug]);
+                    . http_build_query(['key' => $item->license_key, 'product_id' => $item->store_product_id]);
 
                 $response = $client->get($url, ['http_errors' => false]);
                 $status   = $response->getStatusCode();
@@ -352,16 +372,16 @@ class MarketplaceService
                         $this->enforceLicenseInvalid($item);
                     }
 
-                    $results[] = ['slug' => $item->product_slug, 'status' => $valid ? 'valid' : 'invalid'];
+                    $results[] = ['store_product_id' => $item->store_product_id, 'status' => $valid ? 'valid' : 'invalid'];
                 } else {
                     $licenseModel->update($item->id, [
                         'license_last_checked' => date('Y-m-d H:i:s'),
                     ]);
-                    $results[] = ['slug' => $item->product_slug, 'status' => 'unreachable'];
+                    $results[] = ['store_product_id' => $item->store_product_id, 'status' => 'unreachable'];
                 }
             } catch (\Throwable $e) {
-                log_message('warning', 'MarketplaceService::revalidateLicenses unreachable for ' . $item->product_slug . ': ' . $e->getMessage());
-                $results[] = ['slug' => $item->product_slug, 'status' => 'unreachable'];
+                log_message('warning', 'MarketplaceService::revalidateLicenses unreachable for product ID ' . $item->store_product_id . ': ' . $e->getMessage());
+                $results[] = ['store_product_id' => $item->store_product_id, 'status' => 'unreachable'];
             }
         }
 
@@ -370,27 +390,27 @@ class MarketplaceService
 
     protected function enforceLicenseInvalid(object $licenseRow): void
     {
-        $db   = db_connect();
-        $slug = $licenseRow->product_slug;
-        $type = $licenseRow->item_type;
+        $db        = db_connect();
+        $productId = $licenseRow->store_product_id;
+        $type      = $licenseRow->item_type;
 
         if ($type === 'theme') {
             $theme = $db->table('themes')
-                ->where('folder', $slug)
+                ->where('store_product_id', $productId)
                 ->where('is_active', 1)
                 ->get()->getRowObject();
 
             if ($theme) {
                 $db->table('themes')->where('id', $theme->id)->update(['is_active' => 0]);
                 $db->table('themes')->where('folder', 'default')->update(['is_active' => 1]);
-                log_message('notice', "MarketplaceService: deactivated theme '{$slug}' — invalid license. Fell back to default.");
+                log_message('notice', "MarketplaceService: deactivated theme (product ID {$productId}) - invalid license. Fell back to default.");
             }
         } elseif ($type === 'plugin') {
             $db->table('plugins')
-                ->where('folder', $slug)
+                ->where('store_product_id', $productId)
                 ->where('is_active', 1)
                 ->update(['is_active' => 0]);
-            log_message('notice', "MarketplaceService: deactivated plugin '{$slug}' — invalid license.");
+            log_message('notice', "MarketplaceService: deactivated plugin (product ID {$productId}) - invalid license.");
         }
     }
 
@@ -399,9 +419,9 @@ class MarketplaceService
         return (new MarketplaceLicenseModel())->where('license_valid', 0)->findAll();
     }
 
-    public function getLicenseBySlug(string $slug): ?object
+    public function getLicenseByProductId(int $storeProductId): ?object
     {
-        return (new MarketplaceLicenseModel())->where('product_slug', $slug)->first();
+        return (new MarketplaceLicenseModel())->where('store_product_id', $storeProductId)->first();
     }
 
     public function getAllLicenses(): array
@@ -425,7 +445,7 @@ class MarketplaceService
 
         try {
             $url = PUBVANA_DSTORE_API . 'license/check?'
-                . http_build_query(['key' => $item->license_key, 'slug' => $item->product_slug]);
+                . http_build_query(['key' => $item->license_key, 'product_id' => $item->store_product_id]);
 
             $response = $client->get($url, ['http_errors' => false]);
             $body     = json_decode($response->getBody(), true);

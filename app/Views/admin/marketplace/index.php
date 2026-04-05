@@ -77,12 +77,12 @@
                             <?php if (! empty($item->installed_version)): ?>
                                 <span class="badge badge-success"><?= lang('Admin.marketplaceInstalled') ?></span>
                             <?php endif; ?>
-                            <?php if (isset($pending_updates[$item->slug])): ?>
+                            <?php if (isset($pending_updates[$item->id ?? ''])): ?>
                                 <span class="badge badge-info">
-                                    <?= lang('Admin.updatesExtBadge', [esc($pending_updates[$item->slug])]) ?>
+                                    <?= lang('Admin.updatesExtBadge', [esc($pending_updates[$item->id ?? ''])]) ?>
                                 </span>
                             <?php endif; ?>
-                            <?php if (isset($pending_updates[$item->slug])): ?>
+                            <?php if (isset($pending_updates[$item->id ?? ''])): ?>
                                 <a href="<?= base_url('admin/updates') ?>#ext-row-<?= esc($item->item_type ?? $item->type ?? 'plugin') ?>-<?= esc($item->slug) ?>"
                                    class="btn btn-xs btn-outline-info ml-1">
                                     <i class="fas fa-arrow-up-right-from-square fa-xs"></i> <?= lang('Admin.updatesExtGoToUpdates') ?>
@@ -106,6 +106,7 @@
                                     <input type="hidden" name="slug" value="<?= esc($item->slug) ?>">
                                     <input type="hidden" name="item_type" value="<?= esc($itemType) ?>">
                                     <input type="hidden" name="download_url" value="<?= esc($item->download_url ?? '') ?>">
+                                    <input type="hidden" name="store_product_id" value="<?= esc($item->id) ?>">
                                     <button class="btn btn-sm btn-primary"><?= lang('Admin.marketplaceInstall') ?></button>
                                 </form>
                                 <?php else: ?>
@@ -126,6 +127,7 @@
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="slug" value="<?= esc($item->slug) ?>">
                                 <input type="hidden" name="item_type" value="<?= esc($itemType) ?>">
+                                <input type="hidden" name="store_product_id" value="<?= esc($item->id) ?>">
                                 <div class="input-group">
                                     <input type="text" name="license_key" class="form-control form-control-sm"
                                            placeholder="<?= lang('Admin.licenseKeyPlaceholder') ?>" required>

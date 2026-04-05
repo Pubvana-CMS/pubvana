@@ -760,7 +760,7 @@ return [
     'updatesExtCapped'          => 'Atualização disponível: {0} (segura para extensões)',
     'updatesNewerAvailable'     => 'Pubvana {0} também está disponível — atualize as extensões listadas abaixo para desbloqueá-la.',
 
-    // Extension Updates
+    // Addon Updates
     'updatesExtTitle'               => 'Complementos',
     'updatesExtCheckAll'            => 'Verificar tudo',
     'updatesExtUpdateAll'           => 'Atualizar tudo',
@@ -773,6 +773,7 @@ return [
     'updatesExtColAutoUpdate'       => 'Atualização automática',
     'updatesExtColStatus'           => 'Status',
     'updatesExtColActions'          => 'Ações',
+    'updatesExtBundled'             => 'Core Bundled',
     'updatesExtNoSource'            => 'Sem fonte de atualização',
     'updatesExtFailed'              => 'Falhou',
     'updatesExtUpdatedAt'           => 'Atualizado {0}',
@@ -789,7 +790,7 @@ return [
     'updatesConfirmSafe'            => 'Seus arquivos <code>.env</code>, <code>App.php</code> e <code>Database.php</code> nunca são sobrescritos.',
     'updatesConfirmBtn'             => 'Atualizar agora',
 
-    // Extension Update All Modal
+    // Addon Update All Modal
     'updatesExtAllTitle'            => 'Atualizar todas as extensões',
     'updatesExtAllBody'             => 'Isso atualizará todas as extensões com atualizações pendentes.',
     'updatesExtAllNote'             => 'Extensões com atualização automática desativada também serão atualizadas.',

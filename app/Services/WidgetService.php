@@ -68,9 +68,12 @@ class WidgetService
                 ]);
                 $hasNew = true;
 
-                $license = (new MarketplaceLicenseModel())->where('product_slug', $folder)->first();
-                if ($license && (int) ($license->license_valid ?? -1) !== 1) {
-                    $db->table('widgets')->where('folder', $folder)->update(['is_active' => 0]);
+                $newRow = $db->table('widgets')->where('folder', $folder)->get()->getRowObject();
+                if ($newRow && $newRow->store_product_id) {
+                    $license = (new MarketplaceLicenseModel())->where('store_product_id', $newRow->store_product_id)->first();
+                    if ($license && (int) ($license->license_valid ?? -1) !== 1) {
+                        $db->table('widgets')->where('folder', $folder)->update(['is_active' => 0]);
+                    }
                 }
             } else {
                 $newVersion = $info['version'] ?? '1.0.0';
@@ -112,9 +115,12 @@ class WidgetService
 
         $html = '';
         foreach ($instances as $instance) {
-            $license = (new MarketplaceLicenseModel())->where('product_slug', $instance->folder)->first();
-            if ($license && (int) ($license->license_valid ?? -1) !== 1) {
-                continue; // Skip rendering — invalid license
+            $widgetRow = $db->table('widgets')->where('folder', $instance->folder)->get()->getRowObject();
+            if ($widgetRow && $widgetRow->store_product_id) {
+                $license = (new MarketplaceLicenseModel())->where('store_product_id', $widgetRow->store_product_id)->first();
+                if ($license && (int) ($license->license_valid ?? -1) !== 1) {
+                    continue; // Skip rendering - invalid license
+                }
             }
             $html .= $this->renderWidget($instance->folder, $instance->options_json);
         }

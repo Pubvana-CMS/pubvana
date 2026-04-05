@@ -793,10 +793,10 @@ return [
     'updatesReleaseNotes'       => 'Release Notes',
     'updatesHowToApply'         => 'How to Apply an Update',
     'updatesCacheCleared'       => 'Update cache cleared - re-checking now.',
-    'updatesExtCapped'          => 'Update available: {0} (extension-safe)',
-    'updatesNewerAvailable'     => 'Pubvana {0} is also available — update the extensions listed below to unlock it.',
+    'updatesExtCapped'          => 'Update available: {0} (addon-safe)',
+    'updatesNewerAvailable'     => 'Pubvana {0} is also available - update the addons listed below to unlock it.',
 
-    // Extension Updates
+    // Addon Updates
     'updatesExtTitle'               => 'Addons',
     'updatesExtCheckAll'            => 'Check All',
     'updatesExtUpdateAll'           => 'Update All',
@@ -809,6 +809,7 @@ return [
     'updatesExtColAutoUpdate'       => 'Auto-Update',
     'updatesExtColStatus'           => 'Status',
     'updatesExtColActions'          => 'Actions',
+    'updatesExtBundled'             => 'Core Bundled',
     'updatesExtNoSource'            => 'No update source',
     'updatesExtFailed'              => 'Failed',
     'updatesExtUpdatedAt'           => 'Updated {0}',
@@ -825,10 +826,10 @@ return [
     'updatesConfirmSafe'            => 'Your <code>.env</code>, <code>App.php</code>, and <code>Database.php</code> are never overwritten.',
     'updatesConfirmBtn'             => 'Update Now',
 
-    // Extension Update All Modal
-    'updatesExtAllTitle'            => 'Update All Extensions',
-    'updatesExtAllBody'             => 'This will update all extensions that have pending updates.',
-    'updatesExtAllNote'             => 'Extensions with auto-update disabled will also be updated.',
+    // Addon Update All Modal
+    'updatesExtAllTitle'            => 'Update All Addons',
+    'updatesExtAllBody'             => 'This will update all addons that have pending updates.',
+    'updatesExtAllNote'             => 'Addons with auto-update disabled will also be updated.',
     'updatesExtAllBtn'              => 'Update All',
 
     'updatesExtBadge'               => 'Update: v{0}',

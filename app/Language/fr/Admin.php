@@ -757,11 +757,11 @@ return [
     'updatesAvailable'          => 'Mise à jour disponible : {0}',
     'updatesCheckBtn'           => 'Vérifier les mises à jour',
     'updatesCacheCleared'       => 'Cache des mises à jour effacé - nouvelle vérification en cours.',
-    'updatesExtCapped'          => 'Mise à jour disponible : {0} (compatible avec les extensions)',
-    'updatesNewerAvailable'     => 'Pubvana {0} est également disponible — mettez à jour les extensions ci-dessous pour y accéder.',
+    'updatesExtCapped'          => 'Mise à jour disponible : {0} (compatible avec les addons)',
+    'updatesNewerAvailable'     => 'Pubvana {0} est aussi disponible - mettez à jour les addons ci-dessous pour y accéder.',
 
-    // Extension Updates
-    'updatesExtTitle'               => 'Extensions',
+    // Addon Updates
+    'updatesExtTitle'               => 'Addons',
     'updatesExtCheckAll'            => 'Tout vérifier',
     'updatesExtUpdateAll'           => 'Tout mettre à jour',
     'updatesExtCheckAllType'        => 'Vérifier tous les {0}',
@@ -773,6 +773,7 @@ return [
     'updatesExtColAutoUpdate'       => 'Mise à jour auto',
     'updatesExtColStatus'           => 'Statut',
     'updatesExtColActions'          => 'Actions',
+    'updatesExtBundled'             => 'Core Bundled',
     'updatesExtNoSource'            => 'Aucune source de mise à jour',
     'updatesExtFailed'              => 'Échoué',
     'updatesExtUpdatedAt'           => 'Mis à jour {0}',
@@ -789,10 +790,10 @@ return [
     'updatesConfirmSafe'            => 'Vos fichiers <code>.env</code>, <code>App.php</code> et <code>Database.php</code> ne sont jamais écrasés.',
     'updatesConfirmBtn'             => 'Mettre à jour maintenant',
 
-    // Extension Update All Modal
-    'updatesExtAllTitle'            => 'Mettre à jour toutes les extensions',
-    'updatesExtAllBody'             => 'Cela mettra à jour toutes les extensions ayant des mises à jour en attente.',
-    'updatesExtAllNote'             => 'Les extensions avec la mise à jour automatique désactivée seront également mises à jour.',
+    // Addon Update All Modal
+    'updatesExtAllTitle'            => 'Mettre à jour tous les addons',
+    'updatesExtAllBody'             => 'Cela mettra à jour tous les addons ayant des mises à jour en attente.',
+    'updatesExtAllNote'             => 'Les addons avec la mise à jour automatique désactivée seront aussi mis à jour.',
     'updatesExtAllBtn'              => 'Tout mettre à jour',
 
     'updatesExtBadge'               => 'Mise à jour : v{0}',

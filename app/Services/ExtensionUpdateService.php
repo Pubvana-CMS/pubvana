@@ -39,7 +39,7 @@ class ExtensionUpdateService
             $payload = [
                 'pubvana_version' => APP_VERSION,
                 'extensions'      => array_map(fn($e) => [
-                    'slug'        => $e['slug'],
+                    'product_id'  => $e['product_id'],
                     'type'        => $e['type'],
                     'version'     => $e['version'],
                     'license_key' => $e['license_key'],
@@ -51,26 +51,36 @@ class ExtensionUpdateService
                 continue;
             }
 
+            // Build product_id -> folder and type lookups from the extensions we sent
+            $idToFolder = [];
+            $idToType   = [];
+            foreach ($exts as $e) {
+                $idToFolder[$e['product_id']] = $e['folder'];
+                $idToType[$e['product_id']]   = $e['type'];
+            }
+
             // Merge results
             foreach ($response['updates'] ?? [] as $upd) {
                 $merged['updates'][] = $upd;
             }
-            foreach ($response['no_update'] ?? [] as $slug) {
-                $merged['no_update'][] = $slug;
+            foreach ($response['no_update'] ?? [] as $noId) {
+                $merged['no_update'][] = $noId;
             }
             foreach ($response['incompatible'] ?? [] as $inc) {
                 $merged['incompatible'][] = $inc;
             }
-            foreach ((array) ($response['errors'] ?? []) as $slug => $msg) {
-                $merged['errors'][$slug] = $msg;
+            foreach ((array) ($response['errors'] ?? []) as $pid => $msg) {
+                $merged['errors'][$pid] = $msg;
             }
 
             // Write update info back to the respective tables
             foreach ($response['updates'] ?? [] as $upd) {
-                $table = $this->tableForType($upd['type'] ?? '');
-                if (! $table) continue;
+                $pid    = $upd['product_id'] ?? 0;
+                $folder = $idToFolder[$pid] ?? null;
+                $table  = $this->tableForType($upd['type'] ?? '');
+                if (! $table || ! $folder) continue;
 
-                $db->table($table)->where('folder', $upd['slug'])->update([
+                $db->table($table)->where('folder', $folder)->update([
                     'latest_version'    => $upd['latest_version'],
                     'changelog'         => $upd['changelog'] ?? null,
                     'last_update_check' => $now,
@@ -78,28 +88,26 @@ class ExtensionUpdateService
             }
 
             // Clear latest_version for items with no update
-            foreach ($response['no_update'] ?? [] as $slug) {
-                // Find which ext this belongs to
-                foreach ($exts as $e) {
-                    if ($e['slug'] === $slug) {
-                        $table = $this->tableForType($e['type']);
-                        if ($table) {
-                            $db->table($table)->where('folder', $slug)->update([
-                                'latest_version'    => null,
-                                'changelog'         => null,
-                                'last_update_check' => $now,
-                            ]);
-                        }
-                        break;
-                    }
+            foreach ($response['no_update'] ?? [] as $noId) {
+                $folder = $idToFolder[$noId] ?? null;
+                $type   = $idToType[$noId] ?? null;
+                $table  = $type ? $this->tableForType($type) : null;
+                if ($table && $folder) {
+                    $db->table($table)->where('folder', $folder)->update([
+                        'latest_version'    => null,
+                        'changelog'         => null,
+                        'last_update_check' => $now,
+                    ]);
                 }
             }
 
-            // Mark last_update_check for incompatible and error items too
+            // Mark last_update_check for incompatible items
             foreach ($response['incompatible'] ?? [] as $inc) {
-                $table = $this->tableForType($inc['type'] ?? '');
-                if ($table) {
-                    $db->table($table)->where('folder', $inc['slug'])->update([
+                $pid    = $inc['product_id'] ?? 0;
+                $folder = $idToFolder[$pid] ?? null;
+                $table  = $this->tableForType($inc['type'] ?? '');
+                if ($table && $folder) {
+                    $db->table($table)->where('folder', $folder)->update([
                         'last_update_check' => $now,
                     ]);
                 }
@@ -112,17 +120,30 @@ class ExtensionUpdateService
     /**
      * Check a single addon for updates. Used by the per-row "Check" button.
      */
-    public function checkSingleAddon(string $type, string $slug): array
+    public function checkSingleAddon(string $type, string $folder): array
     {
-        $ext = $this->readExtensionInfo($type, $slug);
+        $db = db_connect();
+        $table = $this->tableForType($type);
+        if (! $table) {
+            return ['error' => 'Invalid type.'];
+        }
+
+        $row = $db->table($table)->where('folder', $folder)->get()->getRowObject();
+        $storeProductId = $row->store_product_id ?? null;
+
+        $ext = $this->readExtensionInfo($type, $folder);
         if (! $ext || empty($ext['update_url'])) {
             return ['error' => 'No update_url configured for this extension.'];
+        }
+
+        if (! $storeProductId) {
+            return ['error' => 'Extension not linked to store.'];
         }
 
         $payload = [
             'pubvana_version' => APP_VERSION,
             'extensions'      => [[
-                'slug'        => $ext['slug'],
+                'product_id'  => (int) $storeProductId,
                 'type'        => $ext['type'],
                 'version'     => $ext['version'],
                 'license_key' => $ext['license_key'],
@@ -134,14 +155,11 @@ class ExtensionUpdateService
             return ['error' => 'Could not reach update server.'];
         }
 
-        $db  = db_connect();
         $now = date('Y-m-d H:i:s');
-        $table = $this->tableForType($type);
 
-        // Write results
         foreach ($response['updates'] ?? [] as $upd) {
-            if ($upd['slug'] === $slug && $table) {
-                $db->table($table)->where('folder', $slug)->update([
+            if (($upd['product_id'] ?? 0) == $storeProductId && $table) {
+                $db->table($table)->where('folder', $folder)->update([
                     'latest_version'    => $upd['latest_version'],
                     'changelog'         => $upd['changelog'] ?? null,
                     'last_update_check' => $now,
@@ -149,9 +167,9 @@ class ExtensionUpdateService
             }
         }
 
-        foreach ($response['no_update'] ?? [] as $noSlug) {
-            if ($noSlug === $slug && $table) {
-                $db->table($table)->where('folder', $slug)->update([
+        foreach ($response['no_update'] ?? [] as $noId) {
+            if ($noId == $storeProductId && $table) {
+                $db->table($table)->where('folder', $folder)->update([
                     'latest_version'    => null,
                     'changelog'         => null,
                     'last_update_check' => $now,
@@ -160,8 +178,8 @@ class ExtensionUpdateService
         }
 
         foreach ($response['incompatible'] ?? [] as $inc) {
-            if (($inc['slug'] ?? '') === $slug && $table) {
-                $db->table($table)->where('folder', $slug)->update([
+            if (($inc['product_id'] ?? 0) == $storeProductId && $table) {
+                $db->table($table)->where('folder', $folder)->update([
                     'last_update_check' => $now,
                 ]);
             }
@@ -174,11 +192,26 @@ class ExtensionUpdateService
      * Update a single addon. Fetches a fresh download_url from the update API,
      * then downloads and installs.
      */
-    public function updateAddon(string $type, string $slug): bool
+    public function updateAddon(string $type, string $folder): bool
     {
-        $ext = $this->readExtensionInfo($type, $slug);
+        $db = db_connect();
+        $table = $this->tableForType($type);
+        if (! $table) {
+            $this->recordFailure($type, $folder, 'Invalid type.');
+            return false;
+        }
+
+        $row = $db->table($table)->where('folder', $folder)->get()->getRowObject();
+        $storeProductId = $row->store_product_id ?? null;
+
+        $ext = $this->readExtensionInfo($type, $folder);
         if (! $ext || empty($ext['update_url'])) {
-            $this->recordFailure($type, $slug, 'No update_url configured.');
+            $this->recordFailure($type, $folder, 'No update_url configured.');
+            return false;
+        }
+
+        if (! $storeProductId) {
+            $this->recordFailure($type, $folder, 'Extension not linked to store.');
             return false;
         }
 
@@ -186,7 +219,7 @@ class ExtensionUpdateService
         $payload = [
             'pubvana_version' => APP_VERSION,
             'extensions'      => [[
-                'slug'        => $ext['slug'],
+                'product_id'  => (int) $storeProductId,
                 'type'        => $ext['type'],
                 'version'     => $ext['version'],
                 'license_key' => $ext['license_key'],
@@ -195,27 +228,26 @@ class ExtensionUpdateService
 
         $response = $this->postJson($ext['update_url'], $payload);
         if ($response === null) {
-            $this->recordFailure($type, $slug, 'Could not reach update server.');
+            $this->recordFailure($type, $folder, 'Could not reach update server.');
             return false;
         }
 
         $downloadUrl = null;
         foreach ($response['updates'] ?? [] as $upd) {
-            if ($upd['slug'] === $slug) {
+            if (($upd['product_id'] ?? 0) == $storeProductId) {
                 $downloadUrl = $upd['download_url'] ?? null;
                 break;
             }
         }
 
         if (! $downloadUrl) {
-            // Check errors
             $error = (array) ($response['errors'] ?? []);
-            $msg = $error[$slug] ?? 'No update available.';
-            $this->recordFailure($type, $slug, $msg);
+            $msg = $error[$storeProductId] ?? 'No update available.';
+            $this->recordFailure($type, $folder, $msg);
             return false;
         }
 
-        return $this->downloadAndInstall($type, $slug, $downloadUrl, $ext['license_key']);
+        return $this->downloadAndInstall($type, $folder, $downloadUrl, $ext['license_key']);
     }
 
     /**
@@ -227,24 +259,24 @@ class ExtensionUpdateService
     {
         $db = db_connect();
 
-        // Build a set of incompatible slugs to skip
-        $incompatibleSlugs = [];
+        // Build a set of incompatible product IDs to skip
+        $incompatibleIds = [];
         foreach ($checkResults['incompatible'] ?? [] as $inc) {
-            $incompatibleSlugs[] = $inc['slug'] ?? '';
+            $incompatibleIds[] = $inc['product_id'] ?? 0;
         }
 
         foreach ($checkResults['updates'] ?? [] as $upd) {
-            $type  = $upd['type'] ?? '';
-            $slug  = $upd['slug'] ?? '';
-            $table = $this->tableForType($type);
+            $type      = $upd['type'] ?? '';
+            $productId = $upd['product_id'] ?? 0;
+            $table     = $this->tableForType($type);
             if (! $table) continue;
 
-            if (in_array($slug, $incompatibleSlugs, true)) {
-                log_message('info', "Addon auto-update skipped: {$type}/{$slug} is incompatible with current Pubvana version.");
+            if (in_array($productId, $incompatibleIds, true)) {
+                log_message('info', "Addon auto-update skipped: {$type} store ID {$productId} is incompatible.");
                 continue;
             }
 
-            $row = $db->table($table)->where('folder', $slug)->get()->getRowObject();
+            $row = $db->table($table)->where('store_product_id', $productId)->get()->getRowObject();
             if (! $row || ! (int) $row->auto_update) {
                 continue;
             }
@@ -253,10 +285,10 @@ class ExtensionUpdateService
             if (! $downloadUrl) continue;
 
             // Look up license key
-            $license = (new MarketplaceLicenseModel())->where('product_slug', $slug)->first();
+            $license = (new MarketplaceLicenseModel())->where('store_product_id', $productId)->first();
             $licenseKey = $license->license_key ?? null;
 
-            $this->downloadAndInstall($type, $slug, $downloadUrl, $licenseKey);
+            $this->downloadAndInstall($type, $row->folder, $downloadUrl, $licenseKey);
         }
     }
 
@@ -274,43 +306,56 @@ class ExtensionUpdateService
 
     /**
      * Gather all installed extensions that have an update_url in their info file.
+     * Only includes extensions linked to the store via store_product_id.
      */
     private function gatherInstalledExtensions(): array
     {
         $extensions = [];
         $db = db_connect();
 
-        $sources = [
-            'theme'  => [THEMES_PATH, 'theme_info.json'],
-            'widget' => [WIDGETS_PATH, 'widget_info.json'],
-            'plugin' => [PLUGINS_PATH, 'plugin_info.json'],
-        ];
-
-        // Pre-load all license keys indexed by product_slug
+        // Pre-load license keys indexed by store_product_id
         $licenses = [];
         $licenseRows = (new MarketplaceLicenseModel())
             ->where('license_key IS NOT NULL')
             ->where('license_key !=', '')
             ->findAll();
         foreach ($licenseRows as $lic) {
-            $licenses[$lic->product_slug] = $lic->license_key;
+            $licenses[$lic->store_product_id] = $lic->license_key;
         }
 
-        foreach ($sources as $type => [$basePath, $infoFile]) {
+        $sources = [
+            'theme'  => [THEMES_PATH, 'theme_info.json', 'themes'],
+            'widget' => [WIDGETS_PATH, 'widget_info.json', 'widgets'],
+            'plugin' => [PLUGINS_PATH, 'plugin_info.json', 'plugins'],
+        ];
+
+        foreach ($sources as $type => [$basePath, $infoFile, $table]) {
             if (! is_dir($basePath)) continue;
 
             foreach (glob($basePath . '*/' . $infoFile) as $file) {
                 $data = json_decode(file_get_contents($file), true);
-                if (! is_array($data) || empty($data['slug']) || empty($data['update_url'])) {
+                if (! is_array($data) || empty($data['update_url'])) {
+                    continue;
+                }
+
+                $folder = basename(dirname($file));
+
+                // Look up store_product_id from DB
+                $row = $db->table($table)->where('folder', $folder)->get()->getRowObject();
+                $storeProductId = $row->store_product_id ?? null;
+
+                // Skip extensions not linked to the store
+                if (! $storeProductId) {
                     continue;
                 }
 
                 $extensions[] = [
-                    'slug'        => $data['slug'],
+                    'product_id'  => (int) $storeProductId,
+                    'folder'      => $folder,
                     'type'        => $type,
                     'version'     => $data['version'] ?? '0.0.0',
                     'update_url'  => $data['update_url'],
-                    'license_key' => $licenses[$data['slug']] ?? null,
+                    'license_key' => $licenses[$storeProductId] ?? null,
                 ];
             }
         }
@@ -319,14 +364,14 @@ class ExtensionUpdateService
     }
 
     /**
-     * Read a single extension's info file and look up its license.
+     * Read a single extension's info file and look up its license via store_product_id.
      */
-    private function readExtensionInfo(string $type, string $slug): ?array
+    private function readExtensionInfo(string $type, string $folder): ?array
     {
         $infoFile = match ($type) {
-            'theme'  => THEMES_PATH . $slug . '/theme_info.json',
-            'widget' => WIDGETS_PATH . $slug . '/widget_info.json',
-            'plugin' => PLUGINS_PATH . $slug . '/plugin_info.json',
+            'theme'  => THEMES_PATH . $folder . '/theme_info.json',
+            'widget' => WIDGETS_PATH . $folder . '/widget_info.json',
+            'plugin' => PLUGINS_PATH . $folder . '/plugin_info.json',
             default  => null,
         };
 
@@ -335,25 +380,35 @@ class ExtensionUpdateService
         }
 
         $data = json_decode(file_get_contents($infoFile), true);
-        if (! is_array($data) || empty($data['slug'])) {
+        if (! is_array($data)) {
             return null;
         }
 
-        $license = (new MarketplaceLicenseModel())->where('product_slug', $slug)->first();
+        // Look up license by store_product_id
+        $table = $this->tableForType($type);
+        $db = db_connect();
+        $row = $db->table($table)->where('folder', $folder)->get()->getRowObject();
+        $storeProductId = $row->store_product_id ?? null;
+
+        $licenseKey = null;
+        if ($storeProductId) {
+            $license = (new MarketplaceLicenseModel())->where('store_product_id', $storeProductId)->first();
+            $licenseKey = $license->license_key ?? null;
+        }
 
         return [
-            'slug'        => $data['slug'],
+            'slug'        => $data['slug'] ?? $folder,
             'type'        => $type,
             'version'     => $data['version'] ?? '0.0.0',
             'update_url'  => $data['update_url'] ?? null,
-            'license_key' => $license->license_key ?? null,
+            'license_key' => $licenseKey,
         ];
     }
 
     /**
      * Download a ZIP from the given URL (via POST) and install it.
      */
-    private function downloadAndInstall(string $type, string $slug, string $downloadUrl, ?string $licenseKey): bool
+    private function downloadAndInstall(string $type, string $folder, string $downloadUrl, ?string $licenseKey): bool
     {
         $table = $this->tableForType($type);
         if (! $table) {
@@ -373,7 +428,7 @@ class ExtensionUpdateService
             if ($response->getStatusCode() !== 200) {
                 $body = json_decode($response->getBody(), true);
                 $error = $body['error'] ?? 'Download failed (HTTP ' . $response->getStatusCode() . ')';
-                $this->recordFailure($type, $slug, $error);
+                $this->recordFailure($type, $folder, $error);
                 return false;
             }
 
@@ -382,13 +437,13 @@ class ExtensionUpdateService
                 : '';
 
             if (stripos($contentType, 'application/zip') === false) {
-                $this->recordFailure($type, $slug, 'Response was not a ZIP file.');
+                $this->recordFailure($type, $folder, 'Response was not a ZIP file.');
                 return false;
             }
 
             // Save to temp and extract
             $tmpDir  = WRITEPATH . 'tmp/';
-            $zipPath = $tmpDir . $slug . '.zip';
+            $zipPath = $tmpDir . $folder . '.zip';
             if (! is_dir($tmpDir)) {
                 mkdir($tmpDir, 0755, true);
             }
@@ -403,7 +458,7 @@ class ExtensionUpdateService
             $archive = new \ZipArchive();
             if ($archive->open($zipPath) !== true) {
                 @unlink($zipPath);
-                $this->recordFailure($type, $slug, 'Failed to open ZIP archive.');
+                $this->recordFailure($type, $folder, 'Failed to open ZIP archive.');
                 return false;
             }
 
@@ -413,7 +468,7 @@ class ExtensionUpdateService
                 if (str_contains($entry, '..') || str_starts_with($entry, '/')) {
                     $archive->close();
                     @unlink($zipPath);
-                    $this->recordFailure($type, $slug, 'ZIP contains unsafe path entries.');
+                    $this->recordFailure($type, $folder, 'ZIP contains unsafe path entries.');
                     return false;
                 }
             }
@@ -424,17 +479,19 @@ class ExtensionUpdateService
 
             // Post-install hooks
             if ($type === 'theme') {
-                service('theme')->publishAssets($slug);
+                service('theme')->publishAssets($folder);
             }
             if ($type === 'plugin') {
                 PluginManager::instance()->discover();
+                $migrate = \Config\Services::migrations();
+                $migrate->setNamespace('Plugins\\' . $folder)->latest();
             }
 
             // Read new version from the freshly extracted info file
             $infoFile = match ($type) {
-                'theme'  => THEMES_PATH . $slug . '/theme_info.json',
-                'widget' => WIDGETS_PATH . $slug . '/widget_info.json',
-                'plugin' => PLUGINS_PATH . $slug . '/plugin_info.json',
+                'theme'  => THEMES_PATH . $folder . '/theme_info.json',
+                'widget' => WIDGETS_PATH . $folder . '/widget_info.json',
+                'plugin' => PLUGINS_PATH . $folder . '/plugin_info.json',
             };
             $newInfo = is_file($infoFile) ? json_decode(file_get_contents($infoFile), true) : [];
             $newVersion = $newInfo['version'] ?? null;
@@ -442,7 +499,7 @@ class ExtensionUpdateService
             // Record success
             $db  = db_connect();
             $now = date('Y-m-d H:i:s');
-            $db->table($table)->where('folder', $slug)->update([
+            $db->table($table)->where('folder', $folder)->update([
                 'version'             => $newVersion,
                 'latest_version'      => null,
                 'changelog'           => null,
@@ -454,17 +511,17 @@ class ExtensionUpdateService
 
             return true;
         } catch (\Throwable $e) {
-            $this->recordFailure($type, $slug, $e->getMessage());
+            $this->recordFailure($type, $folder, $e->getMessage());
             return false;
         }
     }
 
-    private function recordFailure(string $type, string $slug, string $error): void
+    private function recordFailure(string $type, string $folder, string $error): void
     {
         $table = $this->tableForType($type);
         if (! $table) return;
 
-        db_connect()->table($table)->where('folder', $slug)->update([
+        db_connect()->table($table)->where('folder', $folder)->update([
             'last_update_attempt' => 'fail',
             'last_update_error'   => mb_substr($error, 0, 500),
         ]);

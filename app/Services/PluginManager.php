@@ -113,7 +113,13 @@ class PluginManager
         }
 
         $plugin = new $className();
-        $plugin->register();
+
+        try {
+            $plugin->register();
+        } catch (\Throwable $e) {
+            log_message('error', "PluginManager: register() failed for {$folder} — {$e->getMessage()}");
+            return;
+        }
 
         $slug = $plugin->getSlug();
         $this->plugins[$slug]     = $plugin;
@@ -264,7 +270,9 @@ class PluginManager
         }
 
         // License check
-        $license = (new MarketplaceLicenseModel())->where('product_slug', $folder)->first();
+        $license = $plugin->store_product_id
+            ? (new MarketplaceLicenseModel())->where('store_product_id', $plugin->store_product_id)->first()
+            : null;
         if ($license && (int) ($license->license_valid ?? -1) !== 1) {
             return 'invalid_license';
         }

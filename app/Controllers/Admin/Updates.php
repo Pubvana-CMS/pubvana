@@ -79,6 +79,7 @@ class Updates extends BaseAdminController
             $extensionMeta[$t->folder] = [
                 'update_url'  => $info['update_url'] ?? null,
                 'support_url' => $info['support_url'] ?? $info['author_url'] ?? null,
+                'bundled'     => ! empty($info['bundled']),
             ];
         }
         foreach ($widgets as $w) {
@@ -87,6 +88,7 @@ class Updates extends BaseAdminController
             $extensionMeta[$w->folder] = [
                 'update_url'  => $info['update_url'] ?? null,
                 'support_url' => $info['support_url'] ?? $info['author_url'] ?? null,
+                'bundled'     => ! empty($info['bundled']),
             ];
         }
         foreach ($plugins as $p) {
@@ -95,6 +97,7 @@ class Updates extends BaseAdminController
             $extensionMeta[$p->folder] = [
                 'update_url'  => $info['update_url'] ?? null,
                 'support_url' => $info['support_url'] ?? $info['author_url'] ?? null,
+                'bundled'     => ! empty($info['bundled']),
             ];
         }
 
@@ -327,10 +330,19 @@ class Updates extends BaseAdminController
         $checkResults = $service->checkAllAddons();
 
         $results = [];
+        $db = db_connect();
         foreach ($checkResults['updates'] ?? [] as $upd) {
-            $ok = $service->updateAddon($upd['type'], $upd['slug']);
+            $table = match ($upd['type'] ?? '') {
+                'theme' => 'themes', 'widget' => 'widgets', 'plugin' => 'plugins', default => null
+            };
+            if (! $table) continue;
+
+            $row = $db->table($table)->where('store_product_id', $upd['product_id'])->get()->getRowObject();
+            if (! $row) continue;
+
+            $ok = $service->updateAddon($upd['type'], $row->folder);
             $results[] = [
-                'slug'   => $upd['slug'],
+                'folder' => $row->folder,
                 'type'   => $upd['type'],
                 'status' => $ok ? 'success' : 'fail',
             ];

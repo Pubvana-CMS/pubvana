@@ -9,6 +9,8 @@ class Plugins extends BaseAdminController
 {
     public function index()
     {
+        PluginManager::instance()->discover();
+
         $plugins = model(PluginModel::class)->orderBy('folder')->findAll();
 
         return $this->adminView('plugins/index', array_merge(

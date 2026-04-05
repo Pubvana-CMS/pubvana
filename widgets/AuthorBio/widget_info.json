@@ -3,14 +3,14 @@
     "slug": "author_bio",
     "bundled": true,
     "description": "Displays the post author's profile card on single post pages.",
-    "version": "2.0.2",
+    "version": "2.0.3",
     "min_pubvana_version": "2.2.3",
     "max_pubvana_version": "2.2.15",
     "update_url": "https://pubvana.net/api/dstore/v1/update/check",
     "support_url": "https://pubvana.net/contact",
     "author": "Pubvana Team",
     "admin": {
-        "notice": "No configuration needed. This widget automatically displays the current post author's profile. Set up profiles in Admin → Users → Profile tab.",
+        "notice": "No configuration needed. This widget automatically displays the current post author's profile. Set up profiles in Admin \u2192 Users \u2192 Profile tab.",
         "options": {}
     },
     "output": {

@@ -3,7 +3,7 @@
     "slug": "text_block",
     "bundled": true,
     "description": "Displays custom HTML or text content.",
-    "version": "2.0.2",
+    "version": "2.0.3",
     "min_pubvana_version": "2.2.3",
     "max_pubvana_version": "2.2.15",
     "update_url": "https://pubvana.net/api/dstore/v1/update/check",
