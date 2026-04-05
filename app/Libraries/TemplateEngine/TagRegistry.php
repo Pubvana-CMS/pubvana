@@ -41,7 +41,11 @@ class TagRegistry
 
     private function tagBaseUrl(array $args): string
     {
-        return base_url((string) ($args[0] ?? ''));
+        $path = (string) ($args[0] ?? '');
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+        return base_url($path);
     }
 
     private function tagSiteUrl(array $args): string

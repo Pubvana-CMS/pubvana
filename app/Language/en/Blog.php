@@ -154,4 +154,51 @@ return [
     // Language
     'language'          => 'Language',
 
+    // =========================================================================
+    // Account / Profile
+    // =========================================================================
+
+    'profileTitle'            => 'My Profile',
+    'profileBasicInfo'        => 'Basic Information',
+    'profileUsername'          => 'Username',
+    'profileEmail'            => 'Email',
+    'profilePassword'         => 'Password',
+    'profilePasswordConfirm'  => 'Confirm Password',
+    'profilePasswordHelp'     => 'Leave blank to keep current password.',
+    'profileSave'             => 'Save Changes',
+    'profileUpdated'          => 'Profile updated successfully.',
+    'profileUsernameRequired' => 'Username is required.',
+    'profileUsernameTaken'    => 'That username is already taken.',
+    'profileEmailRequired'    => 'Email is required.',
+    'profileEmailTaken'       => 'That email is already in use.',
+    'profilePasswordMismatch' => 'Passwords do not match.',
+    'profilePasswordTooShort' => 'Password must be at least 8 characters.',
+
+    'profileAuthorInfo'       => 'Author Profile',
+    'profileDisplayName'      => 'Display Name',
+    'profileBio'              => 'Bio',
+    'profileAvatar'           => 'Avatar',
+    'profileAvatarChange'     => 'Change Avatar',
+    'profileAvatarUpload'     => 'Upload',
+    'profileWebsite'          => 'Website',
+    'profileTwitter'          => 'Twitter',
+    'profileFacebook'         => 'Facebook',
+    'profileLinkedin'         => 'LinkedIn',
+    'profileAvatarUpdated'    => 'Avatar updated successfully.',
+    'profileAvatarInvalid'    => 'Invalid file upload.',
+    'profileAvatarTypeError'  => 'Only JPEG, PNG, WebP, and GIF images are accepted.',
+    'profileAvatarTooLarge'   => 'Avatar must be 2 MB or smaller.',
+    'profileAvatarNotAllowed' => 'Avatar uploads are available for authors and above.',
+
+    'login'                         => 'Log In',
+    'adminPanel'                    => 'Admin Panel',
+
+    'profileUpdatedRelogin'         => 'Profile updated. Please log in again.',
+    'profileUsernameChangedSubject' => 'Your username has been changed',
+    'profileUsernameChangedBody'    => 'Your username was changed from "{0}" to "{1}". If you did not make this change, please contact the site administrator immediately.',
+    'profileEmailChangedSubject'    => 'Your email address has been changed',
+    'profileEmailChangedBody'       => 'Your email address was changed from "{0}" to "{1}". If you did not make this change, please contact the site administrator immediately.',
+    'profilePasswordChangedSubject' => 'Your password has been changed',
+    'profilePasswordChangedBody'    => 'Your password was recently changed. If you did not make this change, please contact the site administrator immediately.',
+
 ];

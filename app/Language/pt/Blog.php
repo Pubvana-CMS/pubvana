@@ -150,4 +150,51 @@ return [
     // Language
     'language'          => 'Idioma',
 
+    // =========================================================================
+    // Account / Profile
+    // =========================================================================
+
+    'profileTitle'            => 'Meu Perfil',
+    'profileBasicInfo'        => 'Informações Básicas',
+    'profileUsername'          => 'Nome de usuário',
+    'profileEmail'            => 'E-mail',
+    'profilePassword'         => 'Senha',
+    'profilePasswordConfirm'  => 'Confirmar Senha',
+    'profilePasswordHelp'     => 'Deixe em branco para manter a senha atual.',
+    'profileSave'             => 'Salvar Alterações',
+    'profileUpdated'          => 'Perfil atualizado com sucesso.',
+    'profileUsernameRequired' => 'O nome de usuário é obrigatório.',
+    'profileUsernameTaken'    => 'Esse nome de usuário já está em uso.',
+    'profileEmailRequired'    => 'O e-mail é obrigatório.',
+    'profileEmailTaken'       => 'Esse e-mail já está em uso.',
+    'profilePasswordMismatch' => 'As senhas não coincidem.',
+    'profilePasswordTooShort' => 'A senha deve ter pelo menos 8 caracteres.',
+
+    'profileAuthorInfo'       => 'Perfil de Autor',
+    'profileDisplayName'      => 'Nome de Exibição',
+    'profileBio'              => 'Bio',
+    'profileAvatar'           => 'Avatar',
+    'profileAvatarChange'     => 'Alterar Avatar',
+    'profileAvatarUpload'     => 'Enviar',
+    'profileWebsite'          => 'Site',
+    'profileTwitter'          => 'Twitter',
+    'profileFacebook'         => 'Facebook',
+    'profileLinkedin'         => 'LinkedIn',
+    'profileAvatarUpdated'    => 'Avatar atualizado com sucesso.',
+    'profileAvatarInvalid'    => 'Arquivo inválido.',
+    'profileAvatarTypeError'  => 'Somente imagens JPEG, PNG, WebP e GIF são aceitas.',
+    'profileAvatarTooLarge'   => 'O avatar deve ter 2 MB ou menos.',
+    'profileAvatarNotAllowed' => 'O envio de avatares está disponível para autores e acima.',
+
+    'login'                         => 'Entrar',
+    'adminPanel'                    => 'Painel Admin',
+
+    'profileUpdatedRelogin'         => 'Perfil atualizado. Por favor, faça login novamente.',
+    'profileUsernameChangedSubject' => 'Seu nome de usuário foi alterado',
+    'profileUsernameChangedBody'    => 'Seu nome de usuário foi alterado de "{0}" para "{1}". Se você não fez essa alteração, entre em contato com o administrador do site imediatamente.',
+    'profileEmailChangedSubject'    => 'Seu endereço de e-mail foi alterado',
+    'profileEmailChangedBody'       => 'Seu endereço de e-mail foi alterado de "{0}" para "{1}". Se você não fez essa alteração, entre em contato com o administrador do site imediatamente.',
+    'profilePasswordChangedSubject' => 'Sua senha foi alterada',
+    'profilePasswordChangedBody'    => 'Sua senha foi alterada recentemente. Se você não fez essa alteração, entre em contato com o administrador do site imediatamente.',
+
 ];

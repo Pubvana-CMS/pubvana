@@ -83,6 +83,13 @@ class Posts extends BaseAdminController
         $status          = $this->request->getPost('status');
         $shareOnPublish  = $this->request->getPost('share_on_publish') ? 1 : 0;
 
+        $featuredImage = $this->request->getPost('featured_image');
+        $mediaId       = $this->request->getPost('media_id') ?: null;
+        // External URLs don't link to a media record
+        if ($featuredImage && preg_match('#^https?://#i', $featuredImage)) {
+            $mediaId = null;
+        }
+
         $id = $this->postModel->insert([
             'title'            => $this->request->getPost('title'),
             'slug'             => $slug,
@@ -90,7 +97,8 @@ class Posts extends BaseAdminController
             'content_type'     => $this->request->getPost('content_type') ?? 'html',
             'excerpt'          => $this->request->getPost('excerpt'),
             'status'           => $status,
-            'featured_image'   => $this->request->getPost('featured_image'),
+            'featured_image'   => $featuredImage,
+            'media_id'         => $mediaId,
             'author_id'        => auth()->id(),
             'published_at'     => $publishedAt,
             'is_featured'      => $this->request->getPost('is_featured') ? 1 : 0,
@@ -187,13 +195,20 @@ class Posts extends BaseAdminController
             $publishedAt = date('Y-m-d H:i:s');
         }
 
+        $featuredImage = $this->request->getPost('featured_image');
+        $mediaId       = $this->request->getPost('media_id') ?: null;
+        if ($featuredImage && preg_match('#^https?://#i', $featuredImage)) {
+            $mediaId = null;
+        }
+
         $this->postModel->update($id, [
             'title'            => $this->request->getPost('title'),
             'content'          => $this->request->getPost('content'),
             'content_type'     => $this->request->getPost('content_type') ?? 'html',
             'excerpt'          => $this->request->getPost('excerpt'),
             'status'           => $newStatus,
-            'featured_image'   => $this->request->getPost('featured_image'),
+            'featured_image'   => $featuredImage,
+            'media_id'         => $mediaId,
             'published_at'     => $publishedAt,
             'is_featured'      => $this->request->getPost('is_featured') ? 1 : 0,
             'is_premium'       => $this->request->getPost('is_premium') ? 1 : 0,

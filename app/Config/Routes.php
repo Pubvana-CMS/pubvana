@@ -36,6 +36,15 @@ $routes->get('preview/(:segment)',          'Blog::preview/$1');
 $routes->get('go/(:segment)',               'AffiliateRedirect::go/$1');
 
 // ===================================================
+// ACCOUNT (logged-in users — public-facing profile)
+// ===================================================
+$routes->group('accounts', ['filter' => 'session'], function ($routes) {
+    $routes->get('profile',  'Account::profile');
+    $routes->post('profile', 'Account::updateProfile');
+    $routes->post('avatar',  'Account::uploadAvatar');
+});
+
+// ===================================================
 // SHIELD AUTH (login, register, logout, forgot-password, etc.)
 // ===================================================
 service('auth')->routes($routes);
@@ -101,7 +110,9 @@ $routes->group('admin', ['filter' => ['admin_auth', 'totp'], 'namespace' => 'App
 
     // Media
     $routes->get('media',                    'Media::index');
+    $routes->get('media/json',               'Media::json');
     $routes->post('media/upload',            'Media::upload');
+    $routes->post('media/update/(:num)',     'Media::update/$1');
     $routes->post('media/(:num)/delete',     'Media::delete/$1');
 
     // Themes
@@ -270,6 +281,13 @@ $routes->group('{locale}', static function ($routes): void {
     $routes->post('contact',                 'Contact::send');
     $routes->get('preview/(:segment)',       'Blog::preview/$1');
     $routes->get('go/(:segment)',            'AffiliateRedirect::go/$1');
+
+    // Account profile (logged-in users)
+    $routes->group('accounts', ['filter' => 'session'], function ($routes) {
+        $routes->get('profile',  'Account::profile');
+        $routes->post('profile', 'Account::updateProfile');
+        $routes->post('avatar',  'Account::uploadAvatar');
+    });
 
     // Plugin routes inside locale group too
     foreach (\App\Services\PluginManager::instance()->getRouteFiles() as $pluginRoutes) {

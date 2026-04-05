@@ -15,7 +15,7 @@ class MediaService
         'medium'    => [800, 600],
     ];
 
-    public function upload(UploadedFile $file, int $uploadedBy = 0): array
+    public function upload(UploadedFile $file, int $uploadedBy = 0, string $altText = '', string $title = ''): array
     {
         if (! $file->isValid() || $file->hasMoved()) {
             throw new \RuntimeException('Invalid or already-moved upload.');
@@ -82,20 +82,28 @@ class MediaService
 
         @unlink($tmpPath);
 
-        $mediaId = db_connect()->table('media')->insert([
+        $model   = new \App\Models\MediaModel();
+        $mediaId = $model->insert([
             'filename'    => $origName,
             'path'        => $relPath,
             'mime_type'   => $mimeType,
             'size'        => $fileSize,
+            'alt_text'    => $altText,
+            'title'       => $title,
             'uploaded_by' => $uploadedBy,
-            'created_at'  => date('Y-m-d H:i:s'),
-            'updated_at'  => date('Y-m-d H:i:s'),
-        ], true);
+        ]);
+
+        $thumbPath = $this->deriveThumbPath($relPath);
 
         return [
-            'id'   => $mediaId,
-            'path' => $relPath,
-            'url'  => base_url($relPath),
+            'id'        => $mediaId,
+            'filename'  => $origName,
+            'path'      => $relPath,
+            'url'       => base_url($relPath),
+            'mime_type' => $mimeType,
+            'alt_text'  => $altText,
+            'title'     => $title,
+            'thumb_path' => $thumbPath,
         ];
     }
 
@@ -110,8 +118,24 @@ class MediaService
         if (is_file($abs)) {
             @unlink($abs);
         }
+        $thumbPath = $this->deriveThumbPath($media->path);
+        $absThumb  = FCPATH . ltrim($thumbPath, '/');
+        if (is_file($absThumb)) {
+            @unlink($absThumb);
+        }
         $db->table('media')->where('id', $id)->delete();
         return true;
+    }
+
+    /**
+     * Derives the thumbnail path from a full media path by inserting /thumbs/
+     * before the filename. E.g. /uploads/2026/02/file.webp → /uploads/2026/02/thumbs/file.webp
+     */
+    private function deriveThumbPath(string $path): string
+    {
+        $dir      = dirname($path);
+        $filename = basename($path);
+        return $dir . '/thumbs/' . $filename;
     }
 
     private function saveAsWebP(string $src, string $dest, int $quality): void

@@ -33,6 +33,10 @@ class AuthGroups extends ShieldAuthGroups
             'title'       => 'Author',
             'description' => 'Can create and publish their own posts.',
         ],
+        'premiumsubscriber' => [
+            'title'       => 'Premium Subscriber',
+            'description' => 'Premium Subscriber - No admin access',
+        ],
         'subscriber' => [
             'title'       => 'Subscriber',
             'description' => 'Registered user with no admin access.',
@@ -106,8 +110,11 @@ class AuthGroups extends ShieldAuthGroups
             'posts.read.premium',
             'media.upload',
         ],
-        'subscriber' => [
+        'premiumsubscriber' => [
             'posts.read.premium',
+        ],
+        'subscriber' => [
+            '',
         ],
     ];
 }

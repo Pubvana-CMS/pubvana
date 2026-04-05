@@ -292,6 +292,7 @@ class ThemeService
             'social_links'       => $socialLinks,
             'plugin_menu_items'  => $pluginMenuItems,
             'is_logged_in'       => $isLoggedIn,
+            'can_access_admin'   => $isLoggedIn && auth()->user()->can('admin.access'),
             'flash_success'      => $flashSuccess,
             'flash_error'        => $flashError,
             'analytics_id'       => $analyticsId,

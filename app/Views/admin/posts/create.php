@@ -103,7 +103,22 @@
         <div class="card shadow mb-4">
             <div class="card-header"><h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.postFeaturedImage') ?></h6></div>
             <div class="card-body">
-                <input type="text" name="featured_image" class="form-control" placeholder="<?= lang('Admin.postFeaturedImagePlaceholder') ?>" value="<?= esc(old('featured_image')) ?>">
+                <input type="hidden" name="media_id" id="featured_media_id" value="">
+                <div id="featured-image-preview" class="mb-2" style="<?= old('featured_image') ? '' : 'display:none' ?>">
+                    <img id="featured-image-preview-img" src="<?= esc(old('featured_image') ? base_url(old('featured_image')) : '') ?>" class="img-fluid rounded" alt="" style="max-height:180px">
+                </div>
+                <div id="featured-image-empty" class="text-center text-muted border rounded p-3 mb-2" style="<?= old('featured_image') ? 'display:none' : '' ?>">
+                    <i class="fas fa-image fa-2x mb-1"></i><br><small>No image selected</small>
+                </div>
+                <div class="d-flex mb-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="browse-featured-image">
+                        <i class="fas fa-folder-open mr-1"></i>Browse Media
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger ml-1" id="remove-featured-image" style="<?= old('featured_image') ? '' : 'display:none' ?>">
+                        <i class="fas fa-times mr-1"></i>Remove
+                    </button>
+                </div>
+                <input type="text" name="featured_image" id="featured_image_url" class="form-control" placeholder="<?= lang('Admin.postFeaturedImagePlaceholder') ?>" value="<?= esc(old('featured_image')) ?>">
             </div>
         </div>
 
@@ -147,7 +162,7 @@
 </script>
 
 <?php $content = ob_get_clean(); ?>
-<?php $extra_scripts = <<<'HTML'
+<?php ob_start(); ?>
 <link href="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-bs4.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-bs4.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/easymde@2.20.0/dist/easymde.min.js"></script>
@@ -169,13 +184,54 @@ function switchEditor(type) {
         document.getElementById('editor-html').style.display = 'block';
         document.getElementById('editor-md').style.display = 'none';
         if (!summernoteInitialized) {
-            $('#content-html').summernote({ height: 400, toolbar: [
-                ['style', ['bold', 'italic', 'underline', 'clear']],
-                ['font', ['strikethrough']],
-                ['para', ['ul', 'ol', 'paragraph']],
-                ['insert', ['link', 'picture', 'hr']],
-                ['view', ['codeview', 'fullscreen']]
-            ]});
+            var mediaPickerBtn = function(context) {
+                var ui = $.summernote.ui;
+                var button = ui.button({
+                    contents: '<i class="fas fa-image"/>',
+                    tooltip: 'Insert Image',
+                    click: function() {
+                        openMediaPicker(function(media) {
+                            var imgHtml = '<img src="' + media.url + '" alt="' + (media.alt_text || '') + '" title="' + (media.title || '') + '" class="img-fluid">';
+                            $('#content-html').summernote('pasteHTML', imgHtml);
+                        });
+                    }
+                });
+                return button.render();
+            };
+            $('#content-html').summernote({
+                height: 400,
+                toolbar: [
+                    ['style', ['bold', 'italic', 'underline', 'clear']],
+                    ['font', ['strikethrough']],
+                    ['para', ['ul', 'ol', 'paragraph']],
+                    ['insert', ['link', 'mediapicker', 'hr']],
+                    ['view', ['codeview', 'fullscreen']]
+                ],
+                buttons: {
+                    mediapicker: mediaPickerBtn
+                },
+                callbacks: {
+                    onImageUpload: function(files) {
+                        var file = files[0];
+                        var formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+                        $.ajax({
+                            url: '<?= base_url('admin/media/upload') ?>',
+                            type: 'POST',
+                            data: formData,
+                            processData: false,
+                            contentType: false,
+                            success: function(resp) {
+                                if (resp.success) {
+                                    var imgHtml = '<img src="' + resp.url + '" alt="' + (resp.alt_text || '') + '" title="' + (resp.title || '') + '" class="img-fluid">';
+                                    $('#content-html').summernote('pasteHTML', imgHtml);
+                                }
+                            }
+                        });
+                    }
+                }
+            });
             summernoteInitialized = true;
         }
     } else {
@@ -185,7 +241,20 @@ function switchEditor(type) {
         document.getElementById('editor-html').style.display = 'none';
         document.getElementById('editor-md').style.display = 'block';
         if (!easymdeEditor) {
-            easymdeEditor = new EasyMDE({ element: document.getElementById('content-md') });
+            easymdeEditor = new EasyMDE({
+                element: document.getElementById('content-md'),
+                toolbar: ['bold', 'italic', 'heading', '|', 'quote', 'unordered-list', 'ordered-list', '|', 'link', {
+                    name: 'image',
+                    action: function(editor) {
+                        openMediaPicker(function(media) {
+                            var md = '![' + (media.alt_text || media.filename) + '](' + media.url + ')';
+                            editor.codemirror.replaceSelection(md);
+                        });
+                    },
+                    className: 'fa fa-image',
+                    title: 'Insert Image'
+                }, '|', 'preview', 'side-by-side', 'fullscreen']
+            });
         }
     }
 }
@@ -204,8 +273,42 @@ document.addEventListener('DOMContentLoaded', function() {
             $('#content-html').val($('#content-html').summernote('code'));
         }
     });
+
+    // Featured image picker
+    document.getElementById('browse-featured-image').addEventListener('click', function() {
+        openMediaPicker(function(media) {
+            document.getElementById('featured_media_id').value = media.id;
+            document.getElementById('featured_image_url').value = media.path;
+            document.getElementById('featured-image-preview-img').src = media.url;
+            document.getElementById('featured-image-preview').style.display = '';
+            document.getElementById('featured-image-empty').style.display = 'none';
+            document.getElementById('remove-featured-image').style.display = '';
+        });
+    });
+
+    document.getElementById('remove-featured-image').addEventListener('click', function() {
+        document.getElementById('featured_media_id').value = '';
+        document.getElementById('featured_image_url').value = '';
+        document.getElementById('featured-image-preview-img').src = '';
+        document.getElementById('featured-image-preview').style.display = 'none';
+        document.getElementById('featured-image-empty').style.display = '';
+        this.style.display = 'none';
+    });
+
+    document.getElementById('featured_image_url').addEventListener('input', function() {
+        document.getElementById('featured_media_id').value = '';
+        if (this.value) {
+            document.getElementById('featured-image-preview-img').src = this.value;
+            document.getElementById('featured-image-preview').style.display = '';
+            document.getElementById('featured-image-empty').style.display = 'none';
+            document.getElementById('remove-featured-image').style.display = '';
+        } else {
+            document.getElementById('featured-image-preview').style.display = 'none';
+            document.getElementById('featured-image-empty').style.display = '';
+            document.getElementById('remove-featured-image').style.display = 'none';
+        }
+    });
 });
 </script>
-HTML;
-?>
+<?php $extra_scripts = ob_get_clean(); ?>
 <?= view($layout, array_merge(get_defined_vars(), ['content' => $content, 'extra_scripts' => $extra_scripts])) ?>

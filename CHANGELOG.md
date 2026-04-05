@@ -4,6 +4,31 @@ All notable changes to Pubvana CMS, starting from the v2.0.0 rewrite.
 
 ---
 
+## v2.2.7 - 2026-04-04
+
+### Fixed
+- Admin media page: detail panel fields hidden until an image is selected
+- Admin media page: upload and detail cards now styled consistently
+- Admin posts edit/create: heredoc replaced with ob_start — fixes `<?= ?>` tags not processing in inline scripts
+- Media picker modal: infinite click loop on file browse fixed
+- Featured image Browse/Remove buttons stay on one line with `d-flex`
+- Restored missing `Config/Social.php` — fixes post save crash when social sharing checks settings
+
+### Added
+- Public user profile page at `/accounts/profile` — all logged-in users can edit username, email, password
+- Author profile fields (bio, avatar, social links) for author+ roles on profile page
+- Avatar upload for authors at `/accounts/avatar` with image validation and resize
+- Security: username/email/password changes trigger email notification and force re-login
+- Security: email changes deactivate account and require verification via Shield's EmailActivator
+- `premiumsubscriber` auth group — `posts.read.premium` moved off base subscriber
+- Auth icons in all theme navbars: profile (fa-user-pen), admin (fa-user-gear), login (fa-lock-open)
+- `can_access_admin` variable available in all theme views
+- `profile.tpl` view added to all 9 themes
+- `media_id` column migration for posts table (featured image media library link)
+- Profile lang keys added to all 6 languages (en, es, fr, id, pt, sk)
+
+---
+
 ## v2.2.6 - 2026-04-04
 
 ### Fixed

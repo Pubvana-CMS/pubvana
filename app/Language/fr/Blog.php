@@ -150,4 +150,51 @@ return [
     // Language
     'language'          => 'Langue',
 
+    // =========================================================================
+    // Account / Profile
+    // =========================================================================
+
+    'profileTitle'            => 'Mon profil',
+    'profileBasicInfo'        => 'Informations de base',
+    'profileUsername'          => 'Nom d\'utilisateur',
+    'profileEmail'            => 'E-mail',
+    'profilePassword'         => 'Mot de passe',
+    'profilePasswordConfirm'  => 'Confirmer le mot de passe',
+    'profilePasswordHelp'     => 'Laissez vide pour conserver le mot de passe actuel.',
+    'profileSave'             => 'Enregistrer les modifications',
+    'profileUpdated'          => 'Profil mis à jour avec succès.',
+    'profileUsernameRequired' => 'Le nom d\'utilisateur est obligatoire.',
+    'profileUsernameTaken'    => 'Ce nom d\'utilisateur est déjà pris.',
+    'profileEmailRequired'    => 'L\'adresse e-mail est obligatoire.',
+    'profileEmailTaken'       => 'Cette adresse e-mail est déjà utilisée.',
+    'profilePasswordMismatch' => 'Les mots de passe ne correspondent pas.',
+    'profilePasswordTooShort' => 'Le mot de passe doit comporter au moins 8 caractères.',
+
+    'profileAuthorInfo'       => 'Profil d\'auteur',
+    'profileDisplayName'      => 'Nom affiché',
+    'profileBio'              => 'Biographie',
+    'profileAvatar'           => 'Avatar',
+    'profileAvatarChange'     => 'Changer l\'avatar',
+    'profileAvatarUpload'     => 'Téléverser',
+    'profileWebsite'          => 'Site web',
+    'profileTwitter'          => 'Twitter',
+    'profileFacebook'         => 'Facebook',
+    'profileLinkedin'         => 'LinkedIn',
+    'profileAvatarUpdated'    => 'Avatar mis à jour avec succès.',
+    'profileAvatarInvalid'    => 'Fichier invalide.',
+    'profileAvatarTypeError'  => 'Seules les images JPEG, PNG, WebP et GIF sont acceptées.',
+    'profileAvatarTooLarge'   => 'L\'avatar doit peser 2 Mo ou moins.',
+    'profileAvatarNotAllowed' => 'Le téléversement d\'avatars est disponible pour les auteurs et au-delà.',
+
+    'login'                         => 'Se connecter',
+    'adminPanel'                    => 'Panneau d\'administration',
+
+    'profileUpdatedRelogin'         => 'Profil mis à jour. Veuillez vous reconnecter.',
+    'profileUsernameChangedSubject' => 'Votre nom d\'utilisateur a été modifié',
+    'profileUsernameChangedBody'    => 'Votre nom d\'utilisateur a été changé de « {0} » à « {1} ». Si vous n\'êtes pas à l\'origine de ce changement, veuillez contacter immédiatement l\'administrateur du site.',
+    'profileEmailChangedSubject'    => 'Votre adresse e-mail a été modifiée',
+    'profileEmailChangedBody'       => 'Votre adresse e-mail a été changée de « {0} » à « {1} ». Si vous n\'êtes pas à l\'origine de ce changement, veuillez contacter immédiatement l\'administrateur du site.',
+    'profilePasswordChangedSubject' => 'Votre mot de passe a été modifié',
+    'profilePasswordChangedBody'    => 'Votre mot de passe a été modifié récemment. Si vous n\'êtes pas à l\'origine de ce changement, veuillez contacter immédiatement l\'administrateur du site.',
+
 ];

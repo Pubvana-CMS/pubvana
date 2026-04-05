@@ -150,4 +150,51 @@ return [
     // Language
     'language'          => 'Jazyk',
 
+    // =========================================================================
+    // Account / Profile
+    // =========================================================================
+
+    'profileTitle'            => 'Môj profil',
+    'profileBasicInfo'        => 'Základné informácie',
+    'profileUsername'          => 'Používateľské meno',
+    'profileEmail'            => 'E-mail',
+    'profilePassword'         => 'Heslo',
+    'profilePasswordConfirm'  => 'Potvrdiť heslo',
+    'profilePasswordHelp'     => 'Nechajte prázdne pre zachovanie aktuálneho hesla.',
+    'profileSave'             => 'Uložiť zmeny',
+    'profileUpdated'          => 'Profil bol úspešne aktualizovaný.',
+    'profileUsernameRequired' => 'Používateľské meno je povinné.',
+    'profileUsernameTaken'    => 'Toto používateľské meno je už obsadené.',
+    'profileEmailRequired'    => 'E-mail je povinný.',
+    'profileEmailTaken'       => 'Táto e-mailová adresa je už používaná.',
+    'profilePasswordMismatch' => 'Heslá sa nezhodujú.',
+    'profilePasswordTooShort' => 'Heslo musí mať aspoň 8 znakov.',
+
+    'profileAuthorInfo'       => 'Profil autora',
+    'profileDisplayName'      => 'Zobrazované meno',
+    'profileBio'              => 'Životopis',
+    'profileAvatar'           => 'Avatar',
+    'profileAvatarChange'     => 'Zmeniť avatar',
+    'profileAvatarUpload'     => 'Nahrať',
+    'profileWebsite'          => 'Webová stránka',
+    'profileTwitter'          => 'Twitter',
+    'profileFacebook'         => 'Facebook',
+    'profileLinkedin'         => 'LinkedIn',
+    'profileAvatarUpdated'    => 'Avatar bol úspešne aktualizovaný.',
+    'profileAvatarInvalid'    => 'Neplatný súbor.',
+    'profileAvatarTypeError'  => 'Akceptujú sa iba obrázky JPEG, PNG, WebP a GIF.',
+    'profileAvatarTooLarge'   => 'Avatar musí mať veľkosť 2 MB alebo menej.',
+    'profileAvatarNotAllowed' => 'Nahrávanie avatarov je dostupné pre autorov a vyššie.',
+
+    'login'                         => 'Prihlásiť sa',
+    'adminPanel'                    => 'Administrátorský panel',
+
+    'profileUpdatedRelogin'         => 'Profil bol aktualizovaný. Prosím, prihláste sa znova.',
+    'profileUsernameChangedSubject' => 'Vaše používateľské meno bolo zmenené',
+    'profileUsernameChangedBody'    => 'Vaše používateľské meno bolo zmenené z „{0}" na „{1}". Ak ste túto zmenu nevykonali, kontaktujte ihneď správcu stránky.',
+    'profileEmailChangedSubject'    => 'Vaša e-mailová adresa bola zmenená',
+    'profileEmailChangedBody'       => 'Vaša e-mailová adresa bola zmenená z „{0}" na „{1}". Ak ste túto zmenu nevykonali, kontaktujte ihneď správcu stránky.',
+    'profilePasswordChangedSubject' => 'Vaše heslo bolo zmenené',
+    'profilePasswordChangedBody'    => 'Vaše heslo bolo nedávno zmenené. Ak ste túto zmenu nevykonali, kontaktujte ihneď správcu stránky.',
+
 ];

@@ -26,6 +26,7 @@ themes/my_theme/
         tag.tpl                 tag archive
         archive.tpl             date archive
         search.tpl              search results
+        profile.tpl             user account profile (logged-in users)
         partials/
             post-card.tpl       post listing card
             sidebar.tpl         sidebar wrapper
@@ -36,7 +37,7 @@ themes/my_theme/
             _comment.tpl        single comment (recursive for replies)
 ```
 
-All 8 views and 7 partials should be present in a complete theme. Zero PHP files in the theme directory — any theme containing `<?php`, `<?=`, or `<%` will fail validation and cannot be activated.
+All 9 views and 7 partials should be present in a complete theme. Zero PHP files in the theme directory — any theme containing `<?php`, `<?=`, or `<%` will fail validation and cannot be activated.
 
 ---
 
@@ -290,6 +291,15 @@ Includes inherit the parent scope. `with {}` adds or overrides variables. Paths 
         {% for item in primary_nav %}
             <a href="{{ item.url }}" target="{{ item.target }}">{{ item.label }}</a>
         {% endfor %}
+        {# Auth icons — after search bar, right side of navbar #}
+        {% if is_logged_in %}
+            <a href="{% site_url 'accounts/profile' %}" title="{% lang 'Blog.profileTitle' %}"><i class="fas fa-user-pen"></i></a>
+            {% if can_access_admin %}
+            <a href="{% base_url 'admin' %}" title="{% lang 'Blog.adminPanel' %}"><i class="fas fa-user-gear"></i></a>
+            {% endif %}
+        {% else %}
+            <a href="{% site_url 'login' %}" title="{% lang 'Blog.login' %}"><i class="fas fa-lock-open"></i></a>
+        {% endif %}
     </nav>
 
     {% if flash_success %}
@@ -347,6 +357,7 @@ The engine loads the child, collects its block content, loads the parent (layout
 | `social_links` | array of objects | Social links: `.url`, `.icon` (FA class), `.platform` |
 | `plugin_menu_items` | array | Plugin-contributed nav items |
 | `is_logged_in` | bool | Whether a user is authenticated |
+| `can_access_admin` | bool | Whether the logged-in user has `admin.access` permission (false when logged out) |
 | `flash_success` | string or null | Session flash message (success) |
 | `flash_error` | string or null | Session flash message (error) |
 | `analytics_id` | string | Google Analytics tracking ID (empty if not set) |
@@ -444,6 +455,20 @@ Controllers pass only page-specific data. These are merged with common data (Sec
 | `posts` | array of objects | Matching posts, or empty if no query |
 | `pager_links` | string or null | Pre-rendered pagination HTML |
 | `seo` | array | SEO metadata |
+
+### profile.tpl
+
+User account profile page, shown at `/accounts/profile` for logged-in users. All users see basic fields (username, email, password). Authors and above also see the full author profile fields.
+
+| Variable | Type | Description |
+|----------|------|-------------|
+| `user` | object | Shield user object (`user.username`, `user.id`) |
+| `email` | string | Current email address |
+| `profile` | object or null | Author profile (display_name, bio, avatar, website, twitter, facebook, linkedin) — null for non-authors |
+| `is_author` | bool | True if user is author, editor, admin, or superadmin |
+| `seo` | array | SEO metadata |
+
+The avatar upload uses a separate form (POST to `/accounts/avatar` with `enctype="multipart/form-data"`). The profile form POSTs to `/accounts/profile`.
 
 ---
 
@@ -912,7 +937,7 @@ A Bootstrap + Font Awesome 6 theme and a DaisyUI + Bootstrap Icons theme will bo
 
 Available `Blog.*` keys organized by view:
 
-**All views (layout):** `home`, `blog`, `search`, `searchPlaceholder`, `rssFeed`, `sitemap`, `allRightsReserved`, `language`, `previewModeBanner`
+**All views (layout):** `home`, `blog`, `search`, `searchPlaceholder`, `rssFeed`, `sitemap`, `allRightsReserved`, `language`, `previewModeBanner`, `login`, `adminPanel`, `profileTitle`
 
 **home.tpl:** `latestPosts`, `readMore`, `viewAll`, `noPostsYet`
 
@@ -931,6 +956,8 @@ Available `Blog.*` keys organized by view:
 **archive.tpl:** `archiveHeading`, `noPostsInPeriod`
 
 **search.tpl:** `searchResultsHeading`, `searchShowingFor`, `searchNoResults`, `searchPostsPlaceholder`
+
+**profile.tpl:** `profileTitle`, `profileBasicInfo`, `profileUsername`, `profileEmail`, `profilePassword`, `profilePasswordConfirm`, `profilePasswordHelp`, `profileSave`, `profileAuthorInfo`, `profileDisplayName`, `profileBio`, `profileAvatar`, `profileAvatarChange`, `profileWebsite`, `profileTwitter`, `profileFacebook`, `profileLinkedin`
 
 **pagination (partial):** `pageNavLabel`, `prevPage`, `nextPage`
 

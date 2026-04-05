@@ -150,4 +150,51 @@ return [
     // Language
     'language'          => 'Idioma',
 
+    // =========================================================================
+    // Account / Profile
+    // =========================================================================
+
+    'profileTitle'            => 'Mi Perfil',
+    'profileBasicInfo'        => 'Información Básica',
+    'profileUsername'          => 'Nombre de usuario',
+    'profileEmail'            => 'Correo electrónico',
+    'profilePassword'         => 'Contraseña',
+    'profilePasswordConfirm'  => 'Confirmar contraseña',
+    'profilePasswordHelp'     => 'Deja en blanco para mantener la contraseña actual.',
+    'profileSave'             => 'Guardar cambios',
+    'profileUpdated'          => 'Perfil actualizado correctamente.',
+    'profileUsernameRequired' => 'El nombre de usuario es obligatorio.',
+    'profileUsernameTaken'    => 'Ese nombre de usuario ya está en uso.',
+    'profileEmailRequired'    => 'El correo electrónico es obligatorio.',
+    'profileEmailTaken'       => 'Ese correo electrónico ya está en uso.',
+    'profilePasswordMismatch' => 'Las contraseñas no coinciden.',
+    'profilePasswordTooShort' => 'La contraseña debe tener al menos 8 caracteres.',
+
+    'profileAuthorInfo'       => 'Perfil de autor',
+    'profileDisplayName'      => 'Nombre visible',
+    'profileBio'              => 'Biografía',
+    'profileAvatar'           => 'Avatar',
+    'profileAvatarChange'     => 'Cambiar avatar',
+    'profileAvatarUpload'     => 'Subir',
+    'profileWebsite'          => 'Sitio web',
+    'profileTwitter'          => 'Twitter',
+    'profileFacebook'         => 'Facebook',
+    'profileLinkedin'         => 'LinkedIn',
+    'profileAvatarUpdated'    => 'Avatar actualizado correctamente.',
+    'profileAvatarInvalid'    => 'Archivo inválido.',
+    'profileAvatarTypeError'  => 'Solo se aceptan imágenes JPEG, PNG, WebP y GIF.',
+    'profileAvatarTooLarge'   => 'El avatar debe pesar 2 MB o menos.',
+    'profileAvatarNotAllowed' => 'La carga de avatares está disponible para autores y superiores.',
+
+    'login'                         => 'Iniciar sesión',
+    'adminPanel'                    => 'Panel de administración',
+
+    'profileUpdatedRelogin'         => 'Perfil actualizado. Por favor, inicia sesión de nuevo.',
+    'profileUsernameChangedSubject' => 'Tu nombre de usuario ha sido cambiado',
+    'profileUsernameChangedBody'    => 'Tu nombre de usuario fue cambiado de "{0}" a "{1}". Si no realizaste este cambio, comunícate inmediatamente con el administrador del sitio.',
+    'profileEmailChangedSubject'    => 'Tu dirección de correo electrónico ha sido cambiada',
+    'profileEmailChangedBody'       => 'Tu dirección de correo electrónico fue cambiada de "{0}" a "{1}". Si no realizaste este cambio, comunícate inmediatamente con el administrador del sitio.',
+    'profilePasswordChangedSubject' => 'Tu contraseña ha sido cambiada',
+    'profilePasswordChangedBody'    => 'Tu contraseña fue cambiada recientemente. Si no realizaste este cambio, comunícate inmediatamente con el administrador del sitio.',
+
 ];

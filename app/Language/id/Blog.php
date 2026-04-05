@@ -150,4 +150,51 @@ return [
     // Language
     'language'          => 'Bahasa',
 
+    // =========================================================================
+    // Account / Profile
+    // =========================================================================
+
+    'profileTitle'            => 'Profil Saya',
+    'profileBasicInfo'        => 'Informasi Dasar',
+    'profileUsername'          => 'Nama Pengguna',
+    'profileEmail'            => 'Email',
+    'profilePassword'         => 'Kata Sandi',
+    'profilePasswordConfirm'  => 'Konfirmasi Kata Sandi',
+    'profilePasswordHelp'     => 'Biarkan kosong untuk mempertahankan kata sandi saat ini.',
+    'profileSave'             => 'Simpan Perubahan',
+    'profileUpdated'          => 'Profil berhasil diperbarui.',
+    'profileUsernameRequired' => 'Nama pengguna wajib diisi.',
+    'profileUsernameTaken'    => 'Nama pengguna tersebut sudah digunakan.',
+    'profileEmailRequired'    => 'Email wajib diisi.',
+    'profileEmailTaken'       => 'Email tersebut sudah digunakan.',
+    'profilePasswordMismatch' => 'Kata sandi tidak cocok.',
+    'profilePasswordTooShort' => 'Kata sandi harus terdiri dari minimal 8 karakter.',
+
+    'profileAuthorInfo'       => 'Profil Penulis',
+    'profileDisplayName'      => 'Nama Tampilan',
+    'profileBio'              => 'Bio',
+    'profileAvatar'           => 'Avatar',
+    'profileAvatarChange'     => 'Ganti Avatar',
+    'profileAvatarUpload'     => 'Unggah',
+    'profileWebsite'          => 'Situs Web',
+    'profileTwitter'          => 'Twitter',
+    'profileFacebook'         => 'Facebook',
+    'profileLinkedin'         => 'LinkedIn',
+    'profileAvatarUpdated'    => 'Avatar berhasil diperbarui.',
+    'profileAvatarInvalid'    => 'File tidak valid.',
+    'profileAvatarTypeError'  => 'Hanya gambar JPEG, PNG, WebP, dan GIF yang diterima.',
+    'profileAvatarTooLarge'   => 'Avatar harus berukuran 2 MB atau lebih kecil.',
+    'profileAvatarNotAllowed' => 'Pengunggahan avatar tersedia untuk penulis dan di atasnya.',
+
+    'login'                         => 'Masuk',
+    'adminPanel'                    => 'Panel Admin',
+
+    'profileUpdatedRelogin'         => 'Profil diperbarui. Silakan masuk kembali.',
+    'profileUsernameChangedSubject' => 'Nama pengguna Anda telah diubah',
+    'profileUsernameChangedBody'    => 'Nama pengguna Anda diubah dari "{0}" menjadi "{1}". Jika Anda tidak melakukan perubahan ini, segera hubungi administrator situs.',
+    'profileEmailChangedSubject'    => 'Alamat email Anda telah diubah',
+    'profileEmailChangedBody'       => 'Alamat email Anda diubah dari "{0}" menjadi "{1}". Jika Anda tidak melakukan perubahan ini, segera hubungi administrator situs.',
+    'profilePasswordChangedSubject' => 'Kata sandi Anda telah diubah',
+    'profilePasswordChangedBody'    => 'Kata sandi Anda baru-baru ini diubah. Jika Anda tidak melakukan perubahan ini, segera hubungi administrator situs.',
+
 ];

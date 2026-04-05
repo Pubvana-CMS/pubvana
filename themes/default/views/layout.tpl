@@ -80,6 +80,14 @@
                 <input class="form-control form-control-sm me-2" type="search" name="q" placeholder="{% lang 'Blog.searchPlaceholder' %}" aria-label="{% lang 'Blog.search' %}">
                 <button class="btn btn-outline-light btn-sm" type="submit"><i class="fas fa-magnifying-glass"></i></button>
             </form>
+            {% if is_logged_in %}
+            <a href="{% site_url 'accounts/profile' %}" class="btn btn-outline-light btn-sm ms-2" title="{% lang 'Blog.profileTitle' %}"><i class="fas fa-user-pen"></i></a>
+            {% if can_access_admin %}
+            <a href="{% base_url 'admin' %}" class="btn btn-outline-light btn-sm ms-1" title="{% lang 'Blog.adminPanel' %}"><i class="fas fa-user-gear"></i></a>
+            {% endif %}
+            {% else %}
+            <a href="{% site_url 'login' %}" class="btn btn-outline-light btn-sm ms-2" title="{% lang 'Blog.login' %}"><i class="fas fa-lock-open"></i></a>
+            {% endif %}
         </div>
     </div>
 </nav>

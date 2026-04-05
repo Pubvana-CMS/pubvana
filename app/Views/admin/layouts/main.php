@@ -383,6 +383,7 @@
 <script src="<?= admin_theme_url('admin/vendor/bootstrap/js/bootstrap.bundle.min.js') ?>"></script>
 <script src="<?= admin_theme_url('admin/vendor/jquery-easing/jquery.easing.min.js') ?>"></script>
 <script src="<?= admin_theme_url('admin/js/sb-admin-2.min.js') ?>"></script>
+<script src="<?= admin_theme_url('cms/media-picker.js') ?>"></script>
 
 <script>
 $(document).on('click', '.btn-close-notification[data-id]', function() {
@@ -407,6 +408,8 @@ $(document).on('click', '.btn-close-notification[data-id]', function() {
 <?php if (isset($extra_scripts)): ?>
     <?= $extra_scripts ?>
 <?php endif; ?>
+
+<?= view('admin/partials/media_picker_modal') ?>
 
 </body>
 </html>
