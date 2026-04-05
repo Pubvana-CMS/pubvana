@@ -3,15 +3,11 @@
     {
       "version": "2.2.7",
       "breaking_changes": [],
-      "migration_notes": [
-        "Run migrations to add media_id column to posts table"
-      ],
+      "migration_notes": [],
       "min_php_version": "8.2",
       "min_ci_version": "4.7",
       "min_shield_version": "1.2",
-      "notices": [
-        "New premiumsubscriber auth group added — subscribers no longer have posts.read.premium by default; assign premium users to the premiumsubscriber group"
-      ]
+      "notices": []
     },
     {
       "version": "2.2.6",
