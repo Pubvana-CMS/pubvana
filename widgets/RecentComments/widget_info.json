@@ -1,10 +1,11 @@
 {
     "name": "Recent Comments",
     "slug": "recent_comments",
+    "bundled": true,
     "description": "Displays the most recent approved comments.",
-    "version": "2.0.1",
+    "version": "2.0.2",
     "min_pubvana_version": "2.2.3",
-    "max_pubvana_version": "2.2.7",
+    "max_pubvana_version": "2.2.15",
     "update_url": "https://pubvana.net/api/dstore/v1/update/check",
     "support_url": "https://pubvana.net/contact",
     "author": "Pubvana Team",

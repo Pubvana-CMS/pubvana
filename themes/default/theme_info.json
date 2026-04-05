@@ -1,9 +1,10 @@
 {
     "name": "Default",
     "slug": "default",
+    "bundled": true,
     "version": "2.1.1",
     "min_pubvana_version": "2.2.3",
-    "max_pubvana_version": "2.2.7",
+    "max_pubvana_version": "2.2.15",
     "update_url": "https://pubvana.net/api/dstore/v1/update/check",
     "author": "Pubvana",
     "author_url": "https://pubvana.net",

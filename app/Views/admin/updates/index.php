@@ -483,11 +483,14 @@ $extra_scripts = <<<SCRIPT
     }
 
     function pollUpdateStatus() {
+        var pollStart = Date.now();
+        var sawProgress = false;
         var interval = setInterval(function() {
             fetch(statusUrl)
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
                     if (data.status === 'in_progress') {
+                        sawProgress = true;
                         var pct = data.steps_total > 0
                             ? Math.round((data.steps_completed / data.steps_total) * 100)
                             : 0;
@@ -500,6 +503,13 @@ $extra_scripts = <<<SCRIPT
                     } else if (data.status === 'error') {
                         clearInterval(interval);
                         showError(data.error || 'Unknown error');
+                    } else if (data.status === 'idle') {
+                        // Background process hasn't written progress yet — or failed silently
+                        var elapsed = Date.now() - pollStart;
+                        if (elapsed > 15000) {
+                            clearInterval(interval);
+                            showError('The background update process did not start. Check server logs for details.');
+                        }
                     }
                 });
         }, 500);

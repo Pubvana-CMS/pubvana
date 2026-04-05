@@ -307,6 +307,11 @@ class UpdateService
                     continue;
                 }
 
+                // Bundled extensions ship with the core update — skip them
+                if (! empty($data['bundled'])) {
+                    continue;
+                }
+
                 $maxVersion = $data['max_pubvana_version'] ?? null;
                 if ($maxVersion !== null && version_compare($targetVersion, $maxVersion, '>')) {
                     $incompatible[] = [

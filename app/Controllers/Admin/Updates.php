@@ -9,6 +9,9 @@ use App\Services\ExtractService;
 use App\Services\ApplyService;
 use App\Services\ProgressReporter;
 use App\Services\ActivityLogger;
+use App\Services\WidgetService;
+use App\Services\ThemeService;
+use App\Services\PluginManager;
 
 class Updates extends BaseAdminController
 {
@@ -31,6 +34,11 @@ class Updates extends BaseAdminController
 
     public function index(): string
     {
+        // Sync extension registries so the DB matches the filesystem
+        (new WidgetService())->sync();
+        (new ThemeService())->sync();
+        PluginManager::instance()->discover();
+
         // Always fetch fresh on the updates page
         $this->updateService->clearCache();
         $update  = $this->updateService->checkForUpdate();
@@ -129,26 +137,14 @@ class Updates extends BaseAdminController
             return $this->response->setJSON(['status' => 'error', 'message' => 'Another operation is already in progress.']);
         }
 
+        // Pre-check: is there actually an update available?
+        $update = $this->updateService->checkForUpdate();
+        if (empty($update['available'])) {
+            return $this->response->setJSON(['status' => 'completed', 'message' => 'Already up to date.']);
+        }
+
         $email = auth()->user()->email;
 
-        // Try queue first
-        if ($this->queueAvailable()) {
-            service('queue')->push('pubvana', 'update', ['email' => $email]);
-            return $this->response->setJSON(['status' => 'started', 'method' => 'queue']);
-        }
-
-        // Try exec (background)
-        if ($this->execAvailable()) {
-            $cmd = sprintf(
-                'php %s pubvana:update --email %s > /dev/null 2>&1 &',
-                escapeshellarg(ROOTPATH . 'spark'),
-                escapeshellarg($email)
-            );
-            exec($cmd);
-            return $this->response->setJSON(['status' => 'started', 'method' => 'exec']);
-        }
-
-        // Synchronous fallback
         @set_time_limit(300);
         $reporter = new ProgressReporter('update');
         if (! $reporter->acquireLock()) {
@@ -203,6 +199,11 @@ class Updates extends BaseAdminController
             $reporter->releaseLock();
 
             cache()->clean();
+
+            // Sync extension registries so new/updated extensions from the release are registered
+            (new WidgetService())->sync();
+            (new ThemeService())->sync();
+            PluginManager::instance()->discover();
 
             // Trigger extension update check + auto-updates after CMS version change
             try {
@@ -382,30 +383,6 @@ class Updates extends BaseAdminController
         ]);
 
         return $this->response->setJSON(['status' => 'ok']);
-    }
-
-    /**
-     * Check if the CI4 queue is available and has a running worker.
-     */
-    private function queueAvailable(): bool
-    {
-        if (! class_exists(\CodeIgniter\Queue\Queue::class)) {
-            return false;
-        }
-        // Check if queue table exists
-        try {
-            $db = db_connect();
-            return $db->tableExists('queue_jobs');
-        } catch (\Throwable $e) {
-            return false;
-        }
-    }
-
-    private function execAvailable(): bool
-    {
-        if (! function_exists('exec')) return false;
-        $disabled = ini_get('disable_functions') ?: '';
-        return ! in_array('exec', array_map('trim', explode(',', $disabled)), true);
     }
 
     private function removeDirectory(string $dir): void

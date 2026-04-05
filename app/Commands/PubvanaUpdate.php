@@ -50,7 +50,10 @@ class PubvanaUpdate extends BaseCommand
 
             if (! $update['available']) {
                 CLI::write('Already up to date.', 'green');
-                if (! $dryRun) $reporter->releaseLock();
+                if (! $dryRun) {
+                    $reporter->complete(['message' => 'Already up to date.']);
+                    $reporter->releaseLock();
+                }
                 return;
             }
 
