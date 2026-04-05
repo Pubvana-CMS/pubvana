@@ -85,7 +85,7 @@ Save this file as `.env`
 
 ### 4. Initialize
 
-On the command line run these three commands separately.
+On the command line run these commands separately.
 
 ```bash
 php spark key:generate
@@ -93,15 +93,23 @@ php spark migrate --all
 php spark db:seed DatabaseSeeder
 ```
 
+Then create your admin user:
+
+```bash
+php spark shield:user create -n yourusername -e you@example.com
+php spark shield:user password -e you@example.com
+php spark shield:user addgroup -e you@example.com -g superadmin
+```
+
+The first command creates the account, the second prompts you to set a password, and the third assigns the superadmin role.
+
 ### 5. Web Server
 
 Point your web server to the `public/` folder. `https://your-server/path-to-pubvana`. You should see the homepage of your new website.
 
 ### 6. Log In
 
- Visit `https://your-server/path-to-pubvana/login`.
-
-**Default admin login** — `admin@example.com` / `Admin@12345` — change password immediately after first login.
+ Visit `https://your-server/path-to-pubvana/login` and sign in with the admin credentials you created in step 4.
 
 
 ### 7. File and Directory Structure
@@ -212,7 +220,7 @@ If these keys are not set, hCaptcha is silently skipped — safe for local devel
 Before deploying to a public server:
 
 - [ ] Set `CI_ENVIRONMENT = production` in `.env` — disables stack traces and debug output
-- [ ] Change the default admin password (`admin@example.com` / `Admin@12345`) immediately after first login
+- [ ] Use a strong password for your admin account
 - [ ] Set `app.baseURL` to your actual domain in `.env`
 - [ ] Set `app.forceGlobalSecureRequests = true` in `app/Config/App.php` to enforce HTTPS and send HSTS headers
 - [ ] Enable CSP: set `app.CSPEnabled = true` in `app/Config/App.php` and configure a policy appropriate to your theme
