@@ -345,11 +345,21 @@ class UpdateService
         }
         cache()->save($chainCacheKey, true, $this->cacheTtl);
 
-        // Step 1: CMS update check (uses its own cache internally)
+        // Step 1: Check + auto-update addons first so their max_pubvana_version
+        //         is current before the core compatibility check runs.
+        try {
+            $extService = new ExtensionUpdateService();
+            $results = $extService->checkAllAddons();
+            $extService->runAutoUpdates($results);
+        } catch (\Throwable $e) {
+            log_message('error', 'Addon update chain failed: ' . $e->getMessage());
+        }
+
+        // Step 2: CMS update check (uses its own cache internally)
         $this->clearCache();
         $update = $this->checkForUpdate();
 
-        // Step 2: Auto-apply CMS update if conditions are met
+        // Step 3: Auto-apply CMS update if conditions are met
         if (
             ! empty($update['available'])
             && (bool) setting('App.autoUpdate')
@@ -371,15 +381,6 @@ class UpdateService
                     log_message('info', 'Auto-update skipped: breaking changes between ' . APP_VERSION . ' and ' . $target);
                 }
             }
-        }
-
-        // Step 3: Always check addons + run addon auto-updates
-        try {
-            $extService = new ExtensionUpdateService();
-            $results = $extService->checkAllAddons();
-            $extService->runAutoUpdates($results);
-        } catch (\Throwable $e) {
-            log_message('error', 'Addon update chain failed: ' . $e->getMessage());
         }
     }
 
