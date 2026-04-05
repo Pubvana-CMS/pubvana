@@ -24,9 +24,7 @@
     },
     {
       "version": "2.2.5",
-      "breaking_changes": [
-        "Social login and sharing credentials now stored in database settings, not .env — re-enter credentials at Admin → Settings → Social and Admin → Settings → Social Sharing"
-      ],
+      "breaking_changes": [],
       "migration_notes": [],
       "min_php_version": "8.2",
       "min_ci_version": "4.7",
