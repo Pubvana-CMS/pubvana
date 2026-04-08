@@ -75,5 +75,9 @@ public/writable/
 # Release checklist (local only)
 release-checklist.md
 
+# Local notes and scripts
+MULTI-SITE-NOTES.md
+new_languages.sql
+
 # Docs (replaced by PvDocs plugin)
 docs/

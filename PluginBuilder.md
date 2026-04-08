@@ -117,6 +117,12 @@ These fields are only relevant if you sell your plugin and run your own store/li
 | `update_check_url` | string | Alternative update check endpoint (if different from `update_url`). |
 | `download_url` | string | Direct download endpoint for updates. |
 
+### CLI / Cron Fields
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `cron` | object | `{}` | Maps frequencies (`minute`, `quarterday`, `daily`) to arrays of spark command names to run on that schedule. See Section 7.1. |
+
 > **For most third-party plugins:** You only need `free`, `update_url`, `license_validate_url`, `license_check_url`, `item_url`, and `store_url`. The remaining URL fields are for full marketplace integrations. If your plugin is free, only `free: true` and optionally `update_url` are needed.
 
 ---
@@ -563,7 +569,34 @@ class CleanupExpired extends BaseCommand
 
 **Naming convention:** Prefix command names with your plugin slug to avoid collisions (e.g. `dstore:cleanup`, `dstore:report`).
 
-**Standalone and cron usage:** Plugin commands can be run directly (`php spark dstore:cleanup`) or included in the site's `Cron.php` command alongside core tasks.
+**Standalone and cron usage:** Plugin commands can be run directly (`php spark dstore:cleanup`) or registered to run automatically via the `cron` key in `plugin_info.json`.
+
+### Registering Commands with the Cron System
+
+To have your commands run automatically on a schedule, add a `cron` key to `plugin_info.json`:
+
+```json
+{
+    "name": "Digital Store",
+    "version": "1.0.0",
+    ...
+    "cron": {
+        "minute": ["dstore:expire-carts"],
+        "quarterday": ["dstore:sync-inventory"],
+        "daily": ["dstore:cleanup", "dstore:report"]
+    }
+}
+```
+
+Three frequencies are available:
+
+| Frequency | Schedule | Use for |
+|-----------|----------|---------|
+| `minute` | Every minute | Time-sensitive tasks (expiring carts, queue processing) |
+| `quarterday` | Every 6 hours | Periodic syncs, cache refreshes |
+| `daily` | Once per day | Cleanup, reports, maintenance |
+
+Only include the frequencies your plugin needs. The `cron` key is optional -- omit it entirely if your plugin has no scheduled tasks. Commands listed here must exist in your plugin's `Commands/` directory.
 
 ---
 
@@ -1053,4 +1086,5 @@ Before releasing a plugin:
 - [ ] CSRF exemptions only on external-facing POST endpoints outside `api/*`
 - [ ] Protected files stored in `writable/`, not `FCPATH`
 - [ ] Spark commands (if any) are in `Commands/`, extend `BaseCommand`, and use a plugin-prefixed name
+- [ ] `cron` key in `plugin_info.json` (if used) only references commands in the plugin's own `Commands/` directory
 - [ ] Plugin ZIP contains root folder matching plugin name

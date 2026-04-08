@@ -388,13 +388,29 @@ When releasing a new version of your addon, bump `max_pubvana_version` to the la
 
 ---
 
-## 9. CLI Commands (Plugins Only)
+## 9. CLI Commands & Cron (Plugins Only)
 
-Plugins can ship spark CLI commands by including a `Commands/` directory with classes extending `CodeIgniter\CLI\BaseCommand`. These are auto-discovered when the plugin is active -- no configuration needed.
+Plugins can ship spark CLI commands by including a `Commands/` directory with classes extending `CodeIgniter\CLI\BaseCommand`. These are auto-discovered when the plugin is active -- no configuration needed. Prefix command names with your plugin slug to avoid collisions (e.g. `dstore:cleanup`, `myplugin:sync`).
 
-Commands are useful for maintenance tasks, data processing, or anything that should run from the command line or on a cron schedule. Prefix command names with your plugin slug to avoid collisions (e.g. `dstore:cleanup`, `myplugin:sync`).
+To run commands on a schedule, add a `cron` key to `plugin_info.json`:
 
-See [PluginBuilder.md](PluginBuilder.md) Section 7.1 for full details and examples. This feature is only available to plugins -- themes and widgets cannot ship commands.
+```json
+{
+    "cron": {
+        "minute": ["dstore:expire-carts"],
+        "quarterday": ["dstore:sync-inventory"],
+        "daily": ["dstore:cleanup"]
+    }
+}
+```
+
+| Frequency | Schedule |
+|-----------|----------|
+| `minute` | Every minute |
+| `quarterday` | Every 6 hours |
+| `daily` | Once per day |
+
+Only include the frequencies you need. The `cron` key is optional. See [PluginBuilder.md](PluginBuilder.md) Section 7.1 for full details. This feature is only available to plugins -- themes and widgets cannot ship commands.
 
 ---
 

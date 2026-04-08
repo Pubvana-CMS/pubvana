@@ -50,7 +50,9 @@
             <div class="col-md-4" id="cronCommandBlock" style="<?= $check_method === 'cron' ? '' : 'display:none;' ?>">
                 <label class="d-block font-weight-bold small mb-1"><?= lang('Admin.updatesCronCommand') ?></label>
                 <?php $phpBin = PHP_BINARY ?: (PHP_BINDIR . '/php'); ?>
-                <code class="d-block bg-light p-2 rounded small user-select-all">* * * * * <?= esc($phpBin) ?> <?= esc(ROOTPATH) ?>spark cron minute >> /dev/null 2>&1</code>
+                <code class="d-block bg-light p-2 rounded small user-select-all mb-1">* * * * * <?= esc($phpBin) ?> <?= esc(ROOTPATH) ?>spark cron minute >> /dev/null 2>&1</code>
+                <code class="d-block bg-light p-2 rounded small user-select-all mb-1">0 */6 * * * <?= esc($phpBin) ?> <?= esc(ROOTPATH) ?>spark cron quarterday >> /dev/null 2>&1</code>
+                <code class="d-block bg-light p-2 rounded small user-select-all">0 2 * * * <?= esc($phpBin) ?> <?= esc(ROOTPATH) ?>spark cron daily >> /dev/null 2>&1</code>
                 <small class="form-text text-muted"><?= lang('Admin.updatesCronHelp') ?></small>
             </div>
         </div>
