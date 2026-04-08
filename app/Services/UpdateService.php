@@ -86,18 +86,25 @@ class UpdateService
             // Check extension compatibility against the latest version
             $incompatible = $this->checkExtensionCompatibility($latest);
 
-            // Determine safe target
+            // Determine safe target — must be a version that actually exists in CHANGES.json
             $safeTarget = $latest;
             if (! empty($incompatible)) {
-                // Safe ceiling = lowest max_pubvana_version among incompatible extensions
                 $ceiling = $latest;
                 foreach ($incompatible as $ext) {
                     if (version_compare($ext['max_version'], $ceiling, '<')) {
                         $ceiling = $ext['max_version'];
                     }
                 }
-                // Only valid if ceiling is above current version
-                $safeTarget = version_compare($ceiling, APP_VERSION, '>') ? $ceiling : null;
+                // Find the highest real version that's <= ceiling and > current
+                $safeTarget = null;
+                foreach ($data['versions'] as $entry) {
+                    $v = $entry['version'] ?? '0.0.0';
+                    if (version_compare($v, APP_VERSION, '>') && version_compare($v, $ceiling, '<=')) {
+                        if ($safeTarget === null || version_compare($v, $safeTarget, '>')) {
+                            $safeTarget = $v;
+                        }
+                    }
+                }
             }
 
             $result = [

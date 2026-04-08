@@ -1,7 +1,7 @@
 # Pubvana
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Release](https://img.shields.io/badge/release-v2.3.0-blue)](https://github.com/enlivenapp/pubvana/releases)
+[![Release](https://img.shields.io/badge/release-v2.3.1-blue)](https://github.com/enlivenapp/pubvana/releases)
 [![PHP](https://img.shields.io/badge/PHP-8.2%2B-blue.svg)](https://www.php.net)
 [![CodeIgniter](https://img.shields.io/badge/CodeIgniter-4.7-orange.svg)](https://codeigniter.com)
 [![Installs](https://img.shields.io/packagist/dt/enlivenapp/pubvana.svg)](https://packagist.org/packages/enlivenapp/pubvana)
@@ -12,7 +12,7 @@
 
 Pubvana v2 is a full rewrite of Pubvana v1.x built on CodeIgniter 4, Authentication with Shield, a modern admin UI, dual content editors, theme, plugin & widget system, built-in marketplace, and many new features. We aim for Pubvana to be lean and fast without the bloat of other CMS and Blog software available.
 
-These instructions are for users comfortable with the command line and terminal. If you'd prefer a streamlined experience, [go here: placeholder].
+These instructions are for users comfortable with the command line and terminal. If you'd prefer a streamlined, no command line experience, [Download from GitHib](https://github.com/enlivenapp/Pubvana-Web-Installer) or [Pubvana.net](https://pubvana.net).
 
 ### For Developers
 
@@ -106,11 +106,11 @@ The first command creates the account, the second prompts you to set a password,
 
 ### 5. Web Server
 
-Point your web server to the `public/` folder. `https://your-server/path-to-pubvana`. You should see the homepage of your new website.
+Point your web server to the `public/` folder either by editing your available sites in Apache, or Nginx config. if you use Apache or Litespeed, your site should be available at `https://your-server/path-to-pubvana` with the provided ,htaccess files. You should see the homepage of your new website.
 
 ### 6. Log In
 
- Visit `https://your-server/path-to-pubvana/login` and sign in with the admin credentials you created in step 4.
+ Visit `https://your-server/login` and sign in with the admin credentials you created in step 4.
 
 
 ### 7. File and Directory Structure
@@ -163,12 +163,12 @@ Run `path/to/php /path/to/pubvana/spark links:check` as needed (e.g. weekly) —
 
 | Layer | Technology |
 |---|---|
-| Framework | CodeIgniter 4.7 |
-| Authentication | CodeIgniter Shield |
+| Framework | CodeIgniter 4.7+ |
+| Authentication | CodeIgniter Shield 1.3+ |
 | Admin UI | SB Admin 2 (Bootstrap 4 + jQuery) |
-| Public theme | Bootstrap 5 + Font Awesome 6 |
+| Public Default theme | Bootstrap 5 + Font Awesome 6 |
 | HTML editor | Summernote |
-| Markdown editor | SimpleMDE |
+| Markdown editor | EasyMDE |
 
 ## Features (v2)
 
@@ -188,7 +188,7 @@ Run `path/to/php /path/to/pubvana/spark links:check` as needed (e.g. weekly) —
 - Author profiles with bio cards on posts
 - Social OAuth login (Google, Facebook)
 - Social auto-share on publish (Twitter, Facebook)
-- WordPress importer (admin UI + `php spark wp:import` CLI)
+- WP importer (admin UI + `php spark wp:import` CLI)
 - Post revision history with one-click restore
 
 ## Security
@@ -199,13 +199,13 @@ Please **do not** open a public issue for security vulnerabilities. Email securi
 
 ### hCaptcha (Spam Protection)
 
-Pubvana uses [hCaptcha](https://www.hcaptcha.com) (privacy-respecting, non-Google) to protect comment forms and the contact form from spam bots. hCaptcha is free for most sites.
+Pubvana uses [hCaptcha](https://www.hcaptcha.com) (privacy-respecting) to protect comment forms and the contact form from spam bots. hCaptcha is free for most sites.
 
 **Setup:**
 
 1. Sign up at [hcaptcha.com](https://www.hcaptcha.com) (free)
 2. Create a new site and copy the site key and secret key
-3. Add to your `.env`:
+3. Add to your setting in the Admin Panel:
 
 ```
 HCAPTCHA_SITE_KEY = your-site-key
@@ -224,8 +224,8 @@ Before deploying to a public server:
 - [ ] Use a strong password for your admin account
 - [ ] Set `app.baseURL` to your actual domain in `.env`
 - [ ] Set `app.forceGlobalSecureRequests = true` in `app/Config/App.php` to enforce HTTPS and send HSTS headers
-- [ ] Enable CSP: set `app.CSPEnabled = true` in `app/Config/App.php` and configure a policy appropriate to your theme
-- [ ] Verify your web server's DocumentRoot points to `public/` — this keeps `writable/` (sessions, cache, logs) outside the web root automatically
+- [ ] Enable CSP: set `app.CSPEnabled = true` in `app/Config/App.php` and configure a policy appropriate to your theme - Note, this is often tricky to get right.
+- [ ] Verify your web server's DocumentRoot points to `public/` if possible, this keeps `writable/` (sessions, cache, logs) outside the web root automatically
 - [ ] Ensure `.env` has permissions `600` and is not committed to version control
 - [ ] Run `php spark key:generate` once per installation — do not reuse encryption keys across sites
 
@@ -266,9 +266,9 @@ Please use the [Issues Tracker](https://github.com/enlivenapp/pubvana/issues).
 
 ## Links
 
-[pubvana.net](https://pubvana.net) — Home & Addon Store (Themes, Widgets, and other Addons)
+[pubvana.net](https://pubvana.net) — Home & Addon Store (Themes, Widgets, Plugins and easy installer)
 
-[User Docs](https://pubvana.net/docs)
+[User Docs](https://pubvana.net/pvdocs)
 
 [Facebook Page](https://www.facebook.com/pubvana.net)
 
@@ -284,7 +284,7 @@ Pubvana is released under the MIT Open Source License.
 
 _Translators Wanted!_
 
-Pubvana ships with 6 languages: English (source), Spanish (Latin American), French, Indonesian, Portuguese, and Slovak. French, Slovak, Indonesian, and Portuguese are partially AI-translated and need verification from native speakers.
+Pubvana ships with 24 languages: English (source), Spanish (Latin American), French, Indonesian, Portuguese, and Slovak. French, Slovak, Indonesian, Bulgarian (bg), Bengali (bn), Czech (cs), German (de), Hindi (hi), Italian (it), Japanese (ja), Korean (ko), Lithuanian (lt), Dutch (nl), Polish (pl), Brazilian Portuguese (pt-BR), Russian (ru), Serbian (sr), Swedish (sv-SE), Turkish (tr), Ukrainian (uk), Chinese Simplified (zh) and Portuguese are partially or fully AI-translated and need verification from native speakers.
 
 If you would like to help verify or add translations, please fork this repo and send a PR.
 
@@ -327,14 +327,7 @@ Many Thanks to the folks who've provided translation. It is very apprciated.
 - [x] Multi-language Support (22 languages, admin enable/disable, `{locale}` URL routing, `lang()` throughout views)
 - [x] Honeypot Spam Protection (CI4 built-in filter on comment + contact forms)
 - [x] Atom 1.0 Feed (`/atom` alongside existing RSS)
-- [ ] Email Notifications / Subscriptions (subscribe to new posts, email verification, unsubscribe)
 - [ ] Links Manager / Blogroll (display a curated list of external links via widget)
-
----
-
-### Pubvana Premium
-
-**Premium Core Features** *(pubvana.net — license required)*
 - [x] Scheduled Post Queue (calendar view)
 - [x] Content Analytics (page views, popular posts, referrers)
 - [x] Advanced SEO (OG image generation, schema breadcrumbs, news sitemap)
@@ -344,20 +337,30 @@ Many Thanks to the folks who've provided translation. It is very apprciated.
 - [x] Affiliate Link Manager (`/go/` short links + click tracking)
 - [x] Broken Link Checker
 - [x] Activity / Audit Log
+- [x] Author Bio widget
+- [x] Ad Unit / Custom HTML widget
+- [x] Social Follow Buttons widget
+
+
+**Todo**
+- [ ] Email Notifications / Subscriptions (subscribe to new posts, email verification, unsubscribe)
 
 **Premium Widgets** *(pubvana.net/store)*
-- [x] Author Bio (sidebar)
-- [x] Ad Unit / Custom HTML
-- [x] Social Follow Buttons
-- [ ] Tip Jar / Per-post donations
+
 - [ ] Reading Progress Bar
-- [ ] Enhanced Search (AJAX live preview)
-- [ ] Email Opt-in / Lead Capture
 - [ ] Countdown Timer
-- [ ] Advanced Login
-- [ ] Gallery (masonry + lightbox)
 - [ ] Google Calendar & Maps
-- [ ] YouTube Channel Feed
+- [ ] YouTube Channel Feed ( 1 video/widget)
 
 **Premium Plugins** *(pubvana.net/store)*
-- [ ] E-commerce (products, cart, checkout, orders)
+- [x] PvDocs - Documentation for User & Dev facing docs
+- [x] Digital E-commerce (products, cart, checkout, orders)
+- [ ] Physical goods store (w/ drop shipping and delivery integration)
+- [ ] Enhanced Search (AJAX live preview)
+- [ ] Tip Jar / Per-post donations
+- [ ] Email Opt-in / Lead Capture
+- [ ] Gallery (masonry + lightbox)
+- [ ] Google Calendar & Maps
+- [ ] YouTube Channel Feed (fully searchable integration)
+
+

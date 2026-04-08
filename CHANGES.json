@@ -1,6 +1,15 @@
 {
   "versions": [
     {
+      "version": "2.3.1",
+      "breaking_changes": [],
+      "migration_notes": [],
+      "min_php_version": "8.2",
+      "min_ci_version": "4.7",
+      "min_shield_version": "1.2",
+      "notices": []
+    },
+    {
       "version": "2.3.0",
       "breaking_changes": [
         "Migrations schema consolidated — see CHANGELOG.md for manual upgrade steps from 2.2.x",
