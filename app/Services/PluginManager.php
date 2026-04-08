@@ -78,6 +78,40 @@ class PluginManager
     }
 
     /**
+     * CLI-only boot: register PSR-4 namespaces for active plugins
+     * so their Commands/ directories are visible to spark's
+     * command discovery.
+     *
+     * Called from Config\Services::commands() before the Commands
+     * service is constructed.
+     */
+    public function cliBoot(): void
+    {
+        if ($this->booted) {
+            return;
+        }
+
+        try {
+            $activePlugins = model(PluginModel::class)
+                ->where('is_active', 1)
+                ->where('disabled IS NULL')
+                ->findAll();
+        } catch (\Throwable $e) {
+            log_message('debug', 'PluginManager::cliBoot skipped: ' . $e->getMessage());
+            return;
+        }
+
+        foreach ($activePlugins as $row) {
+            $folder   = $row->folder;
+            $basePath = PLUGINS_PATH . $folder . '/';
+
+            if (is_dir($basePath . 'Commands')) {
+                service('autoloader')->addNamespace('Plugins\\' . $folder, $basePath);
+            }
+        }
+    }
+
+    /**
      * Load a single plugin by folder name.
      *
      * Registers the PSR-4 namespace `Plugins\{Folder}\` pointing to the

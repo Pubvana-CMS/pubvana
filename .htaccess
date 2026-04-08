@@ -30,7 +30,7 @@ Options -Indexes
 	RewriteRule ^$ public/index.php [L]
 
 	# Serve static files from public/ (assets, favicon, etc.)
-	RewriteCond %{DOCUMENT_ROOT}%{CONTEXT_PREFIX}public/$1 -f
+	RewriteCond %{DOCUMENT_ROOT}/public/$1 -f
 	RewriteRule ^(.+)$ public/$1 [L]
 
 	# Checks to see if the user is attempting to access a valid file,

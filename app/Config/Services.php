@@ -2,7 +2,9 @@
 
 namespace Config;
 
+use App\Services\PluginManager;
 use App\Services\ThemeService;
+use CodeIgniter\CLI\Commands;
 use CodeIgniter\Config\BaseService;
 
 /**
@@ -20,6 +22,19 @@ use CodeIgniter\Config\BaseService;
  */
 class Services extends BaseService
 {
+    public static function commands(bool $getShared = true): Commands
+    {
+        if ($getShared) {
+            return static::getSharedInstance('commands');
+        }
+
+        if (is_cli()) {
+            PluginManager::instance()->cliBoot();
+        }
+
+        return new Commands();
+    }
+
     public static function theme(bool $getShared = true): ThemeService
     {
         if ($getShared) {

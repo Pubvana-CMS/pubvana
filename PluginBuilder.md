@@ -45,6 +45,8 @@ plugins/DigitalStore/
             DigitalStore.php
     Api/
         Store.php                   # API controllers
+    Commands/
+        CleanupExpired.php          # Spark CLI commands (optional, auto-discovered)
     assets/
         css/
         js/
@@ -308,7 +310,7 @@ Called once per request when the plugin is active. This runs at the `pre_system`
 
 ## 5. Namespace & Autoloading
 
-`PluginManager` registers a PSR-4 namespace for each active plugin at the `pre_system` event:
+`PluginManager` registers a PSR-4 namespace for each active plugin at the `pre_system` event (web requests) and via `PluginManager::cliBoot()` for CLI/spark commands:
 
 ```
 Plugins\DigitalStore\  →  plugins/DigitalStore/
@@ -326,6 +328,7 @@ This means all classes inside your plugin folder are autoloaded by CI4's autoloa
 | `plugins/DigitalStore/Models/ProductModel.php` | `Plugins\DigitalStore\Models\ProductModel` |
 | `plugins/DigitalStore/Services/CartService.php` | `Plugins\DigitalStore\Services\CartService` |
 | `plugins/DigitalStore/Api/Store.php` | `Plugins\DigitalStore\Api\Store` |
+| `plugins/DigitalStore/Commands/CleanupExpired.php` | `Plugins\DigitalStore\Commands\CleanupExpired` |
 
 Your plugin has full access to all CI4 services, helpers, and libraries: `service()`, `model()`, `helper()`, `db_connect()`, `config()`, `lang()`, `cache()`, `session()`, etc.
 
@@ -522,6 +525,45 @@ class Store extends BaseController
 ```
 
 `ThemeService::view()` detects the namespaced path, resolves it via CI4's FileLocator, and renders it through the template engine inside the active theme's layout. The plugin's `.tpl` uses `{% extends 'layout' %}` to inherit the theme's layout and has access to all theme blocks (`{% block content %}`, `{% block scripts %}`, `{% block head_extra %}`, etc.).
+
+---
+
+## 7.1. Spark Commands (CLI)
+
+Plugins can ship their own spark commands by placing them in a `Commands/` directory. These are auto-discovered when the plugin is active - no registration or configuration needed.
+
+```php
+<?php
+
+namespace Plugins\DigitalStore\Commands;
+
+use CodeIgniter\CLI\BaseCommand;
+use CodeIgniter\CLI\CLI;
+
+class CleanupExpired extends BaseCommand
+{
+    protected $group       = 'DigitalStore';
+    protected $name        = 'dstore:cleanup';
+    protected $description = 'Remove expired download tokens and temporary files.';
+    protected $usage       = 'dstore:cleanup [--days=30]';
+    protected $options     = [
+        '--days' => 'Number of days to keep (default: 30)',
+    ];
+
+    public function run(array $params): void
+    {
+        $days = (int) (CLI::getOption('days') ?? 30);
+        // ... cleanup logic
+        CLI::write("Cleaned up tokens older than {$days} days.", 'green');
+    }
+}
+```
+
+**How it works:** `PluginManager::cliBoot()` runs before CI4's command discovery. It queries active plugins from the database and registers their namespaces if they have a `Commands/` directory. CI4's `discoverCommands()` then finds the command classes automatically.
+
+**Naming convention:** Prefix command names with your plugin slug to avoid collisions (e.g. `dstore:cleanup`, `dstore:report`).
+
+**Standalone and cron usage:** Plugin commands can be run directly (`php spark dstore:cleanup`) or included in the site's `Cron.php` command alongside core tasks.
 
 ---
 
@@ -1010,4 +1052,5 @@ Before releasing a plugin:
 - [ ] All output escaped (`esc()` in PHP views, engine handles `.tpl`)
 - [ ] CSRF exemptions only on external-facing POST endpoints outside `api/*`
 - [ ] Protected files stored in `writable/`, not `FCPATH`
+- [ ] Spark commands (if any) are in `Commands/`, extend `BaseCommand`, and use a plugin-prefixed name
 - [ ] Plugin ZIP contains root folder matching plugin name

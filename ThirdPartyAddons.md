@@ -388,7 +388,17 @@ When releasing a new version of your addon, bump `max_pubvana_version` to the la
 
 ---
 
-## 9. Quick Reference -- Minimum `*_info.json` Examples
+## 9. CLI Commands (Plugins Only)
+
+Plugins can ship spark CLI commands by including a `Commands/` directory with classes extending `CodeIgniter\CLI\BaseCommand`. These are auto-discovered when the plugin is active -- no configuration needed.
+
+Commands are useful for maintenance tasks, data processing, or anything that should run from the command line or on a cron schedule. Prefix command names with your plugin slug to avoid collisions (e.g. `dstore:cleanup`, `myplugin:sync`).
+
+See [PluginBuilder.md](PluginBuilder.md) Section 7.1 for full details and examples. This feature is only available to plugins -- themes and widgets cannot ship commands.
+
+---
+
+## 10. Quick Reference -- Minimum `*_info.json` Examples
 
 ### Free plugin (no updates)
 
