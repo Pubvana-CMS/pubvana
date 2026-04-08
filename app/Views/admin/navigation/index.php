@@ -53,9 +53,9 @@
                         <input type="text" name="url" id="navUrl" class="form-control" required placeholder="/about">
                     </div>
                     <div class="form-group">
-                        <label>Parent</label>
+                        <label><?= lang('Admin.navParent') ?></label>
                         <select name="parent_id" class="form-control">
-                            <option value="">— Top level —</option>
+                            <option value=""><?= lang('Admin.navTopLevel') ?></option>
                             <?php foreach ($items as $item): ?>
                             <?php if (!$item->parent_id): ?>
                             <option value="<?= $item->id ?>"><?= esc($item->label) ?></option>
@@ -66,8 +66,8 @@
                     <div class="form-group">
                         <label><?= lang('Admin.navItemTarget') ?></label>
                         <select name="target" class="form-control">
-                            <option value="_self">Same window</option>
-                            <option value="_blank">New window</option>
+                            <option value="_self"><?= lang('Admin.navSameWindow') ?></option>
+                            <option value="_blank"><?= lang('Admin.navNewWindow') ?></option>
                         </select>
                     </div>
                     <button type="submit" class="btn btn-primary btn-block"><?= lang('Admin.add') ?></button>
@@ -80,12 +80,12 @@
     <div class="col-md-8">
         <div class="card shadow mb-4">
             <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                <h6 class="m-0 font-weight-bold text-primary">Menu Items</h6>
-                <small class="text-muted">Drag to reorder</small>
+                <h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.navMenuItems') ?></h6>
+                <small class="text-muted"><?= lang('Admin.dragToReorder') ?></small>
             </div>
             <div class="card-body p-2">
                 <?php if (empty($items)): ?>
-                    <p class="text-center text-muted py-3">No items in this menu.</p>
+                    <p class="text-center text-muted py-3"><?= lang('Admin.navNoItems') ?></p>
                 <?php else: ?>
                 <ul class="list-group nav-sortable" id="nav-sortable">
                     <?php foreach ($items as $item): ?>

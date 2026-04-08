@@ -11,7 +11,7 @@ class AddPluginToMarketplaceItemType extends Migration
         $this->forge->modifyColumn('marketplace_items', [
             'item_type' => [
                 'type'       => 'ENUM',
-                'constraint' => ['theme', 'widget', 'plugin', 'premium_core'],
+                'constraint' => ['theme', 'widget', 'plugin'],
             ],
         ]);
     }

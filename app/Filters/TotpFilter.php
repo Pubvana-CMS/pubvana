@@ -23,12 +23,9 @@ class TotpFilter implements FilterInterface
             return null;
         }
 
-        $row = db_connect()->table('users')
-            ->select('totp_enabled')
-            ->where('id', auth()->id())
-            ->get()->getRowObject();
+        $totpEnabled = model(\App\Models\UserAdminModel::class)->isTotpEnabled(auth()->id());
 
-        if ($row && $row->totp_enabled) {
+        if ($totpEnabled) {
             session()->set('totp_redirect_url', current_url());
             return redirect()->to('/auth/2fa');
         }

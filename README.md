@@ -1,7 +1,7 @@
 # Pubvana
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Release](https://img.shields.io/badge/release-v2.2.9-blue)](https://github.com/enlivenapp/pubvana/releases)
+[![Release](https://img.shields.io/badge/release-v2.3.0-blue)](https://github.com/enlivenapp/pubvana/releases)
 [![PHP](https://img.shields.io/badge/PHP-8.2%2B-blue.svg)](https://www.php.net)
 [![CodeIgniter](https://img.shields.io/badge/CodeIgniter-4.7-orange.svg)](https://codeigniter.com)
 [![Installs](https://img.shields.io/packagist/dt/enlivenapp/pubvana.svg)](https://packagist.org/packages/enlivenapp/pubvana)
@@ -21,6 +21,7 @@ Developers looking to build themes or widgets for Pubvana can find everything th
 - **[ThemeBuilder.md](ThemeBuilder.md)** — Complete theme development guide
 - **[WidgetBuilder.md](WidgetBuilder.md)** — Complete widget development guide
 - **[PluginBuilder.md](PluginBuilder.md)** — Complete plugin development guide
+- **[ThirdPartyAddons.md](ThirdPartyAddons.md)** — Third-party addon distribution, licensing, and API protocol
 
 ## Installation
 

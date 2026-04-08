@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Libraries\TemplateEngine\Engine;
+use App\Models\AdminNotificationModel;
 use App\Models\MarketplaceLicenseModel;
 use App\Services\VettingService;
 
@@ -21,26 +22,30 @@ class WidgetService
             }
 
             $info = json_decode(file_get_contents($jsonFile), true);
-            if (! is_array($info)) {
-                continue;
-            }
 
-            // Enforce required manifest fields
-            foreach (['name', 'description', 'version', 'author'] as $field) {
-                if (empty($info[$field])) {
-                    log_message('warning', "Widget '{$folder}': missing required field '{$field}' in widget_info.json — skipped.");
-                    continue 2;
+            $disabledReason = null;
+
+            if (! is_array($info)) {
+                $disabledReason = lang('Admin.addonDisabledInvalidJson', [$folder, 'widget_info.json']);
+                $info = [];
+            } else {
+                $required = ['name', 'version', 'description', 'author'];
+                $missing  = array_diff($required, array_keys($info));
+                if (! empty($missing)) {
+                    $disabledReason = lang('Admin.addonDisabledMissingFields', [$folder, implode(', ', $missing)]);
                 }
             }
 
             // Reject widgets containing PHP files (widgets are JSON + templates only)
-            $phpFiles = glob($dir . '/*.php');
-            if (! empty($phpFiles)) {
-                log_message('warning', "Widget '{$folder}': contains PHP files — skipped. Widgets must be JSON + templates only.");
-                continue;
+            if ($disabledReason === null) {
+                $phpFiles = glob($dir . '/*.php');
+                if (! empty($phpFiles)) {
+                    $disabledReason = lang('Admin.addonDisabledPhpFiles', [$folder]);
+                }
             }
 
-            $info['folder'] = $folder;
+            $info['folder']           = $folder;
+            $info['_disabled_reason'] = $disabledReason;
             $widgets[] = $info;
         }
         return $widgets;
@@ -48,51 +53,193 @@ class WidgetService
 
     public function sync(): void
     {
-        $db = db_connect();
+        $widgetModel = model(\App\Models\WidgetModel::class);
         $hasNew = false;
 
-        foreach ($this->discover() as $info) {
-            $folder = $info['folder'];
-            $exists = $db->table('widgets')->where('folder', $folder)->get()->getRow();
+        // Remove orphaned records — widget folder deleted from disk
+        $registered = $widgetModel->findAll();
+        foreach ($registered as $row) {
+            if (! is_dir(WIDGETS_PATH . $row->folder)) {
+                $widgetModel->delete($row->id);
+            }
+        }
 
+        foreach ($this->discover() as $info) {
+            $folder         = $info['folder'];
+            $disabledReason = $info['_disabled_reason'];
+            $exists         = $widgetModel->where('folder', $folder)->first();
+
+            $metaFields = [
+                // Flags
+                'bundled'             => ! empty($info['bundled']) ? 1 : 0,
+                'free'                => ! empty($info['free'])    ? 1 : 0,
+                // Support & store URLs
+                'support_url'         => $info['support_url']         ?? null,
+                'author_url'          => $info['author_url']          ?? null,
+                'items_url'           => $info['items_url']           ?? null,
+                'item_url'            => $info['item_url']            ?? null,
+                'store_url'           => $info['store_url']           ?? null,
+                // Category URLs
+                'categories_url'      => $info['categories_url']      ?? null,
+                'categories_all_url'  => $info['categories_all_url']  ?? null,
+                'category_url'        => $info['category_url']        ?? null,
+                // Discovery URLs
+                'featured_url'        => $info['featured_url']        ?? null,
+                // License URLs
+                'license_validate_url' => $info['license_validate_url'] ?? null,
+                'license_check_url'   => $info['license_check_url']   ?? null,
+                // Update URLs
+                'update_url'          => $info['update_url']          ?? null,
+                'update_check_url'    => $info['update_check_url']    ?? null,
+                'download_url'        => $info['download_url']        ?? null,
+            ];
+
+            // ── Disabled → always force inactive ────────────────────────
+            if ($disabledReason !== null) {
+                if ($exists) {
+                    $widgetModel->update($exists->id, array_merge([
+                        'is_active'       => 0,
+                        'disabled'        => 1,
+                        'disabled_reason' => $disabledReason,
+                        'updated_at'      => date('Y-m-d H:i:s'),
+                    ], $metaFields));
+                } else {
+                    $widgetModel->insert(array_merge([
+                        'name'            => $info['name']        ?? $folder,
+                        'folder'          => $folder,
+                        'description'     => $info['description'] ?? '',
+                        'version'         => $info['version']     ?? '0.0.0',
+                        'author'          => VettingService::normalizeAuthor($info['author'] ?? ''),
+                        'is_active'       => 0,
+                        'disabled'        => 1,
+                        'disabled_reason' => $disabledReason,
+                        'created_at'      => date('Y-m-d H:i:s'),
+                        'updated_at'      => date('Y-m-d H:i:s'),
+                    ], $metaFields));
+                    $hasNew = true;
+                }
+                continue;
+            }
+
+            // ── Valid addon ─────────────────────────────────────────────
             if (! $exists) {
-                $db->table('widgets')->insert([
-                    'name'        => $info['name']        ?? $folder,
+                $isPubvana = in_array(VettingService::normalizeAuthor($info['author'] ?? ''), ['pubvana', 'pubvana_team'], true);
+                $isBundled = ! empty($info['bundled']);
+                $isFree    = ! empty($info['free']);
+
+                $initialActive = ($isBundled && $isPubvana) || ($isFree && ! $isPubvana) ? 1 : 0;
+
+                $widgetModel->insert(array_merge([
+                    'name'        => $info['name'],
                     'folder'      => $folder,
-                    'description' => $info['description'] ?? '',
-                    'version'     => $info['version']     ?? '1.0.0',
+                    'description' => $info['description'],
+                    'version'     => $info['version'],
                     'author'      => VettingService::normalizeAuthor($info['author'] ?? ''),
-                    'is_active'   => 1,
+                    'is_active'   => $initialActive,
                     'created_at'  => date('Y-m-d H:i:s'),
                     'updated_at'  => date('Y-m-d H:i:s'),
-                ]);
+                ], $metaFields));
                 $hasNew = true;
 
-                $newRow = $db->table('widgets')->where('folder', $folder)->get()->getRowObject();
-                if ($newRow && $newRow->store_product_id) {
-                    $license = (new MarketplaceLicenseModel())->where('store_product_id', $newRow->store_product_id)->first();
-                    if ($license && (int) ($license->license_valid ?? -1) !== 1) {
-                        $db->table('widgets')->where('folder', $folder)->update(['is_active' => 0]);
+                // For non-bundled, non-free widgets: resolve product ID inline and check license
+                if (! $isBundled && ! $isFree) {
+                    $newRow = $widgetModel->where('folder', $folder)->first();
+                    if ($newRow) {
+                        $resolved = false;
+                        $slug = $newRow->folder;
+
+                        if ($slug) {
+                            if ($isPubvana) {
+                                try {
+                                    $client   = \Config\Services::curlrequest(['timeout' => 5]);
+                                    $response = $client->get(PUBVANA_DSTORE_API . 'item/' . $slug, ['http_errors' => false]);
+                                    if ($response->getStatusCode() === 200) {
+                                        $body    = json_decode($response->getBody(), true);
+                                        $storeId = (int) ($body['id'] ?? 0);
+                                        if ($storeId) {
+                                            $widgetModel->update($newRow->id, ['store_product_id' => $storeId]);
+                                            $resolved = true;
+                                        }
+                                    }
+                                } catch (\Throwable $e) {
+                                    // Resolution failed — handled below
+                                }
+                            } elseif (! empty($newRow->item_url)) {
+                                try {
+                                    $client   = \Config\Services::curlrequest(['timeout' => 5]);
+                                    $response = $client->get($newRow->item_url . '/' . $slug, ['http_errors' => false]);
+                                    if ($response->getStatusCode() === 200) {
+                                        $body    = json_decode($response->getBody(), true);
+                                        $storeId = (int) ($body['id'] ?? 0);
+                                        if ($storeId) {
+                                            $widgetModel->update($newRow->id, ['store_product_id' => $storeId]);
+                                            $resolved = true;
+                                        }
+                                    }
+                                } catch (\Throwable $e) {
+                                    // Resolution failed
+                                }
+                            }
+                        }
+
+                        if ($resolved) {
+                            $newRow  = $widgetModel->where('folder', $folder)->first();
+                            $license = (new MarketplaceLicenseModel())->where('store_product_id', $newRow->store_product_id)->first();
+                            if ($license && (int) ($license->license_valid ?? -1) === 1) {
+                                $widgetModel->updateByFolder($folder, ['is_active' => 1]);
+                            }
+                        } else {
+                            $supportUrl = $info['support_url'] ?? null;
+                            $message    = $supportUrl
+                                ? lang('Admin.widgetValidationFailedLink', [$info['name'] ?? $folder, $supportUrl])
+                                : lang('Admin.widgetValidationFailed', [$info['name'] ?? $folder]);
+
+                            (new AdminNotificationModel())->insert([
+                                'source'         => 'widget',
+                                'source_name'    => $folder,
+                                'severity'       => 'warning',
+                                'message'        => $message,
+                                'action_url'     => '',
+                                'action_label'   => '',
+                                'is_dismissable' => 1,
+                            ]);
+                        }
                     }
                 }
             } else {
-                $newVersion = $info['version'] ?? '1.0.0';
+                $newVersion = $info['version'];
                 $newAuthor  = VettingService::normalizeAuthor($info['author'] ?? '');
+                $clearDisabled = [];
+                if (! empty($exists->disabled)) {
+                    $clearDisabled = ['disabled' => null, 'disabled_reason' => null];
+                }
 
                 if ($newVersion !== ($exists->version ?? '')) {
-                    $db->table('widgets')->where('id', $exists->id)->update([
+                    $widgetModel->update($exists->id, array_merge([
                         'version'     => $newVersion,
+                        'name'        => $info['name'],
+                        'description' => $info['description'],
                         'author'      => $newAuthor,
-                        'pv_approved' => null,
+                        'pv_safe'     => null,
                         'updated_at'  => date('Y-m-d H:i:s'),
-                    ]);
+                    ], $metaFields, $clearDisabled));
                     $hasNew = true;
+                } elseif (($info['name'] ?? '') !== ($exists->name ?? '') || ($info['description'] ?? '') !== ($exists->description ?? '')) {
+                    $widgetModel->update($exists->id, array_merge([
+                        'name'        => $info['name'],
+                        'description' => $info['description'],
+                        'author'      => $newAuthor,
+                        'updated_at'  => date('Y-m-d H:i:s'),
+                    ], $metaFields, $clearDisabled));
                 } elseif ($newAuthor !== ($exists->author ?? '')) {
-                    $db->table('widgets')->where('id', $exists->id)->update([
+                    $widgetModel->update($exists->id, array_merge([
                         'author'     => $newAuthor,
                         'updated_at' => date('Y-m-d H:i:s'),
-                    ]);
+                    ], $metaFields, $clearDisabled));
+                } elseif ($exists->support_url === null || $exists->author_url === null || ! empty($exists->disabled)) {
+                    $widgetModel->update($exists->id, $metaFields);
                 }
+
             }
         }
 
@@ -103,19 +250,13 @@ class WidgetService
 
     public function renderArea(string $slug): string
     {
-        $db = db_connect();
-        $instances = $db->table('widget_instances wi')
-            ->select('wi.*, w.folder, wa.slug AS area_slug')
-            ->join('widget_areas wa', 'wa.id = wi.widget_area_id')
-            ->join('widgets w', 'w.id = wi.widget_id')
-            ->where('wa.slug', $slug)
-            ->where('w.is_active', 1)
-            ->orderBy('wi.sort_order', 'ASC')
-            ->get()->getResultObject();
+        $instanceModel = model(\App\Models\WidgetInstanceModel::class);
+        $widgetModel   = model(\App\Models\WidgetModel::class);
+        $instances = $instanceModel->getForAreas([$slug]);
 
         $html = '';
         foreach ($instances as $instance) {
-            $widgetRow = $db->table('widgets')->where('folder', $instance->folder)->get()->getRowObject();
+            $widgetRow = $widgetModel->where('folder', $instance->folder)->first();
             if ($widgetRow && $widgetRow->store_product_id) {
                 $license = (new MarketplaceLicenseModel())->where('store_product_id', $widgetRow->store_product_id)->first();
                 if ($license && (int) ($license->license_valid ?? -1) !== 1) {

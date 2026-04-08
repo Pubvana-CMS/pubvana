@@ -1,6 +1,143 @@
 # Changelog
 
-All notable changes to Pubvana CMS, starting from the v2.0.0 rewrite.
+All notable changes to Pubvana CMS, starting from the v2.0.0.
+
+---
+
+## v2.3.0 - 2026-04-07
+
+### Breaking Changes
+
+**Migrations schema consolidated.** The `slug` column has been removed from `plugins`, `themes`, and `widgets` tables. The addon's folder name is now the canonical identifier. The `slug` field in `*_info.json` files is no longer read or required.
+
+**If upgrading from 2.2.x**, run these SQL statements manually:
+
+```sql
+-- Drop slug column from all addon tables
+ALTER TABLE plugins DROP COLUMN slug;
+ALTER TABLE themes DROP COLUMN slug;
+ALTER TABLE widgets DROP COLUMN slug;
+
+-- Add description column to themes (if not present)
+ALTER TABLE themes ADD COLUMN description VARCHAR(255) NULL AFTER name;
+
+-- Change widget description from TEXT to VARCHAR(255)
+ALTER TABLE widgets MODIFY COLUMN description VARCHAR(255) NULL;
+
+-- Add disabled columns to all addon tables (if not present)
+ALTER TABLE plugins ADD COLUMN disabled TINYINT(1) NULL DEFAULT NULL AFTER is_active,
+                    ADD COLUMN disabled_reason VARCHAR(255) NULL DEFAULT NULL AFTER disabled;
+ALTER TABLE themes ADD COLUMN disabled TINYINT(1) NULL DEFAULT NULL AFTER is_active,
+                   ADD COLUMN disabled_reason VARCHAR(255) NULL DEFAULT NULL AFTER disabled;
+ALTER TABLE widgets ADD COLUMN disabled TINYINT(1) NULL DEFAULT NULL AFTER is_active,
+                    ADD COLUMN disabled_reason VARCHAR(255) NULL DEFAULT NULL AFTER disabled;
+
+-- Rename pv_approved to pv_safe (if not already renamed)
+ALTER TABLE plugins CHANGE COLUMN pv_approved pv_safe TINYINT(1) UNSIGNED NULL DEFAULT NULL;
+ALTER TABLE themes CHANGE COLUMN pv_approved pv_safe TINYINT(1) UNSIGNED NULL DEFAULT NULL;
+ALTER TABLE widgets CHANGE COLUMN pv_approved pv_safe TINYINT(1) UNSIGNED NULL DEFAULT NULL;
+
+-- Add marketplace_licenses.author (if not present)
+ALTER TABLE marketplace_licenses ADD COLUMN author VARCHAR(100) NULL DEFAULT NULL AFTER product_name;
+```
+
+
+### Fixed
+- Active plugin migrations now run on every admin page load, catching any automated updates pending migrations from plugin updates
+- ExtensionUpdateService reads `update_url` from database instead of hardcoded constant
+- ICU quoting fix for `widgetValidationFailed` and `widgetValidationFailedLink` language keys (single quotes were escaping placeholders)
+- Scheduled post date now persists correctly when editing (was silently reverting to original date)
+- Published posts always set `published_at` to current timestamp (prevents future-dated published posts)
+- Scheduled posts require a future date (validation added)
+- Redirects form now posts to correct route (`/admin/redirects/store`)
+- Duplicate flash messages removed from 6 admin views (layout already handles them)
+- Edit forms (posts, pages, categories, affiliates, users) now redirect back to the edit form instead of the list
+
+### Added
+- **MVC cleanup**: all `db_connect()` calls eliminated from Controllers, Services, Filters, Views, and Commands — replaced with proper Model methods
+- `AddonModelTrait` shared by ThemeModel, WidgetModel, PluginModel for common addon operations
+- `UserAdminModel` for TOTP and ownership operations on the users table
+- `BackupModel` for database introspection operations
+- `BrokenLinkService` extracted from command — powers new "Run Scan" button in admin
+- `RedirectFilter` — 301/302 redirects now execute via a before-filter (previously stored but never processed)
+- Ban/unban feature using Shield's Bannable trait — admin UI with optional reason, status badges, filter by banned
+- Per-post `allow_comments` field — checkbox on post create/edit, merged with global setting at controller level
+- Paywall enforced at controller level — `post.content` stripped before reaching theme when user lacks `posts.read.premium` permission
+- "Comments are closed" message in all 9 themes when comments disabled (global or per-post)
+- Paywall message in all 9 themes using `Blog.paywallTitle` / `Blog.paywallMessage`
+- Plugin activation now auto-runs `Database/Seeds/` after migrations and before Installer
+- ~167 hardcoded English strings in admin views replaced with lang() keys across all 6 locales
+- Third-party addon licensing: license validation, product ID resolution, and 90-day revalidation route through third-party APIs based on addon author
+- `free` field added to all `*_info.json` files — free third-party addons activate without a license check
+- Standardized URL fields across all `*_info.json` files (`license_validate_url`, `license_check_url`, `store_url`, `items_url`, `item_url`, `download_url`, etc.)
+- Per-addon license key entry in admin Themes, Plugins, and Widgets pages with inline validation
+- Admin notifications for license and activation issues
+- Plugins language file added to all 6 locales (en, es, fr, id, pt, sk)
+- Activation chain enforces correct field combinations for bundled, paid, and free addons
+- Register-and-disable pattern: addons with invalid or incomplete `*_info.json` files are now registered in the DB as disabled (`disabled=1`, `disabled_reason` set) instead of being silently skipped
+- `disabled` and `disabled_reason` columns on plugins, themes, and widgets tables
+- `description` column on themes table (was missing, now matches plugins/widgets)
+- Disabled badge and reason shown in admin Plugins, Themes, and Widgets pages
+- Disabled addons blocked from activation, boot, rendering, and migration execution
+- Orphan cleanup added to theme and widget discovery (matching plugins)
+- Required-field validation for themes and widgets aligned with plugins (`name`, `version`, `description`, `author`)
+- Name/description change tracking added to theme and widget sync (matching plugins)
+- Language keys for disabled addon reasons in all 6 locales
+
+### Changed
+- **Static pages route**: `/:slug` → `/pages/:slug` to eliminate catch-all route conflicts
+- **Paywall**: checks `posts.read.premium` permission instead of just `loggedIn()`; content stripped at controller, not theme
+- **Paywall lang keys**: `paywallTitle` now "Premium Content", `paywallMessage` updated; `paywallSignIn` and `paywallCreateAccount` removed
+- **ExtensionUpdateService** renamed to **AddonUpdateService**
+- **Folder is the identifier**: the `slug` field in `*_info.json` is no longer used. The addon's folder name serves as the unique identifier for vetting, marketplace product resolution, update checks, and renew links
+- Widget `description` column changed from TEXT to VARCHAR(255) to match plugins
+- Widget discovery now resolves product IDs inline and fires admin notifications on failure
+- All addon models updated with new meta and URL `$allowedFields`
+- DStore admin label "Slug" changed to "Folder (case-sensitive)" in all 6 locales
+- 8 incremental addon-table migrations consolidated into the 3 original create-table migrations
+- 4 post-column migrations (`share_on_publish`, `preview_token`, `is_premium`, `media_id`) consolidated into CreatePostsTable
+- Plugin Installer.php role narrowed to filesystem-only; data seeding moves to `Database/Seeds/`
+- DigitalStore and PvDocs plugins refactored: data seeding moved from Installer to Seeds
+
+### Removed
+- `slug` column from plugins, themes, and widgets tables
+- `slug` field from all `*_info.json` files
+- Slug change detection code and notifications
+- `ExtensionUpdateService.php` (replaced by `AddonUpdateService.php`)
+- `Blog.paywallSignIn` and `Blog.paywallCreateAccount` lang keys
+
+---
+
+## v2.2.9 - 2026-04-05
+
+### Changed
+- Store APIs switched from slug to numeric `store_product_id` for update, license, and download endpoints
+- Terminology normalized from "extension" to "addon" across language files
+- Plugin migrations now run automatically during addon updates via `downloadAndInstall()`
+- `*Builder.md` docs excluded from release ZIP
+
+### Added
+- `store_product_id` column on themes, widgets, plugins, and marketplace_licenses tables
+- `is_listed` column on `ds_products` (separates storefront visibility from product validity)
+- "Core Bundled" badge in admin UI; update actions hidden for bundled addons
+- Version bumps for all bundled widgets, themes, and plugins
+
+
+---
+
+## v2.2.8 - 2026-04-05
+
+### Fixed
+- Update system: removed broken background queue/exec paths, now synchronous-only
+- Auto-update chain: addons update before core so `max_pubvana_version` is current before compatibility check
+
+### Added
+- Pre-flight update check before applying updates
+- `bundled` flag on addons — bundled addons skip the compatibility gate
+- Sync of widgets, themes, and plugins on updates page load and post-update
+- Idle status timeout in update polling JS
+- Version bumps: all widgets to 2.0.2, `max_pubvana_version` to 2.2.15 across all addons
+- README install steps updated for `shield:user create` flow
 
 ---
 

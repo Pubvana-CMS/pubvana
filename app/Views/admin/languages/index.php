@@ -33,7 +33,7 @@
                         <?php if ($lang->is_active): ?>
                             <span class="badge badge-success"><?= lang('Admin.languageEnabled') ?></span>
                         <?php else: ?>
-                            <span class="badge badge-secondary"><?= lang('Admin.inactive') ?></span>
+                            <span class="badge badge-secondary"><?= lang('Admin.disabled') ?></span>
                         <?php endif; ?>
                     </td>
                     <td class="text-right text-nowrap">
@@ -42,13 +42,13 @@
                                 <?= csrf_field() ?>
                                 <button class="btn btn-xs btn-outline-secondary"
                                     <?= $lang->is_default ? 'disabled title="' . lang('Admin.languageCannotDisable') . '"' : '' ?>>
-                                    <?= lang('Admin.inactive') ?>
+                                    <?= lang('Admin.disable') ?>
                                 </button>
                             </form>
                         <?php else: ?>
                             <form method="POST" action="<?= base_url('admin/languages/enable/' . $lang->id) ?>" class="d-inline">
                                 <?= csrf_field() ?>
-                                <button class="btn btn-xs btn-success"><?= lang('Admin.languageEnabled') ?></button>
+                                <button class="btn btn-xs btn-success"><?= lang('Admin.enable') ?></button>
                             </form>
                         <?php endif; ?>
 

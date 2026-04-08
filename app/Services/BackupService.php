@@ -233,12 +233,12 @@ class BackupService
 
     private function dumpViaMysqldump(): ?string
     {
-        $db     = db_connect();
-        $dbName = $db->getDatabase();
-        $host   = $db->hostname;
-        $user   = $db->username;
-        $pass   = $db->password;
-        $port   = $db->port ?? 3306;
+        $creds  = model(\App\Models\BackupModel::class)->getCredentials();
+        $dbName = $creds->database;
+        $host   = $creds->hostname;
+        $user   = $creds->username;
+        $pass   = $creds->password;
+        $port   = $creds->port;
 
         $passArg = $pass !== '' ? '-p' . escapeshellarg($pass) : '';
         $cmd = sprintf(
@@ -266,40 +266,34 @@ class BackupService
 
     private function dumpViaPHP(): string
     {
-        $db = db_connect();
+        $dbModel = model(\App\Models\BackupModel::class);
         $sql = '';
 
-        $dbName = $db->getDatabase();
+        $dbName = $dbModel->getCredentials()->database;
         $sql .= "-- Pubvana DB Backup\n";
         $sql .= "-- Generated: " . date('Y-m-d H:i:s') . "\n";
         $sql .= "-- Database:  {$dbName}\n\n";
         $sql .= "SET FOREIGN_KEY_CHECKS=0;\n\n";
 
-        $tables = [];
-        $result = $db->query('SHOW TABLES');
-        foreach ($result->getResultArray() as $row) {
-            $tables[] = reset($row);
-        }
+        $tables = $dbModel->getTableNames();
 
         foreach ($tables as $table) {
-            $createResult = $db->query("SHOW CREATE TABLE `{$table}`");
-            $createRow    = $createResult->getRowArray();
-            $createSql    = $createRow['Create Table'] ?? array_values($createRow)[1];
+            $createSql = $dbModel->getCreateTable($table);
 
             $sql .= "-- Table: {$table}\n";
             $sql .= "DROP TABLE IF EXISTS `{$table}`;\n";
             $sql .= $createSql . ";\n\n";
 
-            $rows = $db->query("SELECT * FROM `{$table}`")->getResultArray();
+            $rows = $dbModel->getAllRows($table);
             if (! empty($rows)) {
                 $columns = '`' . implode('`, `', array_keys($rows[0])) . '`';
                 $sql .= "INSERT INTO `{$table}` ({$columns}) VALUES\n";
 
                 $lastIdx = count($rows) - 1;
                 foreach ($rows as $i => $row) {
-                    $vals = array_map(function ($v) use ($db): string {
+                    $vals = array_map(function ($v) use ($dbModel): string {
                         if ($v === null) return 'NULL';
-                        return $db->escape($v);
+                        return $dbModel->escape($v);
                     }, array_values($row));
                     $sep = ($i === $lastIdx) ? ';' : ',';
                     $sql .= '  (' . implode(', ', $vals) . ')' . $sep . "\n";
@@ -315,12 +309,12 @@ class BackupService
 
     private function restoreViaMysql(string $sqlGzData): bool
     {
-        $db     = db_connect();
-        $dbName = $db->getDatabase();
-        $host   = $db->hostname;
-        $user   = $db->username;
-        $pass   = $db->password;
-        $port   = $db->port ?? 3306;
+        $creds  = model(\App\Models\BackupModel::class)->getCredentials();
+        $dbName = $creds->database;
+        $host   = $creds->hostname;
+        $user   = $creds->username;
+        $pass   = $creds->password;
+        $port   = $creds->port;
 
         // Write gzipped data to temp file
         $tmpFile = WRITEPATH . 'updates/restore_' . time() . '.sql.gz';
@@ -351,7 +345,7 @@ class BackupService
             throw new \RuntimeException('Failed to decompress database backup.');
         }
 
-        $db = db_connect();
+        $dbModel = model(\App\Models\BackupModel::class);
 
         // Split on semicolons that end a line (naive but works for mysqldump output)
         $statements = preg_split('/;\s*\n/', $sql);
@@ -360,7 +354,7 @@ class BackupService
             if ($stmt === '' || str_starts_with($stmt, '--')) {
                 continue;
             }
-            $db->query($stmt);
+            $dbModel->rawQuery($stmt);
         }
     }
 

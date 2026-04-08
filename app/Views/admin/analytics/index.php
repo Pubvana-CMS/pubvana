@@ -89,7 +89,7 @@
                 <table class="table table-sm table-hover mb-0" id="referrersTable">
                     <thead class="thead-light">
                         <tr>
-                            <th>Domain</th>
+                            <th><?= lang('Admin.colDomain') ?></th>
                             <th class="w-10 text-right"><?= lang('Admin.views') ?></th>
                         </tr>
                     </thead>

@@ -92,6 +92,11 @@
                     <label class="form-check-label" for="is_premium"><i class="fas fa-lock fa-xs text-warning mr-1"></i><?= lang('Admin.postMembersOnly') ?></label>
                 </div>
                 <div class="form-check mb-2">
+                    <input type="hidden" name="allow_comments" value="0">
+                    <input type="checkbox" name="allow_comments" id="allow_comments" class="form-check-input" value="1" checked>
+                    <label class="form-check-label" for="allow_comments"><?= lang('Admin.generalCommentsEnable') ?></label>
+                </div>
+                <div class="form-check mb-2">
                     <input type="checkbox" name="share_on_publish" id="share_on_publish" class="form-check-input" value="1" checked>
                     <label class="form-check-label" for="share_on_publish"><?= lang('Admin.postShareOnPublish') ?></label>
                 </div>
@@ -108,14 +113,14 @@
                     <img id="featured-image-preview-img" src="<?= esc(old('featured_image') ? base_url(old('featured_image')) : '') ?>" class="img-fluid rounded" alt="" style="max-height:180px">
                 </div>
                 <div id="featured-image-empty" class="text-center text-muted border rounded p-3 mb-2" style="<?= old('featured_image') ? 'display:none' : '' ?>">
-                    <i class="fas fa-image fa-2x mb-1"></i><br><small>No image selected</small>
+                    <i class="fas fa-image fa-2x mb-1"></i><br><small><?= lang('Admin.mediaNoSelection') ?></small>
                 </div>
                 <div class="d-flex mb-2">
                     <button type="button" class="btn btn-sm btn-outline-primary" id="browse-featured-image">
-                        <i class="fas fa-folder-open mr-1"></i>Browse Media
+                        <i class="fas fa-folder-open mr-1"></i><?= lang('Admin.mediaBrowse') ?>
                     </button>
                     <button type="button" class="btn btn-sm btn-outline-danger ml-1" id="remove-featured-image" style="<?= old('featured_image') ? '' : 'display:none' ?>">
-                        <i class="fas fa-times mr-1"></i>Remove
+                        <i class="fas fa-times mr-1"></i><?= lang('Admin.mediaRemove') ?>
                     </button>
                 </div>
                 <input type="text" name="featured_image" id="featured_image_url" class="form-control" placeholder="<?= lang('Admin.postFeaturedImagePlaceholder') ?>" value="<?= esc(old('featured_image')) ?>">

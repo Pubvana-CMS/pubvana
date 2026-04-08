@@ -56,9 +56,8 @@ class TwoFactor extends BaseAdminController
                 ->with('error', lang('Admin.tfaInvalidCode'));
         }
 
-        db_connect()->table('users')
-            ->where('id', $userId)
-            ->update(['totp_secret' => $secret, 'totp_enabled' => 1]);
+        $userAdmin = model(\App\Models\UserAdminModel::class);
+        $userAdmin->enableTotp($userId, $secret);
 
         session()->remove('totp_temp_secret');
         // Mark as verified so the filter doesn't immediately challenge the user
@@ -75,10 +74,8 @@ class TwoFactor extends BaseAdminController
     {
         $userId = auth()->id();
 
-        $row = db_connect()->table('users')
-            ->select('totp_secret, totp_enabled')
-            ->where('id', $userId)
-            ->get()->getRowObject();
+        $userAdmin = model(\App\Models\UserAdminModel::class);
+        $row = $userAdmin->getTotpInfo($userId);
 
         if (! $row || ! $row->totp_enabled) {
             return redirect()->to('/admin/users/' . $userId . '/profile')
@@ -93,9 +90,7 @@ class TwoFactor extends BaseAdminController
                 ->with('error', lang('Admin.tfaInvalidDisable'));
         }
 
-        db_connect()->table('users')
-            ->where('id', $userId)
-            ->update(['totp_secret' => null, 'totp_enabled' => 0]);
+        $userAdmin->disableTotp($userId);
 
         session()->remove('totp_2fa_verified');
 

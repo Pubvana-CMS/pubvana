@@ -2,6 +2,7 @@
 
 namespace App\Controllers\Admin;
 
+use App\Models\MarketplaceLicenseModel;
 use App\Models\WidgetAreaModel;
 use App\Models\WidgetInstanceModel;
 use App\Models\WidgetModel;
@@ -17,26 +18,29 @@ class Widgets extends BaseAdminController
         }
         (new WidgetService())->sync();
 
+        $widgetModel = new WidgetModel();
+
+        // Build license lookup keyed by store_product_id
+        $allLicenses = (new MarketplaceLicenseModel())->where('item_type', 'widget')->findAll();
+        $licenses    = [];
+        foreach ($allLicenses as $lic) {
+            $licenses[$lic->store_product_id] = $lic;
+        }
+
         $theme     = $this->themeService->getActive();
         $areaModel = new WidgetAreaModel();
         $areas     = $theme ? $areaModel->where('theme_id', $theme->id)->findAll() : [];
 
         // Fetch instances by slug so widgets carry over across themes
-        $slugs = array_column((array) $areas, 'slug');
-        $db = db_connect();
-        $instances = $slugs ? $db->table('widget_instances wi')
-            ->select('wi.*, w.name as widget_name, w.folder, wa.slug as area_slug')
-            ->join('widgets w', 'w.id = wi.widget_id')
-            ->join('widget_areas wa', 'wa.id = wi.widget_area_id')
-            ->whereIn('wa.slug', $slugs)
-            ->where('w.is_active', 1)
-            ->orderBy('wi.sort_order', 'ASC')
-            ->get()->getResultObject() : [];
+        $slugs     = array_column((array) $areas, 'slug');
+        $instanceModel = new WidgetInstanceModel();
+        $instances = $instanceModel->getForAreas($slugs);
 
         return $this->adminView('widgets/areas', array_merge($this->baseData('Widgets', 'widgets'), [
             'areas'           => $areas,
             'instances'       => $instances,
-            'available'       => (new WidgetModel())->where('is_active', 1)->findAll(),
+            'available'       => $widgetModel->where('is_active', 1)->where('disabled IS NULL')->findAll(),
+            'licenses'        => $licenses,
             'invalidLicenses' => array_filter(
                 (new MarketplaceService())->getInvalidLicenses(),
                 fn($l) => $l->item_type === 'widget'
@@ -51,6 +55,12 @@ class Widgets extends BaseAdminController
         }
         $areaId   = (int) $this->request->getPost('widget_area_id');
         $widgetId = (int) $this->request->getPost('widget_id');
+
+        $widget = (new WidgetModel())->find($widgetId);
+        if (! $widget || ! empty($widget->disabled)) {
+            return redirect()->to('/admin/widgets')->with('error', lang('Admin.activationBlockedDisabled', [$widget->name ?? 'Widget']));
+        }
+
         $model    = new WidgetInstanceModel();
         $model->insert([
             'widget_id'      => $widgetId,
@@ -69,13 +79,9 @@ class Widgets extends BaseAdminController
             return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         // Get the area slug before deleting so we can redirect back to the right tab
-        $instance = db_connect()->table('widget_instances wi')
-            ->select('wa.slug')
-            ->join('widget_areas wa', 'wa.id = wi.widget_area_id')
-            ->where('wi.id', $instanceId)
-            ->get()->getRowObject();
-        $slug = $instance ? $instance->slug : '';
-        (new WidgetInstanceModel())->delete($instanceId);
+        $instanceModel = new WidgetInstanceModel();
+        $slug = $instanceModel->getAreaSlug($instanceId) ?? '';
+        $instanceModel->delete($instanceId);
         return redirect()->to('/admin/widgets#area-' . $slug)->with('success', lang('Admin.widgetRemoved'));
     }
 
@@ -84,12 +90,8 @@ class Widgets extends BaseAdminController
         if (! auth()->user()->can('admin.widgets')) {
             return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
-        $db = db_connect();
-        $instance = $db->table('widget_instances wi')
-            ->select('wi.*, w.folder, w.name as widget_name')
-            ->join('widgets w', 'w.id = wi.widget_id')
-            ->where('wi.id', $instanceId)
-            ->get()->getRowObject();
+        $instanceModel = new WidgetInstanceModel();
+        $instance = $instanceModel->getWithWidget($instanceId);
 
         if (! $instance) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
@@ -112,14 +114,11 @@ class Widgets extends BaseAdminController
         $options = $this->request->getPost('options') ?? [];
 
         // Ensure unchecked checkboxes are saved as "0" (HTML forms omit unchecked fields)
-        $instance = db_connect()->table('widget_instances wi')
-            ->select('w.folder')
-            ->join('widgets w', 'w.id = wi.widget_id')
-            ->where('wi.id', $instanceId)
-            ->get()->getRowObject();
+        $instanceModel = new WidgetInstanceModel();
+        $folder = $instanceModel->getWidgetFolder($instanceId);
 
-        if ($instance) {
-            $manifest = (new WidgetService())->readManifest($instance->folder);
+        if ($folder) {
+            $manifest = (new WidgetService())->readManifest($folder);
             if ($manifest) {
                 foreach ($manifest['admin']['options'] ?? [] as $key => $cfg) {
                     if (($cfg['type'] ?? '') === 'checkbox' && ! isset($options[$key])) {
@@ -129,13 +128,8 @@ class Widgets extends BaseAdminController
             }
         }
 
-        (new WidgetInstanceModel())->update($instanceId, ['options_json' => json_encode($options)]);
-        $instance = db_connect()->table('widget_instances wi')
-            ->select('wa.slug')
-            ->join('widget_areas wa', 'wa.id = wi.widget_area_id')
-            ->where('wi.id', $instanceId)
-            ->get()->getRowObject();
-        $slug = $instance ? $instance->slug : '';
+        $instanceModel->update($instanceId, ['options_json' => json_encode($options)]);
+        $slug = $instanceModel->getAreaSlug($instanceId) ?? '';
         return redirect()->to('/admin/widgets#area-' . $slug)->with('success', lang('Admin.widgetConfigured'));
     }
 
@@ -151,5 +145,76 @@ class Widgets extends BaseAdminController
             $model->update((int) $instanceId, ['sort_order' => $i]);
         }
         return $this->response->setJSON(['success' => true]);
+    }
+
+    public function saveLicense()
+    {
+        $licenseKey     = trim($this->request->getPost('license_key') ?? '');
+        $storeProductId = (int) ($this->request->getPost('store_product_id') ?? 0);
+
+        if (! $licenseKey || ! $storeProductId) {
+            return redirect()->to('/admin/widgets')->with('error', lang('Admin.licenseKeyRequired'));
+        }
+
+        // Determine validation URL (Pubvana vs third-party)
+        $widget    = (new WidgetModel())->where('store_product_id', $storeProductId)->first();
+        $isPubvana = $widget && in_array(strtolower(trim($widget->author ?? '')), ['pubvana', 'pubvana_team'], true);
+        $validateUrl = $isPubvana
+            ? PUBVANA_DSTORE_API . 'license/validate'
+            : ($widget->license_validate_url ?? null);
+
+        if (! $validateUrl) {
+            return redirect()->to('/admin/widgets')->with('error', lang('Admin.licenseCheckFailed'));
+        }
+
+        // Validate against the store API
+        try {
+            $client   = \Config\Services::curlrequest(['timeout' => 10]);
+            $response = $client->post($validateUrl, [
+                'json' => [
+                    'license_key' => $licenseKey,
+                    'product_id'  => $storeProductId,
+                    'domain'      => base_url(),
+                ],
+                'http_errors' => false,
+            ]);
+
+            $body  = json_decode($response->getBody(), true);
+            $valid = ($response->getStatusCode() === 200 && ! empty($body['valid']));
+        } catch (\Throwable $e) {
+            return redirect()->to('/admin/widgets')->with('error', lang('Admin.licenseCheckFailed'));
+        }
+
+        if (! $valid) {
+            $error = $body['error'] ?? lang('Admin.licenseInvalid');
+            return redirect()->to('/admin/widgets')->with('error', $error);
+        }
+
+        // Upsert marketplace_licenses
+        $licenseModel = new MarketplaceLicenseModel();
+        $existing     = $licenseModel->where('store_product_id', $storeProductId)
+            ->where('item_type', 'widget')
+            ->first();
+
+        $productName = $widget->name ?? 'Widget';
+
+        $licenseData = [
+            'store_product_id'     => $storeProductId,
+            'product_name'         => $productName,
+            'item_type'            => 'widget',
+            'license_valid'        => 1,
+            'license_last_checked' => date('Y-m-d H:i:s'),
+            'author'               => $widget->author ?? '',
+        ];
+
+        if ($existing) {
+            $licenseData['license_key'] = $licenseKey;
+            $licenseModel->update($existing->id, $licenseData);
+        } else {
+            $licenseData['license_key'] = $licenseKey;
+            $licenseModel->insert($licenseData);
+        }
+
+        return redirect()->to('/admin/widgets')->with('success', lang('Admin.licenseSaved'));
     }
 }

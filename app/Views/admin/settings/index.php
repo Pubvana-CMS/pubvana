@@ -124,7 +124,7 @@
                         <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.generalPageCacheTtl') ?></label>
                         <div class="col-sm-3">
                             <input type="number" name="page_cache_ttl" class="form-control" min="0" value="<?= esc(setting('App.pageCacheTtl') ?? 120) ?>">
-                            <small class="text-muted">Seconds. 0 = disabled.</small>
+                            <small class="text-muted"><?= lang('Admin.settingsCacheTtlHint') ?></small>
                         </div>
                     </div>
                     <div class="text-right">

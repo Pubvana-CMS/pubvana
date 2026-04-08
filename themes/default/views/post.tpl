@@ -22,6 +22,10 @@
         {% if post.excerpt %}
             <div class="post-content">{{ post.excerpt | nl2br | raw }}</div>
         {% endif %}
+        <div class="alert alert-warning mt-3">
+            <strong>{% lang 'Blog.paywallTitle' %}</strong><br>
+            {% lang 'Blog.paywallMessage' %}
+        </div>
     {% else %}
         <div class="post-content">
             {% render_content post %}
@@ -45,5 +49,8 @@
 
     {% include 'partials/comment-form' with {post: post} %}
 </div>
+{% elseif not paywall %}
+<hr class="my-5">
+<p class="text-muted"><i class="fas fa-comment-slash mr-1"></i> {% lang 'Blog.commentsClosed' %}</p>
 {% endif %}
 {% endblock %}

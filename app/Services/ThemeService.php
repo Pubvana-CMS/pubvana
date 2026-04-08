@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AdminNotificationModel;
 use App\Models\ThemeModel;
 use App\Models\WidgetAreaModel;
 use App\Libraries\TemplateEngine\Engine;
@@ -21,23 +22,33 @@ class ThemeService
     {
         $themes = [];
         foreach (glob(THEMES_PATH . '*', GLOB_ONLYDIR) as $dir) {
+            $folder   = basename($dir);
             $jsonFile = $dir . '/theme_info.json';
             $phpFile  = $dir . '/theme_info.php';
 
             if (is_file($jsonFile)) {
                 $info = json_decode(file_get_contents($jsonFile), true);
             } elseif (is_file($phpFile)) {
-                // Legacy fallback during transition
                 $info = require $phpFile;
             } else {
-                continue;
+                continue; // No info file at all — not an addon, skip entirely
             }
+
+            $disabledReason = null;
 
             if (! is_array($info)) {
-                continue;
+                $disabledReason = lang('Admin.addonDisabledInvalidJson', [$folder, 'theme_info.json']);
+                $info = [];
+            } else {
+                $required = ['name', 'version', 'description', 'author'];
+                $missing  = array_diff($required, array_keys($info));
+                if (! empty($missing)) {
+                    $disabledReason = lang('Admin.addonDisabledMissingFields', [$folder, implode(', ', $missing)]);
+                }
             }
 
-            $info['folder'] = basename($dir);
+            $info['folder']           = $folder;
+            $info['_disabled_reason'] = $disabledReason;
             $themes[] = $info;
         }
         return $themes;
@@ -49,38 +60,120 @@ class ThemeService
         $now   = date('Y-m-d H:i:s');
         $hasNew = false;
 
-        foreach ($this->discover() as $info) {
-            $folder = $info['folder'];
-            $existing = $model->where('folder', $folder)->first();
+        // Remove orphaned records — theme folder deleted from disk
+        $registered = $model->findAll();
+        foreach ($registered as $row) {
+            if (! is_dir(THEMES_PATH . $row->folder)) {
+                $model->delete($row->id);
+            }
+        }
 
+        foreach ($this->discover() as $info) {
+            $folder         = $info['folder'];
+            $disabledReason = $info['_disabled_reason'];
+            $existing       = $model->where('folder', $folder)->first();
+
+            $metaFields = [
+                // Flags
+                'bundled'             => ! empty($info['bundled']) ? 1 : 0,
+                'free'                => ! empty($info['free'])    ? 1 : 0,
+                // Support & store URLs
+                'support_url'         => $info['support_url']         ?? null,
+                'author_url'          => $info['author_url']          ?? null,
+                'items_url'           => $info['items_url']           ?? null,
+                'item_url'            => $info['item_url']            ?? null,
+                'store_url'           => $info['store_url']           ?? null,
+                // Category URLs
+                'categories_url'      => $info['categories_url']      ?? null,
+                'categories_all_url'  => $info['categories_all_url']  ?? null,
+                'category_url'        => $info['category_url']        ?? null,
+                // Discovery URLs
+                'featured_url'        => $info['featured_url']        ?? null,
+                // License URLs
+                'license_validate_url' => $info['license_validate_url'] ?? null,
+                'license_check_url'   => $info['license_check_url']   ?? null,
+                // Update URLs
+                'update_url'          => $info['update_url']          ?? null,
+                'update_check_url'    => $info['update_check_url']    ?? null,
+                'download_url'        => $info['download_url']        ?? null,
+            ];
+
+            // ── Disabled → always force inactive ────────────────────────
+            if ($disabledReason !== null) {
+                if ($existing) {
+                    $model->update($existing->id, array_merge([
+                        'is_active'       => 0,
+                        'disabled'        => 1,
+                        'disabled_reason' => $disabledReason,
+                    ], $metaFields));
+                } else {
+                    $model->insert(array_merge([
+                        'name'            => $info['name']        ?? $folder,
+                        'folder'          => $folder,
+                        'description'     => $info['description'] ?? '',
+                        'version'         => $info['version']     ?? '0.0.0',
+                        'author'          => VettingService::normalizeAuthor($info['author'] ?? ''),
+                        'is_active'       => 0,
+                        'disabled'        => 1,
+                        'disabled_reason' => $disabledReason,
+                        'installed_at'    => $now,
+                        'created_at'      => $now,
+                        'updated_at'      => $now,
+                    ], $metaFields));
+                    $hasNew = true;
+                }
+
+                // Still validate and publish assets for disabled themes
+                $this->validationResults[$folder] = $this->validateTheme($folder);
+                $this->publishAssets($folder);
+                continue;
+            }
+
+            // ── Valid addon ─────────────────────────────────────────────
             if (! $existing) {
-                $model->insert([
-                    'name'         => $info['name']    ?? $folder,
+                $model->insert(array_merge([
+                    'name'         => $info['name'],
                     'folder'       => $folder,
-                    'version'      => $info['version'] ?? 'unknown',
+                    'description'  => $info['description'],
+                    'version'      => $info['version'],
                     'author'       => VettingService::normalizeAuthor($info['author'] ?? ''),
                     'is_active'    => 0,
                     'installed_at' => $now,
                     'created_at'   => $now,
                     'updated_at'   => $now,
-                ]);
+                ], $metaFields));
                 $hasNew = true;
             } else {
-                $newVersion = $info['version'] ?? 'unknown';
+                $newVersion = $info['version'];
                 $newAuthor  = VettingService::normalizeAuthor($info['author'] ?? '');
+                $clearDisabled = [];
+                if (! empty($existing->disabled)) {
+                    $clearDisabled = ['disabled' => null, 'disabled_reason' => null];
+                }
 
                 if ($newVersion !== ($existing->version ?? '')) {
-                    $model->update($existing->id, [
+                    $model->update($existing->id, array_merge([
                         'version'     => $newVersion,
+                        'name'        => $info['name'],
+                        'description' => $info['description'],
                         'author'      => $newAuthor,
-                        'pv_approved' => null,
-                    ]);
+                        'pv_safe'     => null,
+                    ], $metaFields, $clearDisabled));
                     $hasNew = true;
+                } elseif (($info['name'] ?? '') !== ($existing->name ?? '') || ($info['description'] ?? '') !== ($existing->description ?? '')) {
+                    $model->update($existing->id, array_merge([
+                        'name'        => $info['name'],
+                        'description' => $info['description'],
+                        'author'      => $newAuthor,
+                    ], $metaFields, $clearDisabled));
                 } elseif ($newAuthor !== ($existing->author ?? '')) {
-                    $model->update($existing->id, [
+                    $model->update($existing->id, array_merge([
                         'author' => $newAuthor,
-                    ]);
+                    ], $metaFields, $clearDisabled));
+                } elseif ($existing->support_url === null || $existing->author_url === null || ! empty($existing->disabled)) {
+                    $model->update($existing->id, array_merge($metaFields, $clearDisabled));
                 }
+
             }
 
             // Validate - check for PHP tags
@@ -117,7 +210,7 @@ class ThemeService
             return $this->activeTheme;
         }
         $model = new ThemeModel();
-        $this->activeTheme = $model->where('is_active', 1)->first();
+        $this->activeTheme = $model->where('is_active', 1)->where('disabled IS NULL')->first();
         return $this->activeTheme;
     }
 
@@ -254,9 +347,8 @@ class ThemeService
         // Theme options — load ALL options for active theme into the bag by key name
         $themeOptions = [];
         if ($theme) {
-            $rows = db_connect()->table('theme_options')
-                ->where('theme_id', $theme->id)
-                ->get()->getResultObject();
+            $optionModel = model(\App\Models\ThemeOptionModel::class);
+            $rows = $optionModel->getForTheme($theme->id);
             foreach ($rows as $row) {
                 $themeOptions[$row->option_key] = $row->option_value;
             }
@@ -355,27 +447,64 @@ class ThemeService
 
     private array $validationResults = [];
 
-    public function activate(int $id): bool
+    public function activate(int $id): string
     {
         $model = new ThemeModel();
         $theme = $model->find($id);
         if (! $theme) {
-            return false;
+            return 'not_found';
         }
 
-        // Dev domains bypass all license checks
-        $host        = strtolower(parse_url(base_url(), PHP_URL_HOST) ?? '');
-        $isDevDomain = $host === 'localhost' || str_ends_with($host, '.local');
+        if (! empty($theme->disabled)) {
+            return 'disabled';
+        }
 
-        if (! $isDevDomain) {
+        $isPubvana      = in_array($theme->author ?? '', ['pubvana', 'pubvana_team'], true);
+        $isBundled      = ! empty($theme->bundled);
+        $isFree         = ! empty($theme->free);
+        $hasLicenseUrls = ! empty($theme->license_validate_url) || ! empty($theme->item_url);
+
+        // Abuse/tamper checks
+        if (! $isPubvana && $isBundled) {
+            return 'tampered_bundled';
+        }
+        if (! $isPubvana && ! $isFree && ! $hasLicenseUrls) {
+            return 'tampered_no_urls';
+        }
+        if ($isPubvana && $isFree && ! $isBundled) {
+            return 'tampered_free_flag';
+        }
+
+        // Activation chain
+        if ($isBundled && $isPubvana) {
+            // Bundled Pubvana — activate, no check
+        } elseif ($isPubvana) {
+            // Pubvana paid — require valid license
             if ($theme->store_product_id) {
                 $license = (new MarketplaceLicenseModel())->where('store_product_id', $theme->store_product_id)->first();
-                if ($license && (int) ($license->license_valid ?? -1) !== 1) {
-                    return false;
+                if (! $license || (int) ($license->license_valid ?? -1) !== 1) {
+                    return 'invalid_license';
                 }
+            } else {
+                return 'invalid_license'; // No store product ID = can't validate
             }
+        } elseif ($isFree) {
+            // Third party free — activate, no check
+        } elseif ($hasLicenseUrls) {
+            // Third party paid with license URLs — check against their API
+            if ($theme->store_product_id) {
+                $license = (new MarketplaceLicenseModel())->where('store_product_id', $theme->store_product_id)->first();
+                if (! $license || (int) ($license->license_valid ?? -1) !== 1) {
+                    return 'invalid_license';
+                }
+            } else {
+                return 'invalid_license';
+            }
+        } else {
+            return 'tampered_no_urls'; // Belt-and-suspenders
         }
 
+        // All checks passed — activate
         $model->where('id !=', $id)->set('is_active', 0)->update();
         $model->update($id, ['is_active' => 1]);
 
@@ -383,7 +512,7 @@ class ThemeService
         $this->syncWidgetAreas($theme);
         $this->publishAssets($theme->folder);
 
-        return true;
+        return 'activated';
     }
 
     protected function syncWidgetAreas(object $theme): void
@@ -447,20 +576,9 @@ class ThemeService
             return;
         }
 
-        $db = db_connect();
+        $optionModel = model(\App\Models\ThemeOptionModel::class);
         foreach ($options as $key => $def) {
-            $exists = $db->table('theme_options')
-                ->where('theme_id', $theme->id)
-                ->where('option_key', $key)
-                ->countAllResults();
-
-            if ($exists === 0) {
-                $db->table('theme_options')->insert([
-                    'theme_id'     => $theme->id,
-                    'option_key'   => $key,
-                    'option_value' => $def['default'] ?? '',
-                ]);
-            }
+            $optionModel->seedDefault($theme->id, $key, $def['default'] ?? '');
         }
     }
 
@@ -585,34 +703,11 @@ class ThemeService
 
     public function getThemeOption(int $themeId, string $key, mixed $default = null): mixed
     {
-        $db  = db_connect();
-        $row = $db->table('theme_options')
-            ->where('theme_id', $themeId)
-            ->where('option_key', $key)
-            ->get()->getRowObject();
-
-        return $row ? $row->option_value : $default;
+        return model(\App\Models\ThemeOptionModel::class)->getOption($themeId, $key, $default);
     }
 
     public function saveThemeOption(int $themeId, string $key, mixed $value): void
     {
-        $db  = db_connect();
-        $row = $db->table('theme_options')
-            ->where('theme_id', $themeId)
-            ->where('option_key', $key)
-            ->get()->getRowObject();
-
-        if ($row) {
-            $db->table('theme_options')
-                ->where('theme_id', $themeId)
-                ->where('option_key', $key)
-                ->update(['option_value' => $value]);
-        } else {
-            $db->table('theme_options')->insert([
-                'theme_id'     => $themeId,
-                'option_key'   => $key,
-                'option_value' => $value,
-            ]);
-        }
+        model(\App\Models\ThemeOptionModel::class)->saveOption($themeId, $key, (string) $value);
     }
 }

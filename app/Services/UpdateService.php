@@ -268,10 +268,15 @@ class UpdateService
         $extIncompat = ! empty($knownIncompatible) ? $knownIncompatible
             : ($targetVersion !== '' ? $this->checkExtensionCompatibility($targetVersion) : []);
         foreach ($extIncompat as $ext) {
+            if (! empty($ext['min_version'])) {
+                $message = lang('Admin.compatMinVersion', [$ext['min_version']]);
+            } else {
+                $message = lang('Admin.compatMaxVersion', [$ext['max_version']]);
+            }
             $checks[] = [
                 'name'    => ucfirst($ext['type']) . ': ' . $ext['name'],
                 'pass'    => false,
-                'message' => 'Max compatible version: ' . $ext['max_version'],
+                'message' => $message,
                 'hard'    => false,
             ];
         }
@@ -318,6 +323,17 @@ class UpdateService
                         'type'        => $type,
                         'name'        => $data['name'],
                         'max_version' => $maxVersion,
+                        'min_version' => null,
+                    ];
+                }
+
+                $minVersion = $data['min_pubvana_version'] ?? null;
+                if ($minVersion !== null && version_compare(APP_VERSION, $minVersion, '<')) {
+                    $incompatible[] = [
+                        'type'        => $type,
+                        'name'        => $data['name'],
+                        'max_version' => $maxVersion,
+                        'min_version' => $minVersion,
                     ];
                 }
             }
@@ -340,10 +356,6 @@ class UpdateService
      */
     public function checkAndAutoUpdateIfDue(): void
     {
-        if ($this->isDevDomain()) {
-            return;
-        }
-
         $chainCacheKey = 'pubvana_daily_update_chain';
         if (cache($chainCacheKey) !== null) {
             return;
@@ -353,7 +365,7 @@ class UpdateService
         // Step 1: Check + auto-update addons first so their max_pubvana_version
         //         is current before the core compatibility check runs.
         try {
-            $extService = new ExtensionUpdateService();
+            $extService = new AddonUpdateService();
             $results = $extService->checkAllAddons();
             $extService->runAutoUpdates($results);
         } catch (\Throwable $e) {
@@ -455,12 +467,6 @@ class UpdateService
     public function clearChainCache(): void
     {
         cache()->delete('pubvana_daily_update_chain');
-    }
-
-    private function isDevDomain(): bool
-    {
-        $host = strtolower(parse_url(base_url(), PHP_URL_HOST) ?? '');
-        return $host === 'localhost' || str_ends_with($host, '.local');
     }
 
     private function removeDirectory(string $dir): void

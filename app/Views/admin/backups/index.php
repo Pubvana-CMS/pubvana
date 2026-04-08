@@ -3,14 +3,14 @@
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.navBackup') ?></h1>
     <button type="button" class="btn btn-primary" id="createBackupBtn" <?= !empty($is_locked) ? 'disabled' : '' ?>>
-        <i class="fas fa-plus mr-1"></i> Create Backup
+        <i class="fas fa-plus mr-1"></i> <?= lang('Admin.backupCreate') ?>
     </button>
 </div>
 
 <!-- Progress bar (hidden by default) -->
 <div id="backup-progress" class="card shadow mb-4" style="display:none;">
     <div class="card-body">
-        <h6 class="font-weight-bold" id="progress-label">Starting backup...</h6>
+        <h6 class="font-weight-bold" id="progress-label"><?= lang('Admin.backupStarting') ?></h6>
         <div class="progress mb-2">
             <div class="progress-bar progress-bar-striped progress-bar-animated" id="progress-bar"
                  role="progressbar" style="width: 0%"></div>
@@ -21,25 +21,25 @@
 
 <?php if (empty($backups)): ?>
     <div class="alert alert-info">
-        <i class="fas fa-info-circle mr-1"></i> No backups yet. Click "Create Backup" to create your first one.
+        <i class="fas fa-info-circle mr-1"></i> <?= lang('Admin.backupNoneYet') ?>
     </div>
 <?php else: ?>
 <div class="card shadow mb-4">
     <div class="card-header py-3 d-flex align-items-center justify-content-between">
-        <h6 class="m-0 font-weight-bold text-primary">Backups</h6>
-        <small class="text-muted">Maximum 15 backups retained — oldest are deleted automatically.</small>
+        <h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.backupsTitle') ?></h6>
+        <small class="text-muted"><?= lang('Admin.backupRetentionNote') ?></small>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover mb-0">
                 <thead class="thead-light">
                     <tr>
-                        <th>Filename</th>
-                        <th>Version</th>
-                        <th>Trigger</th>
-                        <th>Size</th>
-                        <th>Date</th>
-                        <th class="text-right">Actions</th>
+                        <th><?= lang('Admin.colFilename') ?></th>
+                        <th><?= lang('Admin.colVersion') ?></th>
+                        <th><?= lang('Admin.colTrigger') ?></th>
+                        <th><?= lang('Admin.colSize') ?></th>
+                        <th><?= lang('Admin.colDate') ?></th>
+                        <th class="text-right"><?= lang('Admin.colActions') ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -52,24 +52,24 @@
                         <td><?= esc($backup['created']) ?></td>
                         <td class="text-right text-nowrap">
                             <a href="<?= base_url('admin/backups/download/' . esc($backup['filename'])) ?>"
-                               class="btn btn-sm btn-outline-primary" title="Download">
+                               class="btn btn-sm btn-outline-primary" title="<?= lang('Admin.download') ?>">
                                 <i class="fas fa-download"></i>
                             </a>
                             <form method="POST"
                                   action="<?= base_url('admin/backups/restore/' . esc($backup['filename'])) ?>"
                                   class="d-inline"
-                                  onsubmit="return confirm('Restore this backup? A backup of the current state will be created first.')">
+                                  onsubmit="return confirm('<?= lang('Admin.backupRestoreConfirm') ?>')">
                                 <?= csrf_field() ?>
-                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Restore">
+                                <button type="submit" class="btn btn-sm btn-outline-warning" title="<?= lang('Admin.restore') ?>">
                                     <i class="fas fa-rotate-left"></i>
                                 </button>
                             </form>
                             <form method="POST"
                                   action="<?= base_url('admin/backups/' . esc($backup['filename']) . '/delete') ?>"
                                   class="d-inline"
-                                  onsubmit="return confirm('Delete this backup?')">
+                                  onsubmit="return confirm('<?= lang('Admin.backupDeleteConfirm') ?>')">
                                 <?= csrf_field() ?>
-                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="<?= lang('Admin.delete') ?>">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </form>

@@ -31,7 +31,7 @@ class NavigationService
         if (! empty($pages)) {
             $routes['Pages'] = [];
             foreach ($pages as $page) {
-                $routes['Pages'][] = ['label' => $page->title, 'url' => '/' . $page->slug];
+                $routes['Pages'][] = ['label' => $page->title, 'url' => '/pages/' . $page->slug];
             }
         }
 
@@ -68,11 +68,7 @@ class NavigationService
 
     public function getTree(string $group = 'primary'): array
     {
-        $db   = db_connect();
-        $flat = $db->table('navigation')
-            ->where('nav_group', $group)
-            ->orderBy('sort_order', 'ASC')
-            ->get()->getResultObject();
+        $flat = model(\App\Models\NavigationModel::class)->getByGroup($group);
 
         return $this->buildTree($flat);
     }

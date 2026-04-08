@@ -34,35 +34,23 @@ class AuthorProfileModel extends Model
 
     public function getForPost(?int $postId): ?object
     {
-        if (! $postId) {
-            return null;
-        }
+        if ($postId === null) return null;
 
-        $post = db_connect()->table('posts')
-            ->select('author_id')
-            ->where('id', $postId)
-            ->where('status', 'published')
-            ->get()->getRowObject();
+        $post = $this->db->table('posts')
+                    ->select('author_id')
+                    ->where('id', $postId)
+                    ->where('status', 'published')
+                    ->get()->getRowObject();
 
-        if (! $post || empty($post->author_id)) {
-            return null;
-        }
+        if (! $post) return null;
 
         $profile = $this->getByUserId((int) $post->author_id);
-        if (! $profile) {
-            return null;
-        }
 
-        // Attach email/username for gravatar fallback
-        $userRow = db_connect()->table('users u')
-            ->select('u.username, ai.secret AS email')
-            ->join('auth_identities ai', 'ai.user_id = u.id AND ai.type = \'email_password\'', 'left')
-            ->where('u.id', $post->author_id)
-            ->get()->getRowObject();
+        $authorUser = auth()->getProvider()->findById((int) $post->author_id);
 
-        if ($userRow) {
-            $profile->username = $userRow->username;
-            $profile->email    = $userRow->email;
+        if ($profile && $authorUser) {
+            $profile->username = $authorUser->username;
+            $profile->email    = $authorUser->getEmail();
         }
 
         return $profile;

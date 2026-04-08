@@ -81,7 +81,9 @@ class Blog extends BaseController
 
         // Handle comment submission
         $commentSaved = false;
-        if (strtolower($this->request->getMethod()) === 'post' && setting('App.commentsEnabled')) {
+        $commentsEnabled = (bool) setting('App.commentsEnabled') && (bool) ($post->allow_comments ?? 1);
+
+        if (strtolower($this->request->getMethod()) === 'post' && $commentsEnabled) {
             if (! auth()->loggedIn()) {
                 return redirect()->to('/login')->with('error', lang('Blog.commentLoginToComment'));
             }
@@ -107,14 +109,10 @@ class Blog extends BaseController
             $profile       = $profileModel->getByUserId((int) $post->author_id);
             if ($profile) {
                 // Attach username/email from users table for gravatar fallback
-                $userRow = db_connect()->table('users u')
-                    ->select('u.username, ai.secret AS email')
-                    ->join('auth_identities ai', 'ai.user_id = u.id AND ai.type = \'email_password\'', 'left')
-                    ->where('u.id', $post->author_id)
-                    ->get()->getRowObject();
-                if ($userRow) {
-                    $profile->username = $userRow->username;
-                    $profile->email    = $userRow->email;
+                $authorUser = auth()->getProvider()->findById($post->author_id);
+                if ($authorUser) {
+                    $profile->username = $authorUser->username;
+                    $profile->email    = $authorUser->getEmail();
                 }
                 $authorProfile = $profile;
             }
@@ -125,19 +123,25 @@ class Blog extends BaseController
             $seo['og_image'] = (new OgImageService())->generate($post->title, $post->slug);
         }
 
-        $paywall = ! empty($post->is_premium) && ! auth()->loggedIn();
+        $canReadPremium = auth()->loggedIn() && auth()->user()->can('posts.read.premium');
+        $paywall = ! empty($post->is_premium) && ! $canReadPremium;
+
+        if ($paywall) {
+            $post->content = '';
+        }
 
         $wordCount = str_word_count(strip_tags($post->content ?? ''));
         $readingTime = max(1, (int) ceil($wordCount / 200));
 
         return $this->themeService->view('post', [
-            'post'           => $post,
-            'comments'       => $comments,
-            'author_profile' => $authorProfile,
-            'seo'            => $seo,
-            'json_ld'        => $this->seoService->getJsonLd($post, $authorProfile),
-            'paywall'        => $paywall,
-            'reading_time'   => $readingTime,
+            'post'              => $post,
+            'comments'          => $comments,
+            'comments_enabled'  => $commentsEnabled,
+            'author_profile'    => $authorProfile,
+            'seo'               => $seo,
+            'json_ld'           => $this->seoService->getJsonLd($post, $authorProfile),
+            'paywall'           => $paywall,
+            'reading_time'      => $readingTime,
         ]);
     }
 
@@ -158,14 +162,10 @@ class Blog extends BaseController
             $profileModel = new AuthorProfileModel();
             $profile      = $profileModel->getByUserId((int) $post->author_id);
             if ($profile) {
-                $userRow = db_connect()->table('users u')
-                    ->select('u.username, ai.secret AS email')
-                    ->join('auth_identities ai', 'ai.user_id = u.id AND ai.type = \'email_password\'', 'left')
-                    ->where('u.id', $post->author_id)
-                    ->get()->getRowObject();
-                if ($userRow) {
-                    $profile->username = $userRow->username;
-                    $profile->email    = $userRow->email;
+                $authorUser = auth()->getProvider()->findById($post->author_id);
+                if ($authorUser) {
+                    $profile->username = $authorUser->username;
+                    $profile->email    = $authorUser->getEmail();
                 }
                 $authorProfile = $profile;
             }
@@ -199,18 +199,14 @@ class Blog extends BaseController
         }
 
         // Auto-fill author details from the logged-in user
-        $userRow = db_connect()->table('users u')
-            ->select('u.username, ai.secret AS email')
-            ->join('auth_identities ai', 'ai.user_id = u.id AND ai.type = \'email_password\'', 'left')
-            ->where('u.id', auth()->id())
-            ->get()->getRowObject();
+        $authorUser = auth()->getProvider()->findById(auth()->id());
 
         $profileModel = new AuthorProfileModel();
         $profile      = $profileModel->getByUserId((int) auth()->id());
         $displayName  = ($profile && ! empty($profile->display_name))
             ? $profile->display_name
-            : ($userRow->username ?? '');
-        $authorEmail  = $userRow->email ?? '';
+            : ($authorUser ? $authorUser->username : '');
+        $authorEmail  = $authorUser ? $authorUser->getEmail() : '';
 
         $status = setting('App.commentModeration') ? 'pending' : 'approved';
         $model  = new CommentModel();
@@ -255,10 +251,7 @@ class Blog extends BaseController
             return null;
         }
         $parentId = (int) $raw;
-        $exists   = db_connect()->table('comments')
-            ->where('id', $parentId)
-            ->where('post_id', $postId)
-            ->countAllResults();
+        $exists   = model(\App\Models\CommentModel::class)->existsForPost($parentId, $postId);
         return $exists ? $parentId : null;
     }
 

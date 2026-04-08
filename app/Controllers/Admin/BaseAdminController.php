@@ -24,6 +24,8 @@ abstract class BaseAdminController extends BaseController
             exit;
         }
 
+        \App\Services\PluginManager::instance()->runPendingMigrations();
+
         $this->checkDirectoryWritability();
 
         // Cron fallback: if check method is 'cron' but the scheduler hasn't

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Interfaces\PluginInterface;
+use App\Models\AdminNotificationModel;
 use App\Models\MarketplaceLicenseModel;
 use App\Models\PluginModel;
 use App\Services\VettingService;
@@ -53,6 +54,7 @@ class PluginManager
         try {
             $activePlugins = model(PluginModel::class)
                 ->where('is_active', 1)
+                ->where('disabled IS NULL')
                 ->findAll();
         } catch (\Throwable $e) {
             // Table doesn't exist yet (fresh install before migrations).
@@ -186,53 +188,119 @@ class PluginManager
 
         foreach (glob(PLUGINS_PATH . '*/plugin_info.json') as $infoFile) {
             $folder = basename(dirname($infoFile));
-            $info   = json_decode(file_get_contents($infoFile), true);
+            $raw    = file_get_contents($infoFile);
+            $info   = json_decode($raw, true);
 
-            // Reject plugins with invalid or incomplete plugin_info.json
-            $required = ['name', 'slug', 'version', 'description', 'author'];
-            $missing  = array_diff($required, array_keys($info ?? []));
-
-            if (! is_array($info) || ! empty($missing)) {
-                $msg = "Plugin '{$folder}' skipped — plugin_info.json missing required fields: " . implode(', ', $missing);
-                log_message('warning', 'PluginManager: ' . $msg);
-                $warnings[] = $msg;
-                continue;
-            }
-
+            // Look up existing record before validation so we can update/insert for broken plugins too
             $existing = $model->where('folder', $folder)->first();
 
-            if ($existing) {
-                $newVersion = $info['version'];
-                if ($newVersion !== $existing->version) {
-                    // Version changed — update and reset approval (new code needs re-vetting)
+            // Validate — build a disabled_reason if something is wrong
+            $disabledReason = null;
+            $required       = ['name', 'version', 'description', 'author'];
+
+            if (! is_array($info)) {
+                $disabledReason = lang('Admin.addonDisabledInvalidJson', [$folder, 'plugin_info.json']);
+                $info           = [];
+            } else {
+                $missing = array_diff($required, array_keys($info));
+                if (! empty($missing)) {
+                    $disabledReason = lang('Admin.addonDisabledMissingFields', [$folder, implode(', ', $missing)]);
+                }
+            }
+
+            $metaFields = [
+                // Flags
+                'bundled'             => ! empty($info['bundled']) ? 1 : 0,
+                'free'                => ! empty($info['free'])    ? 1 : 0,
+                // Support & store URLs
+                'support_url'         => $info['support_url']         ?? null,
+                'author_url'          => $info['author_url']          ?? null,
+                'items_url'           => $info['items_url']           ?? null,
+                'item_url'            => $info['item_url']            ?? null,
+                'store_url'           => $info['store_url']           ?? null,
+                // Category URLs
+                'categories_url'      => $info['categories_url']      ?? null,
+                'categories_all_url'  => $info['categories_all_url']  ?? null,
+                'category_url'        => $info['category_url']        ?? null,
+                // Discovery URLs
+                'featured_url'        => $info['featured_url']        ?? null,
+                // License URLs
+                'license_validate_url' => $info['license_validate_url'] ?? null,
+                'license_check_url'   => $info['license_check_url']   ?? null,
+                // Update URLs
+                'update_url'          => $info['update_url']          ?? null,
+                'update_check_url'    => $info['update_check_url']    ?? null,
+                'download_url'        => $info['download_url']        ?? null,
+            ];
+
+            // --- Broken plugin: register/update with disabled flag ---
+            if ($disabledReason !== null) {
+                log_message('warning', 'PluginManager: ' . $disabledReason);
+                $warnings[] = $disabledReason;
+
+                if ($existing) {
                     $model->update($existing->id, [
-                        'version'     => $newVersion,
-                        'name'        => $info['name'],
-                        'description' => $info['description'],
-                        'author'      => VettingService::normalizeAuthor($info['author'] ?? ''),
-                        'pv_approved' => null,
+                        'is_active'       => 0,
+                        'disabled'        => 1,
+                        'disabled_reason' => $disabledReason,
                     ]);
-                } elseif (($info['name'] ?? '') !== $existing->name || ($info['description']) !== $existing->description) {
-                    $model->update($existing->id, [
-                        'name'        => $info['name'],
-                        'description' => $info['description'],
-                        'author'      => VettingService::normalizeAuthor($info['author'] ?? ''),
+                } else {
+                    $model->insert([
+                        'folder'          => $folder,
+                        'name'            => $info['name']        ?? $folder,
+                        'version'         => $info['version']     ?? '0.0.0',
+                        'description'     => $info['description'] ?? '',
+                        'author'          => VettingService::normalizeAuthor($info['author'] ?? ''),
+                        'is_active'       => 0,
+                        'disabled'        => 1,
+                        'disabled_reason' => $disabledReason,
+                        'pv_safe'         => null,
                     ]);
                 }
                 continue;
             }
 
-            // New plugin — insert as inactive, pv_approved NULL triggers API check
-            $model->insert([
+            // --- Valid plugin ---
+
+            // If previously disabled, clear those flags on save
+            $clearDisabled = ! empty($existing->disabled)
+                ? ['disabled' => null, 'disabled_reason' => null]
+                : [];
+
+            if ($existing) {
+                $newVersion = $info['version'];
+                if ($newVersion !== $existing->version) {
+                    // Version changed — update and reset approval (new code needs re-vetting)
+                    $model->update($existing->id, array_merge([
+                        'version'     => $newVersion,
+                        'name'        => $info['name'],
+                        'description' => $info['description'],
+                        'author'      => VettingService::normalizeAuthor($info['author']),
+                        'pv_safe'     => null,
+                    ], $metaFields, $clearDisabled));
+                } elseif ($info['name'] !== $existing->name || $info['description'] !== $existing->description) {
+                    $model->update($existing->id, array_merge([
+                        'name'        => $info['name'],
+                        'description' => $info['description'],
+                        'author'      => VettingService::normalizeAuthor($info['author']),
+                    ], $metaFields, $clearDisabled));
+                } elseif ($existing->support_url === null || $existing->author_url === null || ! empty($existing->disabled)) {
+                    $model->update($existing->id, array_merge($metaFields, $clearDisabled));
+                }
+
+                continue;
+            }
+
+            // New plugin — insert as inactive, pv_safe NULL triggers API check
+            $model->insert(array_merge([
                 'folder'      => $folder,
                 'name'        => $info['name'],
-                'slug'        => $info['slug'],
                 'version'     => $info['version'],
                 'description' => $info['description'],
-                'author'      => VettingService::normalizeAuthor($info['author'] ?? ''),
+                'author'      => VettingService::normalizeAuthor($info['author']),
                 'is_active'   => 0,
-                'pv_approved' => null,
-            ]);
+                'pv_safe'     => null,
+            ], $metaFields));
 
             $discovered[] = $folder;
         }
@@ -251,7 +319,7 @@ class PluginManager
      * Returns a status string:
      *   'activated'              — plugin is now active
      *   'not_found'             — no such plugin in the DB
-     *   'requires_confirmation' — pv_approved is not 1, caller must confirm
+     *   'requires_confirmation' — pv_safe is not 1, caller must confirm
      *   'already_active'        — plugin was already active
      *
      * Pass $force = true to skip the approval check (after user confirms).
@@ -269,16 +337,51 @@ class PluginManager
             return 'already_active';
         }
 
-        // License check
-        $license = $plugin->store_product_id
-            ? (new MarketplaceLicenseModel())->where('store_product_id', $plugin->store_product_id)->first()
-            : null;
-        if ($license && (int) ($license->license_valid ?? -1) !== 1) {
-            return 'invalid_license';
+        if (! empty($plugin->disabled)) {
+            return 'disabled';
+        }
+
+        $isPubvana      = in_array($plugin->author ?? '', ['pubvana', 'pubvana_team'], true);
+        $isBundled      = ! empty($plugin->bundled);
+        $isFree         = ! empty($plugin->free);
+        $hasLicenseUrls = ! empty($plugin->license_validate_url) || ! empty($plugin->item_url);
+
+        // Abuse/tamper checks
+        if (! $isPubvana && $isBundled) {
+            return 'tampered_bundled';
+        }
+        if (! $isPubvana && ! $isFree && ! $hasLicenseUrls) {
+            return 'tampered_no_urls';
+        }
+        if ($isPubvana && $isFree && ! $isBundled) {
+            return 'tampered_free_flag';
+        }
+
+        // Activation chain
+        if ($isBundled && $isPubvana) {
+            // Bundled Pubvana — skip license check
+        } elseif ($isPubvana) {
+            $license = $plugin->store_product_id
+                ? (new MarketplaceLicenseModel())->where('store_product_id', $plugin->store_product_id)->first()
+                : null;
+            if (! $license || (int) ($license->license_valid ?? -1) !== 1) {
+                return 'invalid_license';
+            }
+        } elseif ($isFree) {
+            // Third party free — skip license check
+        } elseif ($hasLicenseUrls) {
+            $license = $plugin->store_product_id
+                ? (new MarketplaceLicenseModel())->where('store_product_id', $plugin->store_product_id)->first()
+                : null;
+            if (! $license || (int) ($license->license_valid ?? -1) !== 1) {
+                return 'invalid_license';
+            }
+        } else {
+            return 'tampered_no_urls';
         }
 
         // If not Pubvana-approved, require explicit confirmation
-        if (! $force && (int) $plugin->pv_approved !== 1) {
+        if (! $force && (int) $plugin->pv_safe !== 1) {
             return 'requires_confirmation';
         }
 
@@ -293,6 +396,21 @@ class PluginManager
         } catch (\Throwable $e) {
             log_message('error', "PluginManager: migration failed for {$namespace} — {$e->getMessage()}");
             return 'migration_failed';
+        }
+
+        // Run seeders if the plugin ships any
+        $seedsPath = PLUGINS_PATH . $folder . '/Database/Seeds/';
+        if (is_dir($seedsPath)) {
+            $seeder = new \CodeIgniter\Database\Seeder(config('Database'));
+            foreach (glob($seedsPath . '*.php') as $seedFile) {
+                $seedClass = $namespace . '\\Database\\Seeds\\' . pathinfo($seedFile, PATHINFO_FILENAME);
+                try {
+                    $seeder->call($seedClass);
+                } catch (\Throwable $e) {
+                    log_message('error', "PluginManager: seeder failed for {$seedClass} — {$e->getMessage()}");
+                    return 'seed_failed';
+                }
+            }
         }
 
         // Run Installer::up() if the plugin ships one
@@ -402,5 +520,33 @@ class PluginManager
     public function getPlugins(): array
     {
         return $this->plugins;
+    }
+
+    /**
+     * Run pending migrations for all active plugins.
+     * Safe to call on every admin request — the migration runner
+     * skips anything already in the migrations table.
+     */
+    public function runPendingMigrations(): void
+    {
+        try {
+            $activePlugins = model(PluginModel::class)
+                ->where('is_active', 1)
+                ->where('disabled IS NULL')
+                ->findAll();
+        } catch (\Throwable $e) {
+            return;
+        }
+
+        $migrate = \Config\Services::migrations();
+
+        foreach ($activePlugins as $row) {
+            $namespace = 'Plugins\\' . $row->folder;
+            try {
+                $migrate->setNamespace($namespace)->latest();
+            } catch (\Throwable $e) {
+                log_message('error', "PluginManager: migration failed for {$row->folder} — {$e->getMessage()}");
+            }
+        }
     }
 }

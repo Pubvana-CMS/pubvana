@@ -69,7 +69,7 @@ class Categories extends BaseAdminController
             'slug'        => slug_from_title($this->request->getPost('name')),
             'description' => $this->request->getPost('description'),
         ]);
-        return redirect()->to('/admin/categories')->with('success', lang('Admin.categoryUpdated'));
+        return redirect()->to('/admin/categories/' . $id . '/edit')->with('success', lang('Admin.categoryUpdated'));
     }
 
     public function delete(int $id)

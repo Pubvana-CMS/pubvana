@@ -55,10 +55,8 @@ return [
     // Premium paywall
     // =========================================================================
 
-    'paywallTitle'          => 'Membres uniquement',
-    'paywallMessage'        => 'Cet article est disponible pour les membres inscrits. Connectez-vous ou créez un compte gratuit pour continuer la lecture.',
-    'paywallSignIn'         => 'Se connecter',
-    'paywallCreateAccount'  => 'Créer un compte',
+    'paywallTitle'          => 'Contenu Premium',
+    'paywallMessage'        => 'Ce contenu est disponible pour les abonnés premium.',
 
     // =========================================================================
     // Author card
@@ -101,6 +99,7 @@ return [
     // =========================================================================
 
     'commentsHeading'       => 'Commentaires ({0})',
+    'commentsClosed'        => 'Les commentaires sont fermés.',
     'commentFormTitle'      => 'Laisser un commentaire',
     'commentLabel'          => 'Commentaire *',
     'commentPostBtn'        => 'Publier le commentaire',

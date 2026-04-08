@@ -103,7 +103,7 @@ class Pages extends BaseAdminController
             'meta_description' => $this->request->getPost('meta_description'),
         ]);
         ActivityLogger::log('page.updated', 'page', $id, 'Updated page: ' . $this->request->getPost('title'));
-        return redirect()->to('/admin/pages')->with('success', lang('Admin.pageUpdated'));
+        return redirect()->to('/admin/pages/' . $id . '/edit')->with('success', lang('Admin.pageUpdated'));
     }
 
     public function delete(int $id)

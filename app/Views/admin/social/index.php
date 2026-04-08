@@ -21,10 +21,7 @@
                 <?php if (! empty($themeInfo['icon_pack'])): ?>
                 <div class="alert alert-info small mb-3">
                     <i class="fas fa-palette fa-fw"></i>
-                    The current theme <strong><?= esc($themeInfo['name'] ?? 'Unknown') ?></strong> uses
-                    <strong><?= esc($themeInfo['icon_pack']) ?></strong>
-                    (v<?= esc($themeInfo['icon_pack_ver'] ?? '?') ?>) for icons.
-                    Below you can choose the icons available that will display for the Social Links feature of this site.
+                    <?= lang('Admin.socialIconPackInfo', [esc($themeInfo['name'] ?? lang('Admin.unknown')), esc($themeInfo['icon_pack']), esc($themeInfo['icon_pack_ver'] ?? '?')]) ?>
                 </div>
                 <?php endif; ?>
                 <form method="POST" action="<?= base_url('admin/social/store') ?>">
@@ -35,13 +32,13 @@
                             <div class="input-group-prepend">
                                 <span class="input-group-text" id="icon-preview"><i class="fas fa-icons fa-fw"></i></span>
                             </div>
-                            <input type="text" id="icon-search" class="form-control" placeholder="Search platforms..." autocomplete="off">
+                            <input type="text" id="icon-search" class="form-control" placeholder="<?= lang('Admin.socialSearchPlaceholder') ?>" autocomplete="off">
                         </div>
                         <input type="hidden" name="platform" id="platform-value">
                         <input type="hidden" name="icon" id="icon-value">
                         <div id="icon-dropdown" class="border rounded mt-1 bg-white" style="display:none; max-height:200px; overflow-y:auto">
                         </div>
-                        <small class="form-text text-muted">These icons are just a representation of the icon that will be used. The actual icon may differ depending on the active theme's icon pack.</small>
+                        <small class="form-text text-muted"><?= lang('Admin.socialIconDisclaimer') ?></small>
                     </div>
                     <div class="form-group">
                         <label><?= lang('Admin.socialUrl') ?></label>

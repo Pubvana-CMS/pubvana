@@ -12,13 +12,6 @@
     </div>
 </div>
 
-<?php if (session()->getFlashdata('success')): ?>
-    <div class="alert alert-success"><?= esc(session()->getFlashdata('success')) ?></div>
-<?php endif; ?>
-<?php if (session()->getFlashdata('error')): ?>
-    <div class="alert alert-danger"><?= esc(session()->getFlashdata('error')) ?></div>
-<?php endif; ?>
-
 <?php if (! empty($updates)): ?>
 <div class="alert alert-warning d-flex align-items-center">
     <i class="fas fa-triangle-exclamation mr-2"></i>
@@ -37,7 +30,7 @@
         <div class="card-body text-center py-5">
             <i class="fas fa-store fa-4x text-muted mb-4"></i>
             <h4 class="text-muted"><?= lang('Admin.marketplaceNoItems') ?></h4>
-            <p class="text-muted">Could not load products from the store. Please check back later.</p>
+            <p class="text-muted"><?= lang('Admin.marketplaceLoadError') ?></p>
         </div>
     </div>
 <?php else: ?>
@@ -91,7 +84,7 @@
                         </div>
                         <p class="text-muted small mb-2"><?= esc($item->description ?? '') ?></p>
                         <p class="text-muted small">
-                            By <?= esc($item->author ?? 'Unknown') ?> &middot; v<?= esc($item->version ?? '1.0') ?>
+                            <?= lang('Admin.byAuthor', [esc($item->author ?? lang('Admin.unknown'))]) ?> &middot; v<?= esc($item->version ?? '1.0') ?>
                         </p>
                     </div>
                     <div class="card-footer bg-white">

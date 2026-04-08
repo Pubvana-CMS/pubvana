@@ -7,6 +7,7 @@
     <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    <link rel="icon" href="<?= base_url('favicon.ico') ?>" type="image/x-icon">
     <meta name="<?= csrf_token() ?>" content="<?= csrf_hash() ?>">
     <title><?= esc($page_title ?? 'Admin - Pubvana') ?></title>
 
@@ -253,11 +254,12 @@
                     <i class="fas fa-arrow-up-right-from-square"></i> <?= lang('Admin.viewSite') ?>
                 </a>
 
+
                 <ul class="navbar-nav ml-auto">
                     <?php if (!empty($update['available'] ?? false)): ?>
                     <li class="nav-item">
                         <a class="nav-link" href="<?= base_url('admin/updates') ?>"
-                           title="Pubvana <?= esc($update['latest_version'] ?? '') ?> available">
+                           title="<?= lang('Admin.updateAvailableTooltip', [esc($update['latest_version'] ?? '')]) ?>">
                             <i class="fas fa-circle-arrow-up text-warning"></i>
                             <span class="badge badge-warning badge-counter">!</span>
                         </a>
@@ -321,7 +323,7 @@
                         <?= esc($notification->message) ?>
                         <?php if ($notification->action_url): ?>
                             <a href="<?= base_url(esc($notification->action_url)) ?>" class="alert-link">
-                                <?= esc($notification->action_label ?? 'View') ?>
+                                <?= esc($notification->action_label ?? lang('Admin.view')) ?>
                             </a>
                         <?php endif; ?>
                         <?php if ((int) $notification->is_dismissable !== 0): ?>

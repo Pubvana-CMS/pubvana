@@ -20,8 +20,9 @@ class Tags extends BaseAdminController
         if (! auth()->user()->can('posts.edit.any')) {
             return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
-        (new TagModel())->delete($id);
-        db_connect()->table('tags_to_posts')->where('tag_id', $id)->delete();
+        $tagModel = new TagModel();
+        $tagModel->deletePostLinks($id);
+        $tagModel->delete($id);
         return redirect()->to('/admin/tags')->with('success', lang('Admin.tagDeleted'));
     }
 }

@@ -25,4 +25,12 @@ class PageModel extends Model
     {
         return $this->where('status', 'published');
     }
+
+    /**
+     * Check if a slug already exists.
+     */
+    public function slugExists(string $slug): bool
+    {
+        return $this->where('slug', $slug)->countAllResults() > 0;
+    }
 }

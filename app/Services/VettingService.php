@@ -20,7 +20,7 @@ class VettingService
      * Check approval status for all unchecked plugins, themes, and widgets.
      *
      * Calls the pubvana.net vetting API with unchecked items.
-     * Updates pv_approved and pv_warning_note in the appropriate table.
+     * Updates pv_safe and pv_warning_note in the appropriate table.
      * On network failure, leaves as NULL (retry on next discover/sync).
      */
     public function checkApproval(): void
@@ -29,9 +29,9 @@ class VettingService
         $themeModel  = model(ThemeModel::class);
         $widgetModel = model(WidgetModel::class);
 
-        $uncheckedPlugins = $pluginModel->where('pv_approved', null)->findAll();
-        $uncheckedThemes  = $themeModel->where('pv_approved', null)->findAll();
-        $uncheckedWidgets = $widgetModel->where('pv_approved', null)->findAll();
+        $uncheckedPlugins = $pluginModel->where('pv_safe', null)->findAll();
+        $uncheckedThemes  = $themeModel->where('pv_safe', null)->findAll();
+        $uncheckedWidgets = $widgetModel->where('pv_safe', null)->findAll();
 
         if (empty($uncheckedPlugins) && empty($uncheckedThemes) && empty($uncheckedWidgets)) {
             return;
@@ -42,7 +42,7 @@ class VettingService
         foreach ($uncheckedPlugins as $p) {
             $items[] = [
                 'type'    => 'plugin',
-                'slug'    => $p->slug,
+                'slug'    => $p->folder,
                 'version' => $p->version,
                 'author'  => $p->author ?? '',
             ];
@@ -94,7 +94,7 @@ class VettingService
             }
 
             foreach ($uncheckedPlugins as $p) {
-                $key = 'plugin|' . $p->slug . '|' . $p->version;
+                $key = 'plugin|' . $p->folder . '|' . $p->version;
                 $this->applyResult($pluginModel, $p->id, $resultMap[$key] ?? null);
             }
 
@@ -124,19 +124,19 @@ class VettingService
         switch ($status) {
             case 'approved':
                 $model->update($id, [
-                    'pv_approved'     => 1,
+                    'pv_safe'     => 1,
                     'pv_warning_note' => null,
                 ]);
                 break;
             case 'known':
                 $model->update($id, [
-                    'pv_approved'     => 1,
+                    'pv_safe'     => 1,
                     'pv_warning_note' => $warning,
                 ]);
                 break;
             case 'malicious':
                 $model->update($id, [
-                    'pv_approved'     => 0,
+                    'pv_safe'     => 0,
                     'pv_warning_note' => $warning,
                 ]);
                 break;

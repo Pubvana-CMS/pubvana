@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\MarketplaceLicenseModel;
 
-class ExtensionUpdateService
+class AddonUpdateService
 {
     protected string $cacheKey = 'extension_update_check';
     protected int    $cacheTtl = 86400; // 24 hours
@@ -32,7 +32,6 @@ class ExtensionUpdateService
             $grouped[$ext['update_url']][] = $ext;
         }
 
-        $db = db_connect();
         $now = date('Y-m-d H:i:s');
 
         foreach ($grouped as $updateUrl => $exts) {
@@ -77,10 +76,10 @@ class ExtensionUpdateService
             foreach ($response['updates'] ?? [] as $upd) {
                 $pid    = $upd['product_id'] ?? 0;
                 $folder = $idToFolder[$pid] ?? null;
-                $table  = $this->tableForType($upd['type'] ?? '');
-                if (! $table || ! $folder) continue;
+                $type   = $upd['type'] ?? '';
+                if (! $this->tableForType($type) || ! $folder) continue;
 
-                $db->table($table)->where('folder', $folder)->update([
+                $this->addonModel($type)->updateByFolder($folder, [
                     'latest_version'    => $upd['latest_version'],
                     'changelog'         => $upd['changelog'] ?? null,
                     'last_update_check' => $now,
@@ -91,9 +90,8 @@ class ExtensionUpdateService
             foreach ($response['no_update'] ?? [] as $noId) {
                 $folder = $idToFolder[$noId] ?? null;
                 $type   = $idToType[$noId] ?? null;
-                $table  = $type ? $this->tableForType($type) : null;
-                if ($table && $folder) {
-                    $db->table($table)->where('folder', $folder)->update([
+                if ($type && $this->tableForType($type) && $folder) {
+                    $this->addonModel($type)->updateByFolder($folder, [
                         'latest_version'    => null,
                         'changelog'         => null,
                         'last_update_check' => $now,
@@ -105,9 +103,9 @@ class ExtensionUpdateService
             foreach ($response['incompatible'] ?? [] as $inc) {
                 $pid    = $inc['product_id'] ?? 0;
                 $folder = $idToFolder[$pid] ?? null;
-                $table  = $this->tableForType($inc['type'] ?? '');
-                if ($table && $folder) {
-                    $db->table($table)->where('folder', $folder)->update([
+                $type   = $inc['type'] ?? '';
+                if ($this->tableForType($type) && $folder) {
+                    $this->addonModel($type)->updateByFolder($folder, [
                         'last_update_check' => $now,
                     ]);
                 }
@@ -122,13 +120,11 @@ class ExtensionUpdateService
      */
     public function checkSingleAddon(string $type, string $folder): array
     {
-        $db = db_connect();
-        $table = $this->tableForType($type);
-        if (! $table) {
+        if (! $this->tableForType($type)) {
             return ['error' => 'Invalid type.'];
         }
 
-        $row = $db->table($table)->where('folder', $folder)->get()->getRowObject();
+        $row = $this->addonModel($type)->findByFolder($folder);
         $storeProductId = $row->store_product_id ?? null;
 
         $ext = $this->readExtensionInfo($type, $folder);
@@ -158,8 +154,8 @@ class ExtensionUpdateService
         $now = date('Y-m-d H:i:s');
 
         foreach ($response['updates'] ?? [] as $upd) {
-            if (($upd['product_id'] ?? 0) == $storeProductId && $table) {
-                $db->table($table)->where('folder', $folder)->update([
+            if (($upd['product_id'] ?? 0) == $storeProductId) {
+                $this->addonModel($type)->updateByFolder($folder, [
                     'latest_version'    => $upd['latest_version'],
                     'changelog'         => $upd['changelog'] ?? null,
                     'last_update_check' => $now,
@@ -168,8 +164,8 @@ class ExtensionUpdateService
         }
 
         foreach ($response['no_update'] ?? [] as $noId) {
-            if ($noId == $storeProductId && $table) {
-                $db->table($table)->where('folder', $folder)->update([
+            if ($noId == $storeProductId) {
+                $this->addonModel($type)->updateByFolder($folder, [
                     'latest_version'    => null,
                     'changelog'         => null,
                     'last_update_check' => $now,
@@ -178,8 +174,8 @@ class ExtensionUpdateService
         }
 
         foreach ($response['incompatible'] ?? [] as $inc) {
-            if (($inc['product_id'] ?? 0) == $storeProductId && $table) {
-                $db->table($table)->where('folder', $folder)->update([
+            if (($inc['product_id'] ?? 0) == $storeProductId) {
+                $this->addonModel($type)->updateByFolder($folder, [
                     'last_update_check' => $now,
                 ]);
             }
@@ -194,14 +190,12 @@ class ExtensionUpdateService
      */
     public function updateAddon(string $type, string $folder): bool
     {
-        $db = db_connect();
-        $table = $this->tableForType($type);
-        if (! $table) {
+        if (! $this->tableForType($type)) {
             $this->recordFailure($type, $folder, 'Invalid type.');
             return false;
         }
 
-        $row = $db->table($table)->where('folder', $folder)->get()->getRowObject();
+        $row = $this->addonModel($type)->findByFolder($folder);
         $storeProductId = $row->store_product_id ?? null;
 
         $ext = $this->readExtensionInfo($type, $folder);
@@ -257,8 +251,6 @@ class ExtensionUpdateService
      */
     public function runAutoUpdates(array $checkResults): void
     {
-        $db = db_connect();
-
         // Build a set of incompatible product IDs to skip
         $incompatibleIds = [];
         foreach ($checkResults['incompatible'] ?? [] as $inc) {
@@ -268,15 +260,14 @@ class ExtensionUpdateService
         foreach ($checkResults['updates'] ?? [] as $upd) {
             $type      = $upd['type'] ?? '';
             $productId = $upd['product_id'] ?? 0;
-            $table     = $this->tableForType($type);
-            if (! $table) continue;
+            if (! $this->tableForType($type)) continue;
 
             if (in_array($productId, $incompatibleIds, true)) {
-                log_message('info', "Addon auto-update skipped: {$type} store ID {$productId} is incompatible.");
+                log_message('info', "AddonUpdateService: auto-update skipped: {$type} store ID {$productId} is incompatible.");
                 continue;
             }
 
-            $row = $db->table($table)->where('store_product_id', $productId)->get()->getRowObject();
+            $row = $this->addonModel($type)->findByStoreProductId($productId);
             if (! $row || ! (int) $row->auto_update) {
                 continue;
             }
@@ -311,7 +302,6 @@ class ExtensionUpdateService
     private function gatherInstalledExtensions(): array
     {
         $extensions = [];
-        $db = db_connect();
 
         // Pre-load license keys indexed by store_product_id
         $licenses = [];
@@ -323,39 +313,17 @@ class ExtensionUpdateService
             $licenses[$lic->store_product_id] = $lic->license_key;
         }
 
-        $sources = [
-            'theme'  => [THEMES_PATH, 'theme_info.json', 'themes'],
-            'widget' => [WIDGETS_PATH, 'widget_info.json', 'widgets'],
-            'plugin' => [PLUGINS_PATH, 'plugin_info.json', 'plugins'],
-        ];
+        foreach (['theme', 'widget', 'plugin'] as $type) {
+            $rows = $this->addonModel($type)->getUpdateCheckable();
 
-        foreach ($sources as $type => [$basePath, $infoFile, $table]) {
-            if (! is_dir($basePath)) continue;
-
-            foreach (glob($basePath . '*/' . $infoFile) as $file) {
-                $data = json_decode(file_get_contents($file), true);
-                if (! is_array($data) || empty($data['update_url'])) {
-                    continue;
-                }
-
-                $folder = basename(dirname($file));
-
-                // Look up store_product_id from DB
-                $row = $db->table($table)->where('folder', $folder)->get()->getRowObject();
-                $storeProductId = $row->store_product_id ?? null;
-
-                // Skip extensions not linked to the store
-                if (! $storeProductId) {
-                    continue;
-                }
-
+            foreach ($rows as $row) {
                 $extensions[] = [
-                    'product_id'  => (int) $storeProductId,
-                    'folder'      => $folder,
+                    'product_id'  => (int) $row->store_product_id,
+                    'folder'      => $row->folder,
                     'type'        => $type,
-                    'version'     => $data['version'] ?? '0.0.0',
-                    'update_url'  => $data['update_url'],
-                    'license_key' => $licenses[$storeProductId] ?? null,
+                    'version'     => $row->version ?? '0.0.0',
+                    'update_url'  => $row->update_url,
+                    'license_key' => $licenses[$row->store_product_id] ?? null,
                 ];
             }
         }
@@ -364,32 +332,20 @@ class ExtensionUpdateService
     }
 
     /**
-     * Read a single extension's info file and look up its license via store_product_id.
+     * Read a single extension's info from the DB and look up its license via store_product_id.
      */
     private function readExtensionInfo(string $type, string $folder): ?array
     {
-        $infoFile = match ($type) {
-            'theme'  => THEMES_PATH . $folder . '/theme_info.json',
-            'widget' => WIDGETS_PATH . $folder . '/widget_info.json',
-            'plugin' => PLUGINS_PATH . $folder . '/plugin_info.json',
-            default  => null,
-        };
-
-        if (! $infoFile || ! is_file($infoFile)) {
+        if (! $this->tableForType($type)) {
             return null;
         }
 
-        $data = json_decode(file_get_contents($infoFile), true);
-        if (! is_array($data)) {
+        $row = $this->addonModel($type)->findByFolder($folder);
+        if (! $row) {
             return null;
         }
 
-        // Look up license by store_product_id
-        $table = $this->tableForType($type);
-        $db = db_connect();
-        $row = $db->table($table)->where('folder', $folder)->get()->getRowObject();
         $storeProductId = $row->store_product_id ?? null;
-
         $licenseKey = null;
         if ($storeProductId) {
             $license = (new MarketplaceLicenseModel())->where('store_product_id', $storeProductId)->first();
@@ -397,10 +353,9 @@ class ExtensionUpdateService
         }
 
         return [
-            'slug'        => $data['slug'] ?? $folder,
             'type'        => $type,
-            'version'     => $data['version'] ?? '0.0.0',
-            'update_url'  => $data['update_url'] ?? null,
+            'version'     => $row->version ?? '0.0.0',
+            'update_url'  => $row->update_url ?? null,
             'license_key' => $licenseKey,
         ];
     }
@@ -410,8 +365,7 @@ class ExtensionUpdateService
      */
     private function downloadAndInstall(string $type, string $folder, string $downloadUrl, ?string $licenseKey): bool
     {
-        $table = $this->tableForType($type);
-        if (! $table) {
+        if (! $this->tableForType($type)) {
             return false;
         }
 
@@ -497,9 +451,8 @@ class ExtensionUpdateService
             $newVersion = $newInfo['version'] ?? null;
 
             // Record success
-            $db  = db_connect();
             $now = date('Y-m-d H:i:s');
-            $db->table($table)->where('folder', $folder)->update([
+            $this->addonModel($type)->updateByFolder($folder, [
                 'version'             => $newVersion,
                 'latest_version'      => null,
                 'changelog'           => null,
@@ -518,10 +471,9 @@ class ExtensionUpdateService
 
     private function recordFailure(string $type, string $folder, string $error): void
     {
-        $table = $this->tableForType($type);
-        if (! $table) return;
+        if (! $this->tableForType($type)) return;
 
-        db_connect()->table($table)->where('folder', $folder)->update([
+        $this->addonModel($type)->updateByFolder($folder, [
             'last_update_attempt' => 'fail',
             'last_update_error'   => mb_substr($error, 0, 500),
         ]);
@@ -537,6 +489,15 @@ class ExtensionUpdateService
         };
     }
 
+    private function addonModel(string $type): \CodeIgniter\Model
+    {
+        return match($type) {
+            'theme'  => model(\App\Models\ThemeModel::class),
+            'widget' => model(\App\Models\WidgetModel::class),
+            'plugin' => model(\App\Models\PluginModel::class),
+        };
+    }
+
     private function postJson(string $url, array $payload): ?array
     {
         try {
@@ -548,21 +509,15 @@ class ExtensionUpdateService
             ]);
 
             if ($response->getStatusCode() !== 200) {
-                log_message('warning', 'ExtensionUpdateService: HTTP ' . $response->getStatusCode() . ' from ' . $url);
+                log_message('warning', 'AddonUpdateService: HTTP ' . $response->getStatusCode() . ' from ' . $url);
                 return null;
             }
 
             $data = json_decode($response->getBody(), true);
             return is_array($data) ? $data : null;
         } catch (\Throwable $e) {
-            log_message('warning', 'ExtensionUpdateService: ' . $e->getMessage());
+            log_message('warning', 'AddonUpdateService: ' . $e->getMessage());
             return null;
         }
-    }
-
-    private function isDevDomain(): bool
-    {
-        $host = strtolower(parse_url(base_url(), PHP_URL_HOST) ?? '');
-        return $host === 'localhost' || str_ends_with($host, '.local');
     }
 }

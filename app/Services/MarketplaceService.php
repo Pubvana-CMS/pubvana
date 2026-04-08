@@ -12,12 +12,6 @@ class MarketplaceService
     protected int    $dailyCheckTtl  = 86400;   // 1 day
     protected string $dailyCacheKey  = 'license_due_check';
 
-    private function isDevDomain(): bool
-    {
-        $host = strtolower(parse_url(base_url(), PHP_URL_HOST) ?? '');
-        return $host === 'localhost' || str_ends_with($host, '.local');
-    }
-
     /**
      * Fetch categories-with-products from the DigitalStore API, with 1-hour cache.
      * Falls back to empty array if API is unreachable.
@@ -154,13 +148,22 @@ class MarketplaceService
         return true;
     }
 
+    private function addonModel(string $type): \CodeIgniter\Model
+    {
+        return match($type) {
+            'theme'  => model(\App\Models\ThemeModel::class),
+            'widget' => model(\App\Models\WidgetModel::class),
+            'plugin' => model(\App\Models\PluginModel::class),
+        };
+    }
+
     protected function registerInstalled(string $type, string $folder, int $storeProductId = 0): void
     {
         if ($type === 'plugin') {
             // PluginManager::discover() handles the DB upsert for plugins.
             // Just update store_product_id if we have one.
             if ($storeProductId) {
-                db_connect()->table('plugins')->where('folder', $folder)->update([
+                $this->addonModel('plugin')->updateByFolder($folder, [
                     'store_product_id' => $storeProductId,
                 ]);
             }
@@ -171,17 +174,16 @@ class MarketplaceService
         $infoFile = $dir . $folder . '/' . ($type === 'theme' ? 'theme_info' : 'widget_info') . '.json';
         $info     = is_file($infoFile) ? json_decode(file_get_contents($infoFile), true) ?? [] : [];
 
-        $table = ($type === 'theme') ? 'themes' : 'widgets';
-        $db    = db_connect();
-        $now   = date('Y-m-d H:i:s');
+        $extModel = $this->addonModel($type);
+        $now      = date('Y-m-d H:i:s');
 
-        $existing = $db->table($table)->where('folder', $folder)->get()->getRowObject();
+        $existing = $extModel->findByFolder($folder);
         if ($existing) {
             $update = ['version' => $info['version'] ?? null, 'updated_at' => $now];
             if ($storeProductId) {
                 $update['store_product_id'] = $storeProductId;
             }
-            $db->table($table)->where('folder', $folder)->update($update);
+            $extModel->updateByFolder($folder, $update);
         } else {
             $insert = [
                 'name'       => $info['name'] ?? $folder,
@@ -194,7 +196,7 @@ class MarketplaceService
             if ($storeProductId) {
                 $insert['store_product_id'] = $storeProductId;
             }
-            $db->table($table)->insert($insert);
+            $extModel->insert($insert);
         }
     }
 
@@ -302,26 +304,18 @@ class MarketplaceService
 
     public function checkUpdates(): array
     {
-        $db = db_connect();
-        return $db->table('marketplace_items')
-            ->where('installed_version IS NOT NULL')
-            ->where('installed_version != version')
-            ->get()->getResultArray();
+        return model(\App\Models\MarketplaceItemModel::class)->getUpdatable();
     }
 
     /**
-     * Re-validate all (or overdue) licensed items against the DigitalStore API.
-     * Uses a GET /license/check endpoint (read-only).
+     * Re-validate all (or overdue) licensed items against the store API.
+     * POSTs {key, product_id, domain} to license/check endpoint.
      *
      * Returns an array of per-item status records:
-     *   ['slug' => string, 'status' => 'valid'|'invalid'|'unreachable'|'skipped']
+     *   ['store_product_id' => int, 'status' => 'valid'|'invalid'|'unreachable'|'skipped']
      */
     public function revalidateLicenses(bool $force = false): array
     {
-        if ($this->isDevDomain()) {
-            return [];
-        }
-
         $licenseModel = new MarketplaceLicenseModel();
         $rows  = $licenseModel
             ->where('license_key IS NOT NULL')
@@ -339,10 +333,26 @@ class MarketplaceService
             }
 
             try {
-                $url = PUBVANA_DSTORE_API . 'license/check?'
-                    . http_build_query(['key' => $item->license_key, 'product_id' => $item->store_product_id]);
+                $isPubvana = in_array($item->author ?? '', ['pubvana', 'pubvana_team'], true);
 
-                $response = $client->get($url, ['http_errors' => false]);
+                if ($isPubvana) {
+                    $url = PUBVANA_DSTORE_API . 'license/check';
+                } else {
+                    $url = $this->getLicenseCheckUrl($item);
+                    if (! $url) {
+                        $results[] = ['store_product_id' => $item->store_product_id, 'status' => 'skipped'];
+                        continue;
+                    }
+                }
+
+                $response = $client->post($url, [
+                    'json' => [
+                        'key'        => $item->license_key,
+                        'product_id' => $item->store_product_id,
+                        'domain'     => base_url(),
+                    ],
+                    'http_errors' => false,
+                ]);
                 $status   = $response->getStatusCode();
                 $body     = json_decode($response->getBody(), true);
 
@@ -390,28 +400,46 @@ class MarketplaceService
 
     protected function enforceLicenseInvalid(object $licenseRow): void
     {
-        $db        = db_connect();
         $productId = $licenseRow->store_product_id;
         $type      = $licenseRow->item_type;
 
         if ($type === 'theme') {
-            $theme = $db->table('themes')
-                ->where('store_product_id', $productId)
-                ->where('is_active', 1)
-                ->get()->getRowObject();
-
+            $themeModel = $this->addonModel('theme');
+            $theme = $themeModel->where('store_product_id', $productId)->where('is_active', 1)->first();
             if ($theme) {
-                $db->table('themes')->where('id', $theme->id)->update(['is_active' => 0]);
-                $db->table('themes')->where('folder', 'default')->update(['is_active' => 1]);
+                $themeModel->deactivateAndFallback($theme->id);
                 log_message('notice', "MarketplaceService: deactivated theme (product ID {$productId}) - invalid license. Fell back to default.");
             }
         } elseif ($type === 'plugin') {
-            $db->table('plugins')
+            $this->addonModel('plugin')
                 ->where('store_product_id', $productId)
                 ->where('is_active', 1)
-                ->update(['is_active' => 0]);
+                ->set('is_active', 0)
+                ->update();
             log_message('notice', "MarketplaceService: deactivated plugin (product ID {$productId}) - invalid license.");
+        } elseif ($type === 'widget') {
+            $this->addonModel('widget')
+                ->where('store_product_id', $productId)
+                ->where('is_active', 1)
+                ->set('is_active', 0)
+                ->update();
+            log_message('notice', "MarketplaceService: deactivated widget (product ID {$productId}) - invalid license.");
         }
+    }
+
+    /**
+     * Look up the license_check_url for a licensed item from its extension table.
+     */
+    protected function getLicenseCheckUrl(object $licenseRow): ?string
+    {
+        if (! in_array($licenseRow->item_type, ['theme', 'widget', 'plugin'], true)) {
+            return null;
+        }
+
+        $row = $this->addonModel($licenseRow->item_type)
+            ->findByStoreProductId($licenseRow->store_product_id);
+
+        return $row->license_check_url ?? null;
     }
 
     public function getInvalidLicenses(): array
@@ -431,10 +459,6 @@ class MarketplaceService
 
     public function revalidateSingle(int $id): ?string
     {
-        if ($this->isDevDomain()) {
-            return 'skipped';
-        }
-
         $licenseModel = new MarketplaceLicenseModel();
         $item = $licenseModel->find($id);
         if (! $item) {
@@ -444,10 +468,25 @@ class MarketplaceService
         $client = \Config\Services::curlrequest(['timeout' => 10]);
 
         try {
-            $url = PUBVANA_DSTORE_API . 'license/check?'
-                . http_build_query(['key' => $item->license_key, 'product_id' => $item->store_product_id]);
+            $isPubvana = in_array($item->author ?? '', ['pubvana', 'pubvana_team'], true);
 
-            $response = $client->get($url, ['http_errors' => false]);
+            if ($isPubvana) {
+                $url = PUBVANA_DSTORE_API . 'license/check';
+            } else {
+                $url = $this->getLicenseCheckUrl($item);
+                if (! $url) {
+                    return 'skipped';
+                }
+            }
+
+            $response = $client->post($url, [
+                'json' => [
+                    'key'        => $item->license_key,
+                    'product_id' => $item->store_product_id,
+                    'domain'     => base_url(),
+                ],
+                'http_errors' => false,
+            ]);
             $body     = json_decode($response->getBody(), true);
 
             if ($response->getStatusCode() === 200 && isset($body['valid'])) {
@@ -492,10 +531,6 @@ class MarketplaceService
      */
     public function checkAndRevalidateIfDue(): void
     {
-        if ($this->isDevDomain()) {
-            return;
-        }
-
         if (cache($this->dailyCacheKey) !== null) {
             return;
         }
@@ -503,6 +538,60 @@ class MarketplaceService
         // Set the cache key first to prevent concurrent requests double-firing
         cache()->save($this->dailyCacheKey, true, $this->dailyCheckTtl);
 
+        $this->resolveStoreProductIds();
         $this->revalidateLicenses(false);
+    }
+
+    /**
+     * Resolve store_product_id for Pubvana-authored, non-bundled extensions
+     * that don't have one yet. Runs behind the daily cache gate.
+     */
+    protected function resolveStoreProductIds(): void
+    {
+        foreach (['theme', 'widget', 'plugin'] as $type) {
+            $extModel = $this->addonModel($type);
+
+            // --- Pubvana addons: resolve via PUBVANA_DSTORE_API ---
+            $pubvanaRows = $extModel->getUnresolvedPubvana();
+
+            if (! empty($pubvanaRows)) {
+                $client = \Config\Services::curlrequest(['timeout' => 5]);
+                foreach ($pubvanaRows as $row) {
+                    try {
+                        $response = $client->get(PUBVANA_DSTORE_API . 'item/' . $row->folder, ['http_errors' => false]);
+                        if ($response->getStatusCode() === 200) {
+                            $body    = json_decode($response->getBody(), true);
+                            $storeId = (int) ($body['id'] ?? 0);
+                            if ($storeId) {
+                                $extModel->update($row->id, ['store_product_id' => $storeId]);
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        // Silently skip
+                    }
+                }
+            }
+
+            // --- Third-party addons: resolve via their item_url ---
+            $thirdPartyRows = $extModel->getUnresolvedThirdParty();
+
+            if (! empty($thirdPartyRows)) {
+                $client = \Config\Services::curlrequest(['timeout' => 5]);
+                foreach ($thirdPartyRows as $row) {
+                    try {
+                        $response = $client->get($row->item_url . '/' . $row->folder, ['http_errors' => false]);
+                        if ($response->getStatusCode() === 200) {
+                            $body    = json_decode($response->getBody(), true);
+                            $storeId = (int) ($body['id'] ?? 0);
+                            if ($storeId) {
+                                $extModel->update($row->id, ['store_product_id' => $storeId]);
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        // Silently skip
+                    }
+                }
+            }
+        }
     }
 }

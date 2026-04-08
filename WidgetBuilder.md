@@ -10,7 +10,7 @@ Each widget lives in its own folder under `widgets/`. **No PHP files.** A widget
 
 ```
 widgets/RecentPosts/
-    widget_info.json        # Manifest: metadata + admin form + data providers
+    widget_info.json        # Required — metadata, admin form, data providers
     views/
         widget.tpl          # Frontend template (rendered by the engine)
 ```
@@ -22,22 +22,27 @@ widgets/RecentPosts/
 
 `WidgetService` enforces these rules when scanning widget directories. Widgets that fail validation are skipped and logged as warnings:
 
-1. **Required manifest fields** — `widget_info.json` must contain non-empty `name`, `slug`, `description`, `version`, and `author` fields. Missing any of these causes the widget to be skipped.
+1. **Required fields** — `widget_info.json` must have non-empty `name`, `description`, `version`, and `author`. Missing any of these causes the widget to be disabled.
 2. **No PHP files** — The widget directory must not contain any `.php` files. Widgets are JSON + templates only. If a `.php` file is found in the widget's root directory, the widget is skipped entirely. This is a security measure — all data access goes through the whitelisted provider system (see Section 2), never through arbitrary PHP.
 
 ---
 
 ## 2. widget_info.json Format
 
-The manifest has three top-level sections: metadata, `admin`, and `output`.
+`widget_info.json` has three top-level sections: metadata, `admin`, and `output`.
 
 ```json
 {
     "name": "Recent Posts",
-    "slug": "recent_posts",
     "description": "Displays a list of the most recent published posts.",
     "version": "1.0.0",
     "author": "Your Name",
+    "author_url": "https://example.com",
+    "support_url": "https://example.com/support",
+    "free": true,
+    "bundled": false,
+    "min_pubvana_version": "2.2.3",
+    "max_pubvana_version": "2.2.15",
     "admin": {
         "notice": "",
         "options": {
@@ -74,34 +79,51 @@ The manifest has three top-level sections: metadata, `admin`, and `output`.
 
 ### Metadata (top-level)
 
+#### Required Fields
+
 | Key | Required | Description |
 |-----|----------|-------------|
 | `name` | yes | Human-readable widget name |
-| `slug` | yes | Lowercase underscore identifier (e.g. `recent_posts`, `tag_cloud`) |
 | `description` | yes | Short description |
 | `version` | yes | Semantic version |
 | `author` | yes | Widget author name |
-| `premium` | no | Set to `true` to display a "Premium" badge in the admin widget list |
-| `min_pubvana_version` | no | Minimum Pubvana version required |
-| `max_pubvana_version` | no | Maximum Pubvana version this widget is compatible with |
-| `update_url` | no | API endpoint for update checks |
-| `support_url` | no | Developer contact URL shown when incompatible |
-| `author_url` | no | Author's website URL |
 
-Optional fields example:
+#### Optional Fields
 
-```json
-    "min_pubvana_version": "2.2.0",
-    "max_pubvana_version": "2.3.0",
-    "update_url": "https://pubvana.net/api/dstore/v1/update/check",
-    "support_url": "https://pubvana.net/contact",
-    "author_url": "https://example.com"
-```
+| Key | Default | Description |
+|-----|---------|-------------|
+| `author_url` | `""` | Author's website URL (linked in admin) |
+| `support_url` | `""` | Support/contact URL shown in admin when widget is incompatible or has issues |
+| `free` | `false` | Set to `true` if your widget is free. Free third-party widgets activate without a license check. |
+| `bundled` | `false` | Reserved for Pubvana-authored addons that ship with the CMS. Third-party widgets must not set this to `true`. |
+| `min_pubvana_version` | `""` | Minimum Pubvana version required |
+| `max_pubvana_version` | `""` | Maximum Pubvana version this widget is compatible with |
+| `update_url` | `""` | API endpoint for update checks. Widgets without this cannot be updated through admin. |
 
-- `min_pubvana_version` / `max_pubvana_version` — The range of Pubvana versions this widget is compatible with. Used by the CMS update system to prevent incompatible core updates and to find the right widget release version.
-- `update_url` — The API endpoint the CMS will POST to when checking for updates. Extensions without this field cannot be updated through the admin UI. Pubvana-built addons use `https://pubvana.net/api/dstore/v1/update/check`. Third-party developers provide their own endpoint implementing the same protocol.
-- `support_url` — Displayed in the admin UI when the widget is incompatible with the current Pubvana version ("Contact the developer").
-- `author_url` — Optional URL to the widget author's website.
+#### Third-Party Store & License Fields
+
+These fields are only relevant if you sell your widget and run your own store/license API. See [ThirdPartyAddons.md](ThirdPartyAddons.md) for the full API protocol specification.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `license_validate_url` | string | Endpoint the CMS POSTs to when a site admin enters a license key for your widget. |
+| `license_check_url` | string | Endpoint the CMS POSTs to for periodic license revalidation (90-day cycle). |
+| `item_url` | string | Endpoint the CMS GETs to resolve your widget's numeric product ID (`{item_url}/{folder}`). |
+| `store_url` | string | URL to your storefront page for this widget (linked in admin for license renewal). |
+| `items_url` | string | Catalog listing endpoint (used by marketplace integrations). |
+| `categories_url` | string | Category listing endpoint. |
+| `categories_all_url` | string | Full category listing with products. |
+| `category_url` | string | Single category endpoint. |
+| `featured_url` | string | Featured products endpoint. |
+| `update_check_url` | string | Alternative update check endpoint (if different from `update_url`). |
+| `download_url` | string | Direct download endpoint for updates. |
+
+> **For most third-party widgets:** You only need `free`, `update_url`, `license_validate_url`, `license_check_url`, `item_url`, and `store_url`. The remaining URL fields are for full marketplace integrations. If your widget is free, only `free: true` and optionally `update_url` are needed.
+
+**Notes:**
+- `min_pubvana_version` / `max_pubvana_version` — Used by the update system to prevent incompatible core updates and to find the right release version.
+- `update_url` — The CMS POSTs here when checking for updates. Pubvana-built addons use `https://pubvana.net/api/dstore/v1/update/check`. Third-party developers provide their own endpoint.
+- `support_url` — Displayed in the admin UI when the widget is incompatible ("Contact the developer").
 
 ### `admin` Section
 
@@ -519,7 +541,7 @@ Some widgets (like Table of Contents) need client-side JavaScript. Since `.tpl` 
 
 **Post Detail:** `postedOn`, `views`, `readingTime`, `publishedBy`, `inCategory`, `tags`
 
-**Paywall:** `paywallTitle`, `paywallMessage`, `paywallSignIn`, `paywallCreateAccount`
+**Paywall:** `paywallTitle` ("Premium Content"), `paywallMessage` ("This content is available to premium subscribers.")
 
 **Author:** `authorCardLabel`, `unknownAuthor`
 
@@ -527,7 +549,7 @@ Some widgets (like Table of Contents) need client-side JavaScript. Since `.tpl` 
 
 **Search:** `searchResultsHeading`, `searchShowingFor`, `searchNoResults`
 
-**Comments:** `commentsHeading`, `commentFormTitle`, `commentLabel`, `commentPostBtn`, `commentModerated`, `commentLoginRequired`, `commentLoginLink`
+**Comments:** `commentsHeading`, `commentFormTitle`, `commentLabel`, `commentPostBtn`, `commentModerated`, `commentLoginRequired`, `commentLoginLink`, `commentsClosed`
 
 **Pagination:** `pageNavLabel`, `prevPage`, `nextPage`
 
@@ -548,10 +570,11 @@ Here is a complete "Popular Tags" widget that displays the most-used tags with p
 ```json
 {
     "name": "Popular Tags",
-    "slug": "popular_tags",
     "description": "Displays the most popular tags by post count.",
     "version": "1.0.0",
     "author": "Your Name",
+    "free": true,
+    "bundled": false,
     "admin": {
         "options": {
             "title": {
@@ -631,9 +654,9 @@ Widgets are checked against the Pubvana vetting service during discovery. This i
 | Status | Badge | Meaning |
 |--------|-------|---------|
 | `unknown` | Gray "Unknown" | Widget has not been checked yet (new install or network error) |
-| `approved` | Green "Approved" | Widget is in the Pubvana registry and has been reviewed |
-| `known` | Yellow "Known Issues" | Widget is in the registry but has a noted limitation or caution |
-| `malicious` | Red "Malicious" | Widget has been flagged as harmful -- a warning is displayed prominently |
+| `safe` | Green "Safe" | Widget is in the Pubvana registry and has been reviewed |
+| `known` | Green "Safe" + yellow warning | Widget is in the registry but has a noted limitation or caution |
+| `malicious` | Red "Not Safe" | Widget has been flagged as harmful -- a warning is displayed prominently |
 
 ### Author Normalization
 

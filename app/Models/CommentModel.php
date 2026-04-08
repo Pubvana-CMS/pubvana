@@ -62,4 +62,14 @@ class CommentModel extends Model
             ->limit($limit)
             ->get()->getResultObject();
     }
+
+    /**
+     * Check if a comment exists for a given post.
+     */
+    public function existsForPost(int $commentId, int $postId): bool
+    {
+        return $this->where('id', $commentId)
+                    ->where('post_id', $postId)
+                    ->countAllResults() > 0;
+    }
 }

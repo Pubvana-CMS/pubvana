@@ -18,13 +18,6 @@ class LicenseRevalidate extends BaseCommand
 
     public function run(array $params): void
     {
-        // Dev domain check — mirror MarketplaceService::isDevDomain()
-        $host = strtolower(parse_url(base_url(), PHP_URL_HOST) ?? '');
-        if ($host === 'localhost' || str_ends_with($host, '.local')) {
-            CLI::write('Dev domain detected — license checks skipped.', 'yellow');
-            return;
-        }
-
         $force = array_key_exists('force', $params) || CLI::getOption('force') !== null;
 
         CLI::write('Running license re-validation' . ($force ? ' (force mode)' : '') . '...', 'white');
@@ -41,20 +34,20 @@ class LicenseRevalidate extends BaseCommand
         foreach ($results as $item) {
             switch ($item['status']) {
                 case 'valid':
-                    CLI::write('  [OK]          ' . $item['slug'], 'green');
+                    CLI::write('  [OK]          ' . $item['store_product_id'], 'green');
                     break;
                 case 'invalid':
-                    CLI::write('  [INVALID]     ' . $item['slug'], 'red');
+                    CLI::write('  [INVALID]     ' . $item['store_product_id'], 'red');
                     $hasInvalid = true;
                     break;
                 case 'unreachable':
-                    CLI::write('  [UNREACHABLE] ' . $item['slug'], 'yellow');
+                    CLI::write('  [UNREACHABLE] ' . $item['store_product_id'], 'yellow');
                     break;
                 case 'skipped':
-                    CLI::write('  [SKIPPED]     ' . $item['slug'], 'dark_gray');
+                    CLI::write('  [SKIPPED]     ' . $item['store_product_id'], 'dark_gray');
                     break;
                 default:
-                    CLI::write('  [UNKNOWN]     ' . $item['slug'], 'white');
+                    CLI::write('  [UNKNOWN]     ' . $item['store_product_id'], 'white');
             }
         }
 

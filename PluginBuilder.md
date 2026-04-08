@@ -11,8 +11,8 @@ Each plugin lives in its own folder under `plugins/`. Plugins are full PHP packa
 ```
 plugins/DigitalStore/
     Plugin.php                      # Entry point - implements PluginInterface (REQUIRED)
-    plugin_info.json                # Metadata manifest (REQUIRED)
-    Installer.php                   # Activation setup - up() and down() (optional)
+    plugin_info.json                # Required — metadata, licensing, update URLs
+    Installer.php                   # Filesystem setup - up() and down() (optional)
     Config/
         Routes.php                  # Route definitions (auto-loaded when plugin is active)
     Controllers/
@@ -27,6 +27,8 @@ plugins/DigitalStore/
     Database/
         Migrations/
             2026-01-01-000001_CreateProductsTable.php
+        Seeds/
+            DefaultSettings.php     # Auto-run on activation (after migrations)
     Views/
         store/
             index.tpl               # Public views rendered inside active theme
@@ -56,41 +58,64 @@ plugins/DigitalStore/
 
 ## 2. plugin_info.json
 
-Every plugin must have a `plugin_info.json` in its root. All five fields are **required**. Plugins with missing fields are rejected during discovery - the admin sees an error listing which fields are missing.
+Every plugin must have a `plugin_info.json` in its root. The first five fields are **required**. Plugins with missing required fields are rejected during discovery - the admin sees an error listing which fields are missing.
 
 ```json
 {
     "name":        "Digital Store",
-    "slug":        "digitalstore",
     "version":     "1.0.0",
     "description": "A full digital storefront for selling themes, plugins, and digital products.",
-    "author":      "Pubvana Team"
+    "author":      "Pubvana Team",
+    "author_url":  "https://pubvana.net",
+    "support_url": "https://pubvana.net/contact",
+    "free":        false,
+    "bundled":     false,
+    "min_pubvana_version": "2.2.3",
+    "max_pubvana_version": "2.2.15",
+    "update_url":  "https://pubvana.net/api/dstore/v1/update/check"
 }
 ```
+
+### Required Fields
 
 | Field | Type | Rules |
 |-------|------|-------|
 | `name` | string | Human-readable plugin name. Shown in Admin → Plugins. |
-| `slug` | string | URL-safe unique identifier. Lowercase, no spaces. Used as DB key and in API calls. Must be unique across all plugins. |
 | `version` | string | Semver format (e.g. `1.0.0`, `2.1.3`). When this changes, the plugin's Pubvana approval status is reset and must be re-verified. |
 | `description` | string | One-line summary. Shown in the admin plugin list under the name. Max 255 characters. |
 | `author` | string | Plugin author name. |
 
-Optional fields:
+### Optional Fields
 
-```json
-{
-    "author_url":          "https://example.com",
-    "support_url":         "https://example.com/support",
-    "min_pubvana_version": "2.2.0",
-    "max_pubvana_version": "2.3.0",
-    "update_url":          "https://pubvana.net/api/dstore/v1/update/check"
-}
-```
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `author_url` | string | `""` | Author's website URL (linked in admin). |
+| `support_url` | string | `""` | Support/contact URL shown in admin when the plugin is incompatible or has issues. |
+| `free` | boolean | `false` | Set to `true` if your plugin is free. Free third-party plugins activate without a license check. |
+| `bundled` | boolean | `false` | Reserved for Pubvana-authored addons that ship with the CMS. Third-party plugins must not set this to `true`. |
+| `min_pubvana_version` | string | `""` | Minimum Pubvana version required. |
+| `max_pubvana_version` | string | `""` | Maximum Pubvana version this plugin is compatible with. Used by the update system to prevent incompatible core updates. |
+| `update_url` | string | `""` | API endpoint the CMS POSTs to when checking for updates. Plugins without this field cannot be updated through the admin UI. |
 
-- `min_pubvana_version` / `max_pubvana_version` — The range of Pubvana versions this plugin is compatible with. Used by the CMS update system to prevent incompatible core updates and to find the right plugin release version.
-- `update_url` — The API endpoint the CMS will POST to when checking for updates. Extensions without this field cannot be updated through the admin UI. Pubvana-built addons use `https://pubvana.net/api/dstore/v1/update/check`. Third-party developers provide their own endpoint implementing the same protocol.
-- `support_url` — Displayed in the admin UI when the plugin is incompatible with the current Pubvana version ("Contact the developer").
+### Third-Party Store & License Fields
+
+These fields are only relevant if you sell your plugin and run your own store/license API. See [ThirdPartyAddons.md](ThirdPartyAddons.md) for the full API protocol specification.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `license_validate_url` | string | Endpoint the CMS POSTs to when a site admin enters a license key for your plugin. |
+| `license_check_url` | string | Endpoint the CMS POSTs to for periodic license revalidation (90-day cycle). |
+| `item_url` | string | Endpoint the CMS GETs to resolve your plugin's numeric product ID (`{item_url}/{folder}`). |
+| `store_url` | string | URL to your storefront page for this plugin (linked in admin for license renewal). |
+| `items_url` | string | Catalog listing endpoint (used by marketplace integrations). |
+| `categories_url` | string | Category listing endpoint. |
+| `categories_all_url` | string | Full category listing with products. |
+| `category_url` | string | Single category endpoint. |
+| `featured_url` | string | Featured products endpoint. |
+| `update_check_url` | string | Alternative update check endpoint (if different from `update_url`). |
+| `download_url` | string | Direct download endpoint for updates. |
+
+> **For most third-party plugins:** You only need `free`, `update_url`, `license_validate_url`, `license_check_url`, `item_url`, and `store_url`. The remaining URL fields are for full marketplace integrations. If your plugin is free, only `free: true` and optionally `update_url` are needed.
 
 ---
 
@@ -774,14 +799,45 @@ Plugin ZIPs must contain a root folder matching the plugin name (e.g. `DigitalSt
 
 1. Admin clicks "Activate" in Admin → Plugins.
 2. If the plugin is unknown to Pubvana, the admin sees a warning and must confirm.
-3. `PluginManager` runs the plugin's migrations automatically.
-4. If the plugin ships an `Installer.php`, `PluginManager` calls `Installer::up()`. If `up()` throws, `Installer::down()` is called to roll back, and activation fails.
-5. If everything succeeds, the plugin is marked active.
-6. On the next request, `PluginManager::boot()` loads the plugin: registers its namespace, loads its routes, calls `register()`.
+3. `PluginManager` runs the plugin's **migrations** automatically.
+4. `PluginManager` runs all **seeders** in `Database/Seeds/` (if the directory exists).
+5. If the plugin ships an `Installer.php`, `PluginManager` calls `Installer::up()`. If `up()` throws, `Installer::down()` is called to roll back, and activation fails.
+6. If everything succeeds, the plugin is marked active.
+7. On the next request, `PluginManager::boot()` loads the plugin: registers its namespace, loads its routes, calls `register()`.
+
+**Activation order:** Migrations → Seeds → Installer. Each step runs only if the plugin has the corresponding files. Migrations create tables, seeds populate default data, Installer handles filesystem setup.
+
+### Database Seeds (optional)
+
+If your plugin needs default data on activation, place seeder classes in `Database/Seeds/`. They extend CI4's `Seeder` class and use `$this->db->table()`.
+
+```php
+<?php
+
+namespace Plugins\DigitalStore\Database\Seeds;
+
+use CodeIgniter\Database\Seeder;
+
+class DefaultSettings extends Seeder
+{
+    public function run(): void
+    {
+        $defaults = [
+            ['setting_key' => 'currency', 'setting_value' => 'USD'],
+            ['setting_key' => 'tax_rate', 'setting_value' => '0'],
+        ];
+        foreach ($defaults as $row) {
+            if (! $this->db->table('ds_settings')->where('setting_key', $row['setting_key'])->get()->getRow()) {
+                $this->db->table('ds_settings')->insert($row);
+            }
+        }
+    }
+}
+```
 
 ### Installer.php (optional)
 
-If your plugin needs non-schema setup on activation — creating directories, seeding default settings, copying files, etc. — ship an `Installer.php` in your plugin root. Migrations handle schema; the installer handles everything else.
+If your plugin needs non-schema, non-data setup on activation - creating directories, copying files, etc. - ship an `Installer.php` in your plugin root. Migrations handle schema, seeds handle data, the installer handles everything else.
 
 ```php
 <?php
@@ -792,34 +848,16 @@ class Installer
 {
     public function up(): void
     {
-        // Create directories
         $dirs = [WRITEPATH . 'dstore/products', FCPATH . 'plugins/digitalstore/screenshots'];
         foreach ($dirs as $dir) {
             if (! is_dir($dir)) {
                 mkdir($dir, 0755, true);
             }
         }
-
-        // Seed default settings
-        $db = db_connect();
-        $defaults = [
-            ['setting_key' => 'currency', 'setting_value' => 'USD'],
-        ];
-        foreach ($defaults as $row) {
-            $exists = $db->table('ds_settings')->where('setting_key', $row['setting_key'])->get()->getRow();
-            if (! $exists) {
-                $db->table('ds_settings')->insert($row);
-            }
-        }
     }
 
     public function down(): void
     {
-        // Roll back seeded data
-        $db = db_connect();
-        $db->table('ds_settings')->whereIn('setting_key', ['currency'])->delete();
-
-        // Remove directories only if empty
         $dirs = [WRITEPATH . 'dstore/products', FCPATH . 'plugins/digitalstore/screenshots'];
         foreach (array_reverse($dirs) as $dir) {
             if (is_dir($dir) && count(scandir($dir)) === 2) {
@@ -859,13 +897,13 @@ Pubvana checks all installed plugins against the Pubvana vetting service during 
 | Status | Badge | Meaning |
 |--------|-------|---------|
 | `unknown` | Gray "Unknown" | Check has not completed yet (new plugin or network error) |
-| `approved` | Green "Approved" | Plugin is in the Pubvana registry and has been reviewed |
-| `known` | Yellow "Known Issues" | Plugin is in the registry but has a noted limitation or caution |
-| `malicious` | Red "Malicious" | Plugin has been flagged as harmful |
+| `safe` | Green "Safe" | Plugin is in the Pubvana registry and has been reviewed |
+| `known` | Green "Safe" + yellow warning | Plugin is in the registry but has a noted limitation or caution |
+| `malicious` | Red "Not Safe" | Plugin has been flagged as harmful |
 
-**Non-approved plugins can still be activated** - the admin must explicitly confirm via a modal dialog. If the plugin has a `malicious` status or a warning note from Pubvana, it is displayed prominently in red in the confirmation modal.
+**Unvetted plugins can still be activated** - the admin must explicitly confirm via a security warning modal. If the plugin has a `malicious` status or a warning note from Pubvana, it is displayed prominently in red in the confirmation modal.
 
-Approved plugins from the Pubvana Marketplace activate without the confirmation step.
+Plugins marked safe activate without the confirmation step.
 
 ---
 
@@ -898,12 +936,12 @@ You're free to distribute your plugin independently - on your own website, GitHu
 
 ## 18. Vetting Process
 
-All plugins - whether submitted to the Marketplace or installed manually - are checked against the Pubvana vetting service. This is a non-blocking check: plugins that are not yet approved can still be activated, but the admin must explicitly confirm.
+All plugins - whether submitted to the Marketplace or installed manually - are checked against the Pubvana vetting service. This is a non-blocking check: plugins that are not yet marked safe can still be activated, but the admin must explicitly confirm.
 
 ### How it works
 
-1. When a plugin is discovered (Scan for Plugins), `VettingService` sends the plugin's slug, version, and normalized author to the `vetted/v1/check` API endpoint.
-2. The API response includes a status (`unknown`, `approved`, `known`, or `malicious`) and an optional warning note.
+1. When a plugin is discovered (Scan for Plugins), `VettingService` sends the plugin's folder name, version, and normalized author to the `vetted/v1/check` API endpoint.
+2. The API response includes a status (`unknown`, `safe`, `known`, or `malicious`) and an optional warning note.
 3. The status and warning are stored locally and displayed as badges in Admin → Plugins.
 4. If the network check fails, the plugin stays `unknown` and retries on the next scan.
 
@@ -913,7 +951,7 @@ The `author` field from `plugin_info.json` is normalized before the vetting look
 
 ### Wildcard version support
 
-Official Pubvana releases use a wildcard version (`*`) in the registry, meaning all versions of that plugin are approved as a group. Third-party plugins are registered per-version - each new version must be re-vetted individually.
+Official Pubvana releases use a wildcard version (`*`) in the registry, meaning all versions of that plugin are marked safe as a group. Third-party plugins are registered per-version - each new version must be re-vetted individually.
 
 ### What gets vetted
 
@@ -927,7 +965,7 @@ Official Pubvana releases use a wildcard version (`*`) in the registry, meaning 
 | Status | Meaning |
 |--------|---------|
 | `unknown` | Not yet checked, or check failed (network error) |
-| `approved` | Reviewed and cleared by the Pubvana team |
+| `safe` | Reviewed and cleared by the Pubvana team |
 | `known` | In the registry with a noted limitation or caution -- warning note is shown to the admin |
 | `malicious` | Flagged as harmful -- warning is displayed prominently in red and activation requires explicit confirmation |
 
@@ -940,7 +978,7 @@ If the Pubvana team discovers malicious or dangerous code in a plugin, a warning
 
 ### Version re-vetting
 
-When a plugin's version changes (new `version` in `plugin_info.json`), its vetting status is automatically reset to `unknown`. The new version must be re-vetted. Approval of v1.0.0 does not carry over to v1.1.0 - new code means new review.
+When a plugin's version changes (new `version` in `plugin_info.json`), its vetting status is automatically reset to `unknown`. The new version must be re-vetted. A safe marking on v1.0.0 does not carry over to v1.1.0 - new code means new review.
 
 ### Submitting for vetting
 
@@ -952,7 +990,7 @@ To request vetting of your plugin - whether free or paid - submit it at **pubvan
 
 Before releasing a plugin:
 
-- [ ] `plugin_info.json` has all 5 required fields (`name`, `slug`, `version`, `description`, `author`)
+- [ ] `plugin_info.json` has all 4 required fields (`name`, `version`, `description`, `author`)
 - [ ] `Plugin.php` implements all 6 `PluginInterface` methods
 - [ ] `getName()`, `getSlug()`, `getVersion()` match `plugin_info.json` values
 - [ ] `getMenuItems()` returns proper structure with `label`, `icon`, and `children` array (or empty array)
@@ -962,7 +1000,8 @@ Before releasing a plugin:
 - [ ] Translations provided for all 6 locales (`en`, `es`, `fr`, `id`, `pt`, `sk`)
 - [ ] All database tables use a plugin-specific prefix (e.g. `ds_`)
 - [ ] Migrations use `createTable('name', true)` for idempotency
-- [ ] Non-schema setup (directories, default settings) is in `Installer.php`, not migrations
+- [ ] Default data is in `Database/Seeds/`, not migrations or Installer
+- [ ] Non-schema, non-data setup (directories, files) is in `Installer.php`
 - [ ] `Installer::down()` cleanly reverses everything `up()` does
 - [ ] Admin routes use `admin_auth` and `totp` filters
 - [ ] Admin views use the `ob_start()` / `ob_get_clean()` pattern (not `$this->extend()`)

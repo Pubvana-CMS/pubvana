@@ -77,20 +77,15 @@ class Account extends BaseController
         if ($email === '') {
             $errors[] = lang('Blog.profileEmailRequired');
         } elseif ($email !== $oldEmail) {
-            $db = db_connect();
-            $dup = $db->table('auth_identities')
-                ->where('type', 'email_password')
-                ->where('secret', $email)
-                ->where('user_id !=', $user->id)
-                ->countAllResults();
+            $existingUser = auth()->getProvider()->findByCredentials(['email' => $email]);
+            $dup = ($existingUser && $existingUser->id !== $user->id) ? 1 : 0;
             if ($dup > 0) {
                 $errors[] = lang('Blog.profileEmailTaken');
             } else {
                 // Update to new email
-                $db->table('auth_identities')
-                    ->where('user_id', $user->id)
-                    ->where('type', 'email_password')
-                    ->update(['secret' => $email]);
+                $userProvider = auth()->getProvider();
+                $user->setEmail($email);
+                $userProvider->save($user);
 
                 // Notify old email
                 $this->notifyUser($oldEmail, lang('Blog.profileEmailChangedSubject'), lang('Blog.profileEmailChangedBody', [$oldEmail, $email]));
@@ -239,13 +234,8 @@ class Account extends BaseController
 
     private function getUserEmail(int $userId): string
     {
-        $row = db_connect()->table('auth_identities')
-            ->select('secret')
-            ->where('user_id', $userId)
-            ->where('type', 'email_password')
-            ->get()->getRowObject();
-
-        return $row->secret ?? '';
+        $user = auth()->getProvider()->findById($userId);
+        return $user ? $user->getEmail() : '';
     }
 
     private function notifyUser(string $toEmail, string $subject, string $body): void

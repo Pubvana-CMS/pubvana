@@ -10,7 +10,7 @@
         <div class="table-responsive">
             <table class="table table-hover mb-0">
                 <thead class="bg-light">
-                    <tr><th><?= lang('Admin.title') ?></th><th><?= lang('Admin.slug') ?></th><th><?= lang('Admin.status') ?></th><th>System</th><th><?= lang('Admin.actions') ?></th></tr>
+                    <tr><th><?= lang('Admin.title') ?></th><th><?= lang('Admin.slug') ?></th><th><?= lang('Admin.status') ?></th><th><?= lang('Admin.colSystem') ?></th><th><?= lang('Admin.actions') ?></th></tr>
                 </thead>
                 <tbody>
                 <?php foreach ($pages as $page): ?>
@@ -18,7 +18,7 @@
                     <td><a href="<?= base_url('admin/pages/' . $page->id . '/edit') ?>"><?= esc($page->title) ?></a></td>
                     <td><code><?= esc($page->slug) ?></code></td>
                     <td><span class="badge badge-<?= $page->status === 'published' ? 'success' : 'secondary' ?>"><?= esc($page->status) ?></span></td>
-                    <td><?= $page->is_system ? '<span class="badge badge-info">System</span>' : '—' ?></td>
+                    <td><?= $page->is_system ? '<span class="badge badge-info">' . lang('Admin.system') . '</span>' : '—' ?></td>
                     <td>
                         <a href="<?= base_url('admin/pages/' . $page->id . '/edit') ?>" class="btn btn-sm btn-outline-primary"><?= lang('Admin.edit') ?></a>
                         <?php if (! $page->is_system): ?>

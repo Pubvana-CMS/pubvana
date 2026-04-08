@@ -17,7 +17,7 @@
                     <input type="text" name="title" class="form-control form-control-lg" required value="<?= esc($page->title) ?>">
                 </div>
                 <div class="form-group">
-                    <label>Slug <small class="text-muted">(cannot change)</small></label>
+                    <label><?= lang('Admin.slug') ?> <small class="text-muted">(<?= lang('Admin.slugCannotChange') ?>)</small></label>
                     <input type="text" class="form-control" value="<?= esc($page->slug) ?>" readonly>
                 </div>
                 <div class="form-group">

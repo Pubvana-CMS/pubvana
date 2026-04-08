@@ -94,11 +94,7 @@ class WidgetDataService
             return null;
         }
 
-        $row = db_connect()->table('posts')
-            ->select('id')
-            ->where('slug', $slug)
-            ->where('status', 'published')
-            ->get()->getRowObject();
+        $row = model(\App\Models\PostModel::class)->published()->where('slug', $slug)->first();
 
         return $row ? (int) $row->id : null;
     }

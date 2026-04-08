@@ -23,7 +23,7 @@ class Sitemap extends BaseController
 
         foreach ($pages as $page) {
             $xml .= $this->urlTag(
-                base_url($page->slug),
+                base_url('pages/' . $page->slug),
                 substr($page->updated_at, 0, 10),
                 'monthly',
                 '0.8'

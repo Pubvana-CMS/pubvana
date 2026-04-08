@@ -17,7 +17,7 @@
 <?php endif; ?>
 
 <?php if (empty($areas)): ?>
-    <div class="alert alert-info">No widget areas found. Activate a theme to enable widget areas.</div>
+    <div class="alert alert-info"><?= lang('Admin.widgetNoAreas') ?></div>
 <?php else: ?>
 
 <ul class="nav nav-tabs mb-3" id="areaTabs" role="tablist">
@@ -38,7 +38,7 @@
             <div class="card shadow mb-4">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h6 class="m-0 font-weight-bold text-primary"><?= esc($area->name) ?></h6>
-                    <small class="text-muted">Drag to reorder</small>
+                    <small class="text-muted"><?= lang('Admin.dragToReorder') ?></small>
                 </div>
                 <div class="card-body p-2">
                     <ul class="list-group widget-sortable" id="sortable-<?= $area->slug ?>" data-area="<?= $area->slug ?>">
@@ -46,7 +46,7 @@
                         <?php usort($areaInstances, fn($a, $b) => $a->sort_order - $b->sort_order); ?>
                         <?php if (empty($areaInstances)): ?>
                         <li class="list-group-item text-center text-muted py-4" id="empty-<?= $area->slug ?>">
-                            No widgets in this area. Add one from the list →
+                            <?= lang('Admin.widgetAreaEmpty') ?>
                         </li>
                         <?php endif; ?>
                         <?php foreach ($areaInstances as $wi): ?>
@@ -82,9 +82,20 @@
                 </div>
                 <div class="card-body p-2">
                     <?php foreach ($available as $w):
-                        $wJsonFile = WIDGETS_PATH . $w->folder . '/widget_info.json';
-                        $wInfo = is_file($wJsonFile) ? json_decode(file_get_contents($wJsonFile), true) : [];
+                        $isPubvana = in_array($w->author ?? '', ['pubvana', 'pubvana_team'], true);
+                        $isBundled = ! empty($w->bundled);
+                        $isFree    = ! empty($w->free);
+                        $lic       = $w->store_product_id ? ($licenses[$w->store_product_id] ?? null) : null;
+                        $licValid  = $lic ? (int) ($lic->license_valid ?? -1) : -1;
+                        $needsLicense = (! $isBundled && ! $isFree) && (! $lic || $licValid !== 1);
                     ?>
+                        <?php if (! empty($w->disabled)): ?>
+                            <li class="list-group-item d-flex justify-content-between align-items-center text-muted">
+                                <?= esc($w->name) ?>
+                                <span class="badge badge-danger badge-pill" title="<?= esc($w->disabled_reason) ?>"><?= lang('Admin.addonDisabled') ?></span>
+                            </li>
+                            <?php continue; ?>
+                        <?php endif; ?>
                     <form method="POST" action="<?= base_url('admin/widgets/add') ?>" class="mb-1">
                         <?= csrf_field() ?>
                         <input type="hidden" name="widget_id" value="<?= $w->id ?>">
@@ -92,22 +103,59 @@
                         <div class="d-flex justify-content-between align-items-center border rounded p-2">
                             <div>
                                 <strong><?= esc($w->name) ?></strong>
-                                <?php if (!empty($wInfo['premium'])): ?>
-                                    <span class="badge badge-warning text-dark small"><?= lang('Admin.premium') ?></span>
-                                <?php endif; ?>
-                                <?php if ($w->pv_approved === null): ?>
-                                    <span class="badge badge-light">Unchecked</span>
-                                <?php elseif ((int) $w->pv_approved === 1): ?>
-                                    <span class="badge badge-success">Approved</span>
+                                <?php if ($w->pv_safe === null): ?>
+                                    <span class="badge badge-light"><?= lang('Admin.unchecked') ?></span>
+                                <?php elseif ((int) $w->pv_safe === 1): ?>
+                                    <span class="badge badge-success"><?= lang('Admin.safe') ?></span>
                                 <?php else: ?>
-                                    <span class="badge badge-danger">Not Approved</span>
+                                    <span class="badge badge-danger"><?= lang('Admin.notSafe') ?></span>
                                 <?php endif ?><br>
                                 <?php if (! empty($w->pv_warning_note)): ?>
                                     <small class="text-warning"><i class="fas fa-exclamation-triangle"></i> <?= esc($w->pv_warning_note) ?></small><br>
                                 <?php endif ?>
                                 <small class="text-muted"><?= esc($w->description) ?></small>
                             </div>
-                            <button class="btn btn-sm btn-outline-primary ml-2"><?= lang('Admin.widgetAddToArea') ?></button>
+                            <div class="d-flex align-items-center ml-2">
+                                <?php if ($isBundled): ?>
+                                    <?php /* Bundled — no license display */ ?>
+                                <?php elseif ($isPubvana): ?>
+                                    <?php
+                                        $renewUrl = 'https://pubvana.net/dstore/product/' . $w->folder;
+                                    ?>
+                                    <?php if ($lic && $licValid === 1): ?>
+                                        <span class="badge badge-success mr-2"><?= lang('Admin.licenseLicensed') ?></span>
+                                    <?php elseif ($lic && $licValid === 0): ?>
+                                        <span class="badge badge-danger mr-1"><?= lang('Admin.licenseExpired') ?></span>
+                                        <button type="button" class="btn btn-xs btn-outline-danger mr-1" data-toggle="modal" data-target="#licenseModal-widget-<?= $w->id ?>"><?= lang('Admin.licenseEnterKey') ?></button>
+                                        <?php if ($renewUrl): ?>
+                                            <a href="<?= esc($renewUrl) ?>" target="_blank" class="btn btn-xs btn-outline-info mr-1"><?= lang('Admin.licenseRenew') ?></a>
+                                        <?php endif; ?>
+                                    <?php elseif ($lic && $licValid === -1): ?>
+                                        <span class="badge badge-warning mr-1"><?= lang('Admin.licenseCheckNow') ?></span>
+                                        <button type="button" class="btn btn-xs btn-outline-warning mr-1" data-toggle="modal" data-target="#licenseModal-widget-<?= $w->id ?>"><?= lang('Admin.licenseEnterKey') ?></button>
+                                    <?php else: ?>
+                                        <button type="button" class="btn btn-xs btn-outline-primary mr-1" data-toggle="modal" data-target="#licenseModal-widget-<?= $w->id ?>"><?= lang('Admin.licenseEnterKey') ?></button>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <?php if (! empty($w->license_validate_url) && $w->store_product_id): ?>
+                                        <?php if ($lic && $licValid === 1): ?>
+                                            <span class="badge badge-success mr-2"><?= lang('Admin.licenseLicensed') ?></span>
+                                        <?php elseif ($lic && $licValid === 0): ?>
+                                            <span class="badge badge-danger mr-1"><?= lang('Admin.licenseExpired') ?></span>
+                                            <button type="button" class="btn btn-xs btn-outline-danger mr-1" data-toggle="modal" data-target="#licenseModal-widget-<?= $w->id ?>"><?= lang('Admin.licenseEnterKey') ?></button>
+                                            <?php $renewUrl = $w->store_url ?? ''; ?>
+                                            <?php if ($renewUrl): ?>
+                                                <a href="<?= esc($renewUrl) ?>" target="_blank" class="btn btn-xs btn-outline-info mr-1"><?= lang('Admin.licenseRenew') ?></a>
+                                            <?php endif; ?>
+                                        <?php else: ?>
+                                            <button type="button" class="btn btn-xs btn-outline-primary mr-1" data-toggle="modal" data-target="#licenseModal-widget-<?= $w->id ?>"><?= lang('Admin.licenseEnterKey') ?></button>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <span class="badge badge-light mr-2"><?= lang('Admin.licenseThirdPartyLabel') ?></span>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                                <button class="btn btn-sm btn-outline-primary" <?= $needsLicense ? 'disabled' : '' ?>><?= lang('Admin.widgetAddToArea') ?></button>
+                            </div>
                         </div>
                     </form>
                     <?php endforeach; ?>
@@ -120,6 +168,42 @@
 </div>
 
 <?php endif; ?>
+
+<!-- Widget license key modals -->
+<?php foreach ($available as $w): ?>
+    <?php
+        $isPubvana = in_array($w->author ?? '', ['pubvana', 'pubvana_team'], true);
+        $isBundled = ! empty($w->bundled);
+    ?>
+    <?php if ((($isPubvana && ! $isBundled) || ! empty($w->license_validate_url)) && $w->store_product_id): ?>
+    <div class="modal fade" id="licenseModal-widget-<?= $w->id ?>" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="<?= site_url('admin/widgets/save-license') ?>" method="post">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="store_product_id" value="<?= esc($w->store_product_id) ?>">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><?= lang('Admin.licenseModalTitle') ?> - <?= esc($w->name) ?></h5>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <p><?= lang('Admin.licenseModalBody') ?></p>
+                        <div class="form-group">
+                            <input type="text" class="form-control" name="license_key"
+                                   value="<?= esc(($licenses[$w->store_product_id] ?? null)?->license_key ?? '') ?>"
+                                   placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"><?= lang('Admin.btnCancel') ?></button>
+                        <button type="submit" class="btn btn-primary"><?= lang('Admin.licenseModalSave') ?></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+<?php endforeach; ?>
 
 <?php $content = ob_get_clean(); ?>
 <?php ob_start(); ?>

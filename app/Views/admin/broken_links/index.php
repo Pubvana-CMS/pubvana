@@ -15,17 +15,20 @@
     </div>
 </div>
 
-<!-- Scan instruction card -->
+<!-- Scan card -->
 <div class="card shadow mb-4">
     <div class="card-body py-3 d-flex align-items-center justify-content-between flex-wrap">
-        <div class="text-muted small mr-3">
-            <i class="fas fa-circle-info mr-1"></i>
-            Run a full scan from the command line to populate this report:
-            <code class="ml-1">php spark links:check</code>
+        <div class="d-flex align-items-center">
+            <form method="POST" action="<?= base_url('admin/broken-links/scan') ?>" class="d-inline mr-3">
+                <?= csrf_field() ?>
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <i class="fas fa-magnifying-glass mr-1"></i> <?= lang('Admin.brokenLinksRunScan') ?>
+                </button>
+            </form>
+            <span class="badge badge-<?= $total > 0 ? 'danger' : 'success' ?> px-3 py-2">
+                <?= lang('Admin.brokenLinksIssueCount', [$total]) ?>
+            </span>
         </div>
-        <span class="badge badge-<?= $total > 0 ? 'danger' : 'success' ?> px-3 py-2 mt-2 mt-sm-0">
-            <?= $total ?> issue<?= $total !== 1 ? 's' : '' ?> found
-        </span>
     </div>
 </div>
 
@@ -42,7 +45,7 @@
         <div class="card-header py-2 d-flex align-items-center justify-content-between">
             <div>
                 <span class="badge badge-<?= $group['source_type'] === 'post' ? 'primary' : 'secondary' ?> mr-2">
-                    <?= ucfirst($group['source_type']) ?>
+                    <?= lang('Admin.type' . ucfirst($group['source_type'])) ?>
                 </span>
                 <?php
                 $editUrl = $group['source_type'] === 'post'
@@ -54,7 +57,7 @@
                 </a>
             </div>
             <span class="badge badge-danger">
-                <?= count($group['links']) ?> broken
+                <?= lang('Admin.brokenLinksCount', [count($group['links'])]) ?>
             </span>
         </div>
         <div class="card-body p-0">
@@ -83,7 +86,7 @@
                                     <?= $link->http_status ?>
                                 </span>
                             <?php else: ?>
-                                <span class="badge badge-secondary">Timeout</span>
+                                <span class="badge badge-secondary"><?= lang('Admin.timeout') ?></span>
                             <?php endif; ?>
                         </td>
                         <td class="small text-muted text-truncate">
@@ -102,7 +105,7 @@
                                   class="d-inline">
                                 <?= csrf_field() ?>
                                 <button type="submit" class="btn btn-xs btn-outline-primary"
-                                        title="Re-check this URL">
+                                        title="<?= lang('Admin.brokenLinksRecheck') ?>">
                                     <i class="fas fa-arrows-rotate"></i>
                                 </button>
                             </form>
@@ -112,7 +115,7 @@
                                   class="d-inline ml-1">
                                 <?= csrf_field() ?>
                                 <button type="submit" class="btn btn-xs btn-outline-secondary"
-                                        title="Dismiss (hide from results)">
+                                        title="<?= lang('Admin.brokenLinksDismiss') ?>">
                                     <i class="fas fa-eye-slash"></i>
                                 </button>
                             </form>

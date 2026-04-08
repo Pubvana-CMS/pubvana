@@ -3,9 +3,24 @@
 namespace App\Controllers\Admin;
 
 use App\Models\BrokenLinkModel;
+use App\Services\BrokenLinkService;
 
 class BrokenLinks extends BaseAdminController
 {
+    public function scan()
+    {
+        if (! auth()->user()->can('admin.settings')) {
+            return redirect()->to('/admin/broken-links')->with('error', lang('Admin.permissionDenied'));
+        }
+
+        $result = (new BrokenLinkService())->scan();
+
+        return redirect()->to('/admin/broken-links')->with(
+            'success',
+            lang('Admin.brokenLinksScanComplete', [$result['total'], $result['broken']])
+        );
+    }
+
     public function index(): string
     {
         if (! auth()->user()->can('admin.settings')) {
@@ -50,7 +65,9 @@ class BrokenLinks extends BaseAdminController
             return redirect()->to('/admin/broken-links')->with('error', lang('Admin.notFound'));
         }
 
-        $result = $this->fetchUrl($row->url);
+        $service = new BrokenLinkService();
+        $client  = \Config\Services::curlrequest(['timeout' => 10]);
+        $result  = $service->checkUrl($client, $row->url);
 
         $model->upsert([
             'source_type'   => $row->source_type,
@@ -85,33 +102,4 @@ class BrokenLinks extends BaseAdminController
         return redirect()->to('/admin/broken-links')->with('success', lang('Admin.brokenLinkDismissed'));
     }
 
-    // -------------------------------------------------------------------------
-
-    private function fetchUrl(string $url): array
-    {
-        try {
-            $client   = \Config\Services::curlrequest(['timeout' => 10]);
-            $response = $client->request('HEAD', $url, [
-                'http_errors'     => false,
-                'allow_redirects' => ['max' => 5],
-                'headers'         => ['User-Agent' => 'Pubvana-LinkChecker/1.0'],
-            ]);
-
-            $status = $response->getStatusCode();
-
-            if ($status === 405) {
-                $response = $client->request('GET', $url, [
-                    'http_errors'     => false,
-                    'allow_redirects' => ['max' => 5],
-                    'headers'         => ['User-Agent' => 'Pubvana-LinkChecker/1.0'],
-                ]);
-                $status = $response->getStatusCode();
-            }
-
-            return ['status' => $status, 'error' => null];
-
-        } catch (\Throwable $e) {
-            return ['status' => null, 'error' => mb_substr($e->getMessage(), 0, 200)];
-        }
-    }
 }

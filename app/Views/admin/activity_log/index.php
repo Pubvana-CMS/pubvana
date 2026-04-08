@@ -32,7 +32,7 @@
                         <th><?= lang('Admin.activityLogUser') ?></th>
                         <th><?= lang('Admin.activityLogAction') ?></th>
                         <th><?= lang('Admin.activityLogNote') ?></th>
-                        <th>IP</th>
+                        <th><?= lang('Admin.colIp') ?></th>
                     </tr>
                 </thead>
                 <tbody>

@@ -62,7 +62,7 @@
 <div class="card shadow mb-4">
     <div class="card-header py-3 d-flex align-items-center justify-content-between">
         <h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.affiliateClicks') ?></h6>
-        <span class="text-muted small">IPs are stored as SHA-256 hashes — no raw PII recorded.</span>
+        <span class="text-muted small"><?= lang('Admin.affiliateIpHashNote') ?></span>
     </div>
     <div class="card-body p-0">
         <?php if (empty($clicks)): ?>
@@ -72,9 +72,9 @@
             <table class="table table-hover mb-0">
                 <thead class="thead-light">
                     <tr>
-                        <th>Time</th>
-                        <th>IP Hash</th>
-                        <th>Referrer</th>
+                        <th><?= lang('Admin.colTime') ?></th>
+                        <th><?= lang('Admin.colIpHash') ?></th>
+                        <th><?= lang('Admin.colReferrer') ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -88,7 +88,7 @@
                                     <?= esc(parse_url($click->referrer, PHP_URL_HOST) ?: $click->referrer) ?>
                                 </span>
                             <?php else: ?>
-                                <span class="text-muted">Direct</span>
+                                <span class="text-muted"><?= lang('Admin.affiliateDirectReferrer') ?></span>
                             <?php endif; ?>
                         </td>
                     </tr>

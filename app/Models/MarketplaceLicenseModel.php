@@ -15,6 +15,7 @@ class MarketplaceLicenseModel extends Model
         'license_key',
         'store_product_id',
         'product_name',
+        'author',
         'item_type',
         'registered_domain',
         'is_subscription',

@@ -1,16 +1,12 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Revisions: <?= esc($post->title) ?></h1>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.revisionsTitle', [esc($post->title)]) ?></h1>
     <div>
         <a href="<?= base_url('admin/posts/' . $post->id . '/edit') ?>" class="btn btn-sm btn-outline-secondary"><?= lang('Admin.revisionsBackToPost') ?></a>
         <a href="<?= base_url('admin/posts') ?>" class="btn btn-sm btn-outline-secondary ml-1"><?= lang('Admin.postsTitle') ?></a>
     </div>
 </div>
-
-<?php if (session()->getFlashdata('success')): ?>
-    <div class="alert alert-success"><?= esc(session()->getFlashdata('success')) ?></div>
-<?php endif; ?>
 
 <?php if (empty($revisions)): ?>
     <div class="alert alert-info"><?= lang('Admin.noRevisionsYet') ?></div>

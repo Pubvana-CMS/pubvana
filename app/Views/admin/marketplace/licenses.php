@@ -4,19 +4,12 @@
     <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.licensesTitle') ?></h1>
 </div>
 
-<?php if (session()->getFlashdata('success')): ?>
-    <div class="alert alert-success"><?= esc(session()->getFlashdata('success')) ?></div>
-<?php endif; ?>
-<?php if (session()->getFlashdata('error')): ?>
-    <div class="alert alert-danger"><?= esc(session()->getFlashdata('error')) ?></div>
-<?php endif; ?>
-
 <?php if (empty($licenses)): ?>
     <div class="card shadow mb-4">
         <div class="card-body text-center py-5">
             <i class="fas fa-key fa-4x text-muted mb-4"></i>
             <h4 class="text-muted"><?= lang('Admin.licensesNone') ?></h4>
-            <p class="text-muted">Licensed products will appear here after installation.</p>
+            <p class="text-muted"><?= lang('Admin.marketplaceLicensesEmpty') ?></p>
         </div>
     </div>
 <?php else: ?>
@@ -87,7 +80,7 @@
                     <tr>
                         <td>
                             <?= esc($lic->product_name) ?>
-                            <span class="badge badge-<?= match($lic->item_type) { 'theme' => 'primary', 'plugin' => 'info', default => 'secondary' } ?> ml-1"><?= ucfirst(esc($lic->item_type)) ?></span>
+                            <span class="badge badge-<?= match($lic->item_type) { 'theme' => 'primary', 'plugin' => 'info', default => 'secondary' } ?> ml-1"><?= lang('Admin.type' . ucfirst($lic->item_type)) ?></span>
                         </td>
                         <td><code class="small"><?= esc($maskedKey) ?></code></td>
                         <td><span class="badge badge-<?= $statusClass ?>"><?= $statusLabel ?></span></td>

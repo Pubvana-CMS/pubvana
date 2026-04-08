@@ -5,10 +5,6 @@
     <a href="<?= base_url('admin/users/' . $user_id . '/profile') ?>" class="btn btn-sm btn-outline-secondary"><?= lang('Admin.cancel') ?></a>
 </div>
 
-<?php if (session()->getFlashdata('error')): ?>
-    <div class="alert alert-danger"><?= esc(session()->getFlashdata('error')) ?></div>
-<?php endif; ?>
-
 <div class="row">
     <div class="col-lg-7">
         <div class="card shadow mb-4">
@@ -17,12 +13,11 @@
             </div>
             <div class="card-body text-center">
                 <p class="text-muted small mb-3">
-                    Open your authenticator app (Google Authenticator, Authy, 1Password, etc.)
-                    and scan this QR code.
+                    <?= lang('Admin.totpScanInstructions') ?>
                 </p>
                 <canvas id="qrcode" class="mb-3"></canvas>
                 <div class="text-muted small">
-                    Can't scan? Enter this code manually:
+                    <?= lang('Admin.totpManualEntry') ?>
                     <div class="mt-1">
                         <code class="font-monospace text-dark" style="font-size:1rem; letter-spacing:0.15em">
                             <?= esc(chunk_split($secret, 4, ' ')) ?>
@@ -40,7 +35,7 @@
             </div>
             <div class="card-body">
                 <p class="text-muted small mb-3">
-                    After scanning, enter the 6-digit code shown in your app to confirm setup.
+                    <?= lang('Admin.totpConfirmInstructions') ?>
                 </p>
                 <form method="POST" action="<?= base_url('admin/users/2fa/confirm') ?>">
                     <?= csrf_field() ?>
@@ -61,8 +56,7 @@
 
         <div class="alert alert-warning small">
             <i class="fas fa-triangle-exclamation mr-1"></i>
-            <strong>Store your recovery codes.</strong> If you lose access to your authenticator app,
-            you will not be able to log in. Contact your site administrator to reset 2FA.
+            <?= lang('Admin.totpRecoveryWarning') ?>
         </div>
     </div>
 </div>

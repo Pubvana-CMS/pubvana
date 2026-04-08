@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="{{ locale }}">
 <head>
+    <link rel="icon" href="{% base_url 'favicon.ico' %}" type="image/x-icon">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ page_title | default(site_name) }}</title>

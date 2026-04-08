@@ -31,11 +31,6 @@ class MigrateAndCleanMarketplaceItems extends Migration
 
         // Drop license columns from marketplace_items
         $this->forge->dropColumn('marketplace_items', ['license_key', 'license_valid', 'license_last_checked']);
-
-        // Update ENUM to remove premium_core
-        $this->db->query(
-            "ALTER TABLE marketplace_items MODIFY COLUMN item_type ENUM('theme','widget','plugin') NOT NULL"
-        );
     }
 
     public function down(): void
@@ -63,9 +58,5 @@ class MigrateAndCleanMarketplaceItems extends Migration
             ],
         ]);
 
-        // Restore ENUM
-        $this->db->query(
-            "ALTER TABLE marketplace_items MODIFY COLUMN item_type ENUM('theme','widget','plugin','premium_core') NOT NULL"
-        );
     }
 }

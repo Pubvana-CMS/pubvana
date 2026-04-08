@@ -3,9 +3,9 @@
 <h1 class="h3 mb-4 text-gray-800"><?= lang('Admin.commentsTitle') ?></h1>
 
 <ul class="nav nav-tabs mb-3">
-    <?php foreach (['pending', 'approved', 'spam', 'trash'] as $s): ?>
+    <?php foreach (['', 'pending', 'approved', 'spam', 'trash'] as $s): ?>
     <li class="nav-item">
-        <a class="nav-link <?= $filter === $s ? 'active' : '' ?>" href="<?= base_url('admin/comments?status=' . $s) ?>"><?= ucfirst($s) ?></a>
+        <a class="nav-link <?= $filter === $s ? 'active' : '' ?>" href="<?= base_url('admin/comments' . ($s !== '' ? '?status=' . $s : '')) ?>"><?= lang('Admin.comment' . ucfirst($s ?: 'All')) ?></a>
     </li>
     <?php endforeach; ?>
 </ul>
@@ -34,7 +34,7 @@
                     </td>
                 </tr>
             <?php endforeach; ?>
-            <?php if (empty($comments)): ?><tr><td colspan="4" class="text-center text-muted py-4">No <?= esc($filter) ?> comments.</td></tr><?php endif; ?>
+            <?php if (empty($comments)): ?><tr><td colspan="4" class="text-center text-muted py-4"><?= lang('Admin.commentsNone', [esc($filter)]) ?></td></tr><?php endif; ?>
             </tbody>
         </table>
     </div>

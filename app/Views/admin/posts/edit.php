@@ -1,7 +1,7 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Edit Post: <?= esc($post->title) ?></h1>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.editPostTitle', [esc($post->title)]) ?></h1>
     <div>
         <a href="<?= post_url($post->slug) ?>" class="btn btn-sm btn-outline-secondary" target="_blank"><?= lang('Admin.postPreview') ?></a>
         <?php if (!empty($preview_url)): ?>
@@ -9,7 +9,7 @@
                 id="copyPreviewBtn"
                 data-url="<?= esc($preview_url) ?>"
                 title="<?= esc($preview_url) ?>">
-            Copy Preview Link
+            <?= lang('Admin.copyPreviewLink') ?>
         </button>
         <script>
         document.getElementById('copyPreviewBtn').addEventListener('click', function() {
@@ -115,6 +115,12 @@
                     <input type="checkbox" name="is_premium" id="is_premium" class="form-check-input" value="1" <?= !empty($post->is_premium) ? 'checked' : '' ?>>
                     <label class="form-check-label" for="is_premium"><i class="fas fa-lock fa-xs text-warning mr-1"></i><?= lang('Admin.postMembersOnly') ?></label>
                 </div>
+                <div class="form-check mb-2">
+                    <input type="hidden" name="allow_comments" value="0">
+                    <input type="checkbox" name="allow_comments" id="allow_comments" class="form-check-input" value="1"
+                           <?= ($post->allow_comments ?? 1) ? 'checked' : '' ?>>
+                    <label class="form-check-label" for="allow_comments"><?= lang('Admin.generalCommentsEnable') ?></label>
+                </div>
                 <?php if ($post->status !== 'published'): ?>
                 <div class="form-check mb-2">
                     <input type="checkbox" name="share_on_publish" id="share_on_publish" class="form-check-input" value="1"
@@ -139,14 +145,14 @@
                     <img id="featured-image-preview-img" src="<?= esc($post->featured_image ? base_url($post->featured_image) : '') ?>" class="img-fluid rounded" alt="" style="max-height:180px">
                 </div>
                 <div id="featured-image-empty" class="text-center text-muted border rounded p-3 mb-2" style="<?= $post->featured_image ? 'display:none' : '' ?>">
-                    <i class="fas fa-image fa-2x mb-1"></i><br><small>No image selected</small>
+                    <i class="fas fa-image fa-2x mb-1"></i><br><small><?= lang('Admin.mediaNoSelection') ?></small>
                 </div>
                 <div class="d-flex mb-2">
                     <button type="button" class="btn btn-sm btn-outline-primary" id="browse-featured-image">
-                        <i class="fas fa-folder-open mr-1"></i>Browse Media
+                        <i class="fas fa-folder-open mr-1"></i><?= lang('Admin.mediaBrowse') ?>
                     </button>
                     <button type="button" class="btn btn-sm btn-outline-danger ml-1" id="remove-featured-image" style="<?= $post->featured_image ? '' : 'display:none' ?>">
-                        <i class="fas fa-times mr-1"></i>Remove
+                        <i class="fas fa-times mr-1"></i><?= lang('Admin.mediaRemove') ?>
                     </button>
                 </div>
                 <input type="text" name="featured_image" id="featured_image_url" class="form-control" value="<?= esc($post->featured_image) ?>">

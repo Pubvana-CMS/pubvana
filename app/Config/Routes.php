@@ -120,6 +120,7 @@ $routes->group('admin', ['filter' => ['admin_auth', 'totp'], 'namespace' => 'App
     $routes->post('themes/(:num)/activate',        'Themes::activate/$1');
     $routes->get('themes/(:num)/options',          'Themes::options/$1');
     $routes->post('themes/(:num)/options',         'Themes::saveOptions/$1');
+    $routes->post('themes/save-license',           'Themes::saveLicense');
 
     // Widgets
     $routes->get('widgets',                        'Widgets::areas');
@@ -128,6 +129,7 @@ $routes->group('admin', ['filter' => ['admin_auth', 'totp'], 'namespace' => 'App
     $routes->get('widgets/(:num)/configure',       'Widgets::configure/$1');
     $routes->post('widgets/(:num)/configure',      'Widgets::saveConfig/$1');
     $routes->post('widgets/reorder',               'Widgets::reorder');
+    $routes->post('widgets/save-license',          'Widgets::saveLicense');
 
     // Navigation
     $routes->get('navigation',                     'Navigation::index');
@@ -142,6 +144,7 @@ $routes->group('admin', ['filter' => ['admin_auth', 'totp'], 'namespace' => 'App
     $routes->get('users/(:num)/edit',        'Users::edit/$1');
     $routes->post('users/(:num)/edit',       'Users::update/$1');
     $routes->post('users/(:num)/delete',     'Users::delete/$1');
+    $routes->post('users/(:num)/ban',        'Users::toggleBan/$1');
     $routes->get('users/(:num)/profile',     'Users::profile/$1');
     $routes->post('users/(:num)/profile',    'Users::saveProfile/$1');
     $routes->get('users/2fa/setup',          'TwoFactor::setup');
@@ -220,6 +223,7 @@ $routes->group('admin', ['filter' => ['admin_auth', 'totp'], 'namespace' => 'App
 
     // Broken Links
     $routes->get('broken-links',                        'BrokenLinks::index');
+    $routes->post('broken-links/scan',                  'BrokenLinks::scan');
     $routes->post('broken-links/(:num)/recheck',        'BrokenLinks::recheck/$1');
     $routes->post('broken-links/(:num)/dismiss',        'BrokenLinks::dismiss/$1');
 
@@ -241,6 +245,7 @@ $routes->group('admin', ['filter' => ['admin_auth', 'totp'], 'namespace' => 'App
     $routes->post('plugins/discover',    'Plugins::discover');
     $routes->post('plugins/activate',    'Plugins::activate');
     $routes->post('plugins/deactivate',  'Plugins::deactivate');
+    $routes->post('plugins/save-license', 'Plugins::saveLicense');
 });
 
 // ===================================================
@@ -294,11 +299,11 @@ $routes->group('{locale}', static function ($routes): void {
         require $pluginRoutes;
     }
 
-    // Catch-all for locale-prefixed static pages — must be last inside the group
-    $routes->get('(:segment)',               'Pages::show/$1');
+    // Static pages — locale-prefixed
+    $routes->get('pages/(:segment)',         'Pages::show/$1');
 });
 
 // ===================================================
-// CATCH-ALL: Static pages — non-prefixed, must be very last
+// Static pages — non-prefixed
 // ===================================================
-$routes->get('(:segment)', 'Pages::show/$1');
+$routes->get('pages/(:segment)', 'Pages::show/$1');

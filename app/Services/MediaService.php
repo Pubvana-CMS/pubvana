@@ -109,8 +109,8 @@ class MediaService
 
     public function delete(int $id): bool
     {
-        $db    = db_connect();
-        $media = $db->table('media')->where('id', $id)->get()->getRowObject();
+        $mediaModel = model(\App\Models\MediaModel::class);
+        $media = $mediaModel->find($id);
         if (! $media) {
             return false;
         }
@@ -123,7 +123,7 @@ class MediaService
         if (is_file($absThumb)) {
             @unlink($absThumb);
         }
-        $db->table('media')->where('id', $id)->delete();
+        $mediaModel->delete($id);
         return true;
     }
 

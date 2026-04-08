@@ -68,7 +68,7 @@
 <!-- Progress bar (hidden by default) -->
 <div id="update-progress" class="card shadow mb-4" style="display:none;">
     <div class="card-body">
-        <h6 class="font-weight-bold" id="progress-label">Starting update...</h6>
+        <h6 class="font-weight-bold" id="progress-label"><?= lang('Admin.updateStarting') ?></h6>
         <div class="progress mb-2">
             <div class="progress-bar progress-bar-striped progress-bar-animated" id="progress-bar"
                  role="progressbar" style="width: 0%"></div>
@@ -80,7 +80,7 @@
 <?php if (!empty($update['error'])): ?>
     <div class="alert alert-warning">
         <i class="fas fa-triangle-exclamation mr-1"></i>
-        <strong>Update check:</strong> <?= esc($update['error']) ?>
+        <strong><?= lang('Admin.updateCheckLabel') ?></strong> <?= esc($update['error']) ?>
     </div>
 
 <?php elseif (!empty($update['available'])): ?>
@@ -88,25 +88,27 @@
         <!-- State 3: No safe target — all paths have incompatible extensions -->
         <div class="alert alert-warning">
             <i class="fas fa-circle-arrow-up mr-1"></i>
-            <strong>Pubvana <?= esc($update['latest_version']) ?> is available</strong>
-            — you are running <?= esc($update['current_version']) ?>.
-            Some installed extensions are not compatible with this version.
+            <strong><?= lang('Admin.updateAvailable', [esc($update['latest_version'])]) ?></strong>
+            — <?= lang('Admin.updateRunning', [esc($update['current_version'])]) ?>
+            <?= lang('Admin.compatNotCompatible') ?>
         </div>
     <?php elseif ($capped_by_extensions): ?>
         <!-- State 2: Safe target is lower than latest -->
         <div class="alert alert-info">
             <i class="fas fa-circle-arrow-up mr-1"></i>
-            <strong>Pubvana <?= esc($effective_target) ?> is available!</strong>
-            You are running <?= esc($update['current_version']) ?>.
+            <strong><?= lang('Admin.updateAvailable', [esc($effective_target)]) ?></strong>
+            <?= lang('Admin.updateRunning', [esc($update['current_version'])]) ?>
         </div>
         <div class="alert alert-secondary">
             <i class="fas fa-info-circle mr-1"></i>
-            <strong>Pubvana <?= esc($update['latest_version']) ?> is also available</strong>
-            but requires the following extensions to be updated first:
+            <strong><?= lang('Admin.updateAvailable', [esc($update['latest_version'])]) ?></strong>
+            <?= lang('Admin.compatRequiresUpdate') ?>
             <ul class="mb-0 mt-1">
                 <?php foreach ($incompatible as $ext): ?>
                     <li><?= esc(ucfirst($ext['type'])) ?>: <strong><?= esc($ext['name']) ?></strong>
-                        (supports up to <?= esc($ext['max_version']) ?>)</li>
+                        (<?= ! empty($ext['min_version'])
+                            ? lang('Admin.compatRequiresMin', [esc($ext['min_version'])])
+                            : lang('Admin.compatSupportsUpTo', [esc($ext['max_version'])]) ?>)</li>
                 <?php endforeach; ?>
             </ul>
         </div>
@@ -114,14 +116,14 @@
         <!-- State 1: Safe target = latest, no issues -->
         <div class="alert alert-info">
             <i class="fas fa-circle-arrow-up mr-1"></i>
-            <strong>Pubvana <?= esc($effective_target) ?> is available!</strong>
-            You are running <?= esc($update['current_version']) ?>.
+            <strong><?= lang('Admin.updateAvailable', [esc($effective_target)]) ?></strong>
+            <?= lang('Admin.updateRunning', [esc($update['current_version'])]) ?>
         </div>
     <?php endif; ?>
 
     <?php if (!empty($breaking_changes)): ?>
     <div class="alert alert-danger">
-        <h6 class="font-weight-bold"><i class="fas fa-exclamation-triangle mr-1"></i> Breaking Changes</h6>
+        <h6 class="font-weight-bold"><i class="fas fa-exclamation-triangle mr-1"></i> <?= lang('Admin.updateBreakingChanges') ?></h6>
         <ul class="mb-0">
             <?php foreach ($breaking_changes as $bc): ?>
                 <li><?= esc($bc) ?></li>
@@ -132,7 +134,7 @@
 
     <?php if (!empty($migration_notes)): ?>
     <div class="alert alert-warning">
-        <h6 class="font-weight-bold"><i class="fas fa-database mr-1"></i> Migration Notes</h6>
+        <h6 class="font-weight-bold"><i class="fas fa-database mr-1"></i> <?= lang('Admin.updateMigrationNotes') ?></h6>
         <ul class="mb-0">
             <?php foreach ($migration_notes as $mn): ?>
                 <li><?= esc($mn) ?></li>
@@ -143,7 +145,7 @@
 
     <?php if (!empty($notices)): ?>
     <div class="alert alert-info">
-        <h6 class="font-weight-bold"><i class="fas fa-info-circle mr-1"></i> Notices</h6>
+        <h6 class="font-weight-bold"><i class="fas fa-info-circle mr-1"></i> <?= lang('Admin.updateNotices') ?></h6>
         <ul class="mb-0">
             <?php foreach ($notices as $n): ?>
                 <li><?= esc($n) ?></li>
@@ -156,7 +158,7 @@
     <?php if (!empty($checks)): ?>
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Pre-flight Checks</h6>
+            <h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.updatePreflightTitle') ?></h6>
         </div>
         <div class="card-body p-0">
             <table class="table table-sm mb-0">
@@ -174,7 +176,7 @@
                         <td><?= esc($check['message']) ?></td>
                         <td class="text-right pr-3">
                             <span class="badge badge-<?= $check['hard'] ? 'danger' : 'secondary' ?>">
-                                <?= $check['hard'] ? 'required' : 'optional' ?>
+                                <?= $check['hard'] ? lang('Admin.required') : lang('Admin.optional') ?>
                             </span>
                         </td>
                     </tr>
@@ -188,10 +190,10 @@
     <!-- Update Now -->
     <button type="button" class="btn btn-primary btn-lg mb-3" id="updateBtn"
             <?= (!$all_hard_pass || !empty($is_locked)) ? 'disabled' : '' ?>>
-        <i class="fas fa-rocket mr-1"></i> Update to Pubvana <?= esc($effective_target) ?>
+        <i class="fas fa-rocket mr-1"></i> <?= lang('Admin.updateToVersion', [esc($effective_target)]) ?>
     </button>
     <?php if (!$all_hard_pass): ?>
-        <p class="text-danger small">One or more required pre-flight checks failed. Please resolve them before updating.</p>
+        <p class="text-danger small"><?= lang('Admin.updatePreflightFailed') ?></p>
     <?php endif; ?>
 
     <?php if (!$can_download): ?>
@@ -204,8 +206,7 @@
 <?php else: ?>
     <div class="alert alert-success">
         <i class="fas fa-circle-check mr-1"></i>
-        <strong>Pubvana is up to date.</strong>
-        You are running version <?= esc($update['current_version']) ?>.
+        <?= lang('Admin.updateUpToDate', [esc($update['current_version'])]) ?>
     </div>
 <?php endif; ?>
 
@@ -215,30 +216,32 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-warning">
-                <h5 class="modal-title"><i class="fas fa-exclamation-triangle mr-1"></i> Compatibility Warning</h5>
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle mr-1"></i> <?= lang('Admin.compatWarningTitle') ?></h5>
                 <button class="close" data-dismiss="modal"><span>&times;</span></button>
             </div>
             <div class="modal-body">
-                <p>The following extensions have not declared compatibility with Pubvana <?= esc($effective_target) ?>. They may stop working after the update:</p>
+                <p><?= lang('Admin.compatNotDeclared', [esc($effective_target)]) ?></p>
                 <table class="table table-sm mb-3">
                     <thead class="bg-light">
-                        <tr><th>Type</th><th>Name</th><th>Max Version</th></tr>
+                        <tr><th><?= lang('Admin.compatColType') ?></th><th><?= lang('Admin.compatColName') ?></th><th><?= lang('Admin.compatColVersion') ?></th></tr>
                     </thead>
                     <tbody>
                     <?php foreach ($incompatible as $ext): ?>
                         <tr>
                             <td><span class="badge badge-secondary"><?= esc(ucfirst($ext['type'])) ?></span></td>
                             <td><?= esc($ext['name']) ?></td>
-                            <td><?= esc($ext['max_version']) ?></td>
+                            <td><?= ! empty($ext['min_version'])
+                                ? lang('Admin.compatRequiresMin', [esc($ext['min_version'])])
+                                : lang('Admin.compatSupportsUpTo', [esc($ext['max_version'])]) ?></td>
                         </tr>
                     <?php endforeach; ?>
                     </tbody>
                 </table>
-                <p class="small text-muted mb-0">You can remove incompatible extensions or switch to the default theme if issues occur. A backup is created before every update.</p>
+                <p class="small text-muted mb-0"><?= lang('Admin.compatRemoveHint') ?></p>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button class="btn btn-warning" id="confirmUpdateBtn">Update Anyway</button>
+                <button class="btn btn-secondary" data-dismiss="modal"><?= lang('Admin.cancel') ?></button>
+                <button class="btn btn-warning" id="confirmUpdateBtn"><?= lang('Admin.updateAnyway') ?></button>
             </div>
         </div>
     </div>
@@ -464,7 +467,7 @@ $extra_scripts = <<<SCRIPT
 
     function startUpdate() {
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Starting update...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> <?= lang("Admin.updateStarting") ?>';
         prog.style.display = 'block';
 
         fetch(applyUrl, { method: 'POST' })

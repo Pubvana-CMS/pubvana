@@ -55,10 +55,8 @@ return [
     // Premium paywall
     // =========================================================================
 
-    'paywallTitle'          => 'Hanya Anggota',
-    'paywallMessage'        => 'Artikel ini tersedia untuk anggota terdaftar. Masuk atau buat akun gratis untuk melanjutkan membaca.',
-    'paywallSignIn'         => 'Masuk',
-    'paywallCreateAccount'  => 'Buat Akun',
+    'paywallTitle'          => 'Konten Premium',
+    'paywallMessage'        => 'Konten ini tersedia untuk pelanggan premium.',
 
     // =========================================================================
     // Author card
@@ -101,6 +99,7 @@ return [
     // =========================================================================
 
     'commentsHeading'       => 'Komentar ({0})',
+    'commentsClosed'        => 'Komentar ditutup.',
     'commentFormTitle'      => 'Tinggalkan Komentar',
     'commentLabel'          => 'Komentar *',
     'commentPostBtn'        => 'Kirim Komentar',

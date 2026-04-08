@@ -12,10 +12,10 @@
                 <h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.redirectAdd') ?></h6>
             </div>
             <div class="card-body">
-                <form method="POST" action="<?= base_url('admin/redirects') ?>">
+                <form method="POST" action="<?= base_url('admin/redirects/store') ?>">
                     <?= csrf_field() ?>
                     <div class="form-group">
-                        <label><?= lang('Admin.redirectFrom') ?> <small class="text-muted">(relative, e.g. /old-page)</small></label>
+                        <label><?= lang('Admin.redirectFrom') ?> <small class="text-muted"><?= lang('Admin.redirectFromHint') ?></small></label>
                         <input type="text" name="from_url" class="form-control" required placeholder="/old-page">
                     </div>
                     <div class="form-group">
@@ -25,8 +25,8 @@
                     <div class="form-group">
                         <label><?= lang('Admin.redirectType') ?></label>
                         <select name="type" class="form-control">
-                            <option value="301">301 Permanent</option>
-                            <option value="302">302 Temporary</option>
+                            <option value="301"><?= lang('Admin.redirect301') ?></option>
+                            <option value="302"><?= lang('Admin.redirect302') ?></option>
                         </select>
                     </div>
                     <button type="submit" class="btn btn-primary btn-block"><?= lang('Admin.redirectAdd') ?></button>

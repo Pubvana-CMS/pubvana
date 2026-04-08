@@ -9,7 +9,7 @@
 
             <!-- Modal Header -->
             <div class="modal-header py-3">
-                <h5 class="modal-title"><i class="fas fa-images mr-2 text-primary"></i>Media Library</h5>
+                <h5 class="modal-title"><i class="fas fa-images mr-2 text-primary"></i><?= lang('Admin.mediaLibrary') ?></h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -27,7 +27,7 @@
                              class="border rounded p-3 mb-3 text-center bg-light"
                              style="border-style: dashed !important; cursor: pointer;">
                             <i class="fas fa-cloud-arrow-up fa-2x text-muted mb-2"></i>
-                            <p class="mb-1 text-muted small">Drag &amp; drop image here or click to browse</p>
+                            <p class="mb-1 text-muted small"><?= lang('Admin.mediaDropzone') ?></p>
                             <input type="file" id="mp-file-input" accept="image/*" class="d-none">
                         </div>
 
@@ -38,22 +38,22 @@
                                      style="width:80px;height:80px;object-fit:cover;flex-shrink:0;">
                                 <div class="flex-grow-1">
                                     <div class="form-group mb-2">
-                                        <label class="small font-weight-bold mb-1">Alt Text</label>
+                                        <label class="small font-weight-bold mb-1"><?= lang('Admin.mediaAltText') ?></label>
                                         <input type="text" id="mp-upload-alt"
                                                class="form-control form-control-sm"
-                                               placeholder="Describe the image for accessibility">
+                                               placeholder="<?= lang('Admin.mediaAltPlaceholder') ?>">
                                     </div>
                                     <div class="form-group mb-2">
-                                        <label class="small font-weight-bold mb-1">Title</label>
+                                        <label class="small font-weight-bold mb-1"><?= lang('Admin.mediaTitle') ?></label>
                                         <input type="text" id="mp-upload-title"
                                                class="form-control form-control-sm"
-                                               placeholder="Image title (optional)">
+                                               placeholder="<?= lang('Admin.mediaTitlePlaceholder') ?>">
                                     </div>
                                     <button type="button" id="mp-use-uploaded" class="btn btn-sm btn-primary">
-                                        Use This Image
+                                        <?= lang('Admin.mediaUseImage') ?>
                                     </button>
                                     <button type="button" id="mp-upload-dismiss" class="btn btn-sm btn-link text-muted">
-                                        Dismiss
+                                        <?= lang('Admin.dismiss') ?>
                                     </button>
                                 </div>
                             </div>
@@ -76,18 +76,18 @@
                         <!-- Load More -->
                         <div class="text-center mt-3" id="mp-load-more-wrap" style="display:none !important;">
                             <button type="button" id="mp-load-more" class="btn btn-sm btn-outline-secondary">
-                                Load More
+                                <?= lang('Admin.loadMore') ?>
                             </button>
                         </div>
 
                         <!-- Empty / loading states -->
                         <div id="mp-grid-loading" class="text-center py-4 text-muted">
                             <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
-                            <p class="mb-0 small">Loading media&hellip;</p>
+                            <p class="mb-0 small"><?= lang('Admin.mediaLoading') ?></p>
                         </div>
                         <div id="mp-grid-empty" class="text-center py-4 text-muted d-none">
                             <i class="fas fa-photo-film fa-2x mb-2"></i>
-                            <p class="mb-0 small">No media uploaded yet.</p>
+                            <p class="mb-0 small"><?= lang('Admin.mediaEmpty') ?></p>
                         </div>
 
                     </div><!-- /mp-left-col -->
@@ -100,19 +100,19 @@
                         <p id="mp-detail-filename" class="small font-weight-bold text-truncate mb-1"></p>
                         <p id="mp-detail-dims" class="small text-muted mb-2"></p>
                         <div class="form-group mb-2">
-                            <label class="small font-weight-bold mb-1">Alt Text</label>
+                            <label class="small font-weight-bold mb-1"><?= lang('Admin.mediaAltText') ?></label>
                             <input type="text" id="mp-detail-alt"
                                    class="form-control form-control-sm"
-                                   placeholder="Alt text">
+                                   placeholder="<?= lang('Admin.mediaAltText') ?>">
                         </div>
                         <div class="form-group mb-3">
-                            <label class="small font-weight-bold mb-1">Title</label>
+                            <label class="small font-weight-bold mb-1"><?= lang('Admin.mediaTitle') ?></label>
                             <input type="text" id="mp-detail-title"
                                    class="form-control form-control-sm"
-                                   placeholder="Title">
+                                   placeholder="<?= lang('Admin.mediaTitle') ?>">
                         </div>
                         <button type="button" id="mp-use-btn" class="btn btn-primary btn-block btn-sm">
-                            <i class="fas fa-check mr-1"></i>Use Image
+                            <i class="fas fa-check mr-1"></i><?= lang('Admin.mediaUseImage') ?>
                         </button>
                     </div><!-- /mp-detail -->
 

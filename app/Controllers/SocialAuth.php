@@ -76,13 +76,12 @@ class SocialAuth extends BaseController
             return redirect()->to('/login')->with('error', 'Could not retrieve email from ' . ucfirst($provider) . '.');
         }
 
-        $db = db_connect();
+        $identityModel = model(\CodeIgniter\Shield\Models\UserIdentityModel::class);
 
         // Check for existing OAuth identity
-        $identity = $db->table('auth_identities')
-            ->where('type', $identityType)
+        $identity = $identityModel->where('type', $identityType)
             ->where('name', $providerUserId)
-            ->get()->getRowObject();
+            ->first();
 
         if ($identity) {
             // Log them in via Shield
@@ -95,49 +94,35 @@ class SocialAuth extends BaseController
         }
 
         // Check if a user with this email already exists (email_password identity)
-        $emailIdentity = $db->table('auth_identities')
-            ->where('type', 'email_password')
-            ->where('secret', $email)
-            ->get()->getRowObject();
+        $existingUser = auth()->getProvider()
+            ->findByCredentials(['email' => $email]);
 
-        if ($emailIdentity) {
+        if ($existingUser) {
             // Link OAuth identity to existing account
-            $userId = $emailIdentity->user_id;
+            $userId = $existingUser->id;
         } else {
             // Create new Shield user
-            $username = $this->uniqueUsername($email);
-            $userId   = $db->table('users')->insert([
-                'username'   => $username,
-                'active'     => 1,
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ], true);
+            $users = auth()->getProvider();
 
-            $db->table('auth_identities')->insert([
-                'user_id'    => $userId,
-                'type'       => 'email_password',
-                'name'       => $email,
-                'secret'     => $email,
-                'secret2'    => password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT),
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
+            $user = new \CodeIgniter\Shield\Entities\User([
+                'username' => $this->uniqueUsername($email),
+                'email'    => $email,
+                'password' => bin2hex(random_bytes(16)),
+                'active'   => 1,
             ]);
+            $users->save($user);
 
-            $db->table('auth_groups_users')->insert([
-                'user_id'    => $userId,
-                'group'      => 'subscriber',
-                'created_at' => date('Y-m-d H:i:s'),
-            ]);
+            $user   = $users->findById($users->getInsertID());
+            $userId = $user->id;
+            $user->addGroup('subscriber');
         }
 
         // Store OAuth identity
-        $db->table('auth_identities')->insert([
-            'user_id'    => $userId,
-            'type'       => $identityType,
-            'name'       => $providerUserId,
-            'secret'     => $providerUserId,
-            'created_at' => date('Y-m-d H:i:s'),
-            'updated_at' => date('Y-m-d H:i:s'),
+        $identityModel->create([
+            'user_id' => $userId,
+            'type'    => $identityType,
+            'name'    => $providerUserId,
+            'secret'  => $providerUserId,
         ]);
 
         $userModel = new \CodeIgniter\Shield\Models\UserModel();
@@ -181,14 +166,7 @@ class SocialAuth extends BaseController
 
     protected function uniqueUsername(string $email): string
     {
-        $base = strtolower(explode('@', $email)[0]);
-        $base = preg_replace('/[^a-z0-9_]/', '', $base) ?: 'user';
-        $db   = db_connect();
-        $name = $base;
-        $i    = 2;
-        while ($db->table('users')->where('username', $name)->countAllResults() > 0) {
-            $name = $base . $i++;
-        }
-        return $name;
+        return model(\App\Models\UserAdminModel::class)
+            ->uniqueUsername(strtolower(preg_replace('/[^a-z0-9_]/', '', explode('@', $email)[0])) ?: 'user');
     }
 }

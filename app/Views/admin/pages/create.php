@@ -18,7 +18,7 @@
                 </div>
                 <div class="form-group">
                     <label class="font-weight-bold"><?= lang('Admin.slug') ?> *</label>
-                    <input type="text" name="slug" class="form-control" value="<?= esc(old('slug')) ?>" placeholder="auto-generated from title if left blank">
+                    <input type="text" name="slug" class="form-control" value="<?= esc(old('slug')) ?>" placeholder="<?= lang('Admin.slugAutoGenHint') ?>">
                 </div>
                 <div class="form-group">
                     <label class="font-weight-bold d-block"><?= lang('Admin.postEditor') ?></label>

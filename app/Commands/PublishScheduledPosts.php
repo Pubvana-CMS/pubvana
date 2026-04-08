@@ -17,16 +17,8 @@ class PublishScheduledPosts extends BaseCommand
 
     public function run(array $params): void
     {
-        $db    = db_connect();
         $model = new PostModel();
-        $now   = date('Y-m-d H:i:s');
-
-        $due = $db->table('posts')
-            ->select('id, title, share_on_publish')
-            ->where('status', 'scheduled')
-            ->where('published_at <=', $now)
-            ->whereNull('deleted_at')
-            ->get()->getResultObject();
+        $due   = $model->getScheduledDue();
 
         if (empty($due)) {
             CLI::write('No scheduled posts are due for publishing.', 'yellow');

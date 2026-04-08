@@ -94,7 +94,7 @@ class Affiliates extends BaseAdminController
 
         ActivityLogger::log('affiliate.updated', 'setting', $id, 'Updated affiliate link: ' . $this->request->getPost('slug'));
 
-        return redirect()->to('/admin/affiliates')->with('success', lang('Admin.affiliateUpdated'));
+        return redirect()->to('/admin/affiliates/' . $id . '/edit')->with('success', lang('Admin.affiliateUpdated'));
     }
 
     public function delete(int $id)
@@ -105,7 +105,7 @@ class Affiliates extends BaseAdminController
         }
 
         // Delete clicks first (no FK cascade in migration)
-        db_connect()->table('affiliate_clicks')->where('link_id', $id)->delete();
+        model(\App\Models\AffiliateClickModel::class)->deleteForLink($id);
         $this->linkModel->delete($id);
 
         ActivityLogger::log('affiliate.deleted', 'setting', $id, 'Deleted affiliate link: ' . $link->slug);

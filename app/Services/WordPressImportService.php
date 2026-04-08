@@ -93,13 +93,11 @@ class WordPressImportService
                 continue;
             }
 
-            $db       = db_connect();
-            $existing = $db->table('users u')
-                ->select('u.id')
-                ->join('auth_identities ai', 'ai.user_id = u.id AND ai.type = \'email_password\'', 'left')
-                ->where('u.username', $login)
-                ->orWhere('ai.secret', $email)
-                ->get()->getRowObject();
+            $users    = auth()->getProvider();
+            $existing = $users->where('username', $login)->first();
+            if (! $existing) {
+                $existing = $users->findByCredentials(['email' => $email]);
+            }
 
             if ($existing) {
                 $this->authorMap[$login] = (int) $existing->id;
@@ -108,40 +106,23 @@ class WordPressImportService
             }
 
             if (! $this->dryRun) {
-                $password = bin2hex(random_bytes(16));
-                $userId   = $db->table('users')->insert([
-                    'username'   => $login,
-                    'active'     => 1,
-                    'created_at' => date('Y-m-d H:i:s'),
-                    'updated_at' => date('Y-m-d H:i:s'),
-                ], true);
-
-                $db->table('auth_identities')->insert([
-                    'user_id'    => $userId,
-                    'type'       => 'email_password',
-                    'name'       => $email,
-                    'secret'     => $email,
-                    'secret2'    => password_hash($password, PASSWORD_DEFAULT),
-                    'created_at' => date('Y-m-d H:i:s'),
-                    'updated_at' => date('Y-m-d H:i:s'),
+                $user = new \CodeIgniter\Shield\Entities\User([
+                    'username' => $login,
+                    'email'    => $email,
+                    'password' => bin2hex(random_bytes(16)),
+                    'active'   => 1,
                 ]);
-
-                $db->table('auth_groups_users')->insert([
-                    'user_id'    => $userId,
-                    'group'      => 'author',
-                    'created_at' => date('Y-m-d H:i:s'),
-                ]);
+                $users->save($user);
+                $user = $users->findById($users->getInsertID());
+                $user->addGroup('author');
 
                 if ($displayName) {
-                    $db->table('author_profiles')->insert([
-                        'user_id'      => $userId,
+                    model(\App\Models\AuthorProfileModel::class)->upsert($user->id, [
                         'display_name' => $displayName,
-                        'created_at'   => date('Y-m-d H:i:s'),
-                        'updated_at'   => date('Y-m-d H:i:s'),
                     ]);
                 }
 
-                $this->authorMap[$login] = (int) $userId;
+                $this->authorMap[$login] = (int) $user->id;
             }
             $this->results['authors']['created']++;
         }
@@ -196,8 +177,8 @@ class WordPressImportService
 
     protected function insertCategoryRow(string $name, string $slug, int $parentId): void
     {
-        $db       = db_connect();
-        $existing = $db->table('categories')->where('slug', $slug)->get()->getRowObject();
+        $catModel = model(\App\Models\CategoryModel::class);
+        $existing = $catModel->findBySlug($slug);
 
         if ($existing) {
             $this->categoryMap[$slug] = (int) $existing->id;
@@ -206,14 +187,14 @@ class WordPressImportService
         }
 
         if (! $this->dryRun) {
-            $id = $db->table('categories')->insert([
-                'name'      => $name,
-                'slug'      => $slug,
-                'parent_id' => $parentId ?: null,
-                'created_at'=> date('Y-m-d H:i:s'),
-                'updated_at'=> date('Y-m-d H:i:s'),
-            ], true);
-            $this->categoryMap[$slug] = (int) $id;
+            $catModel->insert([
+                'name'       => $name,
+                'slug'       => $slug,
+                'parent_id'  => $parentId ?: null,
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+            $this->categoryMap[$slug] = $catModel->getInsertID();
         }
         $this->results['categories']['created']++;
     }
@@ -232,8 +213,8 @@ class WordPressImportService
                 continue;
             }
 
-            $db       = db_connect();
-            $existing = $db->table('tags')->where('slug', $slug)->get()->getRowObject();
+            $tagModel = model(\App\Models\TagModel::class);
+            $existing = $tagModel->findBySlug($slug);
 
             if ($existing) {
                 $this->tagMap[$slug] = (int) $existing->id;
@@ -242,11 +223,8 @@ class WordPressImportService
             }
 
             if (! $this->dryRun) {
-                $id = $db->table('tags')->insert([
-                    'name' => $name,
-                    'slug' => $slug,
-                ], true);
-                $this->tagMap[$slug] = (int) $id;
+                $tagModel->insert(['name' => $name, 'slug' => $slug]);
+                $this->tagMap[$slug] = $tagModel->getInsertID();
             }
             $this->results['tags']['created']++;
         }
@@ -314,13 +292,13 @@ class WordPressImportService
         string $excerpt, string $status, string $creator, string $pubDate,
         array $catIds, array $tagIds
     ): void {
-        $db       = db_connect();
-        $authorId = $this->authorMap[$creator] ?? auth()->id();
+        $authorId  = $this->authorMap[$creator] ?? auth()->id();
+        $postModel = model(\App\Models\PostModel::class);
 
         $slug = $this->uniqueSlug($slug ?: slug_from_title($title), 'posts');
 
         if (! $this->dryRun) {
-            $id = $db->table('posts')->insert([
+            $postModel->insert([
                 'title'        => $title,
                 'slug'         => $slug,
                 'content'      => $content,
@@ -332,16 +310,13 @@ class WordPressImportService
                 'published_at' => $status === 'published' ? ($pubDate ?: date('Y-m-d H:i:s')) : null,
                 'created_at'   => $pubDate ?: date('Y-m-d H:i:s'),
                 'updated_at'   => date('Y-m-d H:i:s'),
-            ], true);
+            ]);
 
+            $id = $postModel->getInsertID();
             $this->postMap[$wpPostId] = (int) $id;
 
-            foreach ($catIds as $catId) {
-                $db->table('posts_to_categories')->ignore(true)->insert(['post_id' => $id, 'category_id' => $catId]);
-            }
-            foreach ($tagIds as $tagId) {
-                $db->table('tags_to_posts')->ignore(true)->insert(['post_id' => $id, 'tag_id' => $tagId]);
-            }
+            $postModel->syncCategories($id, $catIds);
+            $postModel->linkTags($id, $tagIds);
         }
         $this->results['posts']['created']++;
     }
@@ -350,11 +325,11 @@ class WordPressImportService
         int $wpPostId, string $title, string $slug, string $content,
         string $status, string $pubDate
     ): void {
-        $db   = db_connect();
-        $slug = $this->uniqueSlug($slug ?: slug_from_title($title), 'pages');
+        $pageModel = model(\App\Models\PageModel::class);
+        $slug      = $this->uniqueSlug($slug ?: slug_from_title($title), 'pages');
 
         if (! $this->dryRun) {
-            $id = $db->table('pages')->insert([
+            $pageModel->insert([
                 'title'        => $title,
                 'slug'         => $slug,
                 'content'      => $content,
@@ -362,8 +337,9 @@ class WordPressImportService
                 'status'       => $status,
                 'created_at'   => $pubDate ?: date('Y-m-d H:i:s'),
                 'updated_at'   => date('Y-m-d H:i:s'),
-            ], true);
+            ]);
 
+            $id = $pageModel->getInsertID();
             $this->postMap[$wpPostId] = (int) $id; // pages share the map for comment linking
         }
         $this->results['pages']['created']++;
@@ -395,9 +371,8 @@ class WordPressImportService
             }
 
             if (! $this->dryRun) {
-                $table = $postType === 'page' ? null : 'comments';
-                if ($table) {
-                    db_connect()->table($table)->insert([
+                if ($postType !== 'page') {
+                    model(\App\Models\CommentModel::class)->insert([
                         'post_id'      => $pubvanaPostId,
                         'author_name'  => $authorName,
                         'author_email' => $authorEmail,
@@ -417,10 +392,13 @@ class WordPressImportService
     // -------------------------------------------------------------------------
     protected function uniqueSlug(string $slug, string $table): string
     {
-        $db   = db_connect();
+        $model = match ($table) {
+            'posts' => model(\App\Models\PostModel::class),
+            'pages' => model(\App\Models\PageModel::class),
+        };
         $base = $slug;
         $i    = 2;
-        while ($db->table($table)->where('slug', $slug)->countAllResults() > 0) {
+        while ($model->slugExists($slug)) {
             $slug = $base . '-' . $i++;
         }
         return $slug;

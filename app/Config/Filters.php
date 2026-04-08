@@ -4,6 +4,7 @@ namespace Config;
 
 use App\Filters\AdminFilter;
 use App\Filters\MaintenanceFilter;
+use App\Filters\RedirectFilter;
 use App\Filters\TotpFilter;
 use CodeIgniter\Config\Filters as BaseFilters;
 use CodeIgniter\Filters\Cors;
@@ -36,6 +37,7 @@ class Filters extends BaseFilters
         'admin_auth'    => AdminFilter::class,
         'maintenance'   => MaintenanceFilter::class,
         'totp'          => TotpFilter::class,
+        'redirects'     => RedirectFilter::class,
     ];
 
     /**
@@ -45,6 +47,7 @@ class Filters extends BaseFilters
         'before' => [
             'forcehttps',
             'pagecache',
+            'redirects',
         ],
         'after' => [
             'pagecache',

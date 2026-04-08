@@ -55,10 +55,8 @@ return [
     // Premium paywall
     // =========================================================================
 
-    'paywallTitle'          => 'Iba pre členov',
-    'paywallMessage'        => 'Tento príspevok je dostupný pre registrovaných členov. Prihláste sa alebo vytvorte bezplatný účet pre pokračovanie v čítaní.',
-    'paywallSignIn'         => 'Prihlásiť sa',
-    'paywallCreateAccount'  => 'Vytvoriť účet',
+    'paywallTitle'          => 'Prémiový obsah',
+    'paywallMessage'        => 'Tento obsah je dostupný pre prémiových predplatiteľov.',
 
     // =========================================================================
     // Author card
@@ -101,6 +99,7 @@ return [
     // =========================================================================
 
     'commentsHeading'       => 'Komentáre ({0})',
+    'commentsClosed'        => 'Komentáre sú uzavreté.',
     'commentFormTitle'      => 'Pridať komentár',
     'commentLabel'          => 'Komentár *',
     'commentPostBtn'        => 'Odoslať komentár',

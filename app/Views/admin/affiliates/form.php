@@ -27,7 +27,7 @@ $title  = $isEdit ? lang('Admin.edit') . ' ' . lang('Admin.affiliatesTitle') : l
                     <input type="text" name="name" class="form-control"
                            placeholder="e.g. Amazon Hosting"
                            value="<?= esc(old('name', $isEdit ? $link->name : '')) ?>">
-                    <small class="text-muted">Internal label — not shown to visitors.</small>
+                    <small class="text-muted"><?= lang('Admin.affiliateNameHint') ?></small>
                 </div>
             </div>
 
@@ -44,7 +44,7 @@ $title  = $isEdit ? lang('Admin.edit') . ' ' . lang('Admin.affiliatesTitle') : l
                                placeholder="my-link"
                                value="<?= esc(old('slug', $isEdit ? $link->slug : '')) ?>">
                     </div>
-                    <small class="text-muted">Letters, numbers, hyphens and underscores only. Cannot be changed once links are shared.</small>
+                    <small class="text-muted"><?= lang('Admin.affiliateSlugHint') ?></small>
                 </div>
             </div>
 
@@ -56,7 +56,7 @@ $title  = $isEdit ? lang('Admin.edit') . ' ' . lang('Admin.affiliatesTitle') : l
                     <input type="url" name="destination_url" class="form-control"
                            placeholder="https://example.com/product?ref=pubvana"
                            value="<?= esc(old('destination_url', $isEdit ? $link->destination_url : '')) ?>">
-                    <small class="text-muted">Visitors will be 301-redirected here.</small>
+                    <small class="text-muted"><?= lang('Admin.affiliateDestHint') ?></small>
                 </div>
             </div>
 
@@ -70,7 +70,7 @@ $title  = $isEdit ? lang('Admin.edit') . ' ' . lang('Admin.affiliatesTitle') : l
                                <?= old('is_active', $isEdit ? $link->is_active : 1) ? 'checked' : '' ?>>
                         <label class="custom-control-label" for="is_active"><?= lang('Admin.affiliateActive') ?></label>
                     </div>
-                    <small class="text-muted">Inactive links return a 404.</small>
+                    <small class="text-muted"><?= lang('Admin.affiliateInactiveHint') ?></small>
                 </div>
             </div>
 

@@ -1,0 +1,203 @@
+<?php
+
+/**
+ * Pubvana CMS - Blog / Public-facing language strings (Brazilian Portuguese)
+ *
+ * Covers: blog listing, post detail, category, tag, archive, search,
+ *         contact form, comments, pagination, paywall, preview mode,
+ *         author card, and shared public UI elements.
+ *
+ * Also incorporates the single key from the old pages_lang.php (readMore).
+ *
+ * Usage: lang('Blog.keyName')
+ */
+
+return [
+
+    // =========================================================================
+    // Common public UI
+    // =========================================================================
+
+    'home'              => 'Início',
+    'blog'              => 'Blog',
+    'readMore'          => 'Leia Mais',
+    'viewAll'           => 'Ver Todos',
+    'noPostsYet'        => 'Nenhuma publicação ainda. Volte em breve!',
+    'search'            => 'Buscar',
+    'searchPlaceholder' => 'Buscar…',
+    'searchPostsPlaceholder' => 'Buscar publicações…',
+
+    // RSS / feeds
+    'rssFeed'           => 'RSS',
+    'sitemap'           => 'Mapa do site',
+    'allRightsReserved' => 'Todos os direitos reservados.',
+
+    // =========================================================================
+    // Home / listing
+    // =========================================================================
+
+    'latestPosts'       => 'Publicações Recentes',
+
+    // =========================================================================
+    // Post detail
+    // =========================================================================
+
+    'postedOn'          => 'Publicado em',
+    'views'             => '{0} visualizações',
+    'readingTime'       => '{0} min de leitura',
+    'publishedBy'       => 'Por',
+    'inCategory'        => 'em',
+    'tags'              => 'Tags',
+
+    // =========================================================================
+    // Preview mode banner
+    // =========================================================================
+
+    'previewModeBanner' => 'Modo de Pré-visualização - Esta publicação não está visível ao público',
+
+    // =========================================================================
+    // Premium paywall
+    // =========================================================================
+
+    'paywallTitle'          => 'Conteúdo Premium',
+    'paywallMessage'        => 'Este conteúdo está disponível para assinantes premium.',
+
+    // =========================================================================
+    // Author card
+    // =========================================================================
+
+    'authorCardLabel'   => 'Sobre o Autor',
+    'unknownAuthor'     => 'Autor Desconhecido',
+
+    // =========================================================================
+    // Category page
+    // =========================================================================
+
+    'categoryHeading'   => 'Categoria: {0}',
+    'noPostsInCategory' => 'Nenhuma publicação nesta categoria ainda.',
+
+    // =========================================================================
+    // Tag page
+    // =========================================================================
+
+    'tagHeading'        => 'Tag: {0}',
+    'noPostsWithTag'    => 'Nenhuma publicação com esta tag.',
+
+    // =========================================================================
+    // Archive page
+    // =========================================================================
+
+    'archiveHeading'    => 'Arquivo: {0}',
+    'noPostsInPeriod'   => 'Nenhuma publicação neste período.',
+
+    // =========================================================================
+    // Search results
+    // =========================================================================
+
+    'searchResultsHeading'  => 'Resultados da Busca',
+    'searchShowingFor'      => 'Exibindo resultados para: {0}',
+    'searchNoResults'       => 'Nenhuma publicação encontrada para "{0}".',
+
+    // =========================================================================
+    // Comments
+    // =========================================================================
+
+    'commentsHeading'       => 'Comentários ({0})',
+    'commentsClosed'        => 'Os comentários estão fechados.',
+    'commentFormTitle'      => 'Deixe um Comentário',
+    'commentLabel'          => 'Comentário *',
+    'commentPostBtn'        => 'Publicar Comentário',
+    'commentModerated'      => 'Os comentários são moderados antes de aparecerem.',
+    'commentLoginRequired'  => 'para deixar um comentário.',
+    'commentLoginLink'      => 'Entrar',
+    'commentAwaitModeration'=> 'Seu comentário está aguardando moderação.',
+    'commentPosted'         => 'Seu comentário foi publicado.',
+    'commentLoginToComment' => 'Você precisa estar logado para comentar.',
+    'commentTooFast'        => 'Você está comentando muito rápido. Aguarde alguns minutos antes de tentar novamente.',
+
+    // =========================================================================
+    // Contact form
+    // =========================================================================
+
+    'contactTitle'          => 'Contato',
+    'contactName'           => 'Nome',
+    'contactEmail'          => 'E-mail',
+    'contactMessage'        => 'Mensagem',
+    'contactSendBtn'        => 'Enviar Mensagem',
+    'contactSent'           => 'Sua mensagem foi enviada!',
+    'contactCaptchaFail'    => 'Verificação de captcha falhou. Tente novamente.',
+    'contactSubject'        => 'Formulário de Contato: {0}',
+
+    // =========================================================================
+    // Pagination
+    // =========================================================================
+
+    'pageNavLabel'      => 'Navegação de página',
+    'prevPage'          => 'Anterior',
+    'nextPage'          => 'Próximo',
+
+    // =========================================================================
+    // Errors / 404
+    // =========================================================================
+
+    'pageNotFound'      => 'Página não encontrada.',
+    'pageNotFoundTitle' => '404 - Página Não Encontrada',
+
+    // =========================================================================
+    // Maintenance mode
+    // =========================================================================
+
+    'maintenanceTitle'  => 'Em Manutenção',
+    'maintenanceBody'   => "Estamos realizando uma manutenção programada. Voltaremos em breve - obrigado pela sua paciência!",
+
+    // Language
+    'language'          => 'Idioma',
+
+    // =========================================================================
+    // Account / Profile
+    // =========================================================================
+
+    'profileTitle'            => 'Meu Perfil',
+    'profileBasicInfo'        => 'Informações Básicas',
+    'profileUsername'          => 'Nome de usuário',
+    'profileEmail'            => 'E-mail',
+    'profilePassword'         => 'Senha',
+    'profilePasswordConfirm'  => 'Confirmar Senha',
+    'profilePasswordHelp'     => 'Deixe em branco para manter a senha atual.',
+    'profileSave'             => 'Salvar Alterações',
+    'profileUpdated'          => 'Perfil atualizado com sucesso.',
+    'profileUsernameRequired' => 'Nome de usuário é obrigatório.',
+    'profileUsernameTaken'    => 'Esse nome de usuário já está em uso.',
+    'profileEmailRequired'    => 'E-mail é obrigatório.',
+    'profileEmailTaken'       => 'Esse e-mail já está em uso.',
+    'profilePasswordMismatch' => 'As senhas não coincidem.',
+    'profilePasswordTooShort' => 'A senha deve ter pelo menos 8 caracteres.',
+
+    'profileAuthorInfo'       => 'Perfil do Autor',
+    'profileDisplayName'      => 'Nome de Exibição',
+    'profileBio'              => 'Bio',
+    'profileAvatar'           => 'Avatar',
+    'profileAvatarChange'     => 'Alterar Avatar',
+    'profileAvatarUpload'     => 'Enviar',
+    'profileWebsite'          => 'Website',
+    'profileTwitter'          => 'Twitter',
+    'profileFacebook'         => 'Facebook',
+    'profileLinkedin'         => 'LinkedIn',
+    'profileAvatarUpdated'    => 'Avatar atualizado com sucesso.',
+    'profileAvatarInvalid'    => 'Arquivo de upload inválido.',
+    'profileAvatarTypeError'  => 'Somente imagens JPEG, PNG, WebP e GIF são aceitas.',
+    'profileAvatarTooLarge'   => 'O avatar deve ter no máximo 2 MB.',
+    'profileAvatarNotAllowed' => 'O upload de avatar está disponível para autores e acima.',
+
+    'login'                         => 'Entrar',
+    'adminPanel'                    => 'Painel Administrativo',
+
+    'profileUpdatedRelogin'         => 'Perfil atualizado. Faça login novamente.',
+    'profileUsernameChangedSubject' => 'Seu nome de usuário foi alterado',
+    'profileUsernameChangedBody'    => 'Seu nome de usuário foi alterado de "{0}" para "{1}". Se você não fez essa alteração, entre em contato com o administrador do site imediatamente.',
+    'profileEmailChangedSubject'    => 'Seu endereço de e-mail foi alterado',
+    'profileEmailChangedBody'       => 'Seu endereço de e-mail foi alterado de "{0}" para "{1}". Se você não fez essa alteração, entre em contato com o administrador do site imediatamente.',
+    'profilePasswordChangedSubject' => 'Sua senha foi alterada',
+    'profilePasswordChangedBody'    => 'Sua senha foi alterada recentemente. Se você não fez essa alteração, entre em contato com o administrador do site imediatamente.',
+
+];

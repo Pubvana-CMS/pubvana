@@ -103,6 +103,7 @@ class Posts extends BaseAdminController
             'published_at'     => $publishedAt,
             'is_featured'      => $this->request->getPost('is_featured') ? 1 : 0,
             'is_premium'       => $this->request->getPost('is_premium') ? 1 : 0,
+            'allow_comments'   => $this->request->getPost('allow_comments') ? 1 : 0,
             'share_on_publish' => $shareOnPublish,
             'meta_title'       => $this->request->getPost('meta_title'),
             'meta_description' => $this->request->getPost('meta_description'),
@@ -137,15 +138,8 @@ class Posts extends BaseAdminController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
-        $selectedCats = db_connect()->table('posts_to_categories')->where('post_id', $id)->get()->getResultObject();
-        $catIds       = array_column((array) $selectedCats, 'category_id');
-
-        $postTags = db_connect()->table('tags_to_posts ttp')
-            ->select('t.name')
-            ->join('tags t', 't.id = ttp.tag_id')
-            ->where('ttp.post_id', $id)
-            ->get()->getResultObject();
-        $tagNames = implode(', ', array_column((array) $postTags, 'name'));
+        $catIds   = $this->postModel->getCategoryIds($id);
+        $tagNames = implode(', ', $this->postModel->getTagNames($id));
 
         $revisionCount = (new PostRevisionModel())->where('post_id', $id)->countAllResults();
 
@@ -190,9 +184,16 @@ class Posts extends BaseAdminController
         $shareOnPublish = $this->request->getPost('share_on_publish') ? 1 : 0;
         $wasPublished   = $post->status === 'published';
 
-        $publishedAt = $post->published_at;
-        if ($newStatus === 'published' && ! $publishedAt) {
-            $publishedAt = date('Y-m-d H:i:s');
+        $publishedAt = match($newStatus) {
+            'scheduled' => $this->request->getPost('published_at')
+                           ? date('Y-m-d H:i:s', strtotime($this->request->getPost('published_at')))
+                           : $post->published_at,
+            'published' => date('Y-m-d H:i:s'),
+            default     => null,
+        };
+
+        if ($newStatus === 'scheduled' && $publishedAt && strtotime($publishedAt) <= time()) {
+            return redirect()->back()->withInput()->with('error', lang('Admin.scheduledDateMustBeFuture'));
         }
 
         $featuredImage = $this->request->getPost('featured_image');
@@ -212,6 +213,7 @@ class Posts extends BaseAdminController
             'published_at'     => $publishedAt,
             'is_featured'      => $this->request->getPost('is_featured') ? 1 : 0,
             'is_premium'       => $this->request->getPost('is_premium') ? 1 : 0,
+            'allow_comments'   => $this->request->getPost('allow_comments') ? 1 : 0,
             'share_on_publish' => $shareOnPublish,
             'meta_title'       => $this->request->getPost('meta_title'),
             'meta_description' => $this->request->getPost('meta_description'),
@@ -229,7 +231,7 @@ class Posts extends BaseAdminController
         $action = (! $wasPublished && $newStatus === 'published') ? 'post.published' : 'post.updated';
         ActivityLogger::log($action, 'post', $id, ucfirst(str_replace('.', ' ', $action)) . ': ' . $this->request->getPost('title'));
 
-        return redirect()->to('/admin/posts')->with('success', lang('Admin.postUpdated'));
+        return redirect()->to('/admin/posts/' . $id . '/edit')->with('success', lang('Admin.postUpdated'));
     }
 
     public function bulk()
@@ -302,28 +304,12 @@ class Posts extends BaseAdminController
 
     protected function syncCategories(int $postId, array $catIds): void
     {
-        $db = db_connect();
-        $db->table('posts_to_categories')->where('post_id', $postId)->delete();
-        foreach ($catIds as $catId) {
-            $db->table('posts_to_categories')->insert(['post_id' => $postId, 'category_id' => (int) $catId]);
-        }
+        model(\App\Models\PostModel::class)->syncCategories($postId, $catIds);
     }
 
     protected function syncTags(int $postId, string $tagsRaw): void
     {
-        $db       = db_connect();
-        $tagModel = new TagModel();
-        $db->table('tags_to_posts')->where('post_id', $postId)->delete();
         $names = array_filter(array_map('trim', explode(',', $tagsRaw)));
-        foreach ($names as $name) {
-            $slug = slug_from_title($name);
-            $tag  = $tagModel->where('slug', $slug)->first();
-            if (! $tag) {
-                $tagId = $tagModel->insert(['name' => $name, 'slug' => $slug], true);
-            } else {
-                $tagId = $tag->id;
-            }
-            $db->table('tags_to_posts')->ignore(true)->insert(['post_id' => $postId, 'tag_id' => $tagId]);
-        }
+        model(\App\Models\PostModel::class)->syncTags($postId, $names);
     }
 }

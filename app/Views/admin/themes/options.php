@@ -9,7 +9,7 @@
 
 <div class="card shadow mb-4">
     <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">Customize Theme</h6>
+        <h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.themeCustomize') ?></h6>
     </div>
     <div class="card-body">
         <form method="POST" action="<?= base_url('admin/themes/' . $theme->id . '/options') ?>">
@@ -29,7 +29,7 @@
                                 <input type="checkbox" class="custom-control-input" id="opt_<?= esc($key) ?>"
                                        name="options[<?= esc($key) ?>]" value="1"
                                        <?= $savedVal ? 'checked' : '' ?>>
-                                <label class="custom-control-label" for="opt_<?= esc($key) ?>">Enable</label>
+                                <label class="custom-control-label" for="opt_<?= esc($key) ?>"><?= lang('Admin.enable') ?></label>
                             </div>
                         <?php elseif ($type === 'textarea'): ?>
                             <textarea class="form-control" name="options[<?= esc($key) ?>]" rows="4"><?= esc($savedVal) ?></textarea>
@@ -55,7 +55,7 @@
                 </div>
             <?php endforeach; ?>
             <?php if (empty($options)): ?>
-                <p class="text-muted">This theme has no configurable options.</p>
+                <p class="text-muted"><?= lang('Admin.themeNoOptions') ?></p>
             <?php else: ?>
                 <hr>
                 <div class="text-right">

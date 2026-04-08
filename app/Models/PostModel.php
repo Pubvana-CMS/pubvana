@@ -15,7 +15,7 @@ class PostModel extends Model
     protected $allowedFields = [
         'title', 'slug', 'content', 'content_type', 'excerpt', 'status',
         'featured_image', 'media_id', 'author_id', 'published_at', 'views', 'is_featured', 'is_premium',
-        'meta_title', 'meta_description', 'lang', 'share_on_publish', 'preview_token',
+        'meta_title', 'meta_description', 'lang', 'share_on_publish', 'allow_comments', 'preview_token',
     ];
 
     public function published(): static
@@ -77,7 +77,7 @@ class PostModel extends Model
 
     public function getArchiveList(string $format = 'monthly'): array
     {
-        $db = db_connect();
+        $db = $this->db;
 
         if ($format === 'yearly') {
             $rows = $db->table('posts')
@@ -117,7 +117,7 @@ class PostModel extends Model
             return [];
         }
 
-        $db = db_connect();
+        $db = $this->db;
 
         $catIds = array_column(
             $db->table('posts_to_categories')
@@ -177,5 +177,127 @@ class PostModel extends Model
         usort($scores, fn($a, $b) => $b['score'] <=> $a['score']);
 
         return array_slice(array_values($scores), 0, $limit);
+    }
+
+    /**
+     * Get category IDs assigned to a post.
+     */
+    public function getCategoryIds(int $postId): array
+    {
+        $rows = $this->db->table('posts_to_categories')
+                    ->where('post_id', $postId)
+                    ->get()->getResultObject();
+        return array_map(fn($r) => (int) $r->category_id, $rows);
+    }
+
+    /**
+     * Get tag names assigned to a post.
+     */
+    public function getTagNames(int $postId): array
+    {
+        $rows = $this->db->table('tags_to_posts ttp')
+                    ->select('t.name')
+                    ->join('tags t', 't.id = ttp.tag_id')
+                    ->where('ttp.post_id', $postId)
+                    ->get()->getResultObject();
+        return array_map(fn($r) => $r->name, $rows);
+    }
+
+    /**
+     * Replace all category assignments for a post.
+     */
+    public function syncCategories(int $postId, array $categoryIds): void
+    {
+        $this->db->table('posts_to_categories')->where('post_id', $postId)->delete();
+        foreach ($categoryIds as $catId) {
+            $this->db->table('posts_to_categories')->insert([
+                'post_id'     => $postId,
+                'category_id' => (int) $catId,
+            ]);
+        }
+    }
+
+    /**
+     * Replace all tag assignments for a post.
+     * Accepts an array of tag names; creates new tags as needed.
+     */
+    public function syncTags(int $postId, array $tagNames): void
+    {
+        $this->db->table('tags_to_posts')->where('post_id', $postId)->delete();
+
+        $tagModel = model(\App\Models\TagModel::class);
+
+        foreach ($tagNames as $name) {
+            $name = trim($name);
+            if ($name === '') continue;
+
+            $slug = slug_from_title($name);
+            $tag  = $tagModel->where('slug', $slug)->first();
+
+            if (! $tag) {
+                $tagModel->insert(['name' => $name, 'slug' => $slug]);
+                $tagId = $tagModel->getInsertID();
+            } else {
+                $tagId = $tag->id;
+            }
+
+            $this->db->table('tags_to_posts')->ignore(true)->insert([
+                'post_id' => $postId,
+                'tag_id'  => $tagId,
+            ]);
+        }
+    }
+
+    /**
+     * Get all scheduled posts that are now due for publishing.
+     */
+    public function getScheduledDue(): array
+    {
+        return $this->db->table($this->table)
+            ->select('id, title, share_on_publish')
+            ->where('status', 'scheduled')
+            ->where('published_at <=', date('Y-m-d H:i:s'))
+            ->where('deleted_at IS NULL')
+            ->get()->getResultObject();
+    }
+
+    /**
+     * Link a post to tag IDs (insert ignore — for bulk import).
+     */
+    public function linkTags(int $postId, array $tagIds): void
+    {
+        foreach ($tagIds as $tagId) {
+            $this->db->table('tags_to_posts')->ignore(true)->insert([
+                'post_id' => $postId,
+                'tag_id'  => (int) $tagId,
+            ]);
+        }
+    }
+
+    /**
+     * Check if a slug already exists (includes soft-deleted posts).
+     */
+    public function slugExists(string $slug): bool
+    {
+        return $this->withDeleted()->where('slug', $slug)->countAllResults() > 0;
+    }
+
+    /**
+     * Restore a post's content from a revision snapshot.
+     */
+    public function restoreFromRevision(int $postId, object $revision): bool
+    {
+        return $this->db->table($this->table)
+            ->where('id', $postId)
+            ->update([
+                'title'            => $revision->title,
+                'content'          => $revision->content,
+                'content_type'     => $revision->content_type,
+                'excerpt'          => $revision->excerpt,
+                'status'           => $revision->status,
+                'meta_title'       => $revision->meta_title,
+                'meta_description' => $revision->meta_description,
+                'updated_at'       => date('Y-m-d H:i:s'),
+            ]);
     }
 }

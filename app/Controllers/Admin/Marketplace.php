@@ -25,12 +25,14 @@ class Marketplace extends BaseAdminController
         }
 
         // Build a slug -> latest_version map from all three extension tables
-        $db = db_connect();
         $pendingUpdates = [];
         foreach (['themes', 'widgets', 'plugins'] as $t) {
-            $rows = $db->table($t)
-                ->where('latest_version IS NOT NULL')
-                ->get()->getResult();
+            $modelClass = match($t) {
+                'themes'  => \App\Models\ThemeModel::class,
+                'widgets' => \App\Models\WidgetModel::class,
+                'plugins' => \App\Models\PluginModel::class,
+            };
+            $rows = model($modelClass)->getWithUpdates();
             foreach ($rows as $r) {
                 if (! empty($r->latest_version) && version_compare($r->latest_version, $r->version ?? '0.0.0', '>')) {
                     if ($r->store_product_id) {
@@ -134,7 +136,7 @@ class Marketplace extends BaseAdminController
             return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
 
-        $item = db_connect()->table('marketplace_items')->where('slug', $slug)->get()->getRowObject();
+        $item = model(\App\Models\MarketplaceItemModel::class)->findBySlug($slug);
         if (! $item || ! $item->download_url) {
             return redirect()->to('/admin/marketplace')->with('error', lang('Admin.marketplaceCannotUpdate'));
         }

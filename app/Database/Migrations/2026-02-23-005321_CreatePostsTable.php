@@ -17,12 +17,17 @@ class CreatePostsTable extends Migration
             'excerpt'          => ['type' => 'TEXT', 'null' => true],
             'status'           => ['type' => 'ENUM', 'constraint' => ['draft', 'published', 'scheduled'], 'default' => 'draft'],
             'featured_image'   => ['type' => 'VARCHAR', 'constraint' => 500, 'null' => true],
+            'media_id'         => ['type' => 'INT', 'unsigned' => true, 'null' => true],
             'author_id'        => ['type' => 'INT', 'unsigned' => true],
             'published_at'     => ['type' => 'DATETIME', 'null' => true],
             'views'            => ['type' => 'INT', 'unsigned' => true, 'default' => 0],
             'is_featured'      => ['type' => 'TINYINT', 'constraint' => 1, 'default' => 0],
+            'is_premium'       => ['type' => 'TINYINT', 'constraint' => 1, 'default' => 0],
+            'share_on_publish' => ['type' => 'TINYINT', 'constraint' => 1, 'default' => 1],
+            'allow_comments'   => ['type' => 'TINYINT', 'constraint' => 1, 'default' => 1],
             'meta_title'       => ['type' => 'VARCHAR', 'constraint' => 255, 'null' => true],
             'meta_description' => ['type' => 'TEXT', 'null' => true],
+            'preview_token'    => ['type' => 'VARCHAR', 'constraint' => 64, 'null' => true],
             'lang'             => ['type' => 'VARCHAR', 'constraint' => 10, 'default' => 'en'],
             'created_at'       => ['type' => 'DATETIME', 'null' => true],
             'updated_at'       => ['type' => 'DATETIME', 'null' => true],
@@ -30,6 +35,7 @@ class CreatePostsTable extends Migration
         ]);
         $this->forge->addKey('id', true);
         $this->forge->addUniqueKey('slug');
+        $this->forge->addUniqueKey('preview_token', 'uq_posts_preview_token');
         $this->forge->addKey('author_id');
         $this->forge->addKey('status');
         $this->forge->createTable('posts', true);

@@ -226,8 +226,7 @@ class Backups extends BaseAdminController
         }
         // Check if queue table exists
         try {
-            $db = db_connect();
-            return $db->tableExists('queue_jobs');
+            return model(\App\Models\BackupModel::class)->tableExists('queue_jobs');
         } catch (\Throwable $e) {
             return false;
         }

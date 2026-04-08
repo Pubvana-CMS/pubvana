@@ -6,7 +6,7 @@ This document covers everything needed to build a Pubvana theme. It is self-cont
 
 ## 1. Theme Directory Structure
 
-Each theme lives in its own folder under `themes/`. **No PHP files.** Every view is a `.tpl` file rendered by the template engine. The only non-`.tpl` files are `theme_info.json` (manifest) and static assets.
+Each theme lives in its own folder under `themes/`. **No PHP files.** Every view is a `.tpl` file rendered by the template engine. The only non-`.tpl` files are `theme_info.json` and static assets.
 
 ```
 themes/my_theme/
@@ -37,7 +37,7 @@ themes/my_theme/
             _comment.tpl        single comment (recursive for replies)
 ```
 
-All 9 views and 7 partials should be present in a complete theme. Zero PHP files in the theme directory — any theme containing `<?php`, `<?=`, or `<%` will fail validation and cannot be activated.
+All 9 views and 7 partials should be present in a complete theme. Zero PHP files in the theme directory — any theme containing PHP will fail validation and cannot be activated.
 
 ---
 
@@ -46,20 +46,23 @@ All 9 views and 7 partials should be present in a complete theme. Zero PHP files
 ```json
 {
     "name": "My Theme",
-    "slug": "my_theme",
     "version": "1.0.0",
     "author": "Your Name",
     "author_url": "https://yoursite.com",
     "support_url": "https://yoursite.com/support",
     "description": "One line description.",
     "screenshot": "screenshot.png",
+    "free": true,
+    "bundled": false,
     "css_framework": "Bootstrap",
     "css_frame_ver": "5.x",
     "icon_pack": "FontAwesome",
     "icon_pack_ver": "6.x",
     "js_framework": "Bootstrap",
     "js_framework_ver": "5.x",
-    "premium": false,
+    "min_pubvana_version": "2.2.3",
+    "max_pubvana_version": "2.2.15",
+    "update_url": "https://yoursite.com/api/update/check",
     "widget_areas": {
         "sidebar": "Main Sidebar",
         "footer-1": "Footer Column 1",
@@ -82,33 +85,66 @@ All 9 views and 7 partials should be present in a complete theme. Zero PHP files
 }
 ```
 
+### Required Fields
+
 | Key | Required | Description |
 |-----|----------|-------------|
 | `name` | yes | Human-readable theme name |
-| `slug` | yes | Lowercase identifier matching the theme folder name (e.g. `default`, `ember`, `pvdark`) |
 | `version` | yes | Semantic version |
 | `author` | yes | Author name |
-| `author_url` | no | Author's website URL (linked in admin) |
-| `support_url` | no | Support/contact URL (linked in admin) |
-| `description` | no | Short description |
-| `screenshot` | no | Filename relative to theme root, shown in admin |
 | `css_framework` | yes | CSS framework name (e.g. `Bootstrap`, `DaisyUI`, `Tailwind`) |
 | `css_frame_ver` | yes | CSS framework version (e.g. `5.x`) |
 | `icon_pack` | yes | Icon library name (e.g. `FontAwesome`, `BootstrapIcons`, `Tabler`) |
 | `icon_pack_ver` | yes | Icon library version (e.g. `6.x`) |
 | `js_framework` | yes | JS framework name (e.g. `Bootstrap`, `AlpineJS`, `jQuery`, `none`) |
 | `js_framework_ver` | yes | JS framework version (e.g. `5.x`, `3.x`). Empty string if `js_framework` is `none` |
-| `premium` | no | Boolean flag indicating a paid theme (display only — licensing handled via marketplace_licenses) |
-| `min_pubvana_version` | no | Minimum Pubvana version required |
-| `max_pubvana_version` | no | Maximum Pubvana version this theme is compatible with |
-| `update_url` | no | API endpoint for update checks |
-| `widget_areas` | no | Object mapping area slugs to human labels. DB rows created on activation. |
-| `css_class_mapping` | no | Object mapping `cls_` variable names to CSS classes. Injected into all widgets. See Section 10. |
-| `options` | no | Admin-editable theme options. Types: `text`, `checkbox`, `textarea`, `select`, `color`, `number` |
+| `author_url` | `""` | Author's website URL (linked in admin) |
+| `support_url` | `""` | Support/contact URL shown in admin when theme is incompatible or has issues |
+| `description` | `""` | Short description |
+| `free` | `false` | Set to `true` if your theme is free. Free third-party themes activate without a license check. |
+| `min_pubvana_version` | `""` | Minimum Pubvana version required |
+| `max_pubvana_version` | `""` | Maximum Pubvana version this theme is compatible with |
 
-- `min_pubvana_version` / `max_pubvana_version` — The range of Pubvana versions this theme is compatible with. Used by the CMS update system to prevent incompatible core updates and to find the right theme release version.
-- `update_url` — The API endpoint the CMS will POST to when checking for updates. Themes without this field cannot be updated through the admin UI. Pubvana-built themes use `https://pubvana.net/api/dstore/v1/update/check`. Third-party developers provide their own endpoint implementing the same protocol.
-- `support_url` — Displayed in the admin UI when the theme is incompatible with the current Pubvana version ("Contact the developer").
+### Optional Fields
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `screenshot` | `""` | Filename relative to theme root, shown in admin |
+| `bundled` | `false` | Reserved for Pubvana-authored addons that ship with Pubvana CMS. Third-party themes must not set this to `true`, this will break your updates. |
+| `update_url` | `""` | API endpoint for update checks. Themes without this cannot be updated through admin. |
+| `widget_areas` | `{}` | Object mapping area slugs to human labels. DB rows created on activation. |
+| `css_class_mapping` | `{}` | Object mapping `cls_` variable names to CSS classes. Injected into all widgets. See Section 10. |
+| `options` | `{}` | Admin-editable theme options. Types: `text`, `checkbox`, `textarea`, `select`, `color`, `number` |
+
+### Third-Party Store & License Fields
+
+These fields are only relevant if you sell your theme and run your own store/license API. See [ThirdPartyAddons.md](ThirdPartyAddons.md) for the full API protocol specification and pre-built Pubvana CMS Plugin.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `license_validate_url` | string | Endpoint Pubvana CMS POSTs to when a site admin enters a license key for your theme. |
+| `license_check_url` | string | Endpoint Pubvana CMS POSTs to for periodic license revalidation (90-day cycle). |
+| `item_url` | string | Endpoint Pubvana CMS GETs to resolve your theme's numeric product ID (`{item_url}/{folder}`). |
+| `store_url` | string | URL to your storefront page for this theme (linked in admin for license renewal). |
+
+#### Future Pubvana release support
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `items_url` | string | Catalog listing endpoint (used by marketplace integrations). |
+| `categories_url` | string | Category listing endpoint. |
+| `categories_all_url` | string | Full category listing with products. |
+| `category_url` | string | Single category endpoint. |
+| `featured_url` | string | Featured products endpoint. |
+| `update_check_url` | string | Alternative update check endpoint (if different from `update_url`). |
+| `download_url` | string | Direct download endpoint for updates. |
+
+> **For most third-party themes:** You only need `free`, `update_url`, `license_validate_url`, `license_check_url`, `item_url`, and `store_url`. The remaining URL fields are for full marketplace integrations. If your theme is free, only `free: true` and optionally `update_url` are needed if you provide updates.
+
+**Notes:**
+- `min_pubvana_version` / `max_pubvana_version` — Used by the update system to prevent incompatible core updates and to find the right release version.
+- `update_url` — Pubvana CMS POSTs here when checking for updates. Pubvana-built themes use `https://pubvana.net/api/dstore/v1/update/check`. Third-party developers provide their own endpoint implementing the same protocol.
+- `support_url` — Displayed in the admin UI.
 
 Option values are stored in the `theme_options` table and available as variables in all theme views (see Section 6).
 
@@ -170,7 +206,7 @@ All option definitions support an optional `help` sub-key — rendered as hint t
 
 ## 3. Asset Pipeline
 
-Theme assets are **copied** — not symlinked — from `themes/{name}/assets/` to `public/themes/{name}/` as real files.
+Theme assets are copied from `themes/{name}/assets/` to `public/themes/{name}/` as real files.
 
 `ThemeService::publishAssets()` runs on:
 - Theme activation
@@ -504,9 +540,11 @@ Tag functions output strings directly into the template. Arguments are space-sep
 
 ### `site_url` vs `base_url`
 
+This give your theme language/locale support.
+
 Use `{% site_url %}` for **all route paths** (pages, feeds, login, search, etc.). It automatically prepends the locale prefix when the request is in a non-default language (e.g. `/es/blog` for Spanish).
 
-Use `{% base_url %}` only for:
+Use `{% base_url %}` only for:  
 - **Asset paths** — `{% base_url post.featured_image %}`, `{% base_url author_profile.avatar %}`
 - **hreflang tags** — `{% base_url btn.url %}` (lang switcher URLs are already locale-prefixed)
 - **hreflang x-default** — `{% base_url '' %}` (intentionally the bare site root)
@@ -872,17 +910,17 @@ Scale 0–5. Variable names use `left`/`right`, not `start`/`end`. Bootstrap 5 m
 
 ## 11. Icon Pack Support
 
-Themes declare which icon library they use via the `icon_pack` and `icon_pack_ver` fields in `theme_info.json`. The CMS uses this declaration to keep social link icons, widget icons, and any other icon references in sync with the active theme's icon library — automatically, with no manual effort from the site admin.
+Themes declare which icon library they use via the `icon_pack` and `icon_pack_ver` fields in `theme_info.json`. Pubvana CMS uses this declaration to keep social link icons, widget icons, and any other icon references in sync with the active theme's icon library — automatically, with no manual effort from the site admin.
 
 ### What Happens When a Theme is Activated
 
-When an admin activates a theme, the CMS reads the new theme's `icon_pack` and `icon_pack_ver` from its manifest and automatically converts all social link icons stored in the database to the correct CSS classes for that icon pack. For example, if social links were saved with Font Awesome 6 classes (`fa-brands fa-facebook`) and the admin switches to a theme using Bootstrap Icons, the stored icon classes are updated to `bi bi-facebook` on activation.
+When an admin activates a theme, Pubvana CMS reads the new theme's `icon_pack` and `icon_pack_ver` from `theme_info.json` and automatically converts all social link icons stored in the database to the correct CSS classes for that icon pack. For example, if social links were saved with Font Awesome 6 classes (`fa-brands fa-facebook`) and the admin switches to a theme using Bootstrap Icons, the stored icon classes are updated to `bi bi-facebook` on activation.
 
-This means theme developers do not need to worry about what icon classes were stored before their theme was activated — the CMS handles the translation.
+This means theme developers do not need to worry about what icon classes were stored before their theme was activated — Pubvana CMS handles the translation.
 
 ### Supported Icon Packs
 
-The CMS ships with built-in support for these icon libraries. The `icon_pack` value in `theme_info.json` must match one of the names below (matching is case-insensitive and ignores spaces, hyphens, and underscores — so `"FontAwesome"`, `"Font Awesome"`, and `"font-awesome"` all work). The `icon_pack_ver` value only needs the major version number (e.g. `"6.x"`, `"6"`, or `"6.2.14"` all resolve to major version `6`).
+Pubvana CMS ships with built-in support for these icon libraries. The `icon_pack` value in `theme_info.json` must match one of the names below (matching is case-insensitive and ignores spaces, hyphens, and underscores — so `"FontAwesome"`, `"Font Awesome"`, and `"font-awesome"` all work). The `icon_pack_ver` value only needs the major version number (e.g. `"6.x"`, `"6"`, or `"6.2.14"` all resolve to major version `6`).
 
 | `icon_pack` | Supported Versions | Example Class |
 |-------------|-------------------|---------------|
@@ -898,7 +936,7 @@ Each pack includes mappings for 29 brand platforms (Facebook, X/Twitter, Instagr
 
 ### Icon Variables in Widget Templates (`icon_*`)
 
-When a widget is rendered, the CMS automatically injects `icon_*` template variables based on the active theme's icon pack. These variables let widget templates display the correct icon class without hardcoding any specific icon library.
+When a widget is rendered, Pubvana CMS automatically injects `icon_*` template variables based on the active theme's icon pack. These variables let widget templates display the correct icon class without hardcoding any specific icon library.
 
 Available variables follow the pattern `icon_{platform_key}`:
 
@@ -985,7 +1023,7 @@ Available `Blog.*` keys organized by view:
 {# → 'No posts found for "example".' #}
 ```
 
-For the full key list, see `app/Language/en/Blog.php`. Translations exist for: `en`, `es`, `fr`, `id`, `pt`, `sk`.
+For the full key list, see `app/Language/en/Blog.php`. Translations exist for Multiple Languages.
 
 ---
 
@@ -1039,7 +1077,7 @@ Alternatively, the **LanguagePicker** widget provides a drop-in language switche
 
 ## 14. Dark Mode
 
-Dark mode is entirely a theme-level frontend concern. The CMS has no server-side dark mode setting, middleware, or database flag — it serves the same HTML regardless. All dark mode logic lives in the theme's CSS and (optionally) JavaScript.
+Dark mode is entirely a theme-level frontend concern. Pubvana CMS has no server-side dark mode setting, middleware, or database flag — it serves the same HTML regardless. All dark mode logic lives in the theme's CSS and (optionally) JavaScript.
 
 ### Approaches
 
@@ -1076,7 +1114,7 @@ Zero JavaScript required. The theme just defines two sets of CSS custom property
 3. **Inline JS snippet** in `layout.tpl` `<head>` that reads `localStorage` and applies the attribute *before* paint — prevents a flash of the wrong theme on page load
 4. **Toggle UI element** in `layout.tpl` (button/icon)
 
-All of this lives in `theme.css`, `assets/js/`, and `layout.tpl`. Nothing touches the CMS.
+All of this lives in `theme.css`, `assets/js/`, and `layout.tpl`. Nothing touches Pubvana CMS.
 
 **Always dark** — The theme's base design is dark. No light mode, no switching. Same as "no dark mode" but the single palette is dark.
 
@@ -1092,7 +1130,7 @@ The chosen approach determines:
 
 ## 15. Theme Validation
 
-`ThemeService::validateTheme()` runs on every admin themes page load. It recursively scans every file in the theme directory (skipping binary formats) for `<?php`, `<?=`, and `<%`.
+`ThemeService::validateTheme()` runs on every admin themes page load. It recursively scans every file in the theme directory for PHP.
 
 Themes that fail: activate button is disabled, warning shown in the admin theme card.
 
@@ -1121,14 +1159,20 @@ A minimal but complete theme demonstrating all patterns.
     "name": "Minimal",
     "version": "1.0.0",
     "author": "Example",
+    "author_url": "https://example.com",
+    "support_url": "https://example.com/support",
     "description": "A bare-bones starter theme.",
     "screenshot": "screenshot.png",
+    "free": true,
+    "bundled": false,
     "css_framework": "none",
     "css_frame_ver": "",
     "icon_pack": "FontAwesome",
     "icon_pack_ver": "6.x",
     "js_framework": "none",
     "js_framework_ver": "",
+    "min_pubvana_version": "2.2.3",
+    "max_pubvana_version": "2.2.15",
     "widget_areas": {
         "sidebar": "Sidebar",
         "footer-1": "Footer"
@@ -1366,9 +1410,9 @@ Themes are checked against the Pubvana vetting service during discovery. This is
 | Status | Badge | Meaning |
 |--------|-------|---------|
 | `unknown` | Gray "Unknown" | Theme has not been checked yet (new install or network error) |
-| `approved` | Green "Approved" | Theme is in the Pubvana registry and has been reviewed |
-| `known` | Yellow "Known Issues" | Theme is in the registry but has a noted limitation or caution |
-| `malicious` | Red "Malicious" | Theme has been flagged as harmful -- a warning is displayed prominently |
+| `safe` | Green "Safe" | Theme is in the Pubvana registry and has been reviewed |
+| `known` | Green "Safe" + yellow warning | Theme is in the registry but has a noted limitation or caution |
+| `malicious` | Red "Not Safe" | Theme has been flagged as harmful -- a warning is displayed prominently |
 
 ### Author Normalization
 

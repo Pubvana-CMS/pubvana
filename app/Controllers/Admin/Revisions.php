@@ -8,8 +8,8 @@ class Revisions extends BaseAdminController
 {
     public function index(int $postId): string
     {
-        $db   = db_connect();
-        $post = $db->table('posts')->where('id', $postId)->get()->getRowObject();
+        $postModel = model(\App\Models\PostModel::class);
+        $post = $postModel->withDeleted()->find($postId);
         if (! $post) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
@@ -43,7 +43,7 @@ class Revisions extends BaseAdminController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
-        $post = db_connect()->table('posts')->where('id', $revision->post_id)->get()->getRowObject();
+        $post = model(\App\Models\PostModel::class)->withDeleted()->find($revision->post_id);
         if ($post && ! auth()->user()->can('posts.edit.any') && (int) $post->author_id !== auth()->id()) {
             return redirect()->to('/admin/posts')->with('error', lang('Admin.permissionDenied'));
         }
@@ -60,22 +60,13 @@ class Revisions extends BaseAdminController
         if (! $revision) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
-        $db   = db_connect();
-        $post = $db->table('posts')->where('id', $revision->post_id)->get()->getRowObject();
+        $postModel = model(\App\Models\PostModel::class);
+        $post = $postModel->withDeleted()->find($revision->post_id);
         if ($post && ! auth()->user()->can('posts.edit.any') && (int) $post->author_id !== auth()->id()) {
             return redirect()->to('/admin/posts')->with('error', lang('Admin.permissionDenied'));
         }
 
-        $db->table('posts')->where('id', $revision->post_id)->update([
-            'title'            => $revision->title,
-            'content'          => $revision->content,
-            'content_type'     => $revision->content_type,
-            'excerpt'          => $revision->excerpt,
-            'status'           => $revision->status,
-            'meta_title'       => $revision->meta_title,
-            'meta_description' => $revision->meta_description,
-            'updated_at'       => date('Y-m-d H:i:s'),
-        ]);
+        $postModel->restoreFromRevision($revision->post_id, $revision);
 
         return redirect()->to('/admin/posts/' . $revision->post_id . '/revisions')
                          ->with('success', lang('Admin.revisionRestored', [$revision->created_at]));

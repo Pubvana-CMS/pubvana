@@ -1,7 +1,7 @@
 <?php $layout = 'admin/layouts/main'; ob_start(); ?>
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.mediaTitle') ?></h1>
+    <h1 class="h3 mb-0 text-gray-800"><?= lang('Admin.mediaLibrary') ?></h1>
 </div>
 
 <!-- Upload + Detail side by side -->
@@ -31,7 +31,7 @@
     <div id="detail-panel-wrap" style="flex: 0 0 58.333%; max-width: 58.333%; max-height: 400px; overflow-y: auto; overflow-x: hidden;">
         <div class="card shadow">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="m-0 font-weight-bold text-primary">Image Details</h6>
+                <h6 class="m-0 font-weight-bold text-primary"><?= lang('Admin.mediaImageDetails') ?></h6>
                 <button type="button" id="detail-close" class="close"><span>&times;</span></button>
             </div>
             <div class="card-body">
@@ -42,16 +42,16 @@
                     <div class="flex-grow-1">
                         <p class="font-weight-bold text-truncate mb-2" id="detail-filename" title=""></p>
                         <div class="form-group mb-2">
-                            <label class="small font-weight-bold mb-1" for="detail-alt">Alt Text</label>
-                            <input type="text" id="detail-alt" class="form-control form-control-sm" placeholder="Describe the image for accessibility">
+                            <label class="small font-weight-bold mb-1" for="detail-alt"><?= lang('Admin.mediaAltText') ?></label>
+                            <input type="text" id="detail-alt" class="form-control form-control-sm" placeholder="<?= lang('Admin.mediaAltPlaceholder') ?>">
                         </div>
                         <div class="form-group mb-2">
-                            <label class="small font-weight-bold mb-1" for="detail-title">Title</label>
-                            <input type="text" id="detail-title" class="form-control form-control-sm" placeholder="Optional image title">
+                            <label class="small font-weight-bold mb-1" for="detail-title"><?= lang('Admin.mediaTitle') ?></label>
+                            <input type="text" id="detail-title" class="form-control form-control-sm" placeholder="<?= lang('Admin.mediaTitlePlaceholder') ?>">
                         </div>
                         <div class="d-flex align-items-center mt-2">
-                            <button type="button" class="btn btn-sm btn-primary mr-2" id="detail-save-btn">Save</button>
-                            <span id="detail-feedback" class="small text-success d-none">Saved!</span>
+                            <button type="button" class="btn btn-sm btn-primary mr-2" id="detail-save-btn"><?= lang('Admin.save') ?></button>
+                            <span id="detail-feedback" class="small text-success d-none"><?= lang('Admin.mediaSaved') ?></span>
                             <span id="detail-error" class="small text-danger d-none"></span>
                             <form method="POST" id="detail-delete-form" action="" onsubmit="return confirm('<?= lang('Admin.confirmDeleteMedia') ?>')" class="mb-0 ml-auto">
                                 <?= csrf_field() ?>

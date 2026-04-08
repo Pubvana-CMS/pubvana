@@ -33,4 +33,12 @@ class TagModel extends Model
 
         return $builder->get()->getResultObject();
     }
+
+    /**
+     * Remove all post associations for a tag (pivot cleanup before tag delete).
+     */
+    public function deletePostLinks(int $tagId): void
+    {
+        $this->db->table('tags_to_posts')->where('tag_id', $tagId)->delete();
+    }
 }

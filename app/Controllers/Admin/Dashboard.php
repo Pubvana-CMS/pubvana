@@ -14,7 +14,6 @@ class Dashboard extends BaseAdminController
         $postModel    = new PostModel();
         $pageModel    = new PageModel();
         $commentModel = new CommentModel();
-        $db           = db_connect();
 
         $stats = [
             'posts'           => $postModel->countAllResults(false),
@@ -22,7 +21,7 @@ class Dashboard extends BaseAdminController
             'pages'           => $pageModel->countAllResults(false),
             'comments'        => $commentModel->countAllResults(false),
             'pending_comments'=> $commentModel->where('status', 'pending')->countAllResults(false),
-            'users'           => $db->table('users')->countAllResults(),
+            'users'           => auth()->getProvider()->countAllResults(),
         ];
 
         $recentPosts = $postModel->select('id, title, slug, status, published_at, created_at')

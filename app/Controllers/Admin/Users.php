@@ -3,6 +3,7 @@
 namespace App\Controllers\Admin;
 
 use App\Models\AuthorProfileModel;
+use App\Models\UserAdminModel;
 use App\Services\ActivityLogger;
 use App\Services\MediaService;
 use CodeIgniter\Shield\Models\UserModel;
@@ -15,16 +16,20 @@ class Users extends BaseAdminController
             return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
 
-        $db    = db_connect();
-        $users = $db->table('users u')
-            ->select('u.id, u.username, u.active, u.created_at, ai.secret AS email, g.group AS role')
-            ->join('auth_identities ai', 'ai.user_id = u.id AND ai.type = \'email_password\'', 'left')
-            ->join('auth_groups_users g', 'g.user_id = u.id', 'left')
-            ->orderBy('u.created_at', 'DESC')
-            ->get()->getResultObject();
+        $users = auth()->getProvider()
+            ->withIdentities()
+            ->withGroups()
+            ->orderBy('created_at', 'DESC')
+            ->findAll();
+
+        $filter = $this->request->getGet('filter');
+        if ($filter === 'banned') {
+            $users = array_filter($users, fn($u) => $u->isBanned());
+        }
 
         return $this->adminView('users/index', array_merge($this->baseData('Users', 'users'), [
-            'users' => $users,
+            'users'  => $users,
+            'filter' => $filter ?? '',
         ]));
     }
 
@@ -53,7 +58,7 @@ class Users extends BaseAdminController
         }
 
         // Protect site owner (lowest ID)
-        $ownerId = (int) db_connect()->table('users')->selectMin('id')->get()->getRowObject()->id;
+        $ownerId = model(\App\Models\UserAdminModel::class)->getOwnerId();
         if ($id === $ownerId && auth()->id() !== $ownerId) {
             return redirect()->to('/admin/users')->with('error', lang('Admin.userOwnerCannotModify'));
         }
@@ -73,15 +78,12 @@ class Users extends BaseAdminController
             $user->addGroup($role);
         }
 
-        // Active status — use Shield ban to actually block login, keep active col in sync
-        $db = db_connect();
+        // Active status
         if ($this->request->getPost('active')) {
-            $user->unBan();
-            $db->table('users')->where('id', $id)->update(['active' => 1]);
+            $user->activate();
         } elseif ($id !== auth()->id() && $id !== $ownerId) {
-            $user->ban('Deactivated by admin');
-            $db->table('users')->where('id', $id)->update(['active' => 0]);
-            $db->table('auth_remember_tokens')->where('user_id', $id)->delete();
+            $user->deactivate();
+            model(\CodeIgniter\Shield\Models\RememberModel::class)->purgeRememberTokens($user);
         }
 
         // Password (optional)
@@ -92,7 +94,7 @@ class Users extends BaseAdminController
         }
 
         ActivityLogger::log('user.updated', 'user', $id, 'Updated user: ' . ($user->username ?? $id));
-        return redirect()->to('/admin/users')->with('success', lang('Admin.userUpdated'));
+        return redirect()->to('/admin/users/' . $id . '/edit')->with('success', lang('Admin.userUpdated'));
     }
 
     public function delete(int $id)
@@ -100,13 +102,43 @@ class Users extends BaseAdminController
         if ($id === auth()->id()) {
             return redirect()->to('/admin/users')->with('error', lang('Admin.userCannotDeleteSelf'));
         }
-        $ownerId = (int) db_connect()->table('users')->selectMin('id')->get()->getRowObject()->id;
+        $ownerId = model(\App\Models\UserAdminModel::class)->getOwnerId();
         if ($id === $ownerId) {
             return redirect()->to('/admin/users')->with('error', lang('Admin.userCannotDeleteOwner'));
         }
         (new UserModel())->delete($id, true);
         ActivityLogger::log('user.deleted', 'user', $id, 'Deleted user ID: ' . $id);
         return redirect()->to('/admin/users')->with('success', lang('Admin.userDeleted'));
+    }
+
+    public function toggleBan(int $id)
+    {
+        if (! auth()->user()->can('users.manage')) {
+            return redirect()->to('/admin/users')->with('error', lang('Admin.permissionDenied'));
+        }
+
+        $ownerId = model(\App\Models\UserAdminModel::class)->getOwnerId();
+        if ($id === auth()->id() || $id === $ownerId) {
+            return redirect()->to('/admin/users/' . $id . '/edit')->with('error', lang('Admin.userCannotBanSelf'));
+        }
+
+        $users = auth()->getProvider();
+        $user  = $users->findById($id);
+        if (! $user) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        if ($user->isBanned()) {
+            $user->unBan();
+            ActivityLogger::log('user.unbanned', 'user', $id, 'Unbanned user: ' . ($user->username ?? $id));
+            return redirect()->to('/admin/users/' . $id . '/edit')->with('success', lang('Admin.userUnbanned'));
+        }
+
+        $reason = $this->request->getPost('ban_reason');
+        $user->ban($reason ? trim($reason) : null);
+        model(\CodeIgniter\Shield\Models\RememberModel::class)->purgeRememberTokens($user);
+        ActivityLogger::log('user.banned', 'user', $id, 'Banned user: ' . ($user->username ?? $id) . ' — ' . trim($reason));
+        return redirect()->to('/admin/users/' . $id . '/edit')->with('success', lang('Admin.userBanned'));
     }
 
     public function create(): string
@@ -165,8 +197,11 @@ class Users extends BaseAdminController
         $profile      = $profileModel->getByUserId($id) ?? (object) [];
 
         return $this->adminView('users/profile', array_merge($this->baseData('Author Profile', 'users'), [
-            'subject_user' => $user,
-            'profile'      => $profile,
+            'subject_user'  => $user,
+            'profile'       => $profile,
+            'totp_enabled'  => (auth()->loggedIn() && auth()->id() === $id)
+                               ? model(UserAdminModel::class)->isTotpEnabled($id)
+                               : false,
         ]));
     }
 

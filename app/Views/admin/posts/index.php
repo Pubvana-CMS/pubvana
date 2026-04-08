@@ -12,7 +12,7 @@
     <?php foreach (['', 'draft', 'published', 'scheduled'] as $s): ?>
     <li class="nav-item">
         <a class="nav-link <?= $filter === $s ? 'active' : '' ?>" href="<?= base_url('admin/posts' . ($s ? '?status=' . $s : '')) ?>">
-            <?= $s ? ucfirst($s) : 'All' ?>
+            <?= $s ? lang('Admin.postStatus' . ucfirst($s)) : lang('Admin.all') ?>
         </a>
     </li>
     <?php endforeach; ?>

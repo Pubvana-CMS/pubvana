@@ -59,10 +59,8 @@ return [
     // Premium paywall
     // =========================================================================
 
-    'paywallTitle'          => 'Members Only',
-    'paywallMessage'        => 'This post is available to registered members. Sign in or create a free account to continue reading.',
-    'paywallSignIn'         => 'Sign In',
-    'paywallCreateAccount'  => 'Create Account',
+    'paywallTitle'          => 'Premium Content',
+    'paywallMessage'        => 'This content is available to premium subscribers.',
 
     // =========================================================================
     // Author card
@@ -105,6 +103,7 @@ return [
     // =========================================================================
 
     'commentsHeading'       => 'Comments ({0})',
+    'commentsClosed'        => 'Comments are closed.',
     'commentFormTitle'      => 'Leave a Comment',
     'commentLabel'          => 'Comment *',
     'commentPostBtn'        => 'Post Comment',

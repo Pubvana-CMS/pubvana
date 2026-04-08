@@ -2,21 +2,32 @@
 
 namespace App\Controllers\Admin;
 
+use App\Models\MarketplaceLicenseModel;
 use App\Models\SocialModel;
 use App\Models\ThemeModel;
 use App\Services\ActivityLogger;
 use App\Services\IconService;
+
 class Themes extends BaseAdminController
 {
     public function index(): string
     {
         $themeService = service('theme');
         $themeService->sync();
+
         $themes = (new ThemeModel())->findAll();
+
+        // Build license lookup keyed by store_product_id
+        $allLicenses = (new MarketplaceLicenseModel())->where('item_type', 'theme')->findAll();
+        $licenses    = [];
+        foreach ($allLicenses as $lic) {
+            $licenses[$lic->store_product_id] = $lic;
+        }
 
         return $this->adminView('themes/index', array_merge($this->baseData('Themes', 'themes'), [
             'themes'          => $themes,
             'validation'      => $themeService->getValidationResults(),
+            'licenses'        => $licenses,
             'invalidLicenses' => array_filter(
                 (new \App\Services\MarketplaceService())->getInvalidLicenses(),
                 fn($l) => $l->item_type === 'theme'
@@ -41,9 +52,18 @@ class Themes extends BaseAdminController
             return redirect()->to('/admin/themes')->with('error', lang('Admin.themeValidationFailed'));
         }
 
-        $ok = $service->activate($id);
-        if (! $ok) {
-            return redirect()->to('/admin/themes')->with('error', lang('Admin.themeInvalidLicense'));
+        $status = $service->activate($id);
+        if ($status !== 'activated') {
+            $errorKey = match ($status) {
+                'disabled'           => 'Admin.activationBlockedDisabled',
+                'tampered_bundled'   => 'Admin.activationBlockedBundled',
+                'tampered_no_urls'   => 'Admin.activationBlockedNoUrls',
+                'tampered_free_flag' => 'Admin.activationBlockedFreeFlag',
+                'invalid_license'    => 'Admin.licenseRequired',
+                default              => 'Admin.themeInvalidLicense',
+            };
+            $name = $theme->name ?? 'Theme';
+            return redirect()->to('/admin/themes')->with('error', lang($errorKey, [$name]));
         }
 
         // Convert social link icons to the newly activated theme's icon pack
@@ -141,5 +161,76 @@ class Themes extends BaseAdminController
         }
 
         return redirect()->to("/admin/themes/{$id}/options")->with('success', lang('Admin.themeOptionsSaved'));
+    }
+
+    public function saveLicense()
+    {
+        $licenseKey     = trim($this->request->getPost('license_key') ?? '');
+        $storeProductId = (int) ($this->request->getPost('store_product_id') ?? 0);
+
+        if (! $licenseKey || ! $storeProductId) {
+            return redirect()->to('/admin/themes')->with('error', lang('Admin.licenseKeyRequired'));
+        }
+
+        // Determine validation URL (Pubvana vs third-party)
+        $theme     = (new ThemeModel())->where('store_product_id', $storeProductId)->first();
+        $isPubvana = $theme && in_array(strtolower(trim($theme->author ?? '')), ['pubvana', 'pubvana_team'], true);
+        $validateUrl = $isPubvana
+            ? PUBVANA_DSTORE_API . 'license/validate'
+            : ($theme->license_validate_url ?? null);
+
+        if (! $validateUrl) {
+            return redirect()->to('/admin/themes')->with('error', lang('Admin.licenseCheckFailed'));
+        }
+
+        // Validate against the store API
+        try {
+            $client   = \Config\Services::curlrequest(['timeout' => 10]);
+            $response = $client->post($validateUrl, [
+                'json' => [
+                    'license_key' => $licenseKey,
+                    'product_id'  => $storeProductId,
+                    'domain'      => base_url(),
+                ],
+                'http_errors' => false,
+            ]);
+
+            $body  = json_decode($response->getBody(), true);
+            $valid = ($response->getStatusCode() === 200 && ! empty($body['valid']));
+        } catch (\Throwable $e) {
+            return redirect()->to('/admin/themes')->with('error', lang('Admin.licenseCheckFailed'));
+        }
+
+        if (! $valid) {
+            $error = $body['error'] ?? lang('Admin.licenseInvalid');
+            return redirect()->to('/admin/themes')->with('error', $error);
+        }
+
+        // Upsert marketplace_licenses
+        $licenseModel = new MarketplaceLicenseModel();
+        $existing     = $licenseModel->where('store_product_id', $storeProductId)
+            ->where('item_type', 'theme')
+            ->first();
+
+        $productName = $theme->name ?? 'Theme';
+
+        $licenseData = [
+            'store_product_id'     => $storeProductId,
+            'product_name'         => $productName,
+            'item_type'            => 'theme',
+            'license_valid'        => 1,
+            'license_last_checked' => date('Y-m-d H:i:s'),
+            'author'               => $theme->author ?? '',
+        ];
+
+        if ($existing) {
+            $licenseData['license_key'] = $licenseKey;
+            $licenseModel->update($existing->id, $licenseData);
+        } else {
+            $licenseData['license_key'] = $licenseKey;
+            $licenseModel->insert($licenseData);
+        }
+
+        return redirect()->to('/admin/themes')->with('success', lang('Admin.licenseSaved'));
     }
 }

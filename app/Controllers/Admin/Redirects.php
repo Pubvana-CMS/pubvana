@@ -44,6 +44,7 @@ class Redirects extends BaseAdminController
             'to_url'   => $toUrl,
             'type'     => $this->request->getPost('type') ?: '301',
         ]);
+        cache()->delete('redirects_map');
         return redirect()->to('/admin/redirects')->with('success', lang('Admin.redirectAdded'));
     }
 
@@ -53,6 +54,7 @@ class Redirects extends BaseAdminController
             return redirect()->to('/admin')->with('error', lang('Admin.permissionDenied'));
         }
         (new RedirectModel())->delete($id);
+        cache()->delete('redirects_map');
         return redirect()->to('/admin/redirects')->with('success', lang('Admin.redirectDeleted'));
     }
 }

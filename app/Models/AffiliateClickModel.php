@@ -32,4 +32,12 @@ class AffiliateClickModel extends Model
     {
         return $this->where('link_id', $linkId)->countAllResults();
     }
+
+    /**
+     * Delete all clicks for a given link (cleanup before link deletion).
+     */
+    public function deleteForLink(int $linkId): void
+    {
+        $this->where('link_id', $linkId)->delete();
+    }
 }

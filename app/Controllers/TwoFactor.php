@@ -22,10 +22,7 @@ class TwoFactor extends BaseController
             return redirect()->to('/admin');
         }
 
-        $row = db_connect()->table('users')
-            ->select('totp_secret, totp_enabled')
-            ->where('id', auth()->id())
-            ->get()->getRowObject();
+        $row = model(\App\Models\UserAdminModel::class)->getTotpInfo(auth()->id());
 
         // No TOTP set up — mark verified and continue
         if (! $row || ! $row->totp_enabled || empty($row->totp_secret)) {

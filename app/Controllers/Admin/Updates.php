@@ -66,10 +66,9 @@ class Updates extends BaseAdminController
         $allHardPass = empty(array_filter($checks, fn($c) => $c['hard'] && ! $c['pass']));
         $download    = new DownloadService();
 
-        $db = db_connect();
-        $themes  = $db->table('themes')->orderBy('name')->get()->getResultObject();
-        $widgets = $db->table('widgets')->orderBy('name')->get()->getResultObject();
-        $plugins = $db->table('plugins')->orderBy('name')->get()->getResultObject();
+        $themes  = model(\App\Models\ThemeModel::class)->getAllOrdered();
+        $widgets = model(\App\Models\WidgetModel::class)->getAllOrdered();
+        $plugins = model(\App\Models\PluginModel::class)->getAllOrdered();
 
         // Read update_url and support_url from local info files for each extension
         $extensionMeta = [];
@@ -210,7 +209,7 @@ class Updates extends BaseAdminController
 
             // Trigger extension update check + auto-updates after CMS version change
             try {
-                $extService = new \App\Services\ExtensionUpdateService();
+                $extService = new \App\Services\AddonUpdateService();
                 $extService->clearCache();
                 $extResults = $extService->checkAllAddons();
                 $extService->runAutoUpdates($extResults);
@@ -276,7 +275,7 @@ class Updates extends BaseAdminController
 
     public function checkAllAddons()
     {
-        $service = new \App\Services\ExtensionUpdateService();
+        $service = new \App\Services\AddonUpdateService();
         $service->clearCache();
         $results = $service->checkAllAddons();
 
@@ -292,7 +291,7 @@ class Updates extends BaseAdminController
             return $this->response->setJSON(['status' => 'error', 'message' => 'type and slug required.']);
         }
 
-        $service = new \App\Services\ExtensionUpdateService();
+        $service = new \App\Services\AddonUpdateService();
         $results = $service->checkSingleAddon($type, $slug);
 
         return $this->response->setJSON(['status' => 'ok', 'results' => $results]);
@@ -307,14 +306,11 @@ class Updates extends BaseAdminController
             return $this->response->setJSON(['status' => 'error', 'message' => 'type and slug required.']);
         }
 
-        $service = new \App\Services\ExtensionUpdateService();
+        $service = new \App\Services\AddonUpdateService();
         $ok = $service->updateAddon($type, $slug);
 
         // Read current state from DB for the UI
-        $table = match ($type) {
-            'theme' => 'themes', 'widget' => 'widgets', 'plugin' => 'plugins', default => null
-        };
-        $row = $table ? db_connect()->table($table)->where('folder', $slug)->get()->getRowObject() : null;
+        $row = $this->addonModel($type)?->findByFolder($slug);
 
         return $this->response->setJSON([
             'status'  => $ok ? 'ok' : 'error',
@@ -325,19 +321,16 @@ class Updates extends BaseAdminController
 
     public function updateAllAddons()
     {
-        $service = new \App\Services\ExtensionUpdateService();
+        $service = new \App\Services\AddonUpdateService();
         $service->clearCache();
         $checkResults = $service->checkAllAddons();
 
         $results = [];
-        $db = db_connect();
         foreach ($checkResults['updates'] ?? [] as $upd) {
-            $table = match ($upd['type'] ?? '') {
-                'theme' => 'themes', 'widget' => 'widgets', 'plugin' => 'plugins', default => null
-            };
-            if (! $table) continue;
+            $extModel = $this->addonModel($upd['type'] ?? '');
+            if (! $extModel) continue;
 
-            $row = $db->table($table)->where('store_product_id', $upd['product_id'])->get()->getRowObject();
+            $row = $extModel->findByStoreProductId($upd['product_id']);
             if (! $row) continue;
 
             $ok = $service->updateAddon($upd['type'], $row->folder);
@@ -382,19 +375,24 @@ class Updates extends BaseAdminController
             return $this->response->setJSON(['status' => 'error', 'message' => 'type and slug required.']);
         }
 
-        $table = match ($type) {
-            'theme' => 'themes', 'widget' => 'widgets', 'plugin' => 'plugins', default => null
-        };
-
-        if (! $table) {
+        $extModel = $this->addonModel($type);
+        if (! $extModel) {
             return $this->response->setJSON(['status' => 'error', 'message' => 'Invalid type.']);
         }
 
-        db_connect()->table($table)->where('folder', $slug)->update([
-            'auto_update' => $enabled ? 1 : 0,
-        ]);
+        $extModel->toggleAutoUpdate($slug, (bool) $enabled);
 
         return $this->response->setJSON(['status' => 'ok']);
+    }
+
+    private function addonModel(string $type): ?\CodeIgniter\Model
+    {
+        return match($type) {
+            'theme'  => model(\App\Models\ThemeModel::class),
+            'widget' => model(\App\Models\WidgetModel::class),
+            'plugin' => model(\App\Models\PluginModel::class),
+            default  => null,
+        };
     }
 
     private function removeDirectory(string $dir): void
