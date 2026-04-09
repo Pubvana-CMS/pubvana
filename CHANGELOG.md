@@ -4,6 +4,37 @@ All notable changes to Pubvana CMS, starting from the v2.0.0.
 
 ---
 
+## v2.3.2 - 2026-04-09
+
+### Cron System (action required)
+
+The CI4 Task Scheduler has been replaced with a unified `php spark cron <frequency>` command. **Update your crontab entries:**
+
+```
+* * * * * /path/to/php /path/to/pubvana/spark cron minute
+0 */6 * * * /path/to/php /path/to/pubvana/spark cron quarterday
+0 3 * * * /path/to/php /path/to/pubvana/spark cron daily
+```
+
+The old `posts:publish` crontab entry still works but is now called automatically by `cron minute`. Plugins can register their own cron commands under any frequency via `plugin_info.json`.
+
+### Changes
+
+- **Builder docs reorganized** — ThemeBuilder.md, WidgetBuilder.md, PluginBuilder.md, and ThirdPartyAddons.md moved to `BuilderDocs/` folder
+- **CssClassReference.md** — Canonical `cls_*` CSS class variable reference extracted as single source of truth
+- **DstoreCart widget** — Cart widget now hides when empty, shows via JS when items are added (uses `cls_hidden`)
+- **ThemeService / WidgetService** updates
+
+---
+
+## v2.3.1 - 2026-04-07
+
+### Fixes
+
+- **Update checker** — Fixed offering non-existent versions
+
+---
+
 ## v2.3.0 - 2026-04-07
 
 ### Breaking Changes

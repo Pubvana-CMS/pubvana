@@ -1,7 +1,7 @@
 # Pubvana
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Release](https://img.shields.io/badge/release-v2.3.1-blue)](https://github.com/enlivenapp/pubvana/releases)
+[![Release](https://img.shields.io/badge/release-v2.3.2-blue)](https://github.com/enlivenapp/pubvana/releases)
 [![PHP](https://img.shields.io/badge/PHP-8.2%2B-blue.svg)](https://www.php.net)
 [![CodeIgniter](https://img.shields.io/badge/CodeIgniter-4.7-orange.svg)](https://codeigniter.com)
 [![Installs](https://img.shields.io/packagist/dt/enlivenapp/pubvana.svg)](https://packagist.org/packages/enlivenapp/pubvana)
@@ -128,27 +128,31 @@ Quick troubleshooting: If `writable/sessions`, `writable/cache`, and `writable/l
 
 | Command | Description |
 |---------|-------------|
+| `php spark cron minute` | Run per-minute tasks (publish scheduled posts, plugin minute crons) |
+| `php spark cron quarterday` | Run 4x/day tasks (plugin quarterday crons) |
+| `php spark cron daily` | Run daily tasks (auto-update, broken link check, license revalidation, plugin daily crons) |
 | `php spark wp:import <file>` | Import posts/pages/tags from a WordPress WXR export file |
-| `php spark posts:publish` | Publish scheduled posts whose publish date has passed |
+| `php spark posts:publish` | Publish scheduled posts (also called by `cron minute`) |
 | `php spark links:check` | Scan all published posts and pages for broken external links |
 | `php spark marketplace:revalidate` | Re-validate installed premium item licences against pubvana.net |
 | `php spark pubvana:update [--dry-run]` | Check for and apply Pubvana core updates |
 
 ### Cron Jobs
 
-Scheduled post publishing requires a cron job. Add to crontab by command line:
+Pubvana uses a unified `cron` command with three frequencies. Add these to your crontab:
 
 ```
-* * * * * path/to/php /path/to/pubvana/spark posts:publish >> /dev/null 2>&1
+* * * * * /path/to/php /path/to/pubvana/spark cron minute >> /dev/null 2>&1
+0 */6 * * * /path/to/php /path/to/pubvana/spark cron quarterday >> /dev/null 2>&1
+0 3 * * * /path/to/php /path/to/pubvana/spark cron daily >> /dev/null 2>&1
 ```
 
 Often it's easier to create Crons in your web control panel (CPanel/DirectAdmin).  To help:
-- `* * * * *` are the time slots. 
-- `path/to/php /path/to/pubvana/spark posts:publish`  Command to run
-- `dev/null 2>&1`  fancy way to say throw it away. You have more choices in your control panel.
+- `* * * * *` are the time slots
+- `/path/to/php /path/to/pubvana/spark cron minute` is the command to run
+- `>> /dev/null 2>&1` discards output — your control panel may have its own options for this
 
-
-Run `path/to/php /path/to/pubvana/spark links:check` as needed (e.g. weekly) — to automate checking for broken links, results appear in Admin → Broken Links.
+Active plugins can register their own cron commands under any frequency via `plugin_info.json` — they run automatically when the matching `cron` frequency fires.
 
 ---
 
