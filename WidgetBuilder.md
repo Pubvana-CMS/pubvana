@@ -303,41 +303,259 @@ Themes declare their class overrides in `theme_info.json` under `css_class_mappi
 
 ### Standard `cls_` Variables
 
-| Variable | Default | Used For |
-|----------|---------|----------|
+These variables are available in every widget and plugin template. Themes override them via `css_class_mapping` in `theme_info.json`. Use `{{ cls_name | default('semantic-default') }}` in your templates.
+
+#### Widget Shell
+| Variable | Semantic Default | Used For |
+|----------|-----------------|----------|
 | `cls_widget` | `widget widget-{type}` | Outermost wrapper |
-| `cls_title` | `widget-title` | Widget heading (h4) |
-| `cls_list` | `widget-list` | List container (ul) |
-| `cls_list_item` | `widget-list-item` | List item (li) |
-| `cls_link` | `widget-list-link` | Links within list items |
-| `cls_badge` | `widget-badge` | Count badges |
-| `cls_meta` | `widget-meta` | Metadata text (dates, counts) |
+| `cls_title` | `widget-title` | Widget heading |
+| `cls_content` | `widget-content` | Free-form content area |
 | `cls_empty` | `widget-empty` | Empty state message |
-| `cls_content` | `widget-content` | Content container |
+| `cls_meta` | `widget-meta` | Metadata text |
+| `cls_link` | `widget-list-link` | Standard link |
+
+#### Layout
+| Variable | Semantic Default | Used For |
+|----------|-----------------|----------|
+| `cls_container` | `container` | Main content wrapper |
+| `cls_row` | `row` | Grid row |
+| `cls_col` | `col` | Generic column |
+| `cls_col_half` | `col-half` | 50% column |
+| `cls_col_third` | `col-third` | 33% column |
+| `cls_col_quarter` | `col-quarter` | 25% column |
+
+#### Typography
+| Variable | Semantic Default | Used For |
+|----------|-----------------|----------|
+| `cls_h1` | `heading-1` | Heading 1 |
+| `cls_h2` | `heading-2` | Heading 2 |
+| `cls_h3` | `heading-3` | Heading 3 |
+| `cls_h4` | `heading-4` | Heading 4 |
+| `cls_h5` | `heading-5` | Heading 5 |
+| `cls_h6` | `heading-6` | Heading 6 |
+| `cls_lead` | `text-lead` | Intro/lead text |
+| `cls_blockquote` | `blockquote` | Block quote |
+
+#### Text Color (Semantic)
+| Variable | Semantic Default | Used For |
+|----------|-----------------|----------|
+| `cls_text_muted` | `text-muted` | De-emphasized text |
+| `cls_text_primary` | `text-primary` | Brand/primary color |
+| `cls_text_secondary` | `text-secondary` | Secondary color |
+| `cls_text_success` | `text-success` | Success/positive |
+| `cls_text_danger` | `text-danger` | Error/destructive |
+| `cls_text_warning` | `text-warning` | Caution |
+| `cls_text_info` | `text-info` | Informational |
+| `cls_text_light` | `text-light` | Light on dark bg |
+
+#### Text Alignment
+| Variable | Semantic Default | Used For |
+|----------|-----------------|----------|
+| `cls_text_left` | `text-left` | Left-aligned |
+| `cls_text_center` | `text-center` | Centered |
+| `cls_text_right` | `text-right` | Right-aligned |
+
+#### Background (Semantic)
+| Variable | Semantic Default | Used For |
+|----------|-----------------|----------|
+| `cls_bg_primary` | `bg-primary` | Primary background |
+| `cls_bg_secondary` | `bg-secondary` | Secondary background |
+| `cls_bg_success` | `bg-success` | Success background |
+| `cls_bg_danger` | `bg-danger` | Danger background |
+| `cls_bg_warning` | `bg-warning` | Warning background |
+| `cls_bg_light` | `bg-light` | Light surface |
+| `cls_bg_dark` | `bg-dark` | Dark surface |
+
+#### Cards
+| Variable | Semantic Default | Used For |
+|----------|-----------------|----------|
+| `cls_card` | `widget-card` | Card wrapper |
+| `cls_card_header` | `widget-card-header` | Card header |
+| `cls_card_body` | `widget-card-body` | Card body |
+| `cls_card_footer` | `widget-card-footer` | Card footer |
+| `cls_card_image` | `widget-card-image` | Card image |
+| `cls_card_title` | `widget-card-title` | Card title |
+| `cls_card_text` | `widget-card-text` | Card body text |
+
+#### Lists
+| Variable | Semantic Default | Used For |
+|----------|-----------------|----------|
+| `cls_list` | `widget-list` | Styled list (ul) |
+| `cls_list_item` | `widget-list-item` | List item (li) |
+| `cls_list_plain` | `list-plain` | Unstyled list (no bullets) |
+| `cls_list_inline` | `list-inline` | Horizontal list |
+
+#### Tables
+| Variable | Semantic Default | Used For |
+|----------|-----------------|----------|
+| `cls_table` | `table` | Base table |
+| `cls_table_striped` | `table-striped` | Alternating rows |
+| `cls_table_hover` | `table-hover` | Hover highlight |
+| `cls_table_head` | `table-head` | Table header row |
+| `cls_table_cell` | _(none)_ | `<td>` styling |
+| `cls_table_header_cell` | _(none)_ | `<th>` styling |
+
+#### Forms
+| Variable | Semantic Default | Used For |
+|----------|-----------------|----------|
 | `cls_form` | `widget-form` | Form wrapper |
-| `cls_input` | `widget-form-input` | Form inputs |
-| `cls_button` | `widget-form-button` | Form buttons |
+| `cls_form_group` | `form-group` | Field + label wrapper |
+| `cls_label` | `form-label` | Form label |
+| `cls_input` | `widget-form-input` | Text input |
+| `cls_select` | `form-select` | Select dropdown |
+| `cls_textarea` | `form-textarea` | Textarea |
+| `cls_checkbox` | `form-checkbox` | Checkbox input |
+| `cls_form_help` | `form-help` | Help/hint text |
+
+#### Buttons
+| Variable | Semantic Default | Used For |
+|----------|-----------------|----------|
+| `cls_button` | `widget-form-button` | Generic button (widget context) |
+| `cls_btn_primary` | `btn-primary` | Primary action |
+| `cls_btn_secondary` | `btn-secondary` | Secondary action |
+| `cls_btn_success` | `btn-success` | Positive/confirm |
+| `cls_btn_danger` | `btn-danger` | Destructive/delete |
+| `cls_btn_warning` | `btn-warning` | Caution action |
+| `cls_btn_outline` | `btn-outline` | Outlined/ghost variant |
+| `cls_btn_sm` | `btn-sm` | Small button |
+| `cls_btn_lg` | `btn-lg` | Large button |
+| `cls_btn_block` | `btn-block` | Full-width button |
+
+#### Alerts
+| Variable | Semantic Default | Used For |
+|----------|-----------------|----------|
+| `cls_alert` | `alert` | Base alert wrapper |
+| `cls_alert_success` | `alert-success` | Success notice |
+| `cls_alert_danger` | `alert-danger` | Error notice |
+| `cls_alert_warning` | `alert-warning` | Warning notice |
+| `cls_alert_info` | `alert-info` | Info notice |
+
+#### Navigation
+| Variable | Semantic Default | Used For |
+|----------|-----------------|----------|
+| `cls_nav` | `nav` | Nav wrapper |
+| `cls_nav_item` | `nav-item` | Nav entry |
+| `cls_nav_link` | `nav-link` | Nav anchor |
+| `cls_nav_active` | `nav-active` | Active nav item |
+| `cls_dropdown` | `dropdown-menu` | Dropdown menu |
+| `cls_dropdown_item` | `dropdown-item` | Dropdown entry |
+
+#### Breadcrumbs
+| Variable | Semantic Default | Used For |
+|----------|-----------------|----------|
+| `cls_breadcrumb` | `breadcrumb` | Breadcrumb wrapper |
+| `cls_breadcrumb_item` | `breadcrumb-item` | Breadcrumb entry |
+| `cls_breadcrumb_active` | `breadcrumb-active` | Current page |
+
+#### Badges & Tags
+| Variable | Semantic Default | Used For |
+|----------|-----------------|----------|
+| `cls_badge` | `widget-badge` | Count/label badge |
 | `cls_tags` | `widget-tags` | Tag cloud container |
 | `cls_tag` | `widget-tag` | Individual tag link |
-| `cls_card` | `widget-card` | Card container |
-| `cls_card_image` | `widget-card-image` | Card image |
-| `cls_card_body` | `widget-card-body` | Card body |
-| `cls_card_title` | `widget-card-title` | Card title |
-| `cls_card_text` | `widget-card-text` | Card text |
+
+#### Images
+| Variable | Semantic Default | Used For |
+|----------|-----------------|----------|
 | `cls_thumbnail` | `widget-thumbnail` | Thumbnail image |
+| `cls_img_fluid` | `img-fluid` | Responsive image |
+| `cls_img_rounded` | `img-rounded` | Rounded corners |
+| `cls_img_circle` | `img-circle` | Circular crop |
+
+#### Social
+| Variable | Semantic Default | Used For |
+|----------|-----------------|----------|
 | `cls_social_links` | `widget-social-links` | Social links container |
 | `cls_social_link` | `widget-social-link` | Individual social link |
-| `cls_toc_nav` | `widget-toc-nav` | Table of contents nav |
+
+#### Table of Contents
+| Variable | Semantic Default | Used For |
+|----------|-----------------|----------|
+| `cls_toc_nav` | `widget-toc-nav` | TOC nav wrapper |
 | `cls_toc_list` | `widget-toc-list` | TOC list |
 | `cls_toc_item` | `widget-toc-item` | TOC list item |
 | `cls_toc_link` | `widget-toc-link` | TOC link |
-| `cls_fade` | `widget-paywall-fade` | Paywall fade overlay |
-| `cls_cta` | `widget-paywall-cta` | Paywall CTA container |
-| `cls_icon` | `widget-paywall-icon` | Paywall icon |
+
+#### Paywall
+| Variable | Semantic Default | Used For |
+|----------|-----------------|----------|
+| `cls_fade` | `widget-paywall-fade` | Fade overlay |
+| `cls_cta` | `widget-paywall-cta` | CTA container |
+| `cls_icon` | `widget-paywall-icon` | Lock icon |
 | `cls_paywall_title` | `widget-paywall-title` | Paywall heading |
 | `cls_message` | `widget-paywall-message` | Paywall message |
-| `cls_btn_primary` | `widget-paywall-button widget-paywall-button-primary` | Primary button |
-| `cls_btn_secondary` | `widget-paywall-button widget-paywall-button-secondary` | Secondary button |
+
+#### Pagination
+| Variable | Semantic Default | Used For |
+|----------|-----------------|----------|
+| `cls_pager_list` | `pv-pagination` | Pagination `<ul>` wrapper |
+| `cls_pager_item` | `pv-page-item` | Each `<li>` page entry |
+| `cls_pager_link` | `pv-page-link` | `<a>` or `<span>` inside each item |
+| `cls_pager_active` | `pv-page-active` | Added to active `<li>` |
+| `cls_pager_disabled` | `pv-page-disabled` | Added to disabled `<li>` |
+
+#### Display & Flex
+| Variable | Semantic Default | Used For |
+|----------|-----------------|----------|
+| `cls_hidden` | `hidden` | Hide element |
+| `cls_flex` | `flex` | Flex container |
+| `cls_flex_center` | `flex-center` | Centered both axes |
+| `cls_flex_between` | `flex-between` | Space-between |
+| `cls_flex_col` | `flex-col` | Vertical flex |
+| `cls_flex_wrap` | `flex-wrap` | Wrapping flex |
+
+#### Borders & Shape
+| Variable | Semantic Default | Used For |
+|----------|-----------------|----------|
+| `cls_rounded` | `rounded` | Standard rounding |
+| `cls_rounded_lg` | `rounded-lg` | Large rounding |
+| `cls_rounded_circle` | `rounded-circle` | Circle/pill |
+| `cls_shadow` | `shadow` | Standard shadow |
+| `cls_shadow_sm` | `shadow-sm` | Subtle shadow |
+
+#### Float & Alignment
+| Variable | Semantic Default | Used For |
+|----------|-----------------|----------|
+| `cls_left` | `float-left` | Float/align left |
+| `cls_right` | `float-right` | Float/align right |
+
+#### Miscellaneous
+| Variable | Semantic Default | Used For |
+|----------|-----------------|----------|
+| `cls_divider` | `divider` | Horizontal separator |
+| `cls_sr_only` | `sr-only` | Screen reader only |
+
+#### Spacing — Margin
+
+Scale 0–5. Names use `left`/`right`, not `start`/`end`.
+
+| Pattern | Count | Used For |
+|---------|-------|----------|
+| `cls_m_{0-5}` | 6 | All-side margin |
+| `cls_mt_{0-5}` | 6 | Margin top |
+| `cls_mb_{0-5}` | 6 | Margin bottom |
+| `cls_ml_{0-5}` | 6 | Margin left |
+| `cls_mr_{0-5}` | 6 | Margin right |
+| `cls_mx_{0-5}` | 6 | Margin horizontal |
+| `cls_mx_auto` | 1 | Center horizontally |
+| `cls_my_{0-5}` | 6 | Margin vertical |
+
+#### Spacing — Padding
+
+| Pattern | Count | Used For |
+|---------|-------|----------|
+| `cls_p_{0-5}` | 6 | All-side padding |
+| `cls_pt_{0-5}` | 6 | Padding top |
+| `cls_pb_{0-5}` | 6 | Padding bottom |
+| `cls_pl_{0-5}` | 6 | Padding left |
+| `cls_pr_{0-5}` | 6 | Padding right |
+| `cls_px_{0-5}` | 6 | Padding horizontal |
+| `cls_py_{0-5}` | 6 | Padding vertical |
+
+Note: Variable names use `left`/`right` (not `start`/`end`). Themes map the values to their framework's conventions (e.g. BS5 maps `cls_ml_3` → `ms-3`, `cls_text_left` → `text-start`).
+
+---
 
 ### Naming Convention
 
