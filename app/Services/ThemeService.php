@@ -9,6 +9,7 @@ use App\Libraries\TemplateEngine\Engine;
 use App\Models\NavigationModel;
 use App\Models\SocialModel;
 use App\Models\MarketplaceLicenseModel;
+use App\Services\IconService;
 use App\Services\PluginManager;
 use App\Services\VettingService;
 
@@ -273,12 +274,10 @@ class ThemeService
 
         $data = array_merge($this->buildCommonData(), $pageData);
 
-        // Build page_title for the <title> tag: "Post Title - Site Name" or just "Site Name"
-        $siteName = $data['site_name'] ?? '';
-        $seoTitle = $data['seo']['title'] ?? '';
-        $data['page_title'] = ($seoTitle !== '' && $seoTitle !== $siteName)
-            ? $seoTitle . ' - ' . $siteName
-            : $siteName;
+        // Only set page_title if the controller didn't pass one
+        if (!isset($pageData['page_title'])) {
+            $data['page_title'] = $data['site_name'] ?? '';
+        }
 
         $basePath = THEMES_PATH . $theme->folder . '/views/';
         $html = $this->getEngine()->render($path, $data, $basePath);
@@ -374,7 +373,7 @@ class ThemeService
         $commentModeration = (bool) setting('App.commentModeration');
         $hcaptchaSiteKey   = setting('App.hcaptchaSiteKey') ?? '';
 
-        return array_merge($themeOptions, [
+        return array_merge($themeOptions, $this->getThemeIconClasses(), [
             'theme'              => $theme,
             'site_name'          => site_name(),
             'site_tagline'       => site_tagline(),
@@ -397,6 +396,46 @@ class ThemeService
             'csrf_token_value'   => csrf_hash(),
             'lang_switcher'      => $this->langSwitcherData,
         ]);
+    }
+
+    /**
+     * Resolve icon classes from the active theme's icon pack.
+     * Returns variables like icon_facebook, icon_website, etc.
+     * Cached per request via static variable.
+     */
+    public function getThemeIconClasses(): array
+    {
+        static $icons = null;
+        if ($icons !== null) {
+            return $icons;
+        }
+
+        $icons = [];
+        $theme = $this->getActive();
+        if (! $theme) {
+            return $icons;
+        }
+
+        $jsonPath = THEMES_PATH . $theme->folder . '/theme_info.json';
+        if (! is_file($jsonPath)) {
+            return $icons;
+        }
+
+        $info = json_decode(file_get_contents($jsonPath), true);
+        $pack = $info['icon_pack'] ?? '';
+        $ver  = $info['icon_pack_ver'] ?? '';
+        if (! $pack || ! $ver) {
+            return $icons;
+        }
+
+        $brandMap   = IconService::getBrandMap($pack, $ver);
+        $genericMap = IconService::getGenericMap($pack, $ver);
+
+        foreach (array_merge($brandMap, $genericMap) as $key => $class) {
+            $icons['icon_' . $key] = $class;
+        }
+
+        return $icons;
     }
 
     /**

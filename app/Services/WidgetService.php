@@ -289,7 +289,7 @@ class WidgetService
 
         // Load theme cls_ overrides and resolved icon variables
         $themeClasses = $this->getThemeWidgetClasses();
-        $themeIcons   = $this->getThemeIconClasses();
+        $themeIcons   = service('theme')->getThemeIconClasses();
 
         // Render template — theme classes, icons, saved options, and provider data merged into one array
         $template = $manifest['output']['template'] ?? 'widget.tpl';
@@ -384,48 +384,6 @@ class WidgetService
         $info = json_decode(file_get_contents($jsonPath), true);
         $classes = $info['css_class_mapping'] ?? [];
         return $classes;
-    }
-
-    /**
-     * Resolve icon classes from the active theme's icon pack.
-     * Returns variables like icon_facebook, icon_website, etc.
-     * Cached per request — only reads theme_info.json and calls IconService once.
-     */
-    private function getThemeIconClasses(): array
-    {
-        static $icons = null;
-        if ($icons !== null) {
-            return $icons;
-        }
-
-        $icons = [];
-        $themeService = service('theme');
-        $theme = $themeService->getActive();
-        if (! $theme) {
-            return $icons;
-        }
-
-        $jsonPath = THEMES_PATH . $theme->folder . '/theme_info.json';
-        if (! is_file($jsonPath)) {
-            return $icons;
-        }
-
-        $info = json_decode(file_get_contents($jsonPath), true);
-        $pack = $info['icon_pack'] ?? '';
-        $ver  = $info['icon_pack_ver'] ?? '';
-        if (! $pack || ! $ver) {
-            return $icons;
-        }
-
-        // Resolve all brand + generic icons and prefix keys with "icon_"
-        $brandMap  = IconService::getBrandMap($pack, $ver);
-        $genericMap = IconService::getGenericMap($pack, $ver);
-
-        foreach (array_merge($brandMap, $genericMap) as $key => $class) {
-            $icons['icon_' . $key] = $class;
-        }
-
-        return $icons;
     }
 
     private function getDefaults(array $manifest): array
