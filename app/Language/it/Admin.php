@@ -425,6 +425,8 @@ return [
     'recheckSuccess'         => 'Controllo di sicurezza aggiornato.',
     'recheckFailed'          => 'Impossibile raggiungere il server di verifica. Riprova più tardi.',
     'recheckNotFound'        => 'Elemento non trovato.',
+    'widgetBlockedMalicious' => '{0} è stato segnalato come dannoso e non può essere aggiunto.',
+    'licenseNoStoreProduct'  => 'Questo elemento non è collegato a un prodotto dello store. Se hai acquistato questo elemento, reinstallalo dal marketplace per abilitare la licenza.',
     'securityWarning'        => 'Avviso di sicurezza:',
     'licenseModalTitle'      => 'Inserisci chiave di licenza',
     'licenseModalBody'       => 'Incolla la tua chiave di licenza qui sotto.',

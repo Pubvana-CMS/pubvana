@@ -424,6 +424,8 @@ return [
     'recheckSuccess'         => 'Güvenlik kontrolü güncellendi.',
     'recheckFailed'          => 'Doğrulama sunucusuna ulaşılamadı. Lütfen daha sonra tekrar deneyin.',
     'recheckNotFound'        => 'Öğe bulunamadı.',
+    'widgetBlockedMalicious' => '{0} kötü amaçlı olarak işaretlendi ve eklenemez.',
+    'licenseNoStoreProduct'  => 'Bu öğe bir mağaza ürünüyle bağlantılı değil. Bu öğeyi satın aldıysanız, lisanslamayı etkinleştirmek için lütfen marketplace\'ten yeniden yükleyin.',
     'securityWarning'        => 'Güvenlik Uyarısı:',
     'licenseModalTitle'      => 'Lisans Anahtarı Gir',
     'licenseModalBody'       => 'Lisans anahtarınızı aşağıya yapıştırın.',

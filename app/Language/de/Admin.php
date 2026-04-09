@@ -425,6 +425,8 @@ return [
     'recheckSuccess'         => 'Sicherheitsprüfung aktualisiert.',
     'recheckFailed'          => 'Der Überprüfungsserver konnte nicht erreicht werden. Bitte versuchen Sie es später erneut.',
     'recheckNotFound'        => 'Element nicht gefunden.',
+    'widgetBlockedMalicious' => '{0} wurde als bösartig markiert und kann nicht hinzugefügt werden.',
+    'licenseNoStoreProduct'  => 'Dieses Element ist nicht mit einem Store-Produkt verknüpft. Wenn Sie dieses Element gekauft haben, installieren Sie es bitte über den Marketplace neu, um die Lizenzierung zu aktivieren.',
     'securityWarning'        => 'Sicherheitswarnung:',
     'licenseModalTitle'      => 'Lizenzschlüssel eingeben',
     'licenseModalBody'       => 'Fügen Sie Ihren Lizenzschlüssel unten ein.',

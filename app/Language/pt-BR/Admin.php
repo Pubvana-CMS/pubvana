@@ -425,6 +425,8 @@ return [
     'recheckSuccess'         => 'Verificação de segurança atualizada.',
     'recheckFailed'          => 'Não foi possível contatar o servidor de verificação. Tente novamente mais tarde.',
     'recheckNotFound'        => 'Item não encontrado.',
+    'widgetBlockedMalicious' => '{0} foi marcado como malicioso e não pode ser adicionado.',
+    'licenseNoStoreProduct'  => 'Este item não está vinculado a um produto da loja. Se você comprou este item, reinstale-o pelo marketplace para habilitar a licença.',
     'securityWarning'        => 'Aviso de Segurança:',
     'licenseModalTitle'      => 'Inserir Chave de Licença',
     'licenseModalBody'       => 'Cole sua chave de licença abaixo.',

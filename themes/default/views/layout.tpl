@@ -142,7 +142,7 @@
                 {% if footer_nav %}
                 <nav class="mt-3">
                     {% for item in footer_nav %}
-                    <a href="{% site_url item.url %}" class="text-white-50 d-block small"{% if item.target == '_blank' %} target="_blank" rel="noopener"{% endif %}>{{ item.label }}</a>
+                    <a href="{{ item.url }}" class="text-white-50 d-block small"{% if item.target == '_blank' %} target="_blank" rel="noopener"{% endif %}>{{ item.label }}</a>
                     {% endfor %}
                 </nav>
                 {% endif %}

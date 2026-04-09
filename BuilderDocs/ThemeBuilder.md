@@ -388,8 +388,8 @@ The engine loads the child, collects its block content, loads the parent (layout
 | `site_name` | string | From `site_name()` helper |
 | `site_tagline` | string | From `site_tagline()` helper |
 | `locale` | string | Request locale (e.g. `en`, `es`) |
-| `primary_nav` | array of objects | Nav items: `.url`, `.label`, `.target` |
-| `footer_nav` | array of objects | Nav items: `.url`, `.label`, `.target` |
+| `primary_nav` | array of objects | Nav items: `.url` (already locale-prefixed), `.label`, `.target` |
+| `footer_nav` | array of objects | Nav items: `.url` (already locale-prefixed), `.label`, `.target` |
 | `social_links` | array of objects | Social links: `.url`, `.icon` (FA class), `.platform` |
 | `plugin_menu_items` | array | Plugin-contributed nav items |
 | `is_logged_in` | bool | Whether a user is authenticated |

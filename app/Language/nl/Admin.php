@@ -425,6 +425,8 @@ return [
     'recheckSuccess'         => 'Veiligheidscontrole bijgewerkt.',
     'recheckFailed'          => 'Kon de verificatieserver niet bereiken. Probeer het later opnieuw.',
     'recheckNotFound'        => 'Item niet gevonden.',
+    'widgetBlockedMalicious' => '{0} is gemarkeerd als kwaadaardig en kan niet worden toegevoegd.',
+    'licenseNoStoreProduct'  => 'Dit item is niet gekoppeld aan een winkelproduct. Als u dit item heeft gekocht, installeer het dan opnieuw via de marketplace om licentiëring in te schakelen.',
     'securityWarning'        => 'Beveiligingswaarschuwing:',
     'licenseModalTitle'      => 'Licentiesleutel invoeren',
     'licenseModalBody'       => 'Plak uw licentiesleutel hieronder.',

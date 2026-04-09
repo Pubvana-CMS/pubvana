@@ -100,6 +100,7 @@
                         <?= csrf_field() ?>
                         <input type="hidden" name="widget_id" value="<?= $w->id ?>">
                         <input type="hidden" name="widget_area_id" value="<?= $area->id ?>">
+                        <button type="submit" class="d-none"></button>
                         <div class="d-flex justify-content-between align-items-center border rounded p-2">
                             <div>
                                 <strong><?= esc($w->name) ?></strong>
@@ -142,7 +143,7 @@
                                         <button type="button" class="btn btn-xs btn-outline-primary mr-1" data-toggle="modal" data-target="#licenseModal-widget-<?= $w->id ?>"><?= lang('Admin.licenseEnterKey') ?></button>
                                     <?php endif; ?>
                                 <?php else: ?>
-                                    <?php if (! empty($w->license_validate_url) && $w->store_product_id): ?>
+                                    <?php if (! empty($w->license_validate_url)): ?>
                                         <?php if ($lic && $licValid === 1): ?>
                                             <span class="badge badge-success mr-2"><?= lang('Admin.licenseLicensed') ?></span>
                                         <?php elseif ($lic && $licValid === 0): ?>
@@ -159,7 +160,7 @@
                                         <span class="badge badge-light mr-2"><?= lang('Admin.licenseThirdPartyLabel') ?></span>
                                     <?php endif; ?>
                                 <?php endif; ?>
-                                <button class="btn btn-sm btn-outline-primary" <?= $needsLicense ? 'disabled' : '' ?>><?= lang('Admin.widgetAddToArea') ?></button>
+                                <button class="btn btn-sm btn-outline-primary" <?= $needsLicense || (int) ($w->pv_safe ?? -1) === 0 ? 'disabled' : '' ?>><?= lang('Admin.widgetAddToArea') ?></button>
                             </div>
                         </div>
                     </form>
@@ -180,10 +181,11 @@
         $isPubvana = in_array($w->author ?? '', ['pubvana', 'pubvana_team'], true);
         $isBundled = ! empty($w->bundled);
     ?>
-    <?php if ((($isPubvana && ! $isBundled) || ! empty($w->license_validate_url)) && $w->store_product_id): ?>
+    <?php if (($isPubvana && ! $isBundled) || ! empty($w->license_validate_url)): ?>
     <div class="modal fade" id="licenseModal-widget-<?= $w->id ?>" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
+                <?php if ($w->store_product_id): ?>
                 <form action="<?= site_url('admin/widgets/save-license') ?>" method="post">
                     <?= csrf_field() ?>
                     <input type="hidden" name="store_product_id" value="<?= esc($w->store_product_id) ?>">
@@ -204,6 +206,21 @@
                         <button type="submit" class="btn btn-primary"><?= lang('Admin.licenseModalSave') ?></button>
                     </div>
                 </form>
+                <?php else: ?>
+                <div class="modal-header">
+                    <h5 class="modal-title"><?= lang('Admin.licenseModalTitle') ?> - <?= esc($w->name) ?></h5>
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning mb-0">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                        <?= lang('Admin.licenseNoStoreProduct') ?>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"><?= lang('Admin.btnCancel') ?></button>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>

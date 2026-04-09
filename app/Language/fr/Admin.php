@@ -1009,6 +1009,8 @@ return [
     'recheckSuccess'            => 'Vérification de sécurité mise à jour.',
     'recheckFailed'             => 'Impossible de contacter le serveur de vérification. Veuillez réessayer plus tard.',
     'recheckNotFound'           => 'Élément non trouvé.',
+    'widgetBlockedMalicious'    => '{0} a été signalé comme malveillant et ne peut pas être ajouté.',
+    'licenseNoStoreProduct'     => 'Cet élément n\'est pas lié à un produit du magasin. Si vous avez acheté cet élément, réinstallez-le depuis le marketplace pour activer la licence.',
     'securityWarning'           => 'Avertissement de sécurité :',
     'themeUnapprovedTitle'      => 'Activer un thème non approuvé ?',
     'themeNotApproved'          => 'Ce thème n\'a pas été approuvé par Pubvana.',

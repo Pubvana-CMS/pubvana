@@ -4,6 +4,16 @@ All notable changes to Pubvana CMS, starting from the v2.0.0.
 
 ---
 
+## v2.3.3 - 2026-04-09
+
+### Changes
+
+- **Navigation locale fix** — Navigation URLs now include the correct locale prefix (e.g. `/fr/blog`) automatically. Theme authors no longer need to wrap nav URLs in `{% site_url %}`.
+- **Safety vetting** — Widgets now blocked from activation if flagged as malicious by the vetting system
+- **Admin language updates** — New and updated translation keys across all 25 languages
+
+---
+
 ## v2.3.2 - 2026-04-09
 
 ### Cron System (action required)

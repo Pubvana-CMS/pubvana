@@ -156,7 +156,7 @@
                             <button class="btn btn-xs btn-outline-primary" data-toggle="modal" data-target="#licenseModal-<?= $theme->id ?>"><?= lang('Admin.licenseEnterKey') ?></button>
                         <?php endif; ?>
                     <?php else: ?>
-                        <?php if (! empty($theme->license_validate_url) && $theme->store_product_id): ?>
+                        <?php if (! empty($theme->license_validate_url)): ?>
                             <?php if ($lic && $licValid === 1): ?>
                                 <span class="badge badge-success"><?= lang('Admin.licenseLicensed') ?></span>
                                 <small class="text-muted d-block"><?= esc(substr($lic->license_key, 0, 12)) ?>...</small>
@@ -196,10 +196,11 @@
         $isPubvana = in_array($theme->author ?? '', ['pubvana', 'pubvana_team'], true);
         $isBundled = ! empty($theme->bundled);
     ?>
-    <?php if ((($isPubvana && ! $isBundled) || ! empty($theme->license_validate_url)) && $theme->store_product_id): ?>
+    <?php if (($isPubvana && ! $isBundled) || ! empty($theme->license_validate_url)): ?>
     <div class="modal fade" id="licenseModal-<?= $theme->id ?>" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
+                <?php if ($theme->store_product_id): ?>
                 <form action="<?= site_url('admin/themes/save-license') ?>" method="post">
                     <?= csrf_field() ?>
                     <input type="hidden" name="store_product_id" value="<?= esc($theme->store_product_id) ?>">
@@ -220,6 +221,21 @@
                         <button type="submit" class="btn btn-primary"><?= lang('Admin.licenseModalSave') ?></button>
                     </div>
                 </form>
+                <?php else: ?>
+                <div class="modal-header">
+                    <h5 class="modal-title"><?= lang('Admin.licenseModalTitle') ?> - <?= esc($theme->name) ?></h5>
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning mb-0">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                        <?= lang('Admin.licenseNoStoreProduct') ?>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"><?= lang('Admin.btnCancel') ?></button>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>

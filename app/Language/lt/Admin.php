@@ -425,6 +425,8 @@ return [
     'recheckSuccess'         => 'Saugumo patikra atnaujinta.',
     'recheckFailed'          => 'Nepavyko pasiekti tikrinimo serverio. Bandykite vėliau.',
     'recheckNotFound'        => 'Elementas nerastas.',
+    'widgetBlockedMalicious' => '{0} pažymėtas kaip kenkėjiškas ir negali būti pridėtas.',
+    'licenseNoStoreProduct'  => 'Šis elementas nesusietas su parduotuvės produktu. Jei įsigijote šį elementą, iš naujo įdiekite jį iš marketplace, kad įgalintumėte licencijavimą.',
     'securityWarning'        => 'Saugumo įspėjimas:',
     'licenseModalTitle'      => 'Įvesti licencijos raktą',
     'licenseModalBody'       => 'Įklijuokite licencijos raktą žemiau.',

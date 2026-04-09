@@ -1009,6 +1009,8 @@ return [
     'recheckSuccess'            => 'Verificação de segurança atualizada.',
     'recheckFailed'             => 'Não foi possível contactar o servidor de verificação. Tente novamente mais tarde.',
     'recheckNotFound'           => 'Item não encontrado.',
+    'widgetBlockedMalicious'    => '{0} foi marcado como malicioso e não pode ser adicionado.',
+    'licenseNoStoreProduct'     => 'Este item não está vinculado a um produto da loja. Se comprou este item, reinstale-o a partir do marketplace para ativar a licença.',
     'securityWarning'           => 'Aviso de segurança:',
     'themeUnapprovedTitle'      => 'Ativar tema não aprovado?',
     'themeNotApproved'          => 'Este tema não foi aprovado pela Pubvana.',

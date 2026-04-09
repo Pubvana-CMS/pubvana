@@ -70,6 +70,12 @@ class NavigationService
     {
         $flat = model(\App\Models\NavigationModel::class)->getByGroup($group);
 
+        // Prepend the current locale prefix to each URL so themes
+        // don't need to call site_url() themselves.
+        foreach ($flat as $item) {
+            $item->url = site_url(ltrim($item->url, '/'));
+        }
+
         return $this->buildTree($flat);
     }
 

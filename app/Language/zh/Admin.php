@@ -425,6 +425,8 @@ return [
     'recheckSuccess'         => '安全检查已更新。',
     'recheckFailed'          => '无法连接验证服务器。请稍后重试。',
     'recheckNotFound'        => '未找到项目。',
+    'widgetBlockedMalicious' => '{0} 已被标记为恶意，无法添加。',
+    'licenseNoStoreProduct'  => '此项目未链接到商店产品。如果您购买了此项目，请从市场重新安装以启用许可。',
     'securityWarning'        => '安全警告：',
     'licenseModalTitle'      => '输入许可证密钥',
     'licenseModalBody'       => '请在下方粘贴您的许可证密钥。',

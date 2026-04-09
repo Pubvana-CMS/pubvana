@@ -425,6 +425,8 @@ return [
     'recheckSuccess'         => '안전 확인이 업데이트되었습니다.',
     'recheckFailed'          => '검증 서버에 연결할 수 없습니다. 나중에 다시 시도하세요.',
     'recheckNotFound'        => '항목을 찾을 수 없습니다.',
+    'widgetBlockedMalicious' => '{0}은(는) 악성으로 표시되어 추가할 수 없습니다.',
+    'licenseNoStoreProduct'  => '이 항목은 스토어 제품에 연결되어 있지 않습니다. 이 항목을 구매한 경우 마켓플레이스에서 다시 설치하여 라이선스를 활성화하세요.',
     'securityWarning'        => '보안 경고:',
     'licenseModalTitle'      => '라이선스 키 입력',
     'licenseModalBody'       => '아래에 라이선스 키를 붙여넣으세요.',

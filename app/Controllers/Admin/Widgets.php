@@ -62,6 +62,10 @@ class Widgets extends BaseAdminController
             return redirect()->to('/admin/widgets')->with('error', lang('Admin.activationBlockedDisabled', [$widget->name ?? 'Widget']));
         }
 
+        if ((int) ($widget->pv_safe ?? -1) === 0) {
+            return redirect()->to('/admin/widgets')->with('error', lang('Admin.widgetBlockedMalicious', [$widget->name ?? 'Widget']));
+        }
+
         $model    = new WidgetInstanceModel();
         $model->insert([
             'widget_id'      => $widgetId,

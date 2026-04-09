@@ -100,7 +100,7 @@
                                 <button class="btn btn-xs btn-outline-primary" data-toggle="modal" data-target="#licenseModal-<?= $p->id ?>"><?= lang('Plugins.licenseEnterKey') ?></button>
                             <?php endif; ?>
                         <?php else: ?>
-                            <?php if (! empty($p->license_validate_url) && $p->store_product_id): ?>
+                            <?php if (! empty($p->license_validate_url)): ?>
                                 <?php if ($lic && $licValid === 1): ?>
                                     <span class="badge badge-success"><?= lang('Plugins.licenseLicensed') ?></span>
                                     <small class="text-muted d-block"><?= esc(substr($lic->license_key, 0, 12)) ?>...</small>
@@ -166,10 +166,11 @@
 
 <!-- License key modals -->
 <?php foreach ($plugins as $p): ?>
-    <?php if ($p->store_product_id && (in_array(strtolower(trim($p->author ?? '')), ['pubvana', 'pubvana_team'], true) || ! empty($p->license_validate_url))): ?>
+    <?php if (in_array(strtolower(trim($p->author ?? '')), ['pubvana', 'pubvana_team'], true) || ! empty($p->license_validate_url)): ?>
     <div class="modal fade" id="licenseModal-<?= $p->id ?>" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
+                <?php if ($p->store_product_id): ?>
                 <form action="<?= site_url('admin/plugins/save-license') ?>" method="post">
                     <?= csrf_field() ?>
                     <input type="hidden" name="store_product_id" value="<?= esc($p->store_product_id) ?>">
@@ -181,7 +182,7 @@
                         <p><?= lang('Plugins.licenseModalBody') ?></p>
                         <div class="form-group">
                             <input type="text" class="form-control" name="license_key"
-                                   value="<?= esc(($p->store_product_id ? ($licenses[$p->store_product_id] ?? null) : null)?->license_key ?? '') ?>"
+                                   value="<?= esc(($licenses[$p->store_product_id] ?? null)?->license_key ?? '') ?>"
                                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" required>
                         </div>
                     </div>
@@ -190,6 +191,21 @@
                         <button type="submit" class="btn btn-primary"><?= lang('Plugins.licenseModalSave') ?></button>
                     </div>
                 </form>
+                <?php else: ?>
+                <div class="modal-header">
+                    <h5 class="modal-title"><?= lang('Plugins.licenseModalTitle') ?> - <?= esc($p->name) ?></h5>
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning mb-0">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                        <?= lang('Admin.licenseNoStoreProduct') ?>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"><?= lang('Plugins.btnCancel') ?></button>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>

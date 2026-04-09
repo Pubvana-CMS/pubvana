@@ -425,6 +425,8 @@ return [
     'recheckSuccess'         => 'Safety check updated.',
     'recheckFailed'          => 'Could not reach the vetting server. Please try again later.',
     'recheckNotFound'        => 'Item not found.',
+    'widgetBlockedMalicious' => '{0} has been flagged as malicious and cannot be added.',
+    'licenseNoStoreProduct'  => 'This item is not linked to a store product. If you purchased this item, please reinstall it from the marketplace to enable licensing.',
     'securityWarning'        => 'Security Warning:',
     'licenseModalTitle'      => 'Enter License Key',
     'licenseModalBody'       => 'Paste your license key below.',

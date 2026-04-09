@@ -425,6 +425,8 @@ return [
     'recheckSuccess'         => '安全性チェックが更新されました。',
     'recheckFailed'          => '検証サーバーに接続できませんでした。後でもう一度お試しください。',
     'recheckNotFound'        => 'アイテムが見つかりません。',
+    'widgetBlockedMalicious' => '{0} は悪意ありとマークされており、追加できません。',
+    'licenseNoStoreProduct'  => 'このアイテムはストア製品にリンクされていません。このアイテムを購入された場合は、マーケットプレイスから再インストールしてライセンスを有効にしてください。',
     'securityWarning'        => 'セキュリティ警告：',
     'licenseModalTitle'      => 'ライセンスキーを入力',
     'licenseModalBody'       => '以下にライセンスキーを貼り付けてください。',

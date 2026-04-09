@@ -1009,6 +1009,8 @@ return [
     'recheckSuccess'            => 'Bezpečnostná kontrola aktualizovaná.',
     'recheckFailed'             => 'Nepodarilo sa kontaktovať overovací server. Skúste to neskôr.',
     'recheckNotFound'           => 'Položka sa nenašla.',
+    'widgetBlockedMalicious'    => '{0} bol označený ako škodlivý a nemožno ho pridať.',
+    'licenseNoStoreProduct'     => 'Táto položka nie je prepojená s produktom obchodu. Ak ste túto položku zakúpili, preinštalujte ju z marketplace pre aktiváciu licencovania.',
     'securityWarning'           => 'Bezpečnostné varovanie:',
     'themeUnapprovedTitle'      => 'Aktivovať neschválenú tému?',
     'themeNotApproved'          => 'Táto téma nebola schválená Pubvanou.',

@@ -425,6 +425,8 @@ return [
     'recheckSuccess'         => 'Sprawdzenie bezpieczeństwa zaktualizowane.',
     'recheckFailed'          => 'Nie udało się połączyć z serwerem weryfikacji. Spróbuj ponownie później.',
     'recheckNotFound'        => 'Element nie znaleziony.',
+    'widgetBlockedMalicious' => '{0} został oznaczony jako złośliwy i nie może zostać dodany.',
+    'licenseNoStoreProduct'  => 'Ten element nie jest powiązany z produktem sklepowym. Jeśli zakupiłeś ten element, zainstaluj go ponownie z marketplace, aby włączyć licencjonowanie.',
     'securityWarning'        => 'Ostrzeżenie bezpieczeństwa:',
     'licenseModalTitle'      => 'Wprowadź klucz licencji',
     'licenseModalBody'       => 'Wklej swój klucz licencji poniżej.',

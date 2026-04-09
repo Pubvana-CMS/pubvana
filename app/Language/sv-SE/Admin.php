@@ -424,6 +424,8 @@ return [
     'recheckSuccess'         => 'Säkerhetskontroll uppdaterad.',
     'recheckFailed'          => 'Kunde inte nå verifieringsservern. Försök igen senare.',
     'recheckNotFound'        => 'Objekt hittades inte.',
+    'widgetBlockedMalicious' => '{0} har markerats som skadlig och kan inte läggas till.',
+    'licenseNoStoreProduct'  => 'Detta objekt är inte kopplat till en butiksprodukt. Om du har köpt detta objekt, installera om det från marketplace för att aktivera licensiering.',
     'securityWarning'        => 'Säkerhetsvarning:',
     'licenseModalTitle'      => 'Ange licensnyckel',
     'licenseModalBody'       => 'Klistra in din licensnyckel nedan.',

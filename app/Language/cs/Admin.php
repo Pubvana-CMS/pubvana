@@ -425,6 +425,8 @@ return [
     'recheckSuccess'         => 'Kontrola bezpečnosti aktualizována.',
     'recheckFailed'          => 'Nepodařilo se kontaktovat ověřovací server. Zkuste to prosím později.',
     'recheckNotFound'        => 'Položka nenalezena.',
+    'widgetBlockedMalicious' => '{0} byl označen jako škodlivý a nelze jej přidat.',
+    'licenseNoStoreProduct'  => 'Tato položka není propojena s produktem obchodu. Pokud jste tuto položku zakoupili, přeinstalujte ji z marketplace pro aktivaci licencování.',
     'securityWarning'        => 'Bezpečnostní varování:',
     'licenseModalTitle'      => 'Zadat licenční klíč',
     'licenseModalBody'       => 'Vložte svůj licenční klíč níže.',

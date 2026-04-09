@@ -1009,6 +1009,8 @@ return [
     'recheckSuccess'            => 'Pemeriksaan keamanan diperbarui.',
     'recheckFailed'             => 'Tidak dapat menghubungi server verifikasi. Silakan coba lagi nanti.',
     'recheckNotFound'           => 'Item tidak ditemukan.',
+    'widgetBlockedMalicious'    => '{0} telah ditandai sebagai berbahaya dan tidak dapat ditambahkan.',
+    'licenseNoStoreProduct'     => 'Item ini tidak terhubung ke produk toko. Jika Anda membeli item ini, silakan instal ulang dari marketplace untuk mengaktifkan lisensi.',
     'securityWarning'           => 'Peringatan Keamanan:',
     'themeUnapprovedTitle'      => 'Aktifkan Tema yang Belum Disetujui?',
     'themeNotApproved'          => 'Tema ini belum disetujui oleh Pubvana.',
