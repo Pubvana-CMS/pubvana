@@ -626,6 +626,78 @@ class ProductModel extends Model
 
 **Table naming:** Prefix all plugin tables with a short prefix to avoid collisions with core tables and other plugins. E.g. `ds_products`, `ds_orders`, `ds_licenses` for the DigitalStore plugin. Choose a 2-3 character prefix unique to your plugin.
 
+### Batch Updates Without a Primary Key
+
+CI4's `Model::update()` expects an `$id` as its first argument. To update multiple rows by condition (e.g., deactivate all licenses for an order), use the `builder()` method to drop down to the query builder:
+
+```php
+public function deactivateForOrder(int $orderId): int
+{
+    $itemIds = (new OrderItemModel())
+        ->where('order_id', $orderId)
+        ->findColumn('id');
+
+    if (empty($itemIds)) {
+        return 0;
+    }
+
+    $this->builder()
+        ->whereIn('order_item_id', $itemIds)
+        ->set(['is_active' => 0])
+        ->update();
+
+    return $this->db->affectedRows();
+}
+```
+
+**Important:** Do not chain `->set()->update()` directly on the Model instance (`$this->whereIn(...)->set(...)->update()`). Without a primary key argument, `Model::update()` behaves unpredictably. Always go through `$this->builder()` for conditional batch updates.
+
+---
+
+## 8.1. Services
+
+Services contain business logic and orchestrate model calls. They are plain PHP classes (no base class required) stored in the `Services/` directory:
+
+```
+plugins/DigitalStore/
+    Services/
+        CartService.php
+        LicenseService.php
+        SubscriptionService.php
+```
+
+**MVC rule:** Services must not access the database directly -- all queries go through models. Services call model methods and return results.
+
+### Transaction Boundaries
+
+The one exception to the "no direct DB access" rule is transaction management. When a service needs to wrap multiple model calls in a single atomic operation, it opens the transaction itself using `db_connect()`:
+
+```php
+public function handlePaymentCompleted(array $event): void
+{
+    $db = db_connect();
+    $db->transStart();
+
+    $this->orderModel->markCompleted($orderId, $event);
+    $licenses = $this->licenseService->createForOrder($orderId, $items);
+
+    $db->transComplete();
+
+    if ($db->transStatus() === false) {
+        log_message('error', 'Transaction failed for order #' . $orderId);
+        return;
+    }
+
+    // Email sending goes OUTSIDE the transaction --
+    // a failed email should not roll back a successful payment.
+    $this->notificationService->sendLicenseDelivery($order, $licenses);
+}
+```
+
+`db_connect()` returns the shared default connection, so all model operations inside the `transStart()` / `transComplete()` block participate in the same transaction. This is the only accepted direct DB call in services.
+
+**Pattern:** Side effects that should not roll back the primary operation (email, logging to external services) go after `transComplete()`, not inside the transaction.
+
 ---
 
 ## 9. Migrations
@@ -777,7 +849,7 @@ All HTML elements in your `.tpl` views must use `cls_` class variables instead o
 
 There are two approaches:
 
-**1. Use existing `cls_*` variables** - The theme system already defines common classes like `cls_card`, `cls_btn_primary`, `cls_badge`, etc. Use these for standard UI elements. See `ThemeBuilder.md` Section 10 for how `cls_` variables work and which ones themes define in `css_class_mapping`.
+**1. Use existing `cls_*` variables** - The theme system already defines common classes like `cls_card`, `cls_btn_primary`, `cls_badge`, etc. Use these for standard UI elements.
 
 ```html
 <div class="{{ cls_card }}">
@@ -785,6 +857,10 @@ There are two approaches:
     <a href="{{ product.url }}" class="{{ cls_btn_primary }}">View</a>
 </div>
 ```
+
+#### Complete `cls_*` Standard Reference
+
+See **[CssClassReference.md](CssClassReference.md)** for the full vocabulary of all standard `cls_*` variables with semantic defaults.
 
 **2. Define plugin-specific `cls_{plugin}_*` variables** - For elements unique to your plugin that don't map to existing theme classes, define your own with a plugin prefix. Ship Bootstrap-based defaults in your controller — at render time, the controller reads `plugin_classes` from the active theme's `theme_info.json` and merges overrides on top (theme wins). Themes override these in `theme_info.json` under `plugin_classes`:
 

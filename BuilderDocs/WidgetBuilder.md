@@ -303,41 +303,7 @@ Themes declare their class overrides in `theme_info.json` under `css_class_mappi
 
 ### Standard `cls_` Variables
 
-| Variable | Default | Used For |
-|----------|---------|----------|
-| `cls_widget` | `widget widget-{type}` | Outermost wrapper |
-| `cls_title` | `widget-title` | Widget heading (h4) |
-| `cls_list` | `widget-list` | List container (ul) |
-| `cls_list_item` | `widget-list-item` | List item (li) |
-| `cls_link` | `widget-list-link` | Links within list items |
-| `cls_badge` | `widget-badge` | Count badges |
-| `cls_meta` | `widget-meta` | Metadata text (dates, counts) |
-| `cls_empty` | `widget-empty` | Empty state message |
-| `cls_content` | `widget-content` | Content container |
-| `cls_form` | `widget-form` | Form wrapper |
-| `cls_input` | `widget-form-input` | Form inputs |
-| `cls_button` | `widget-form-button` | Form buttons |
-| `cls_tags` | `widget-tags` | Tag cloud container |
-| `cls_tag` | `widget-tag` | Individual tag link |
-| `cls_card` | `widget-card` | Card container |
-| `cls_card_image` | `widget-card-image` | Card image |
-| `cls_card_body` | `widget-card-body` | Card body |
-| `cls_card_title` | `widget-card-title` | Card title |
-| `cls_card_text` | `widget-card-text` | Card text |
-| `cls_thumbnail` | `widget-thumbnail` | Thumbnail image |
-| `cls_social_links` | `widget-social-links` | Social links container |
-| `cls_social_link` | `widget-social-link` | Individual social link |
-| `cls_toc_nav` | `widget-toc-nav` | Table of contents nav |
-| `cls_toc_list` | `widget-toc-list` | TOC list |
-| `cls_toc_item` | `widget-toc-item` | TOC list item |
-| `cls_toc_link` | `widget-toc-link` | TOC link |
-| `cls_fade` | `widget-paywall-fade` | Paywall fade overlay |
-| `cls_cta` | `widget-paywall-cta` | Paywall CTA container |
-| `cls_icon` | `widget-paywall-icon` | Paywall icon |
-| `cls_paywall_title` | `widget-paywall-title` | Paywall heading |
-| `cls_message` | `widget-paywall-message` | Paywall message |
-| `cls_btn_primary` | `widget-paywall-button widget-paywall-button-primary` | Primary button |
-| `cls_btn_secondary` | `widget-paywall-button widget-paywall-button-secondary` | Secondary button |
+See **[CssClassReference.md](CssClassReference.md)** for the full vocabulary of all standard `cls_*` variables with semantic defaults.
 
 ### Naming Convention
 

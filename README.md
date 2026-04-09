@@ -18,10 +18,11 @@ These instructions are for users comfortable with the command line and terminal.
 
 Developers looking to build themes or widgets for Pubvana can find everything they need in these guides:
 
-- **[ThemeBuilder.md](ThemeBuilder.md)** — Complete theme development guide
-- **[WidgetBuilder.md](WidgetBuilder.md)** — Complete widget development guide
-- **[PluginBuilder.md](PluginBuilder.md)** — Complete plugin development guide
-- **[ThirdPartyAddons.md](ThirdPartyAddons.md)** — Third-party addon distribution, licensing, and API protocol
+- **[ThemeBuilder.md](BuilderDocs/ThemeBuilder.md)** — Complete theme development guide
+- **[WidgetBuilder.md](BuilderDocs/WidgetBuilder.md)** — Complete widget development guide
+- **[PluginBuilder.md](BuilderDocs/PluginBuilder.md)** — Complete plugin development guide
+- **[ThirdPartyAddons.md](BuilderDocs/ThirdPartyAddons.md)** — Third-party addon distribution, licensing, and API protocol
+- **[CssClassReference.md](BuilderDocs/CssClassReference.md)** — Complete `cls_*` CSS class variable reference
 
 ## Installation
 
