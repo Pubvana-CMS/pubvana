@@ -29,9 +29,9 @@ class VettingService
         $themeModel  = model(ThemeModel::class);
         $widgetModel = model(WidgetModel::class);
 
-        $uncheckedPlugins = $pluginModel->where('pv_safe', null)->findAll();
-        $uncheckedThemes  = $themeModel->where('pv_safe', null)->findAll();
-        $uncheckedWidgets = $widgetModel->where('pv_safe', null)->findAll();
+        $uncheckedPlugins = $pluginModel->groupStart()->where('pv_safe', null)->orWhere('pv_safe', 2)->groupEnd()->findAll();
+        $uncheckedThemes  = $themeModel->groupStart()->where('pv_safe', null)->orWhere('pv_safe', 2)->groupEnd()->findAll();
+        $uncheckedWidgets = $widgetModel->groupStart()->where('pv_safe', null)->orWhere('pv_safe', 2)->groupEnd()->findAll();
 
         if (empty($uncheckedPlugins) && empty($uncheckedThemes) && empty($uncheckedWidgets)) {
             return;
@@ -112,6 +112,66 @@ class VettingService
         }
     }
 
+    /**
+     * Recheck a single item against the vetting API.
+     *
+     * @return string|null The new status string, or null on failure.
+     */
+    public function recheckItem(string $type, int $id): ?string
+    {
+        $modelClass = match ($type) {
+            'plugin' => PluginModel::class,
+            'theme'  => ThemeModel::class,
+            'widget' => WidgetModel::class,
+            default  => null,
+        };
+
+        if (! $modelClass) {
+            return null;
+        }
+
+        $model = model($modelClass);
+        $item  = $model->find($id);
+
+        if (! $item) {
+            return null;
+        }
+
+        try {
+            $client   = \Config\Services::curlrequest(['timeout' => 5]);
+            $response = $client->post(PUBVANA_API_BASE . 'vetted/v1/check', [
+                'json' => [
+                    'pv_version' => APP_VERSION,
+                    'base_url'   => base_url(),
+                    'items'      => [[
+                        'type'    => $type,
+                        'slug'    => $item->folder,
+                        'version' => $item->version ?? '',
+                        'author'  => $item->author ?? '',
+                    ]],
+                ],
+                'http_errors' => false,
+            ]);
+
+            if ($response->getStatusCode() !== 200) {
+                return null;
+            }
+
+            $body = json_decode($response->getBody(), true);
+
+            if (! is_array($body) || empty($body['results'][0])) {
+                return null;
+            }
+
+            $this->applyResult($model, $id, $body['results'][0]);
+
+            return $body['results'][0]['status'] ?? 'unknown';
+        } catch (\Throwable $e) {
+            log_message('debug', 'VettingService::recheckItem failed: ' . $e->getMessage());
+            return null;
+        }
+    }
+
     private function applyResult($model, int $id, ?array $result): void
     {
         if (! $result) {
@@ -124,23 +184,28 @@ class VettingService
         switch ($status) {
             case 'approved':
                 $model->update($id, [
-                    'pv_safe'     => 1,
+                    'pv_safe'         => 1,
                     'pv_warning_note' => null,
                 ]);
                 break;
             case 'known':
                 $model->update($id, [
-                    'pv_safe'     => 1,
+                    'pv_safe'         => 1,
                     'pv_warning_note' => $warning,
                 ]);
                 break;
             case 'malicious':
                 $model->update($id, [
-                    'pv_safe'     => 0,
+                    'pv_safe'         => 0,
                     'pv_warning_note' => $warning,
                 ]);
                 break;
+            case 'unknown':
             default:
+                $model->update($id, [
+                    'pv_safe'         => 2,
+                    'pv_warning_note' => $warning,
+                ]);
                 break;
         }
     }

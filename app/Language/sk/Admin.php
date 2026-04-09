@@ -91,6 +91,8 @@ return [
     'pending'           => 'Čakajúci',
     'safe'              => 'Bezpečný',
     'notSafe'           => 'Nie je Bezpečný',
+    'malicious'         => 'Škodlivý',
+    'safetyUnknown'     => 'Neznámy',
     'inactive'          => 'Neaktívny',
     'installed'         => 'Nainštalovaný',
     'free'              => 'Zadarmo',
@@ -1002,6 +1004,11 @@ return [
 
     // ─── Themes, Widgets, Social, Marketplace, Settings ──
     'unchecked'                 => 'Neoverené',
+    'safetyLabel'               => 'Bezpečnosť:',
+    'recheckBtn'                => 'Znova overiť',
+    'recheckSuccess'            => 'Bezpečnostná kontrola aktualizovaná.',
+    'recheckFailed'             => 'Nepodarilo sa kontaktovať overovací server. Skúste to neskôr.',
+    'recheckNotFound'           => 'Položka sa nenašla.',
     'securityWarning'           => 'Bezpečnostné varovanie:',
     'themeUnapprovedTitle'      => 'Aktivovať neschválenú tému?',
     'themeNotApproved'          => 'Táto téma nebola schválená Pubvanou.',

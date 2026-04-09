@@ -103,12 +103,17 @@
                         <div class="d-flex justify-content-between align-items-center border rounded p-2">
                             <div>
                                 <strong><?= esc($w->name) ?></strong>
+                                <small class="text-muted"><?= lang('Admin.safetyLabel') ?></small>
                                 <?php if ($w->pv_safe === null): ?>
                                     <span class="badge badge-light"><?= lang('Admin.unchecked') ?></span>
+                                    <button formaction="<?= base_url('admin/widgets/' . $w->id . '/recheck') ?>" class="btn btn-sm btn-outline-info ml-1 py-0 px-1" title="<?= lang('Admin.recheckBtn') ?>"><i class="fas fa-sync-alt"></i></button>
+                                <?php elseif ((int) $w->pv_safe === 2): ?>
+                                    <span class="badge badge-warning"><?= lang('Admin.safetyUnknown') ?></span>
+                                    <button formaction="<?= base_url('admin/widgets/' . $w->id . '/recheck') ?>" class="btn btn-sm btn-outline-info ml-1 py-0 px-1" title="<?= lang('Admin.recheckBtn') ?>"><i class="fas fa-sync-alt"></i></button>
                                 <?php elseif ((int) $w->pv_safe === 1): ?>
                                     <span class="badge badge-success"><?= lang('Admin.safe') ?></span>
                                 <?php else: ?>
-                                    <span class="badge badge-danger"><?= lang('Admin.notSafe') ?></span>
+                                    <span class="badge badge-danger"><?= lang('Admin.malicious') ?></span>
                                 <?php endif ?><br>
                                 <?php if (! empty($w->pv_warning_note)): ?>
                                     <small class="text-warning"><i class="fas fa-exclamation-triangle"></i> <?= esc($w->pv_warning_note) ?></small><br>

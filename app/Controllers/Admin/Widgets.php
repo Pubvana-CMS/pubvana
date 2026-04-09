@@ -7,6 +7,7 @@ use App\Models\WidgetAreaModel;
 use App\Models\WidgetInstanceModel;
 use App\Models\WidgetModel;
 use App\Services\MarketplaceService;
+use App\Services\VettingService;
 use App\Services\WidgetService;
 
 class Widgets extends BaseAdminController
@@ -216,5 +217,16 @@ class Widgets extends BaseAdminController
         }
 
         return redirect()->to('/admin/widgets')->with('success', lang('Admin.licenseSaved'));
+    }
+
+    public function recheck(int $id)
+    {
+        $result = (new VettingService())->recheckItem('widget', $id);
+
+        if ($result === null) {
+            return redirect()->to('/admin/widgets')->with('error', lang('Admin.recheckFailed'));
+        }
+
+        return redirect()->to('/admin/widgets')->with('success', lang('Admin.recheckSuccess'));
     }
 }

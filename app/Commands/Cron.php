@@ -52,6 +52,10 @@ class Cron extends BaseCommand
         $this->call('pubvana:auto-update');
         $this->call('links:check');
         $this->call('marketplace:revalidate');
+
+        CLI::write('  Vetting recheck...', 'cyan');
+        (new \App\Services\VettingService())->checkApproval();
+
         $this->runPluginCron('daily');
     }
 

@@ -91,6 +91,8 @@ return [
     'pending'           => 'Menunggu',
     'safe'              => 'Aman',
     'notSafe'           => 'Tidak Aman',
+    'malicious'         => 'Berbahaya',
+    'safetyUnknown'     => 'Tidak Diketahui',
     'inactive'          => 'Tidak Aktif',
     'installed'         => 'Terpasang',
     'free'              => 'Gratis',
@@ -1002,6 +1004,11 @@ return [
 
     // ─── Themes, Widgets, Social, Marketplace, Settings ──
     'unchecked'                 => 'Belum diperiksa',
+    'safetyLabel'               => 'Keamanan:',
+    'recheckBtn'                => 'Periksa Ulang',
+    'recheckSuccess'            => 'Pemeriksaan keamanan diperbarui.',
+    'recheckFailed'             => 'Tidak dapat menghubungi server verifikasi. Silakan coba lagi nanti.',
+    'recheckNotFound'           => 'Item tidak ditemukan.',
     'securityWarning'           => 'Peringatan Keamanan:',
     'themeUnapprovedTitle'      => 'Aktifkan Tema yang Belum Disetujui?',
     'themeNotApproved'          => 'Tema ini belum disetujui oleh Pubvana.',

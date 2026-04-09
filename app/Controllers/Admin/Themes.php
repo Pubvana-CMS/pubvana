@@ -7,6 +7,7 @@ use App\Models\SocialModel;
 use App\Models\ThemeModel;
 use App\Services\ActivityLogger;
 use App\Services\IconService;
+use App\Services\VettingService;
 
 class Themes extends BaseAdminController
 {
@@ -232,5 +233,16 @@ class Themes extends BaseAdminController
         }
 
         return redirect()->to('/admin/themes')->with('success', lang('Admin.licenseSaved'));
+    }
+
+    public function recheck(int $id)
+    {
+        $result = (new VettingService())->recheckItem('theme', $id);
+
+        if ($result === null) {
+            return redirect()->to('/admin/themes')->with('error', lang('Admin.recheckFailed'));
+        }
+
+        return redirect()->to('/admin/themes')->with('success', lang('Admin.recheckSuccess'));
     }
 }

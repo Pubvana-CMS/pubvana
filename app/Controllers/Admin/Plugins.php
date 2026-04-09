@@ -5,6 +5,7 @@ namespace App\Controllers\Admin;
 use App\Models\MarketplaceLicenseModel;
 use App\Models\PluginModel;
 use App\Services\PluginManager;
+use App\Services\VettingService;
 
 class Plugins extends BaseAdminController
 {
@@ -196,5 +197,16 @@ class Plugins extends BaseAdminController
         }
 
         return redirect()->to('/admin/plugins');
+    }
+
+    public function recheck(int $id)
+    {
+        $result = (new VettingService())->recheckItem('plugin', $id);
+
+        if ($result === null) {
+            return redirect()->to('/admin/plugins')->with('error', lang('Admin.recheckFailed'));
+        }
+
+        return redirect()->to('/admin/plugins')->with('success', lang('Admin.recheckSuccess'));
     }
 }

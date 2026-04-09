@@ -121,6 +121,7 @@ $routes->group('admin', ['filter' => ['admin_auth', 'totp'], 'namespace' => 'App
     $routes->get('themes/(:num)/options',          'Themes::options/$1');
     $routes->post('themes/(:num)/options',         'Themes::saveOptions/$1');
     $routes->post('themes/save-license',           'Themes::saveLicense');
+    $routes->post('themes/(:num)/recheck',         'Themes::recheck/$1');
 
     // Widgets
     $routes->get('widgets',                        'Widgets::areas');
@@ -130,6 +131,7 @@ $routes->group('admin', ['filter' => ['admin_auth', 'totp'], 'namespace' => 'App
     $routes->post('widgets/(:num)/configure',      'Widgets::saveConfig/$1');
     $routes->post('widgets/reorder',               'Widgets::reorder');
     $routes->post('widgets/save-license',          'Widgets::saveLicense');
+    $routes->post('widgets/(:num)/recheck',         'Widgets::recheck/$1');
 
     // Navigation
     $routes->get('navigation',                     'Navigation::index');
@@ -246,6 +248,7 @@ $routes->group('admin', ['filter' => ['admin_auth', 'totp'], 'namespace' => 'App
     $routes->post('plugins/activate',    'Plugins::activate');
     $routes->post('plugins/deactivate',  'Plugins::deactivate');
     $routes->post('plugins/save-license', 'Plugins::saveLicense');
+    $routes->post('plugins/(:num)/recheck', 'Plugins::recheck/$1');
 });
 
 // ===================================================

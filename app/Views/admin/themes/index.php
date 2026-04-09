@@ -88,12 +88,23 @@
                     </div>
                 <?php endif; ?>
                 <div class="mt-2">
+                    <small class="text-muted"><?= lang('Admin.safetyLabel') ?></small>
                     <?php if ($theme->pv_safe === null): ?>
                         <span class="badge badge-light"><?= lang('Admin.unchecked') ?></span>
+                        <form method="POST" action="<?= base_url('admin/themes/' . $theme->id . '/recheck') ?>" class="d-inline">
+                            <?= csrf_field() ?>
+                            <button class="btn btn-sm btn-outline-info ml-1 py-0 px-1" title="<?= lang('Admin.recheckBtn') ?>"><i class="fas fa-sync-alt"></i></button>
+                        </form>
+                    <?php elseif ((int) $theme->pv_safe === 2): ?>
+                        <span class="badge badge-warning"><?= lang('Admin.safetyUnknown') ?></span>
+                        <form method="POST" action="<?= base_url('admin/themes/' . $theme->id . '/recheck') ?>" class="d-inline">
+                            <?= csrf_field() ?>
+                            <button class="btn btn-sm btn-outline-info ml-1 py-0 px-1" title="<?= lang('Admin.recheckBtn') ?>"><i class="fas fa-sync-alt"></i></button>
+                        </form>
                     <?php elseif ((int) $theme->pv_safe === 1): ?>
                         <span class="badge badge-success"><?= lang('Admin.safe') ?></span>
                     <?php else: ?>
-                        <span class="badge badge-danger"><?= lang('Admin.notSafe') ?></span>
+                        <span class="badge badge-danger"><?= lang('Admin.malicious') ?></span>
                     <?php endif ?>
                     <?php if (! empty($theme->pv_warning_note)): ?>
                         <br><small class="text-warning"><i class="fas fa-exclamation-triangle"></i> <?= esc($theme->pv_warning_note) ?></small>

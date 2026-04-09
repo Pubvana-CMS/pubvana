@@ -91,6 +91,8 @@ return [
     'pending'           => 'Pendiente',
     'safe'              => 'Seguro',
     'notSafe'           => 'No Seguro',
+    'malicious'         => 'Malicioso',
+    'safetyUnknown'     => 'Desconocido',
     'inactive'          => 'Inactivo',
     'installed'         => 'Instalado',
     'free'              => 'Gratis',
@@ -1002,6 +1004,11 @@ return [
 
     // ─── Themes, Widgets, Social, Marketplace, Settings ──
     'unchecked'                 => 'Sin verificar',
+    'safetyLabel'               => 'Seguridad:',
+    'recheckBtn'                => 'Verificar',
+    'recheckSuccess'            => 'Verificación de seguridad actualizada.',
+    'recheckFailed'             => 'No se pudo contactar el servidor de verificación. Inténtelo más tarde.',
+    'recheckNotFound'           => 'Elemento no encontrado.',
     'securityWarning'           => 'Advertencia de seguridad:',
     'themeUnapprovedTitle'      => '¿Activar tema no aprobado?',
     'themeNotApproved'          => 'Este tema no ha sido aprobado por Pubvana.',

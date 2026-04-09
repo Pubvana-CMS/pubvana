@@ -121,12 +121,23 @@
                         <?php endif; ?>
                     </td>
                     <td>
+                        <small class="text-muted"><?= lang('Admin.safetyLabel') ?></small>
                         <?php if ($p->pv_safe === null): ?>
                             <span class="badge badge-light"><?= lang('Plugins.safeUnchecked') ?></span>
+                            <form method="POST" action="<?= base_url('admin/plugins/' . $p->id . '/recheck') ?>" class="d-inline">
+                                <?= csrf_field() ?>
+                                <button class="btn btn-sm btn-outline-info ml-1 py-0 px-1" title="<?= lang('Admin.recheckBtn') ?>"><i class="fas fa-sync-alt"></i></button>
+                            </form>
+                        <?php elseif ((int) $p->pv_safe === 2): ?>
+                            <span class="badge badge-warning"><?= lang('Plugins.safeUnknown') ?></span>
+                            <form method="POST" action="<?= base_url('admin/plugins/' . $p->id . '/recheck') ?>" class="d-inline">
+                                <?= csrf_field() ?>
+                                <button class="btn btn-sm btn-outline-info ml-1 py-0 px-1" title="<?= lang('Admin.recheckBtn') ?>"><i class="fas fa-sync-alt"></i></button>
+                            </form>
                         <?php elseif ((int) $p->pv_safe === 1): ?>
                             <span class="badge badge-success"><?= lang('Plugins.safeYes') ?></span>
                         <?php else: ?>
-                            <span class="badge badge-danger"><?= lang('Plugins.safeNo') ?></span>
+                            <span class="badge badge-danger"><?= lang('Plugins.safeMalicious') ?></span>
                         <?php endif ?>
                     </td>
                     <td>
