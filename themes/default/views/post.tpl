@@ -22,10 +22,7 @@
         {% if post.excerpt %}
             <div class="post-content">{{ post.excerpt | nl2br | raw }}</div>
         {% endif %}
-        <div class="alert alert-warning mt-3">
-            <strong>{% lang 'Blog.paywallTitle' %}</strong><br>
-            {% lang 'Blog.paywallMessage' %}
-        </div>
+        {% widget 'Paywall' %}
     {% else %}
         <div class="post-content">
             {% render_content post %}

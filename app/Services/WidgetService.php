@@ -291,13 +291,20 @@ class WidgetService
         $themeClasses = $this->getThemeWidgetClasses();
         $themeIcons   = service('theme')->getThemeIconClasses();
 
-        // Render template — theme classes, icons, saved options, and provider data merged into one array
+        // Inject selected page-level context vars so widgets can react to page state
+        $pageData    = service('theme')->getPageData();
+        $pageContext = [];
+        if (array_key_exists('paywall', $pageData)) {
+            $pageContext['paywall'] = $pageData['paywall'];
+        }
+
+        // Render template — theme classes, icons, saved options, provider data, and page context merged
         $template = $manifest['output']['template'] ?? 'widget.tpl';
         $tplPath = WIDGETS_PATH . $folder . '/views/' . $template;
         $basePath = WIDGETS_PATH . $folder . '/views/';
         $engine = new Engine();
 
-        return $engine->render($tplPath, array_merge($themeClasses, $themeIcons, $merged, $providerData), $basePath);
+        return $engine->render($tplPath, array_merge($pageContext, $themeClasses, $themeIcons, $merged, $providerData), $basePath);
     }
 
     public function renderAdminForm(string $folder, array $savedOptions = []): string

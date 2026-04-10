@@ -279,6 +279,9 @@ class ThemeService
             $data['page_title'] = $data['site_name'] ?? '';
         }
 
+        // Store page data so widgets rendered during this view can access page-level context
+        $this->setCurrentPageData($data);
+
         $basePath = THEMES_PATH . $theme->folder . '/views/';
         $html = $this->getEngine()->render($path, $data, $basePath);
 
@@ -448,6 +451,18 @@ class ThemeService
     }
 
     private array $langSwitcherData = [];
+
+    private array $currentPageData = [];
+
+    public function setCurrentPageData(array $data): void
+    {
+        $this->currentPageData = $data;
+    }
+
+    public function getPageData(): array
+    {
+        return $this->currentPageData;
+    }
 
     /**
      * Scan all files in a theme directory for PHP tags.
