@@ -188,7 +188,7 @@ class Posts extends BaseAdminController
             'scheduled' => $this->request->getPost('published_at')
                            ? date('Y-m-d H:i:s', strtotime($this->request->getPost('published_at')))
                            : $post->published_at,
-            'published' => date('Y-m-d H:i:s'),
+            'published' => $wasPublished ? $post->published_at : date('Y-m-d H:i:s'),
             default     => null,
         };
 

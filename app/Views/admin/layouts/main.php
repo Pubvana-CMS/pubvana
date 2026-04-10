@@ -374,10 +374,7 @@
             <div class="modal-body"><?= lang('Admin.logoutModalBody') ?></div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" data-dismiss="modal"><?= lang('Admin.cancel') ?></button>
-                <form action="<?= base_url('logout') ?>" method="POST">
-                    <?= csrf_field() ?>
-                    <button type="submit" class="btn btn-primary"><?= lang('Admin.logout') ?></button>
-                </form>
+                <a href="<?= base_url('logout') ?>" class="btn btn-primary"><?= lang('Admin.logout') ?></a>
             </div>
         </div>
     </div>
