@@ -9,7 +9,7 @@ class Parser
 
     /** Tag function names recognized by the engine. */
     private const TAG_FUNCTIONS = [
-        'lang', 'theme_url', 'base_url', 'site_url', 'widget_area',
+        'lang', 'theme_url', 'base_url', 'site_url', 'widget_area', 'widget',
         'post_url', 'category_url', 'tag_url', 'render_content',
     ];
 

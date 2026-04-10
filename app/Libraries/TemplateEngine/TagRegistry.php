@@ -19,6 +19,7 @@ class TagRegistry
             'base_url'       => $this->tagBaseUrl($args),
             'site_url'       => $this->tagSiteUrl($args),
             'widget_area'    => $this->tagWidgetArea($args),
+            'widget'         => $this->tagWidget($args),
             'post_url'       => $this->tagPostUrl($args),
             'category_url'   => $this->tagCategoryUrl($args),
             'tag_url'        => $this->tagTagUrl($args),
@@ -56,6 +57,15 @@ class TagRegistry
     private function tagWidgetArea(array $args): string
     {
         return widget_area((string) ($args[0] ?? ''));
+    }
+
+    private function tagWidget(array $args): string
+    {
+        $folder = (string) ($args[0] ?? '');
+        if ($folder === '') {
+            return '';
+        }
+        return (new \App\Services\WidgetService())->renderWidget($folder, null);
     }
 
     private function tagPostUrl(array $args): string
