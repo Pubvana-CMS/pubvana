@@ -4,6 +4,17 @@ All notable changes to Pubvana CMS, starting from the v2.0.0.
 
 ---
 
+## v2.3.4 - 2026-04-10
+
+### Changes
+
+- **Paywall widget** — Rebuilt as a dynamic JS-powered CTA; displays live pricing from the API, shows login/subscribe buttons based on user state, and hides automatically for active subscribers
+- **Template engine** — New `{% widget 'FolderName' %}` inline tag lets theme templates render any widget directly without a widget area
+- **Admin: published date** — Re-saving an already-published post no longer resets its `published_at` timestamp
+- **Admin: logout** — Changed logout from a form POST to a direct link
+
+---
+
 ## v2.3.3 - 2026-04-09
 
 ### Changes

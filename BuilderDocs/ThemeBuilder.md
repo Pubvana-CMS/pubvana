@@ -160,6 +160,15 @@ Each slug declared in `widget_areas` becomes an assignable area in the admin Wid
 
 Areas are created in the database when the theme is activated. The admin can then drag widgets into each area and reorder them. If no widgets are assigned to an area, `{% widget_area %}` outputs nothing.
 
+To render a single widget directly — without assigning it to an area — use `{% widget %}` with the widget's folder name:
+
+```
+{% widget 'Paywall' %}
+{% widget 'SearchForm' %}
+```
+
+This is useful for widgets that are always shown in a fixed location (e.g. a paywall CTA on the post template) and don't need to be managed via the Widgets admin.
+
 ### Option type details
 
 All option definitions support an optional `help` sub-key — rendered as hint text below the input.
@@ -523,6 +532,7 @@ Tag functions output strings directly into the template. Arguments are space-sep
 | `category_url` | `{% category_url slug_var %}` | Locale-aware category URL: `/category/{slug}` or `/es/category/{slug}` |
 | `tag_url` | `{% tag_url slug_var %}` | Locale-aware tag URL: `/tag/{slug}` or `/es/tag/{slug}` |
 | `widget_area` | `{% widget_area 'sidebar' %}` | Render all widgets assigned to this area |
+| `widget` | `{% widget 'Paywall' %}` | Render a single widget directly by folder name — no widget area needed |
 | `render_content` | `{% render_content entity_var %}` | Render entity's content (Markdown or HTML based on `.content_type`) |
 
 ### Examples
