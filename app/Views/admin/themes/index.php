@@ -130,11 +130,12 @@
                     <?php
                         $isPubvana = in_array($theme->author ?? '', ['pubvana', 'pubvana_team'], true);
                         $isBundled = ! empty($theme->bundled);
+                        $isFree    = ! empty($theme->free);
                         $lic       = $theme->store_product_id ? ($licenses[$theme->store_product_id] ?? null) : null;
                         $licValid  = $lic ? (int) ($lic->license_valid ?? -1) : -1;
                     ?>
-                    <?php if ($isBundled): ?>
-                        <?php /* Bundled — no license display */ ?>
+                    <?php if ($isBundled || $isFree): ?>
+                        <?php /* Bundled or free — no license display */ ?>
                     <?php elseif ($isPubvana): ?>
                         <?php
                             $renewUrl = 'https://pubvana.net/dstore/product/' . $theme->folder;
@@ -195,8 +196,9 @@
     <?php
         $isPubvana = in_array($theme->author ?? '', ['pubvana', 'pubvana_team'], true);
         $isBundled = ! empty($theme->bundled);
+        $isFree    = ! empty($theme->free);
     ?>
-    <?php if (($isPubvana && ! $isBundled) || ! empty($theme->license_validate_url)): ?>
+    <?php if (!$isFree && (($isPubvana && ! $isBundled) || ! empty($theme->license_validate_url))): ?>
     <div class="modal fade" id="licenseModal-<?= $theme->id ?>" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">

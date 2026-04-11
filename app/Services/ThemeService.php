@@ -525,13 +525,9 @@ class ThemeService
         if (! $isPubvana && ! $isFree && ! $hasLicenseUrls) {
             return 'tampered_no_urls';
         }
-        if ($isPubvana && $isFree && ! $isBundled) {
-            return 'tampered_free_flag';
-        }
-
         // Activation chain
-        if ($isBundled && $isPubvana) {
-            // Bundled Pubvana — activate, no check
+        if (($isBundled && $isPubvana) || $isFree) {
+            // Bundled Pubvana or any free theme — activate, no check
         } elseif ($isPubvana) {
             // Pubvana paid — require valid license
             if ($theme->store_product_id) {
@@ -542,8 +538,6 @@ class ThemeService
             } else {
                 return 'invalid_license'; // No store product ID = can't validate
             }
-        } elseif ($isFree) {
-            // Third party free — activate, no check
         } elseif ($hasLicenseUrls) {
             // Third party paid with license URLs — check against their API
             if ($theme->store_product_id) {

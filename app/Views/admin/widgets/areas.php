@@ -122,8 +122,8 @@
                                 <small class="text-muted"><?= esc($w->description) ?></small>
                             </div>
                             <div class="d-flex align-items-center ml-2">
-                                <?php if ($isBundled): ?>
-                                    <?php /* Bundled — no license display */ ?>
+                                <?php if ($isBundled || $isFree): ?>
+                                    <?php /* Bundled or free — no license display */ ?>
                                 <?php elseif ($isPubvana): ?>
                                     <?php
                                         $renewUrl = 'https://pubvana.net/dstore/product/' . $w->folder;
@@ -180,8 +180,9 @@
     <?php
         $isPubvana = in_array($w->author ?? '', ['pubvana', 'pubvana_team'], true);
         $isBundled = ! empty($w->bundled);
+        $isFree    = ! empty($w->free);
     ?>
-    <?php if (($isPubvana && ! $isBundled) || ! empty($w->license_validate_url)): ?>
+    <?php if (!$isFree && (($isPubvana && ! $isBundled) || ! empty($w->license_validate_url))): ?>
     <div class="modal fade" id="licenseModal-widget-<?= $w->id ?>" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">

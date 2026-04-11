@@ -127,7 +127,7 @@ class WidgetService
                 $isBundled = ! empty($info['bundled']);
                 $isFree    = ! empty($info['free']);
 
-                $initialActive = ($isBundled && $isPubvana) || ($isFree && ! $isPubvana) ? 1 : 0;
+                $initialActive = ($isBundled && $isPubvana) || $isFree ? 1 : 0;
 
                 $widgetModel->insert(array_merge([
                     'name'        => $info['name'],

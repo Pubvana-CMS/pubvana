@@ -4,6 +4,16 @@ All notable changes to Pubvana CMS, starting from the v2.0.0.
 
 ---
 
+## v2.3.5 - 2026-04-11
+
+### Changes
+
+- **Free addons** — Free themes and widgets (including Pubvana-authored) now activate without a license check; license UI hidden for free items
+- **Author bio** — All themes now show the author bio card on post pages; removed legacy premium gate
+- **Theme CSS** — Added responsive image constraints (`.post-content img`, `.page-content img`) across all themes
+
+---
+
 ## v2.3.4 - 2026-04-10
 
 ### Changes
