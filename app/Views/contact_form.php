@@ -4,7 +4,7 @@
 <?php if (session()->getFlashdata('error')): ?>
 <div class="alert alert-danger"><?= esc(session()->getFlashdata('error')) ?></div>
 <?php endif; ?>
-<form method="POST" action="<?= base_url('contact') ?>">
+<form method="POST" action="<?= base_url('actions/contact') ?>">
     <?= csrf_field() ?>
     <div class="mb-3">
         <label class="form-label"><?= lang('Blog.contactName') ?></label>

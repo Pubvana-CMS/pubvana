@@ -31,7 +31,7 @@ $routes->get('robots.txt',                  'Sitemap::robots');
 $routes->get('feed',                        'Feed::index');
 $routes->get('atom',                        'AtomFeed::index');
 $routes->get('contact',                     'Contact::index');
-$routes->post('contact',                    'Contact::send');
+$routes->post('actions/contact',            'Contact::send');
 $routes->get('preview/(:segment)',          'Blog::preview/$1');
 $routes->get('go/(:segment)',               'AffiliateRedirect::go/$1');
 
@@ -286,7 +286,7 @@ $routes->group('{locale}', static function ($routes): void {
     $routes->get('feed',                     'Feed::index');
     $routes->get('atom',                     'AtomFeed::index');
     $routes->get('contact',                  'Contact::index');
-    $routes->post('contact',                 'Contact::send');
+    $routes->post('actions/contact',         'Contact::send');
     $routes->get('preview/(:segment)',       'Blog::preview/$1');
     $routes->get('go/(:segment)',            'AffiliateRedirect::go/$1');
 
