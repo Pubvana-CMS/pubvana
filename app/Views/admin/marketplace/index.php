@@ -82,7 +82,7 @@
                                 </a>
                             <?php endif; ?>
                         </div>
-                        <p class="text-muted small mb-2"><?= esc($item->description ?? '') ?></p>
+                        <div class="text-muted small mb-2"><?= $item->description ?? '' ?></div>
                         <p class="text-muted small">
                             <?= lang('Admin.byAuthor', [esc($item->author ?? lang('Admin.unknown'))]) ?> &middot; v<?= esc($item->version ?? '1.0') ?>
                         </p>
