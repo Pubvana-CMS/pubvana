@@ -760,7 +760,7 @@ return [
 
     'spamProtectionHeading'     => '垃圾防护（hCaptcha）',
     'spamHcaptchaIntro'         => 'Pubvana 使用 hCaptcha（注重隐私，非 Google）保护评论表单和联系表单免受垃圾机器人攻击。',
-    'spamHcaptchaFree'          => '大多数网站可免费使用 hCaptcha。在 hcaptcha.com 注册，创建站点后在下方输入您的密钥。',
+    'spamHcaptchaFree'          => '大多数网站可免费使用 hCaptcha。在 hcaptcha.com 注册，然后：通过 Account → Sites → Add Site 获取您的站点密钥，通过 Account → Settings → Secret Key → Generate 获取您的密钥。请在下方输入这两项。',
     'spamHcaptchaSiteKey'       => '站点密钥',
     'spamHcaptchaSecretKey'     => '私密密钥',
     'spamHcaptchaNote'          => '如果未设置这些密钥，hCaptcha 将静默跳过 - 适合本地开发。保存后，小部件将自动出现在评论表单和联系页面上。',

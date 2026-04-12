@@ -761,7 +761,7 @@ return [
 
     'spamProtectionHeading'     => 'Заштита од нежељене поште (hCaptcha)',
     'spamHcaptchaIntro'         => 'Pubvana користи hCaptcha (са поштовањем приватности, не Google) за заштиту образаца за коментаре и контакт образаца од спам ботова.',
-    'spamHcaptchaFree'          => 'hCaptcha је бесплатна за већину сајтова. Региструјте се на hcaptcha.com, креирајте сајт и унесите своје кључеве испод.',
+    'spamHcaptchaFree'          => 'hCaptcha је бесплатна за већину сајтова. Региструјте се на hcaptcha.com, затим: Account → Sites → Add Site за ваш кључ сајта и Account → Settings → Secret Key → Generate за ваш тајни кључ. Унесите оба испод.',
     'spamHcaptchaSiteKey'       => 'Кључ сајта',
     'spamHcaptchaSecretKey'     => 'Тајни кључ',
     'spamHcaptchaNote'          => 'Ако ови кључеви нису подешени, hCaptcha се тихо прескаче — безбедно за локални развој. Једном сачуван, виџет се аутоматски pojavljuje у обрасцу за коментаре и на страници за контакт.',

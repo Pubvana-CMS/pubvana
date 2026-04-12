@@ -761,7 +761,7 @@ return [
 
     'spamProtectionHeading'     => 'Apsauga nuo šlamšto (hCaptcha)',
     'spamHcaptchaIntro'         => 'Pubvana naudoja hCaptcha (privatumą gerbianti, ne Google) apsaugoti komentarų formas ir kontaktų formą nuo šlamšto botų.',
-    'spamHcaptchaFree'          => 'hCaptcha yra nemokama daugumai svetainių. Prisiregistruokite adresu hcaptcha.com, sukurkite svetainę ir įveskite raktus žemiau.',
+    'spamHcaptchaFree'          => 'hCaptcha yra nemokama daugumai svetainių. Prisiregistruokite adresu hcaptcha.com, tada: Account → Sites → Add Site svetainės raktui gauti ir Account → Settings → Secret Key → Generate slaptajam raktui gauti. Įveskite abu žemiau.',
     'spamHcaptchaSiteKey'       => 'Svetainės raktas',
     'spamHcaptchaSecretKey'     => 'Slaptasis raktas',
     'spamHcaptchaNote'          => 'Jei šie raktai nenustatyti, hCaptcha tyliai praleistas – saugu vietiniam kūrimui. Kai išsaugota, valdiklis automatiškai atsiranda komentarų formoje ir kontaktų puslapyje.',

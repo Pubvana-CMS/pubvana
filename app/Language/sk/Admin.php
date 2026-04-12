@@ -678,7 +678,7 @@ return [
 
     'spamProtectionHeading'     => 'Ochrana pred spamom (hCaptcha)',
     'spamHcaptchaIntro'         => 'Pubvana používa hCaptcha (ochrana súkromia, nie od Google) na ochranu formulárov komentárov a kontaktného formulára pred spam botmi.',
-    'spamHcaptchaFree'          => 'hCaptcha je pre väčšinu stránok zadarmo. Zaregistrujte sa na hcaptcha.com, vytvorte stránku a zadajte svoje kľúče nižšie.',
+    'spamHcaptchaFree'          => 'hCaptcha je pre väčšinu stránok zadarmo. Zaregistrujte sa na hcaptcha.com, potom: Account → Sites → Add Site pre získanie kľúča stránky a Account → Settings → Secret Key → Generate pre získanie tajného kľúča. Zadajte oba nižšie.',
     'spamHcaptchaSiteKey'       => 'Kľúč stránky',
     'spamHcaptchaSecretKey'     => 'Tajný kľúč',
     'spamHcaptchaNote'          => 'Ak tieto kľúče nie sú nastavené, hCaptcha je ticho preskočené — bezpečné pre lokálny vývoj. Po uložení sa widget automaticky zobrazí vo formulári komentárov a na kontaktnej stránke.',

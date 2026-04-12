@@ -761,7 +761,7 @@ return [
 
     'spamProtectionHeading'     => 'Защита от спам (hCaptcha)',
     'spamHcaptchaIntro'         => 'Pubvana използва hCaptcha (зачитащ поверителността, не Google) за защита на формулярите за коментари и формуляра за контакт от спам ботове.',
-    'spamHcaptchaFree'          => 'hCaptcha е безплатна за повечето сайтове. Регистрирайте се на hcaptcha.com, създайте сайт и въведете ключовете си по-долу.',
+    'spamHcaptchaFree'          => 'hCaptcha е безплатна за повечето сайтове. Регистрирайте се на hcaptcha.com, след това: Account → Sites → Add Site за вашия Site Key и Account → Settings → Secret Key → Generate за вашия Secret Key. Въведете и двата по-долу.',
     'spamHcaptchaSiteKey'       => 'Ключ на сайта',
     'spamHcaptchaSecretKey'     => 'Таен ключ',
     'spamHcaptchaNote'          => 'Ако тези ключове не са зададени, hCaptcha тихо се пропуска – безопасно за локална разработка. След запазване, уиджетът автоматично се появява в формуляра за коментари и страницата за контакт.',

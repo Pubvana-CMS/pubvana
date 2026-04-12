@@ -761,7 +761,7 @@ return [
 
     'spamProtectionHeading'     => 'スパム対策（hCaptcha）',
     'spamHcaptchaIntro'         => 'Pubvanaはスパムボットからコメントフォームとお問い合わせフォームを保護するためhCaptcha（プライバシー重視、非Google）を使用しています。',
-    'spamHcaptchaFree'          => 'hCaptchaはほとんどのサイトで無料です。hcaptcha.comに登録してサイトを作成し、以下にキーを入力してください。',
+    'spamHcaptchaFree'          => 'hCaptchaはほとんどのサイトで無料です。hcaptcha.comに登録した後、サイトキーは Account → Sites → Add Site から、シークレットキーは Account → Settings → Secret Key → Generate から取得できます。両方を以下に入力してください。',
     'spamHcaptchaSiteKey'       => 'サイトキー',
     'spamHcaptchaSecretKey'     => 'シークレットキー',
     'spamHcaptchaNote'          => 'これらのキーが設定されていない場合、hCaptchaはサイレントにスキップされます — ローカル開発に安全です。保存後、ウィジェットはコメントフォームとお問い合わせページに自動的に表示されます。',

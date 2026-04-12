@@ -761,7 +761,7 @@ return [
 
     'spamProtectionHeading'     => 'Spam Protection (hCaptcha)',
     'spamHcaptchaIntro'         => 'Pubvana uses hCaptcha (privacy-respecting, non-Google) to protect comment forms and the contact form from spam bots.',
-    'spamHcaptchaFree'          => 'hCaptcha is free for most sites. Sign up at hcaptcha.com, create a site, and enter your keys below.',
+    'spamHcaptchaFree'          => 'hCaptcha is free for most sites. Sign up at hcaptcha.com, then: Account → Sites → Add Site to get your Site Key, and Account → Settings → Secret Key → Generate to get your Secret Key. Enter both below.',
     'spamHcaptchaSiteKey'       => 'Site Key',
     'spamHcaptchaSecretKey'     => 'Secret Key',
     'spamHcaptchaNote'          => 'If these keys are not set, hCaptcha is silently skipped — safe for local development. Once saved, the widget appears automatically on the comment form and contact page.',
