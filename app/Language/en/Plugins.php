@@ -55,4 +55,12 @@ return [
 
     // Addon Licensing
     'licenseRequiredActivation' => 'A valid license is required to activate this plugin.',
+
+    // Email provider
+    'emailProviderModalTitle'  => 'Email Delivery',
+    'emailProviderModalBody'   => 'This plugin can handle core system emails (contact forms, password resets, etc.) as well as its own. Do you want it to take over core email delivery?',
+    'emailProviderModalLabel'  => 'Send core emails via',
+    'emailProviderCore'        => 'Core (default)',
+    'emailProviderModalSave'   => 'Save',
+    'emailProviderSaved'       => 'Email provider saved.',
 ];

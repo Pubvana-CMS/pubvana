@@ -63,4 +63,12 @@ return [
 
     // Addon Licensing
     'licenseRequiredActivation' => 'Bu eklentiyi etkinleştirmek için geçerli bir lisans gereklidir.',
+
+    // Email provider
+    'emailProviderModalTitle'  => 'E-posta Teslimi',
+    'emailProviderModalBody'   => 'Bu eklenti, çekirdek sistem e-postalarını (iletişim formları, parola sıfırlamaları vb.) ve kendi e-postalarını işleyebilir. Çekirdek e-posta teslimatını devralmasını ister misiniz?',
+    'emailProviderModalLabel'  => 'Çekirdek e-postaları şu yolla gönder',
+    'emailProviderCore'        => 'Çekirdek (varsayılan)',
+    'emailProviderModalSave'   => 'Kaydet',
+    'emailProviderSaved'       => 'E-posta sağlayıcısı kaydedildi.',
 ];

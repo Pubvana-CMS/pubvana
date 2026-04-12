@@ -242,10 +242,13 @@ class PluginManager
                 }
             }
 
+            $capabilities = isset($info['capabilities']) ? json_encode($info['capabilities']) : null;
+
             $metaFields = [
                 // Flags
                 'bundled'             => ! empty($info['bundled']) ? 1 : 0,
                 'free'                => ! empty($info['free'])    ? 1 : 0,
+                'capabilities'        => $capabilities,
                 // Support & store URLs
                 'support_url'         => $info['support_url']         ?? null,
                 'author_url'          => $info['author_url']          ?? null,
@@ -468,7 +471,44 @@ class PluginManager
         }
 
         $model->update($plugin->id, ['is_active' => 1]);
+
+        // If this plugin declares 'core' email capability, check whether it's the
+        // first such plugin. If so, prompt the admin to choose the email provider.
+        if ($this->pluginDeclaresCorEmail($plugin)) {
+            $existingCoreEmailPlugins = $model
+                ->where('is_active', 1)
+                ->where('folder !=', $folder)
+                ->findAll();
+
+            $hasOtherCoreEmailPlugin = false;
+            foreach ($existingCoreEmailPlugins as $other) {
+                if ($this->pluginDeclaresCorEmail($other)) {
+                    $hasOtherCoreEmailPlugin = true;
+                    break;
+                }
+            }
+
+            if (! $hasOtherCoreEmailPlugin) {
+                return 'needs_email_provider';
+            }
+        }
+
         return 'activated';
+    }
+
+    /**
+     * Check whether a plugin row declares 'core' in its email capabilities.
+     */
+    private function pluginDeclaresCorEmail(object $plugin): bool
+    {
+        if (empty($plugin->capabilities)) {
+            return false;
+        }
+
+        $caps = json_decode($plugin->capabilities, true);
+
+        return is_array($caps['email'] ?? null)
+            && in_array('core', $caps['email'], true);
     }
 
     /**

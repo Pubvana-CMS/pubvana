@@ -719,6 +719,9 @@ return [
     'emailSmtpEncryptionNone'   => 'Brak',
     'emailSmtpUsername'         => 'Nazwa użytkownika SMTP',
     'emailSmtpPassword'         => 'Hasło SMTP',
+    'emailProvider'             => 'Dostawca e-maili',
+    'emailProviderCore'         => 'Główny (domyślny)',
+    'emailProviderHelp'         => 'Wybierz, która wtyczka obsługuje dostarczanie wychodzących e-maili.',
     'emailSaveBtn'              => 'Zapisz ustawienia e-mail',
     'emailSettingsSaved'        => 'Ustawienia e-mail zapisane.',
 

@@ -61,4 +61,12 @@ return [
 
     // Addon Licensing
     'licenseRequiredActivation' => 'Uma licença válida é necessária para ativar este plugin.',
+
+    // Email provider
+    'emailProviderModalTitle'  => 'Entrega de e-mail',
+    'emailProviderModalBody'   => 'Este plugin pode gerenciar os e-mails principais do sistema (formulários de contato, redefinições de senha, etc.) bem como os seus próprios. Você quer que ele assuma a entrega principal de e-mails?',
+    'emailProviderModalLabel'  => 'Enviar e-mails principais via',
+    'emailProviderCore'        => 'Principal (padrão)',
+    'emailProviderModalSave'   => 'Salvar',
+    'emailProviderSaved'       => 'Provedor de e-mail salvo.',
 ];

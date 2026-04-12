@@ -61,4 +61,12 @@ return [
 
     // Addon Licensing
     'licenseRequiredActivation' => 'Do aktywacji tej wtyczki wymagana jest ważna licencja.',
+
+    // Email provider
+    'emailProviderModalTitle'  => 'Dostarczanie e-maili',
+    'emailProviderModalBody'   => 'Ta wtyczka może obsługiwać główne e-maile systemowe (formularze kontaktowe, resetowanie haseł itp.) oraz własne. Czy chcesz, aby przejęła główne dostarczanie e-maili?',
+    'emailProviderModalLabel'  => 'Wysyłaj główne e-maile przez',
+    'emailProviderCore'        => 'Główny (domyślny)',
+    'emailProviderModalSave'   => 'Zapisz',
+    'emailProviderSaved'       => 'Dostawca e-maili zapisany.',
 ];

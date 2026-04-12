@@ -63,4 +63,12 @@ return [
 
     // Addon Licensing
     'licenseRequiredActivation' => 'En giltig licens krävs för att aktivera detta plugin.',
+
+    // Email provider
+    'emailProviderModalTitle'  => 'E-postleverans',
+    'emailProviderModalBody'   => 'Detta plugin kan hantera kärnans systemmeddelanden (kontaktformulär, lösenordsåterställningar, etc.) samt egna. Vill du att det tar över kärnans e-postleverans?',
+    'emailProviderModalLabel'  => 'Skicka kärn-e-post via',
+    'emailProviderCore'        => 'Kärna (standard)',
+    'emailProviderModalSave'   => 'Spara',
+    'emailProviderSaved'       => 'E-postleverantören sparad.',
 ];

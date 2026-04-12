@@ -61,4 +61,12 @@ return [
 
     // Addon Licensing
     'licenseRequiredActivation' => 'Norint aktyvuoti šį įskiepį, reikalinga galiojanti licencija.',
+
+    // Email provider
+    'emailProviderModalTitle'  => 'El. laiškų pristatymas',
+    'emailProviderModalBody'   => 'Šis įskiepis gali tvarkyti pagrindinius sistemos el. laiškus (kontaktų formas, slaptažodžių atkūrimą ir kt.) bei savo paties. Ar norite, kad jis perims pagrindinį el. laiškų pristatymą?',
+    'emailProviderModalLabel'  => 'Siųsti pagrindinius el. laiškus per',
+    'emailProviderCore'        => 'Pagrindinis (numatytasis)',
+    'emailProviderModalSave'   => 'Išsaugoti',
+    'emailProviderSaved'       => 'El. laiškų tiekėjas išsaugotas.',
 ];

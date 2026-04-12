@@ -61,4 +61,12 @@ return [
 
     // Addon Licensing
     'licenseRequiredActivation' => '启用此插件需要有效的许可证。',
+
+    // Email provider
+    'emailProviderModalTitle'  => '邮件投递',
+    'emailProviderModalBody'   => '此插件可以处理核心系统邮件（联系表单、密码重置等）以及自己的邮件。您希望它接管核心邮件投递吗？',
+    'emailProviderModalLabel'  => '通过以下方式发送核心邮件',
+    'emailProviderCore'        => '核心（默认）',
+    'emailProviderModalSave'   => '保存',
+    'emailProviderSaved'       => '邮件提供商已保存。',
 ];

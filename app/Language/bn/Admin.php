@@ -718,6 +718,9 @@ return [
     'emailSmtpEncryptionNone'   => 'কোনোটি নয়',
     'emailSmtpUsername'         => 'SMTP ব্যবহারকারীর নাম',
     'emailSmtpPassword'         => 'SMTP পাসওয়ার্ড',
+    'emailProvider'             => 'ইমেইল প্রদানকারী',
+    'emailProviderCore'         => 'মূল (ডিফল্ট)',
+    'emailProviderHelp'         => 'কোন প্লাগইন আউটবাউন্ড ইমেইল ডেলিভারি পরিচালনা করবে তা নির্বাচন করুন।',
     'emailSaveBtn'              => 'ইমেইল সেটিংস সংরক্ষণ',
     'emailSettingsSaved'        => 'ইমেইল সেটিংস সংরক্ষিত।',
 

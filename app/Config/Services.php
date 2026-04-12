@@ -2,6 +2,8 @@
 
 namespace Config;
 
+use App\Libraries\Email;
+use App\Services\EmailProviderService;
 use App\Services\PluginManager;
 use App\Services\ThemeService;
 use CodeIgniter\CLI\Commands;
@@ -42,5 +44,23 @@ class Services extends BaseService
         }
 
         return new ThemeService();
+    }
+
+    public static function email(bool $getShared = true): Email
+    {
+        if ($getShared) {
+            return static::getSharedInstance('email');
+        }
+
+        return new Email();
+    }
+
+    public static function emailProvider(bool $getShared = true): EmailProviderService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('emailProvider');
+        }
+
+        return new EmailProviderService();
     }
 }

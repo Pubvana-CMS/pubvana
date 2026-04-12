@@ -61,4 +61,12 @@ return [
 
     // Addon Licensing
     'licenseRequiredActivation' => 'За активиране на този плъгин е необходим валиден лиценз.',
+
+    // Email provider
+    'emailProviderModalTitle'  => 'Доставка на имейли',
+    'emailProviderModalBody'   => 'Този плъгин може да обработва основните системни имейли (формуляри за контакт, нулиране на пароли и т.н.), както и собствените си. Искате ли той да поеме основната доставка на имейли?',
+    'emailProviderModalLabel'  => 'Изпращане на основни имейли чрез',
+    'emailProviderCore'        => 'Основен (по подразбиране)',
+    'emailProviderModalSave'   => 'Запазване',
+    'emailProviderSaved'       => 'Доставчикът на имейли е запазен.',
 ];

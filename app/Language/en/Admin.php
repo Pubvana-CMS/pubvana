@@ -719,6 +719,9 @@ return [
     'emailSmtpEncryptionNone'   => 'None',
     'emailSmtpUsername'         => 'SMTP Username',
     'emailSmtpPassword'         => 'SMTP Password',
+    'emailProvider'             => 'Email Provider',
+    'emailProviderCore'         => 'Core (default)',
+    'emailProviderHelp'         => 'Select which plugin handles outbound email delivery.',
     'emailSaveBtn'              => 'Save Email Settings',
     'emailSettingsSaved'        => 'Email settings saved.',
 

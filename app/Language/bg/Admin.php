@@ -719,6 +719,9 @@ return [
     'emailSmtpEncryptionNone'   => 'Без криптиране',
     'emailSmtpUsername'         => 'SMTP потребителско име',
     'emailSmtpPassword'         => 'SMTP парола',
+    'emailProvider'             => 'Доставчик на имейли',
+    'emailProviderCore'         => 'Основен (по подразбиране)',
+    'emailProviderHelp'         => 'Изберете кой плъгин обработва изходящата доставка на имейли.',
     'emailSaveBtn'              => 'Запази настройките за имейл',
     'emailSettingsSaved'        => 'Настройките за имейл са запазени.',
 

@@ -718,6 +718,9 @@ return [
     'emailSmtpEncryptionNone'   => '无',
     'emailSmtpUsername'         => 'SMTP 用户名',
     'emailSmtpPassword'         => 'SMTP 密码',
+    'emailProvider'             => '邮件提供商',
+    'emailProviderCore'         => '核心（默认）',
+    'emailProviderHelp'         => '选择哪个插件负责处理外发邮件投递。',
     'emailSaveBtn'              => '保存邮件设置',
     'emailSettingsSaved'        => '邮件设置已保存。',
 

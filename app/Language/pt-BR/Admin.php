@@ -719,6 +719,9 @@ return [
     'emailSmtpEncryptionNone'   => 'Nenhuma',
     'emailSmtpUsername'         => 'Usuário SMTP',
     'emailSmtpPassword'         => 'Senha SMTP',
+    'emailProvider'             => 'Provedor de e-mail',
+    'emailProviderCore'         => 'Principal (padrão)',
+    'emailProviderHelp'         => 'Selecione qual plugin gerencia a entrega de e-mails enviados.',
     'emailSaveBtn'              => 'Salvar Configurações de E-mail',
     'emailSettingsSaved'        => 'Configurações de e-mail salvas.',
 

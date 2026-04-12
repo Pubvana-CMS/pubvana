@@ -636,6 +636,9 @@ return [
     'emailSmtpEncryptionNone'   => 'Tidak Ada',
     'emailSmtpUsername'         => 'Nama Pengguna SMTP',
     'emailSmtpPassword'         => 'Kata Sandi SMTP',
+    'emailProvider'             => 'Penyedia Email',
+    'emailProviderCore'         => 'Inti (default)',
+    'emailProviderHelp'         => 'Pilih plugin mana yang menangani pengiriman email keluar.',
     'emailSaveBtn'              => 'Simpan Pengaturan Email',
     'emailSettingsSaved'        => 'Pengaturan email disimpan.',
 

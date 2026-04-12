@@ -719,6 +719,9 @@ return [
     'emailSmtpEncryptionNone'   => 'Nėra',
     'emailSmtpUsername'         => 'SMTP naudotojo vardas',
     'emailSmtpPassword'         => 'SMTP slaptažodis',
+    'emailProvider'             => 'El. pašto tiekėjas',
+    'emailProviderCore'         => 'Pagrindinis (numatytasis)',
+    'emailProviderHelp'         => 'Pasirinkite, kuris įskiepis tvarko siunčiamų el. laiškų pristatymą.',
     'emailSaveBtn'              => 'Išsaugoti el. pašto nustatymus',
     'emailSettingsSaved'        => 'El. pašto nustatymai išsaugoti.',
 

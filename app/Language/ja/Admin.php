@@ -719,6 +719,9 @@ return [
     'emailSmtpEncryptionNone'   => 'なし',
     'emailSmtpUsername'         => 'SMTPユーザー名',
     'emailSmtpPassword'         => 'SMTPパスワード',
+    'emailProvider'             => 'メールプロバイダー',
+    'emailProviderCore'         => 'コア（デフォルト）',
+    'emailProviderHelp'         => '送信メールの配信を担当するプラグインを選択してください。',
     'emailSaveBtn'              => 'メール設定を保存',
     'emailSettingsSaved'        => 'メール設定が保存されました。',
 

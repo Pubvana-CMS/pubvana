@@ -719,6 +719,9 @@ return [
     'emailSmtpEncryptionNone'   => 'Нет',
     'emailSmtpUsername'         => 'Пользователь SMTP',
     'emailSmtpPassword'         => 'Пароль SMTP',
+    'emailProvider'             => 'Провайдер электронной почты',
+    'emailProviderCore'         => 'Основной (по умолчанию)',
+    'emailProviderHelp'         => 'Выберите, какой плагин обрабатывает исходящую доставку электронной почты.',
     'emailSaveBtn'              => 'Сохранить настройки Email',
     'emailSettingsSaved'        => 'Настройки Email сохранены.',
 

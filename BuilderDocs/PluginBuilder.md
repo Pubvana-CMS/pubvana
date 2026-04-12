@@ -117,6 +117,25 @@ These fields are only relevant if you sell your plugin and run your own store/li
 | `update_check_url` | string | Alternative update check endpoint (if different from `update_url`). |
 | `download_url` | string | Direct download endpoint for updates. |
 
+### Capabilities
+
+Declare platform capabilities your plugin provides. The system reads this at discovery time and stores it in the database.
+
+```json
+"capabilities": {
+    "email": ["self"]
+}
+```
+
+| Value | Meaning |
+|-------|---------|
+| `"self"` | Plugin sends its own emails (order confirmations, notifications, etc.) |
+| `"core"` | Plugin can also handle core system emails (contact forms, password resets, etc.) |
+
+A plugin that only sends its own emails uses `["self"]`. A plugin that can also take over all outbound email (e.g. a Mailchimp or SendGrid integration) uses `["core", "self"]`. See **Section 7.2** for the full Email Provider implementation guide.
+
+Omit `capabilities` entirely if your plugin has no special platform integrations.
+
 ### CLI / Cron Fields
 
 | Field | Type | Default | Description |
@@ -306,6 +325,7 @@ Called once per request when the plugin is active. This runs at the `pre_system`
 - Loading custom helpers: `helper('digitalstore');`
 - Registering event listeners: `Events::on('post_published', [MyListener::class, 'handle']);`
 - Registering services or shared instances
+- Registering as an email provider (if your plugin declares `"core"` capability — see Section 7.2)
 
 **Do NOT use this for:**
 - Database queries (the request hasn't been routed yet)
@@ -597,6 +617,99 @@ Three frequencies are available:
 | `daily` | Once per day | Cleanup, reports, maintenance |
 
 Only include the frequencies your plugin needs. The `cron` key is optional -- omit it entirely if your plugin has no scheduled tasks. Commands listed here must exist in your plugin's `Commands/` directory.
+
+---
+
+## 7.2. Email Provider
+
+Plugins can take over outbound email delivery for the entire site — routing all emails through an external service (Mailchimp Transactional, SendGrid, Postmark, etc.) instead of the core PHP mail / SMTP handler.
+
+### Declaring the Capability
+
+In `plugin_info.json`, declare that your plugin can handle core emails:
+
+```json
+"capabilities": {
+    "email": ["core", "self"]
+}
+```
+
+Use `["core", "self"]` if your plugin also sends its own emails (e.g. order confirmations). Use `["core"]` if it only acts as a transport layer.
+
+### Implementing EmailProviderInterface
+
+Your plugin class (or a dedicated service class) must implement `App\Interfaces\EmailProviderInterface`:
+
+```php
+<?php
+
+namespace Plugins\MailchimpMailer;
+
+use App\Interfaces\EmailProviderInterface;
+
+class MailchimpProvider implements EmailProviderInterface
+{
+    public function handleEmail(array $data): bool
+    {
+        // $data keys:
+        //   to          string[]      Recipient email addresses
+        //   from        string        Sender email address
+        //   fromName    string        Sender display name
+        //   subject     string        Email subject (raw, unencoded)
+        //   body        string        HTML or plain text body
+        //   altMessage  string        Plain text alt body (for HTML emails)
+        //   cc          string[]      CC addresses
+        //   bcc         string[]      BCC addresses
+        //   replyTo     string|null   Reply-to address
+        //   replyToName string|null   Reply-to display name
+        //   attachments array         CI4 native attachment structure
+
+        $apiKey = setting('MailchimpMailer.apiKey');
+        if (empty($apiKey)) {
+            // No API key configured — fall through to core
+            return false;
+        }
+
+        try {
+            // Call your provider's API...
+            $this->sendViaMandrill($apiKey, $data);
+            return true;  // Handled — core email is skipped
+        } catch (\Throwable $e) {
+            log_message('error', 'MailchimpMailer: send failed — ' . $e->getMessage());
+            return false; // Fall through to core as a safety net
+        }
+    }
+}
+```
+
+**Return values:**
+- `true` — your plugin handled delivery. Core email (`parent::send()`) is skipped.
+- `false` — your plugin did not handle it (e.g. not configured, or an error). Core email runs as normal.
+
+### Registering in register()
+
+Call `service('emailProvider')->register()` from your plugin's `register()` method, passing your slug and a handler instance:
+
+```php
+public function register(): void
+{
+    service('emailProvider')->register($this->getSlug(), new MailchimpProvider());
+}
+```
+
+The `EmailProviderService` is a shared CI4 service — `register()` is called once per request at boot time.
+
+### Admin → Settings → Email
+
+When your plugin is active and registered, it appears in the **Email Provider** dropdown at Admin → Settings → Email. The admin can switch between `Core (default)` and your plugin at any time without deactivating it.
+
+### Activation Modal
+
+When your plugin is the **first** plugin declaring `"core"` email capability to be activated, the admin sees a prompt:
+
+> "This plugin can handle core system emails (contact forms, password resets, etc.) as well as its own. Do you want it to take over core email delivery?"
+
+The admin can choose your plugin or leave the system on Core. This is the only modal — subsequent `"core"`-capable plugins do not prompt again; the existing selection is preserved.
 
 ---
 
@@ -954,7 +1067,8 @@ Plugin ZIPs must contain a root folder matching the plugin name (e.g. `DigitalSt
 4. `PluginManager` runs all **seeders** in `Database/Seeds/` (if the directory exists).
 5. If the plugin ships an `Installer.php`, `PluginManager` calls `Installer::up()`. If `up()` throws, `Installer::down()` is called to roll back, and activation fails.
 6. If everything succeeds, the plugin is marked active.
-7. On the next request, `PluginManager::boot()` loads the plugin: registers its namespace, loads its routes, calls `register()`.
+7. If the plugin is the first to declare `"core"` email capability, the admin is prompted to choose whether this plugin should handle core email delivery (see Section 7.2).
+8. On the next request, `PluginManager::boot()` loads the plugin: registers its namespace, loads its routes, calls `register()`.
 
 **Activation order:** Migrations → Seeds → Installer. Each step runs only if the plugin has the corresponding files. Migrations create tables, seeds populate default data, Installer handles filesystem setup.
 
@@ -1164,3 +1278,6 @@ Before releasing a plugin:
 - [ ] Spark commands (if any) are in `Commands/`, extend `BaseCommand`, and use a plugin-prefixed name
 - [ ] `cron` key in `plugin_info.json` (if used) only references commands in the plugin's own `Commands/` directory
 - [ ] Plugin ZIP contains root folder matching plugin name
+- [ ] If plugin handles email: `capabilities.email` declared in `plugin_info.json`
+- [ ] If plugin handles email: `EmailProviderInterface` implemented and registered in `register()`
+- [ ] If plugin handles email: `handleEmail()` returns `false` gracefully when not configured (falls through to core)

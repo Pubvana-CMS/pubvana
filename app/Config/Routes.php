@@ -248,6 +248,7 @@ $routes->group('admin', ['filter' => ['admin_auth', 'totp'], 'namespace' => 'App
     $routes->post('plugins/activate',    'Plugins::activate');
     $routes->post('plugins/deactivate',  'Plugins::deactivate');
     $routes->post('plugins/save-license', 'Plugins::saveLicense');
+    $routes->post('plugins/save-email-provider', 'Plugins::saveEmailProvider');
     $routes->post('plugins/(:num)/recheck', 'Plugins::recheck/$1');
 });
 

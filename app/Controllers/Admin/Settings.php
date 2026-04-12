@@ -23,8 +23,9 @@ class Settings extends BaseAdminController
         }
 
         return $this->adminView('settings/index', array_merge($this->baseData('Settings', 'settings'), [
-            'pages'        => $pages,
-            'pluginRoutes' => $pluginRoutes,
+            'pages'             => $pages,
+            'pluginRoutes'      => $pluginRoutes,
+            'emailProviders'    => service('emailProvider')->getRegistered(),
         ]));
     }
 
@@ -84,6 +85,11 @@ class Settings extends BaseAdminController
         $pass = $this->request->getPost('smtp_pass');
         if ($pass !== null && $pass !== '') {
             setting()->set('Email.SMTPPass', $pass);
+        }
+
+        $provider = $this->request->getPost('email_provider');
+        if ($provider !== null) {
+            setting()->set('Email.provider', $provider);
         }
 
         ActivityLogger::log('settings.updated', 'setting', null, 'Updated email settings');

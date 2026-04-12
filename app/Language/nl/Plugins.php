@@ -61,4 +61,12 @@ return [
 
     // Addon Licensing
     'licenseRequiredActivation' => 'Een geldige licentie is vereist om deze plugin te activeren.',
+
+    // Email provider
+    'emailProviderModalTitle'  => 'E-mailbezorging',
+    'emailProviderModalBody'   => 'Deze plugin kan kern-systeem-e-mails (contactformulieren, wachtwoordresets, enz.) en eigen e-mails verwerken. Wilt u dat het de kern-e-mailbezorging overneemt?',
+    'emailProviderModalLabel'  => 'Kern-e-mails verzenden via',
+    'emailProviderCore'        => 'Kern (standaard)',
+    'emailProviderModalSave'   => 'Opslaan',
+    'emailProviderSaved'       => 'E-mailprovider opgeslagen.',
 ];

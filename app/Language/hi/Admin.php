@@ -718,6 +718,9 @@ return [
     'emailSmtpEncryptionNone'   => 'कोई नहीं',
     'emailSmtpUsername'         => 'SMTP उपयोगकर्ता नाम',
     'emailSmtpPassword'         => 'SMTP पासवर्ड',
+    'emailProvider'             => 'ईमेल प्रदाता',
+    'emailProviderCore'         => 'मुख्य (डिफ़ॉल्ट)',
+    'emailProviderHelp'         => 'चुनें कि कौन सा प्लगइन आउटबाउंड ईमेल डिलीवरी संभालता है।',
     'emailSaveBtn'              => 'ईमेल सेटिंग्स सहेजें',
     'emailSettingsSaved'        => 'ईमेल सेटिंग्स सहेजी गईं।',
 

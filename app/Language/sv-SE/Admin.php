@@ -717,6 +717,9 @@ return [
     'emailSmtpEncryptionNone'   => 'Ingen',
     'emailSmtpUsername'         => 'SMTP-användarnamn',
     'emailSmtpPassword'         => 'SMTP-lösenord',
+    'emailProvider'             => 'E-postleverantör',
+    'emailProviderCore'         => 'Kärna (standard)',
+    'emailProviderHelp'         => 'Välj vilket plugin som hanterar utgående e-postleverans.',
     'emailSaveBtn'              => 'Spara e-postinställningar',
     'emailSettingsSaved'        => 'E-postinställningar sparades.',
 

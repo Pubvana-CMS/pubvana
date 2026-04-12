@@ -198,6 +198,20 @@
                         <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.emailFromAddress') ?></label>
                         <div class="col-sm-9"><input type="email" name="email_from_address" class="form-control" value="<?= esc(setting('Email.fromAddress')) ?>"></div>
                     </div>
+                    <?php if (! empty($emailProviders)): ?>
+                    <div class="form-group row">
+                        <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.emailProvider') ?></label>
+                        <div class="col-sm-4">
+                            <select name="email_provider" class="form-control">
+                                <option value="core" <?= (setting('Email.provider') ?? 'core') === 'core' ? 'selected' : '' ?>><?= lang('Admin.emailProviderCore') ?></option>
+                                <?php foreach ($emailProviders as $slug => $handler): ?>
+                                <option value="<?= esc($slug) ?>" <?= setting('Email.provider') === $slug ? 'selected' : '' ?>><?= esc(ucwords(str_replace(['_', '-'], ' ', $slug))) ?></option>
+                                <?php endforeach ?>
+                            </select>
+                            <small class="text-muted"><?= lang('Admin.emailProviderHelp') ?></small>
+                        </div>
+                    </div>
+                    <?php endif ?>
                     <div class="form-group row">
                         <label class="col-sm-3 col-form-label font-weight-bold"><?= lang('Admin.emailProtocol') ?></label>
                         <div class="col-sm-4">

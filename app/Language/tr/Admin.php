@@ -717,6 +717,9 @@ return [
     'emailSmtpEncryptionNone'   => 'Yok',
     'emailSmtpUsername'         => 'SMTP Kullanıcı Adı',
     'emailSmtpPassword'         => 'SMTP Şifresi',
+    'emailProvider'             => 'E-posta Sağlayıcısı',
+    'emailProviderCore'         => 'Çekirdek (varsayılan)',
+    'emailProviderHelp'         => 'Giden e-posta teslimatını hangi eklentinin yöneteceğini seçin.',
     'emailSaveBtn'              => 'E-posta Ayarlarını Kaydet',
     'emailSettingsSaved'        => 'E-posta ayarları kaydedildi.',
 

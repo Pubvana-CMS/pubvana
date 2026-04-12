@@ -719,6 +719,9 @@ return [
     'emailSmtpEncryptionNone'   => '없음',
     'emailSmtpUsername'         => 'SMTP 사용자 이름',
     'emailSmtpPassword'         => 'SMTP 비밀번호',
+    'emailProvider'             => '이메일 공급자',
+    'emailProviderCore'         => '핵심 (기본값)',
+    'emailProviderHelp'         => '발신 이메일 전송을 담당할 플러그인을 선택하세요.',
     'emailSaveBtn'              => '이메일 설정 저장',
     'emailSettingsSaved'        => '이메일 설정이 저장되었습니다.',
 

@@ -636,6 +636,9 @@ return [
     'emailSmtpEncryptionNone'   => 'Ninguno',
     'emailSmtpUsername'         => 'Usuario SMTP',
     'emailSmtpPassword'         => 'Contraseña SMTP',
+    'emailProvider'             => 'Proveedor de correo electrónico',
+    'emailProviderCore'         => 'Principal (predeterminado)',
+    'emailProviderHelp'         => 'Seleccione qué plugin gestiona la entrega de correo saliente.',
     'emailSaveBtn'              => 'Guardar ajustes de correo',
     'emailSettingsSaved'        => 'Ajustes de correo guardados.',
 

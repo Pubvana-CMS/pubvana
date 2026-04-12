@@ -719,6 +719,9 @@ return [
     'emailSmtpEncryptionNone'   => 'Geen',
     'emailSmtpUsername'         => 'SMTP-gebruikersnaam',
     'emailSmtpPassword'         => 'SMTP-wachtwoord',
+    'emailProvider'             => 'E-mailprovider',
+    'emailProviderCore'         => 'Kern (standaard)',
+    'emailProviderHelp'         => 'Selecteer welke plugin de uitgaande e-mailbezorging afhandelt.',
     'emailSaveBtn'              => 'E-mailinstellingen opslaan',
     'emailSettingsSaved'        => 'E-mailinstellingen opgeslagen.',
 

@@ -636,6 +636,9 @@ return [
     'emailSmtpEncryptionNone'   => 'Žiadne',
     'emailSmtpUsername'         => 'SMTP používateľské meno',
     'emailSmtpPassword'         => 'SMTP heslo',
+    'emailProvider'             => 'Poskytovateľ e-mailu',
+    'emailProviderCore'         => 'Základný (predvolený)',
+    'emailProviderHelp'         => 'Vyberte, ktorý plugin spravuje odosielanie odchádzajúcich e-mailov.',
     'emailSaveBtn'              => 'Uložiť nastavenia e-mailu',
     'emailSettingsSaved'        => 'Nastavenia e-mailu boli uložené.',
 

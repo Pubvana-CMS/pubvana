@@ -719,6 +719,9 @@ return [
     'emailSmtpEncryptionNone'   => 'Без шифровања',
     'emailSmtpUsername'         => 'SMTP корисничко ime',
     'emailSmtpPassword'         => 'SMTP лозинка',
+    'emailProvider'             => 'Добављач е-поште',
+    'emailProviderCore'         => 'Основни (подразумевани)',
+    'emailProviderHelp'         => 'Изаберите који прикључак управља испоруком одлазне е-поште.',
     'emailSaveBtn'              => 'Сачувај подешавања имејла',
     'emailSettingsSaved'        => 'Подешавања имејла сачувана.',
 
