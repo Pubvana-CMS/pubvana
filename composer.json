@@ -16,7 +16,7 @@
         "source": "https://github.com/enlivenapp/pubvana"
     },
     "require": {
-        "php": "^8.4",
+        "php": "^8.2",
         "abraham/twitteroauth": "^8.1",
         "codeigniter4/framework": "^4.7",
         "codeigniter4/queue": "^1.0",
