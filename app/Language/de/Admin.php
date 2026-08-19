@@ -719,9 +719,6 @@ return [
     'emailSmtpEncryptionNone'   => 'Keine',
     'emailSmtpUsername'         => 'SMTP-Benutzername',
     'emailSmtpPassword'         => 'SMTP-Passwort',
-    'emailProvider'             => 'E-Mail-Anbieter',
-    'emailProviderCore'         => 'Kern (Standard)',
-    'emailProviderHelp'         => 'Wählen Sie, welches Plugin den ausgehenden E-Mail-Versand übernimmt.',
     'emailSaveBtn'              => 'E-Mail-Einstellungen speichern',
     'emailSettingsSaved'        => 'E-Mail-Einstellungen gespeichert.',
 
@@ -764,7 +761,7 @@ return [
 
     'spamProtectionHeading'     => 'Spam-Schutz (hCaptcha)',
     'spamHcaptchaIntro'         => 'Pubvana verwendet hCaptcha (datenschutzfreundlich, kein Google), um Kommentarformulare und das Kontaktformular vor Spam-Bots zu schützen.',
-    'spamHcaptchaFree'          => 'hCaptcha ist für die meisten Websites kostenlos. Registrieren Sie sich unter hcaptcha.com, dann: Account → Sites → Add Site für Ihren Website-Schlüssel und Account → Settings → Secret Key → Generate für Ihren geheimen Schlüssel. Geben Sie beide unten ein.',
+    'spamHcaptchaFree'          => 'hCaptcha ist für die meisten Websites kostenlos. Registrieren Sie sich unter hcaptcha.com, erstellen Sie eine Website und geben Sie Ihre Schlüssel unten ein.',
     'spamHcaptchaSiteKey'       => 'Website-Schlüssel',
     'spamHcaptchaSecretKey'     => 'Geheimer Schlüssel',
     'spamHcaptchaNote'          => 'Wenn diese Schlüssel nicht gesetzt sind, wird hCaptcha stillschweigend übersprungen – sicher für lokale Entwicklung. Nach dem Speichern erscheint das Widget automatisch im Kommentarformular und auf der Kontaktseite.',

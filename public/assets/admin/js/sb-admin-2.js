@@ -1,23 +1,13 @@
 (function($) {
   "use strict"; // Start of use strict
 
-  // Restore sidebar state from localStorage
-  if (localStorage.getItem('sb|sidebar-toggled') === '1') {
-    $("body").addClass("sidebar-toggled");
-    $(".sidebar").addClass("toggled");
-    $('.sidebar .collapse').removeClass('show');
-  }
-
   // Toggle the side navigation
   $("#sidebarToggle, #sidebarToggleTop").on('click', function(e) {
     $("body").toggleClass("sidebar-toggled");
     $(".sidebar").toggleClass("toggled");
     if ($(".sidebar").hasClass("toggled")) {
       $('.sidebar .collapse').collapse('hide');
-      localStorage.setItem('sb|sidebar-toggled', '1');
-    } else {
-      localStorage.removeItem('sb|sidebar-toggled');
-    }
+    };
   });
 
   // Close any open menu accordions when window is resized below 768px

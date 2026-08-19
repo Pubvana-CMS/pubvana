@@ -63,12 +63,4 @@ return [
 
     // Addon Licensing
     'licenseRequiredActivation' => 'Для активації цього плагіна необхідна дійсна ліцензія.',
-
-    // Email provider
-    'emailProviderModalTitle'  => 'Доставка електронної пошти',
-    'emailProviderModalBody'   => 'Цей плагін може обробляти основні системні листи (контактні форми, скидання пароля тощо) та власні. Чи хочете, щоб він перебрав основну доставку електронної пошти?',
-    'emailProviderModalLabel'  => 'Надсилати основні листи через',
-    'emailProviderCore'        => 'Основний (за замовчуванням)',
-    'emailProviderModalSave'   => 'Зберегти',
-    'emailProviderSaved'       => 'Постачальника електронної пошти збережено.',
 ];

@@ -636,9 +636,6 @@ return [
     'emailSmtpEncryptionNone'   => 'Tidak Ada',
     'emailSmtpUsername'         => 'Nama Pengguna SMTP',
     'emailSmtpPassword'         => 'Kata Sandi SMTP',
-    'emailProvider'             => 'Penyedia Email',
-    'emailProviderCore'         => 'Inti (default)',
-    'emailProviderHelp'         => 'Pilih plugin mana yang menangani pengiriman email keluar.',
     'emailSaveBtn'              => 'Simpan Pengaturan Email',
     'emailSettingsSaved'        => 'Pengaturan email disimpan.',
 
@@ -681,7 +678,7 @@ return [
 
     'spamProtectionHeading'     => 'Perlindungan Spam (hCaptcha)',
     'spamHcaptchaIntro'         => 'Pubvana menggunakan hCaptcha (menghormati privasi, bukan Google) untuk melindungi formulir komentar dan kontak dari bot spam.',
-    'spamHcaptchaFree'          => 'hCaptcha gratis untuk sebagian besar situs. Daftar di hcaptcha.com, lalu: Account → Sites → Add Site untuk mendapatkan Site Key, dan Account → Settings → Secret Key → Generate untuk mendapatkan Secret Key. Masukkan keduanya di bawah.',
+    'spamHcaptchaFree'          => 'hCaptcha gratis untuk sebagian besar situs. Daftar di hcaptcha.com, buat situs, dan masukkan kunci Anda di bawah.',
     'spamHcaptchaSiteKey'       => 'Kunci Situs',
     'spamHcaptchaSecretKey'     => 'Kunci Rahasia',
     'spamHcaptchaNote'          => 'Jika kunci ini tidak diatur, hCaptcha dilewati secara diam-diam — aman untuk pengembangan lokal. Setelah disimpan, widget muncul otomatis di formulir komentar dan halaman kontak.',

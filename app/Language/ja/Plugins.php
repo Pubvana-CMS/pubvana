@@ -61,12 +61,4 @@ return [
 
     // Addon Licensing
     'licenseRequiredActivation' => 'このプラグインを有効化するには有効なライセンスが必要です。',
-
-    // Email provider
-    'emailProviderModalTitle'  => 'メール配信',
-    'emailProviderModalBody'   => 'このプラグインは、コアシステムメール（お問い合わせフォーム、パスワードリセットなど）および独自のメールを処理できます。コアのメール配信を引き継ぎますか？',
-    'emailProviderModalLabel'  => 'コアメールの送信先',
-    'emailProviderCore'        => 'コア（デフォルト）',
-    'emailProviderModalSave'   => '保存',
-    'emailProviderSaved'       => 'メールプロバイダーが保存されました。',
 ];

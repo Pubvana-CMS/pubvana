@@ -718,9 +718,6 @@ return [
     'emailSmtpEncryptionNone'   => 'কোনোটি নয়',
     'emailSmtpUsername'         => 'SMTP ব্যবহারকারীর নাম',
     'emailSmtpPassword'         => 'SMTP পাসওয়ার্ড',
-    'emailProvider'             => 'ইমেইল প্রদানকারী',
-    'emailProviderCore'         => 'মূল (ডিফল্ট)',
-    'emailProviderHelp'         => 'কোন প্লাগইন আউটবাউন্ড ইমেইল ডেলিভারি পরিচালনা করবে তা নির্বাচন করুন।',
     'emailSaveBtn'              => 'ইমেইল সেটিংস সংরক্ষণ',
     'emailSettingsSaved'        => 'ইমেইল সেটিংস সংরক্ষিত।',
 
@@ -763,7 +760,7 @@ return [
 
     'spamProtectionHeading'     => 'স্প্যাম সুরক্ষা (hCaptcha)',
     'spamHcaptchaIntro'         => 'Pubvana স্প্যাম বট থেকে মন্তব্য ফর্ম ও যোগাযোগ ফর্ম রক্ষা করতে hCaptcha (গোপনীয়তা-বান্ধব, নন-Google) ব্যবহার করে।',
-    'spamHcaptchaFree'          => 'বেশিরভাগ সাইটের জন্য hCaptcha বিনামূল্যে। hcaptcha.com-এ সাইন আপ করুন, তারপর: আপনার সাইট কী পেতে Account → Sites → Add Site এবং আপনার সিক্রেট কী পেতে Account → Settings → Secret Key → Generate অনুসরণ করুন। নিচে দুটোই দিন।',
+    'spamHcaptchaFree'          => 'বেশিরভাগ সাইটের জন্য hCaptcha বিনামূল্যে। hcaptcha.com-এ সাইন আপ করুন, একটি সাইট তৈরি করুন এবং নিচে আপনার কী দিন।',
     'spamHcaptchaSiteKey'       => 'Site Key',
     'spamHcaptchaSecretKey'     => 'Secret Key',
     'spamHcaptchaNote'          => 'এই কীগুলি সেট না থাকলে hCaptcha নীরবে এড়িয়ে যায় — স্থানীয় উন্নয়নের জন্য নিরাপদ। একবার সংরক্ষণ করলে উইজেট স্বয়ংক্রিয়ভাবে মন্তব্য ফর্ম ও যোগাযোগ পৃষ্ঠায় দেখা যায়।',

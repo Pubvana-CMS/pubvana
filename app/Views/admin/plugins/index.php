@@ -212,50 +212,6 @@
     <?php endif; ?>
 <?php endforeach; ?>
 
-<!-- Email provider prompt modal -->
-<?php if (session('email_provider_prompt')): ?>
-    <?php
-        $promptFolder = session('email_provider_prompt');
-        $promptPlugin = null;
-        foreach ($plugins as $p) {
-            if ($p->folder === $promptFolder) {
-                $promptPlugin = $p;
-                break;
-            }
-        }
-    ?>
-    <?php if ($promptPlugin): ?>
-    <div class="modal fade show" id="emailProviderModal" tabindex="-1" style="display:block;" aria-modal="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <form action="<?= site_url('admin/plugins/save-email-provider') ?>" method="post">
-                    <?= csrf_field() ?>
-                    <div class="modal-header bg-info text-white">
-                        <h5 class="modal-title"><?= lang('Plugins.emailProviderModalTitle') ?></h5>
-                        <a href="/admin/plugins" class="close text-white" aria-label="Close"><span aria-hidden="true">&times;</span></a>
-                    </div>
-                    <div class="modal-body">
-                        <p><?= lang('Plugins.emailProviderModalBody', [esc($promptPlugin->name)]) ?></p>
-                        <div class="form-group">
-                            <label class="font-weight-bold"><?= lang('Plugins.emailProviderModalLabel') ?></label>
-                            <select name="email_provider" class="form-control">
-                                <option value="core"><?= lang('Plugins.emailProviderCore') ?></option>
-                                <option value="<?= esc($promptPlugin->folder) ?>" selected><?= esc($promptPlugin->name) ?></option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <a href="/admin/plugins" class="btn btn-secondary"><?= lang('Plugins.btnCancel') ?></a>
-                        <button type="submit" class="btn btn-primary"><?= lang('Plugins.emailProviderModalSave') ?></button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    <div class="modal-backdrop fade show"></div>
-    <?php endif ?>
-<?php endif ?>
-
 <!-- Confirmation modal for unapproved plugins -->
 <?php if (session('confirm_activate')): ?>
     <?php

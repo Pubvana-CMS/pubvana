@@ -61,12 +61,4 @@ return [
 
     // Addon Licensing
     'licenseRequiredActivation' => 'K aktivaci tohoto pluginu je vyžadována platná licence.',
-
-    // Email provider
-    'emailProviderModalTitle'  => 'Doručování e-mailů',
-    'emailProviderModalBody'   => 'Tento plugin dokáže zpracovávat základní systémové e-maily (kontaktní formuláře, obnovení hesla atd.) i vlastní. Chcete, aby převzal základní doručování e-mailů?',
-    'emailProviderModalLabel'  => 'Odesílat základní e-maily prostřednictvím',
-    'emailProviderCore'        => 'Základní (výchozí)',
-    'emailProviderModalSave'   => 'Uložit',
-    'emailProviderSaved'       => 'Poskytovatel e-mailu uložen.',
 ];

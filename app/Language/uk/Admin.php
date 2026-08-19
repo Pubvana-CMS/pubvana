@@ -717,9 +717,6 @@ return [
     'emailSmtpEncryptionNone'   => 'Немає',
     'emailSmtpUsername'         => 'Ім\'я користувача SMTP',
     'emailSmtpPassword'         => 'Пароль SMTP',
-    'emailProvider'             => 'Постачальник електронної пошти',
-    'emailProviderCore'         => 'Основний (за замовчуванням)',
-    'emailProviderHelp'         => 'Виберіть, який плагін обробляє доставку вихідної електронної пошти.',
     'emailSaveBtn'              => 'Зберегти налаштування електронної пошти',
     'emailSettingsSaved'        => 'Налаштування електронної пошти збережено.',
 
@@ -762,7 +759,7 @@ return [
 
     'spamProtectionHeading'     => 'Захист від спаму (hCaptcha)',
     'spamHcaptchaIntro'         => 'Pubvana використовує hCaptcha (з повагою до приватності, не Google) для захисту форм коментарів та контактної форми від спам-ботів.',
-    'spamHcaptchaFree'          => 'hCaptcha безкоштовний для більшості сайтів. Зареєструйтеся на hcaptcha.com, потім: Account → Sites → Add Site для отримання ключа сайту та Account → Settings → Secret Key → Generate для отримання секретного ключа. Введіть обидва нижче.',
+    'spamHcaptchaFree'          => 'hCaptcha безкоштовний для більшості сайтів. Зареєструйтеся на hcaptcha.com, створіть сайт і введіть ваші ключі нижче.',
     'spamHcaptchaSiteKey'       => 'Ключ сайту',
     'spamHcaptchaSecretKey'     => 'Секретний ключ',
     'spamHcaptchaNote'          => 'Якщо ці ключі не встановлені, hCaptcha мовчки пропускається — безпечно для локальної розробки. Після збереження віджет автоматично з\'являється у формі коментарів та на сторінці контактів.',

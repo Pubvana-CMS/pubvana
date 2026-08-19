@@ -717,9 +717,6 @@ return [
     'emailSmtpEncryptionNone'   => 'Yok',
     'emailSmtpUsername'         => 'SMTP Kullanıcı Adı',
     'emailSmtpPassword'         => 'SMTP Şifresi',
-    'emailProvider'             => 'E-posta Sağlayıcısı',
-    'emailProviderCore'         => 'Çekirdek (varsayılan)',
-    'emailProviderHelp'         => 'Giden e-posta teslimatını hangi eklentinin yöneteceğini seçin.',
     'emailSaveBtn'              => 'E-posta Ayarlarını Kaydet',
     'emailSettingsSaved'        => 'E-posta ayarları kaydedildi.',
 
@@ -762,7 +759,7 @@ return [
 
     'spamProtectionHeading'     => 'Spam Koruması (hCaptcha)',
     'spamHcaptchaIntro'         => 'Pubvana, yorum formlarını ve iletişim formunu spam botlarından korumak için hCaptcha (gizlilik odaklı, Google dışı) kullanır.',
-    'spamHcaptchaFree'          => 'hCaptcha çoğu site için ücretsizdir. hcaptcha.com\'a kayıt olun, ardından: Site Anahtarınızı almak için Account → Sites → Add Site ve Gizli Anahtarınızı almak için Account → Settings → Secret Key → Generate adımlarını izleyin. Her ikisini de aşağıya girin.',
+    'spamHcaptchaFree'          => 'hCaptcha çoğu site için ücretsizdir. hcaptcha.com\'a kayıt olun, bir site oluşturun ve anahtarlarınızı aşağıya girin.',
     'spamHcaptchaSiteKey'       => 'Site Anahtarı',
     'spamHcaptchaSecretKey'     => 'Gizli Anahtar',
     'spamHcaptchaNote'          => 'Bu anahtarlar ayarlanmamışsa, hCaptcha sessizce atlanır — yerel geliştirme için güvenlidir. Kaydedildiğinde, widget otomatik olarak yorum formu ve iletişim sayfasında görünür.',

@@ -61,12 +61,4 @@ return [
 
     // Addon Licensing
     'licenseRequiredActivation' => 'Важећа лиценца је потребна за активирање овог додатка.',
-
-    // Email provider
-    'emailProviderModalTitle'  => 'Испорука е-поште',
-    'emailProviderModalBody'   => 'Овај прикључак може обрадити основне системске е-поруке (формуларе за контакт, ресетовање лозинке итд.) као и своје. Да ли желите да преузме основну испоруку е-поште?',
-    'emailProviderModalLabel'  => 'Шаљи основне е-поруке преко',
-    'emailProviderCore'        => 'Основни (подразумевани)',
-    'emailProviderModalSave'   => 'Сачувај',
-    'emailProviderSaved'       => 'Добављач е-поште је сачуван.',
 ];

@@ -719,9 +719,6 @@ return [
     'emailSmtpEncryptionNone'   => 'Žádné',
     'emailSmtpUsername'         => 'SMTP uživatelské jméno',
     'emailSmtpPassword'         => 'SMTP heslo',
-    'emailProvider'             => 'Poskytovatel e-mailu',
-    'emailProviderCore'         => 'Základní (výchozí)',
-    'emailProviderHelp'         => 'Vyberte, který plugin zpracovává odchozí doručování e-mailů.',
     'emailSaveBtn'              => 'Uložit nastavení e-mailu',
     'emailSettingsSaved'        => 'Nastavení e-mailu bylo uloženo.',
 
@@ -764,7 +761,7 @@ return [
 
     'spamProtectionHeading'     => 'Ochrana proti spamu (hCaptcha)',
     'spamHcaptchaIntro'         => 'Pubvana používá hCaptcha (respektující soukromí, ne Google) k ochraně formulářů komentářů a kontaktního formuláře před spamboty.',
-    'spamHcaptchaFree'          => 'hCaptcha je pro většinu webů zdarma. Zaregistrujte se na hcaptcha.com, poté: Account → Sites → Add Site pro získání klíče webu a Account → Settings → Secret Key → Generate pro získání tajného klíče. Zadejte oba níže.',
+    'spamHcaptchaFree'          => 'hCaptcha je pro většinu webů zdarma. Zaregistrujte se na hcaptcha.com, vytvořte web a zadejte klíče níže.',
     'spamHcaptchaSiteKey'       => 'Klíč webu',
     'spamHcaptchaSecretKey'     => 'Tajný klíč',
     'spamHcaptchaNote'          => 'Pokud tyto klíče nejsou nastaveny, hCaptcha je tiše přeskočena – bezpečné pro lokální vývoj. Po uložení se widget automaticky zobrazí na formuláři komentářů a kontaktní stránce.',

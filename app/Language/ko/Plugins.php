@@ -61,12 +61,4 @@ return [
 
     // Addon Licensing
     'licenseRequiredActivation' => '이 플러그인을 활성화하려면 유효한 라이선스가 필요합니다.',
-
-    // Email provider
-    'emailProviderModalTitle'  => '이메일 전송',
-    'emailProviderModalBody'   => '이 플러그인은 핵심 시스템 이메일(문의 양식, 비밀번호 재설정 등)과 자체 이메일을 처리할 수 있습니다. 핵심 이메일 전송을 담당하도록 하시겠습니까?',
-    'emailProviderModalLabel'  => '핵심 이메일을 통해 보내기',
-    'emailProviderCore'        => '핵심 (기본값)',
-    'emailProviderModalSave'   => '저장',
-    'emailProviderSaved'       => '이메일 공급자가 저장되었습니다.',
 ];

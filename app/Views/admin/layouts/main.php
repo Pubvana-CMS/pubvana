@@ -347,9 +347,8 @@
         <!-- Footer -->
         <footer class="sticky-footer bg-white">
             <div class="container my-auto">
-                <div class="copyright text-center my-auto position-relative">
+                <div class="copyright text-center my-auto">
                     <span><?= lang('Admin.footerCopyright') ?> &copy; <?= date('Y') ?></span>
-                    <span class="position-absolute" style="right:0"><a href="https://startbootstrap.com/theme/sb-admin-2" target="_blank">StartBoostrap Admin Theme</a></span>
                 </div>
             </div>
         </footer>

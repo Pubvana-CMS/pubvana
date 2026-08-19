@@ -719,9 +719,6 @@ return [
     'emailSmtpEncryptionNone'   => '없음',
     'emailSmtpUsername'         => 'SMTP 사용자 이름',
     'emailSmtpPassword'         => 'SMTP 비밀번호',
-    'emailProvider'             => '이메일 공급자',
-    'emailProviderCore'         => '핵심 (기본값)',
-    'emailProviderHelp'         => '발신 이메일 전송을 담당할 플러그인을 선택하세요.',
     'emailSaveBtn'              => '이메일 설정 저장',
     'emailSettingsSaved'        => '이메일 설정이 저장되었습니다.',
 
@@ -764,7 +761,7 @@ return [
 
     'spamProtectionHeading'     => '스팸 방지 (hCaptcha)',
     'spamHcaptchaIntro'         => 'Pubvana는 댓글 양식과 문의 양식을 스팸 봇으로부터 보호하기 위해 hCaptcha(개인 정보 보호, 비Google)를 사용합니다.',
-    'spamHcaptchaFree'          => 'hCaptcha는 대부분의 사이트에서 무료입니다. hcaptcha.com에 가입한 후: 사이트 키를 얻으려면 Account → Sites → Add Site, 시크릿 키를 얻으려면 Account → Settings → Secret Key → Generate 를 따르세요. 아래에 두 키를 모두 입력하세요.',
+    'spamHcaptchaFree'          => 'hCaptcha는 대부분의 사이트에서 무료입니다. hcaptcha.com에 가입하고 사이트를 만든 후 아래에 키를 입력하세요.',
     'spamHcaptchaSiteKey'       => '사이트 키',
     'spamHcaptchaSecretKey'     => '시크릿 키',
     'spamHcaptchaNote'          => '이 키가 설정되지 않은 경우 hCaptcha는 자동으로 건너뜁니다 — 로컬 개발에 안전합니다. 저장 후 위젯은 댓글 양식과 문의 페이지에 자동으로 나타납니다.',

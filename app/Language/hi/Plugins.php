@@ -61,12 +61,4 @@ return [
 
     // Addon Licensing
     'licenseRequiredActivation' => 'इस प्लगइन को सक्रिय करने के लिए एक वैध लाइसेंस आवश्यक है।',
-
-    // Email provider
-    'emailProviderModalTitle'  => 'ईमेल डिलीवरी',
-    'emailProviderModalBody'   => 'यह प्लगइन मुख्य सिस्टम ईमेल (संपर्क फ़ॉर्म, पासवर्ड रीसेट आदि) के साथ-साथ अपने स्वयं के ईमेल को संभाल सकता है। क्या आप चाहते हैं कि यह मुख्य ईमेल डिलीवरी संभाले?',
-    'emailProviderModalLabel'  => 'मुख्य ईमेल के माध्यम से भेजें',
-    'emailProviderCore'        => 'मुख्य (डिफ़ॉल्ट)',
-    'emailProviderModalSave'   => 'सहेजें',
-    'emailProviderSaved'       => 'ईमेल प्रदाता सहेजा गया।',
 ];

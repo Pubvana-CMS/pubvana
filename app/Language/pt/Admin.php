@@ -636,9 +636,6 @@ return [
     'emailSmtpEncryptionNone'   => 'Nenhuma',
     'emailSmtpUsername'         => 'Usuário SMTP',
     'emailSmtpPassword'         => 'Senha SMTP',
-    'emailProvider'             => 'Fornecedor de e-mail',
-    'emailProviderCore'         => 'Principal (predefinição)',
-    'emailProviderHelp'         => 'Selecione qual plugin gere a entrega de e-mails enviados.',
     'emailSaveBtn'              => 'Salvar Configurações de E-mail',
     'emailSettingsSaved'        => 'Configurações de e-mail salvas.',
 
@@ -681,7 +678,7 @@ return [
 
     'spamProtectionHeading'     => 'Proteção contra Spam (hCaptcha)',
     'spamHcaptchaIntro'         => 'O Pubvana usa o hCaptcha (que respeita a privacidade, não-Google) para proteger os formulários de comentários e de contato de bots de spam.',
-    'spamHcaptchaFree'          => 'O hCaptcha é gratuito para a maioria dos sites. Registe-se em hcaptcha.com e depois: Account → Sites → Add Site para obter a sua Chave de Site, e Account → Settings → Secret Key → Generate para obter a sua Chave Secreta. Introduza ambas abaixo.',
+    'spamHcaptchaFree'          => 'O hCaptcha é gratuito para a maioria dos sites. Cadastre-se em hcaptcha.com, crie um site e insira suas chaves abaixo.',
     'spamHcaptchaSiteKey'       => 'Chave do Site',
     'spamHcaptchaSecretKey'     => 'Chave Secreta',
     'spamHcaptchaNote'          => 'Se essas chaves não forem definidas, o hCaptcha é silenciosamente ignorado — seguro para desenvolvimento local. Após salvar, o widget aparece automaticamente no formulário de comentários e na página de contato.',

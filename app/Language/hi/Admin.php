@@ -718,9 +718,6 @@ return [
     'emailSmtpEncryptionNone'   => 'कोई नहीं',
     'emailSmtpUsername'         => 'SMTP उपयोगकर्ता नाम',
     'emailSmtpPassword'         => 'SMTP पासवर्ड',
-    'emailProvider'             => 'ईमेल प्रदाता',
-    'emailProviderCore'         => 'मुख्य (डिफ़ॉल्ट)',
-    'emailProviderHelp'         => 'चुनें कि कौन सा प्लगइन आउटबाउंड ईमेल डिलीवरी संभालता है।',
     'emailSaveBtn'              => 'ईमेल सेटिंग्स सहेजें',
     'emailSettingsSaved'        => 'ईमेल सेटिंग्स सहेजी गईं।',
 
@@ -763,7 +760,7 @@ return [
 
     'spamProtectionHeading'     => 'स्पैम सुरक्षा (hCaptcha)',
     'spamHcaptchaIntro'         => 'Pubvana स्पैम बॉट से टिप्पणी फ़ॉर्म और संपर्क फ़ॉर्म की सुरक्षा के लिए hCaptcha (गोपनीयता-सम्मानजनक, गैर-Google) उपयोग करता है।',
-    'spamHcaptchaFree'          => 'अधिकांश साइटों के लिए hCaptcha मुफ्त है। hcaptcha.com पर साइन अप करें, फिर: अपनी साइट कुंजी पाने के लिए Account → Sites → Add Site और अपनी गुप्त कुंजी पाने के लिए Account → Settings → Secret Key → Generate का अनुसरण करें। दोनों नीचे दर्ज करें।',
+    'spamHcaptchaFree'          => 'अधिकांश साइटों के लिए hCaptcha मुफ्त है। hcaptcha.com पर साइन अप करें, एक साइट बनाएं और नीचे अपनी कुंजियाँ दर्ज करें।',
     'spamHcaptchaSiteKey'       => 'Site Key',
     'spamHcaptchaSecretKey'     => 'Secret Key',
     'spamHcaptchaNote'          => 'यदि ये कुंजियाँ सेट नहीं हैं, hCaptcha चुपचाप छोड़ा जाता है — स्थानीय विकास के लिए सुरक्षित। एक बार सहेजने के बाद, विजेट स्वचालित रूप से टिप्पणी फ़ॉर्म और संपर्क पृष्ठ पर दिखाई देता है।',

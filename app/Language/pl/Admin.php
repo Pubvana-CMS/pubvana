@@ -719,9 +719,6 @@ return [
     'emailSmtpEncryptionNone'   => 'Brak',
     'emailSmtpUsername'         => 'Nazwa użytkownika SMTP',
     'emailSmtpPassword'         => 'Hasło SMTP',
-    'emailProvider'             => 'Dostawca e-maili',
-    'emailProviderCore'         => 'Główny (domyślny)',
-    'emailProviderHelp'         => 'Wybierz, która wtyczka obsługuje dostarczanie wychodzących e-maili.',
     'emailSaveBtn'              => 'Zapisz ustawienia e-mail',
     'emailSettingsSaved'        => 'Ustawienia e-mail zapisane.',
 
@@ -764,7 +761,7 @@ return [
 
     'spamProtectionHeading'     => 'Ochrona przed spamem (hCaptcha)',
     'spamHcaptchaIntro'         => 'Pubvana używa hCaptcha (szanującej prywatność, nie-Google) do ochrony formularzy komentarzy i formularza kontaktowego przed spambotami.',
-    'spamHcaptchaFree'          => 'hCaptcha jest darmowe dla większości witryn. Zarejestruj się na hcaptcha.com, a następnie: Account → Sites → Add Site aby uzyskać klucz witryny i Account → Settings → Secret Key → Generate aby uzyskać klucz tajny. Wprowadź oba poniżej.',
+    'spamHcaptchaFree'          => 'hCaptcha jest darmowe dla większości witryn. Zarejestruj się na hcaptcha.com, utwórz witrynę i wprowadź klucze poniżej.',
     'spamHcaptchaSiteKey'       => 'Klucz witryny',
     'spamHcaptchaSecretKey'     => 'Klucz tajny',
     'spamHcaptchaNote'          => 'Jeśli te klucze nie są ustawione, hCaptcha jest po cichu pomijane — bezpieczne dla lokalnego środowiska deweloperskiego. Po zapisaniu widżet automatycznie pojawia się w formularzu komentarzy i na stronie kontaktowej.',

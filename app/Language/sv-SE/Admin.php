@@ -717,9 +717,6 @@ return [
     'emailSmtpEncryptionNone'   => 'Ingen',
     'emailSmtpUsername'         => 'SMTP-användarnamn',
     'emailSmtpPassword'         => 'SMTP-lösenord',
-    'emailProvider'             => 'E-postleverantör',
-    'emailProviderCore'         => 'Kärna (standard)',
-    'emailProviderHelp'         => 'Välj vilket plugin som hanterar utgående e-postleverans.',
     'emailSaveBtn'              => 'Spara e-postinställningar',
     'emailSettingsSaved'        => 'E-postinställningar sparades.',
 
@@ -762,7 +759,7 @@ return [
 
     'spamProtectionHeading'     => 'Skräppostskydd (hCaptcha)',
     'spamHcaptchaIntro'         => 'Pubvana använder hCaptcha (integritetsvänlig, icke-Google) för att skydda kommentarsformulär och kontaktformuläret mot skräppostbotar.',
-    'spamHcaptchaFree'          => 'hCaptcha är gratis för de flesta webbplatser. Registrera dig på hcaptcha.com, sedan: Account → Sites → Add Site för din webbplatsnyckel och Account → Settings → Secret Key → Generate för din hemliga nyckel. Ange båda nedan.',
+    'spamHcaptchaFree'          => 'hCaptcha är gratis för de flesta webbplatser. Registrera dig på hcaptcha.com, skapa en webbplats och ange dina nycklar nedan.',
     'spamHcaptchaSiteKey'       => 'Webbplatsnyckel',
     'spamHcaptchaSecretKey'     => 'Hemlig nyckel',
     'spamHcaptchaNote'          => 'Om dessa nycklar inte är inställda hoppas hCaptcha tyst över – säkert för lokal utveckling. När de sparats visas widgeten automatiskt på kommentarsformuläret och kontaktsidan.',

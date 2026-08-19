@@ -42,7 +42,7 @@ class Contact extends BaseController
         }
 
         $email = \Config\Services::email();
-        $email->setFrom(setting('Email.fromAddress') ?? 'no-reply@example.com', setting('Email.fromName') ?? site_name());
+        $email->setFrom(setting('Email.fromEmail') ?? 'no-reply@example.com', setting('Email.fromName') ?? site_name());
         $email->setTo(setting('App.siteEmail') ?? 'admin@example.com');
         $email->setReplyTo($this->request->getPost('email'), $this->request->getPost('name'));
         $email->setSubject('Contact Form: ' . site_name());

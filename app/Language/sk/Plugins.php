@@ -55,12 +55,4 @@ return [
 
     // Addon Licensing
     'licenseRequiredActivation' => 'Na aktiváciu tohto pluginu je potrebná platná licencia.',
-
-    // Email provider
-    'emailProviderModalTitle'  => 'Doručovanie e-mailov',
-    'emailProviderModalBody'   => 'Tento plugin dokáže spracovávať základné systémové e-maily (kontaktné formuláre, obnova hesla atď.) aj vlastné. Chcete, aby prevzal základné doručovanie e-mailov?',
-    'emailProviderModalLabel'  => 'Odosielať základné e-maily cez',
-    'emailProviderCore'        => 'Základný (predvolený)',
-    'emailProviderModalSave'   => 'Uložiť',
-    'emailProviderSaved'       => 'Poskytovateľ e-mailu uložený.',
 ];

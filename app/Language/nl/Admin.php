@@ -719,9 +719,6 @@ return [
     'emailSmtpEncryptionNone'   => 'Geen',
     'emailSmtpUsername'         => 'SMTP-gebruikersnaam',
     'emailSmtpPassword'         => 'SMTP-wachtwoord',
-    'emailProvider'             => 'E-mailprovider',
-    'emailProviderCore'         => 'Kern (standaard)',
-    'emailProviderHelp'         => 'Selecteer welke plugin de uitgaande e-mailbezorging afhandelt.',
     'emailSaveBtn'              => 'E-mailinstellingen opslaan',
     'emailSettingsSaved'        => 'E-mailinstellingen opgeslagen.',
 
@@ -764,7 +761,7 @@ return [
 
     'spamProtectionHeading'     => 'Spambescherming (hCaptcha)',
     'spamHcaptchaIntro'         => 'Pubvana gebruikt hCaptcha (privacyvriendelijk, niet-Google) om reactieformulieren en het contactformulier te beschermen tegen spambots.',
-    'spamHcaptchaFree'          => 'hCaptcha is gratis voor de meeste sites. Meld u aan op hcaptcha.com, dan: Account → Sites → Add Site voor uw sitesleutel en Account → Settings → Secret Key → Generate voor uw geheime sleutel. Voer beide hieronder in.',
+    'spamHcaptchaFree'          => 'hCaptcha is gratis voor de meeste sites. Meld u aan op hcaptcha.com, maak een site aan en voer uw sleutels hieronder in.',
     'spamHcaptchaSiteKey'       => 'Sitesleutel',
     'spamHcaptchaSecretKey'     => 'Geheime sleutel',
     'spamHcaptchaNote'          => 'Als deze sleutels niet zijn ingesteld, wordt hCaptcha stilzwijgend overgeslagen — veilig voor lokale ontwikkeling. Eenmaal opgeslagen verschijnt de widget automatisch op het reactieformulier en de contactpagina.',

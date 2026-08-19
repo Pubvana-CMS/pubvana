@@ -55,12 +55,4 @@ return [
 
     // Addon Licensing
     'licenseRequiredActivation' => 'Lisensi valid diperlukan untuk mengaktifkan plugin ini.',
-
-    // Email provider
-    'emailProviderModalTitle'  => 'Pengiriman Email',
-    'emailProviderModalBody'   => 'Plugin ini dapat menangani email sistem inti (formulir kontak, reset kata sandi, dll.) serta miliknya sendiri. Apakah Anda ingin mengambil alih pengiriman email inti?',
-    'emailProviderModalLabel'  => 'Kirim email inti melalui',
-    'emailProviderCore'        => 'Inti (default)',
-    'emailProviderModalSave'   => 'Simpan',
-    'emailProviderSaved'       => 'Penyedia email disimpan.',
 ];

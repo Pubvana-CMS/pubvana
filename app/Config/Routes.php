@@ -31,7 +31,7 @@ $routes->get('robots.txt',                  'Sitemap::robots');
 $routes->get('feed',                        'Feed::index');
 $routes->get('atom',                        'AtomFeed::index');
 $routes->get('contact',                     'Contact::index');
-$routes->post('actions/contact',            'Contact::send');
+$routes->post('contact',                    'Contact::send');
 $routes->get('preview/(:segment)',          'Blog::preview/$1');
 $routes->get('go/(:segment)',               'AffiliateRedirect::go/$1');
 
@@ -248,7 +248,6 @@ $routes->group('admin', ['filter' => ['admin_auth', 'totp'], 'namespace' => 'App
     $routes->post('plugins/activate',    'Plugins::activate');
     $routes->post('plugins/deactivate',  'Plugins::deactivate');
     $routes->post('plugins/save-license', 'Plugins::saveLicense');
-    $routes->post('plugins/save-email-provider', 'Plugins::saveEmailProvider');
     $routes->post('plugins/(:num)/recheck', 'Plugins::recheck/$1');
 });
 
@@ -287,7 +286,7 @@ $routes->group('{locale}', static function ($routes): void {
     $routes->get('feed',                     'Feed::index');
     $routes->get('atom',                     'AtomFeed::index');
     $routes->get('contact',                  'Contact::index');
-    $routes->post('actions/contact',         'Contact::send');
+    $routes->post('contact',                 'Contact::send');
     $routes->get('preview/(:segment)',       'Blog::preview/$1');
     $routes->get('go/(:segment)',            'AffiliateRedirect::go/$1');
 

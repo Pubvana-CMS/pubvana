@@ -97,7 +97,7 @@ class Account extends BaseController
 
                 helper('email');
                 $verifyEmail = emailer(['mailType' => 'html'])
-                    ->setFrom(setting('Email.fromAddress') ?: 'no-reply@example.com', setting('Email.fromName') ?? '');
+                    ->setFrom(setting('Email.fromEmail'), setting('Email.fromName') ?? '');
                 $verifyEmail->setTo($email);
                 $verifyEmail->setSubject(lang('Auth.emailActivateSubject'));
                 $verifyEmail->setMessage(view(
@@ -242,7 +242,7 @@ class Account extends BaseController
     {
         try {
             $email = \Config\Services::email();
-            $email->setFrom(setting('Email.fromAddress') ?? 'no-reply@example.com', setting('Email.fromName') ?? site_name());
+            $email->setFrom(setting('Email.fromEmail') ?? 'no-reply@example.com', setting('Email.fromName') ?? site_name());
             $email->setTo($toEmail);
             $email->setSubject($subject);
             $email->setMessage($body);

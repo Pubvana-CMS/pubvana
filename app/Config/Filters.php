@@ -83,8 +83,8 @@ class Filters extends BaseFilters
         // Patterns cover both non-prefixed (blog/slug, contact) and locale-prefixed
         // (en/blog/slug, fr/contact, etc.) variants produced by the locale route group.
         'honeypot' => [
-            'before' => ['blog/*', 'contact', 'actions/contact', '*/blog/*', '*/contact', '*/actions/contact'],
-            'after'  => ['blog/*', 'contact', 'actions/contact', '*/blog/*', '*/contact', '*/actions/contact'],
+            'before' => ['blog/*', 'contact', '*/blog/*', '*/contact'],
+            'after'  => ['blog/*', 'contact', '*/blog/*', '*/contact'],
         ],
     ];
 }

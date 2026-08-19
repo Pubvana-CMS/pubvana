@@ -4,6 +4,14 @@ All notable changes to Pubvana CMS, starting from the v2.0.0.
 
 ---
 
+## v2.3.6 - 2026-08-19
+
+### Changes
+
+- **Dependencies** — Updated CodeIgniter 4, Shield, and all vendor packages to latest versions
+
+---
+
 ## v2.3.5 - 2026-04-11
 
 ### Changes

@@ -61,12 +61,4 @@ return [
 
     // Addon Licensing
     'licenseRequiredActivation' => 'Для активации этого плагина требуется действующая лицензия.',
-
-    // Email provider
-    'emailProviderModalTitle'  => 'Доставка электронной почты',
-    'emailProviderModalBody'   => 'Этот плагин может обрабатывать основные системные письма (контактные формы, сброс пароля и т.д.), а также собственные. Хотите, чтобы он взял на себя основную доставку электронной почты?',
-    'emailProviderModalLabel'  => 'Отправлять основные письма через',
-    'emailProviderCore'        => 'Основной (по умолчанию)',
-    'emailProviderModalSave'   => 'Сохранить',
-    'emailProviderSaved'       => 'Провайдер электронной почты сохранён.',
 ];

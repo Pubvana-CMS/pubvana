@@ -106,26 +106,9 @@ class Plugins extends BaseAdminController
 
             case 'invalid_license':
                 return redirect()->to('/admin/plugins')->with('error', lang('Admin.pluginInvalidLicense'));
-
-            case 'needs_email_provider':
-                session()->setFlashdata('email_provider_prompt', $folder);
-                break;
         }
 
         return redirect()->to('/admin/plugins');
-    }
-
-    public function saveEmailProvider()
-    {
-        $provider = $this->request->getPost('email_provider');
-
-        if ($provider === null) {
-            return redirect()->to('/admin/plugins');
-        }
-
-        setting()->set('Email.provider', $provider);
-
-        return redirect()->to('/admin/plugins')->with('success', lang('Plugins.emailProviderSaved'));
     }
 
     public function saveLicense()
