@@ -8,9 +8,29 @@ All notable changes to Pubvana CMS, starting from the v2.0.0.
 
 ### Changes
 
-- **Dependencies** — Updated CodeIgniter 4, Shield, and all vendor packages to latest versions
+- **Dependencies** Updated CodeIgniter 4, Shield, and all vendor packages to latest versions
+- **Updated Readme**
+- **Moved Repos** Moved out of Enlivenapp and into Pubvana-CMS repo
+- **Removed Claude Bloat** Removed some Claude bloat, slop, and dumbness. 
 
+*Note: A possible breaking change (we've been unable to confirm). If your version <= 2.3.5 won't update to 2.3.6 or higher follow these instructiions to fix*
+
+```bash
+  cd app/Services/UpdateService.php
+```
+Edit Line `117` from:
+
+```php
+'zipball_url'     => 'https://github.com/enlivenapp/pubvana/releases/download/v' . ($safeTarget ?? $latest) . '/release.zip',
+```
+to: 
+
+```php
+  /* Note 'enlivenapp' has changed to 'Pubvana-CMS' */
+'zipball_url'     => 'https://github.com/Pubvana-CMS/pubvana/releases/download/v' . ($safeTarget ?? $latest) . '/release.zip',
+```
 ---
+
 
 ## v2.3.5 - 2026-04-11
 

@@ -889,7 +889,7 @@ return [
 
     // admin_notifications (persistent)
     'addonMisconfigured'        => '{0} dikonfigurasi dengan tidak benar. Jika Anda adalah pengguna akhir, hubungi pengembang. Jika Anda adalah pengembang, lihat dokumentasinya.',
-    'addonMisconfiguredLink'    => '{0} dikonfigurasi dengan tidak benar. Jika Anda adalah pengguna akhir <a href="{1}">hubungi pengembang</a>. Jika Anda adalah pengembang <a href="https://github.com/enlivenapp/pubvana">lihat dokumentasinya</a>.',
+    'addonMisconfiguredLink'    => '{0} dikonfigurasi dengan tidak benar. Jika Anda adalah pengguna akhir <a href="{1}">hubungi pengembang</a>. Jika Anda adalah pengembang <a href="https://github.com/Pubvana-CMS/pubvana">lihat dokumentasinya</a>.',
     'licenseExpiringSoon'       => 'Lisensi untuk {0} berakhir pada {1}. {0} akan dinonaktifkan saat lisensi berakhir.',
     'licenseExpiredDeactivated' => '{0} telah dinonaktifkan karena lisensi telah berakhir.',
     'addonDeactivated'          => '{0} telah dinonaktifkan. Alasan: {1}.',

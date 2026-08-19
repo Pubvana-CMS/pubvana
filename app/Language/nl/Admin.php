@@ -1053,7 +1053,7 @@ return [
 
     // admin_notifications (persistent)
     'addonMisconfigured'        => '{0} is onjuist geconfigureerd. Als u de eindgebruiker bent, neem contact op met de ontwikkelaar. Als u de ontwikkelaar bent, raadpleeg dan de documentatie.',
-    'addonMisconfiguredLink'    => '{0} is onjuist geconfigureerd. Als u de eindgebruiker bent, <a href="{1}">neem contact op met de ontwikkelaar</a>. Als u de ontwikkelaar bent, <a href="https://github.com/enlivenapp/pubvana">raadpleeg dan de documentatie</a>.',
+    'addonMisconfiguredLink'    => '{0} is onjuist geconfigureerd. Als u de eindgebruiker bent, <a href="{1}">neem contact op met de ontwikkelaar</a>. Als u de ontwikkelaar bent, <a href="https://github.com/Pubvana-CMS/pubvana">raadpleeg dan de documentatie</a>.',
     'licenseExpiringSoon'       => 'Licentie voor {0} vervalt op {1}. {0} wordt gedeactiveerd wanneer de licentie vervalt.',
     'licenseExpiredDeactivated' => '{0} is gedeactiveerd omdat de licentie is verlopen.',
     'addonDeactivated'          => '{0} is gedeactiveerd. Reden: {1}.',

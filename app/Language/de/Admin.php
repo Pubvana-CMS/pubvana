@@ -1050,7 +1050,7 @@ return [
     // =========================================================================
 
     'addonMisconfigured'        => '{0} ist nicht ordnungsgemäß konfiguriert. Wenn Sie der Endbenutzer sind, kontaktieren Sie den Entwickler. Wenn Sie der Entwickler sind, lesen Sie die Dokumentation.',
-    'addonMisconfiguredLink'    => '{0} ist nicht ordnungsgemäß konfiguriert. Wenn Sie der Endbenutzer sind, <a href="{1}">kontaktieren Sie den Entwickler</a>. Wenn Sie der Entwickler sind, <a href="https://github.com/enlivenapp/pubvana">lesen Sie die Dokumentation</a>.',
+    'addonMisconfiguredLink'    => '{0} ist nicht ordnungsgemäß konfiguriert. Wenn Sie der Endbenutzer sind, <a href="{1}">kontaktieren Sie den Entwickler</a>. Wenn Sie der Entwickler sind, <a href="https://github.com/Pubvana-CMS/pubvana">lesen Sie die Dokumentation</a>.',
     'licenseExpiringSoon'       => 'Lizenz für {0} läuft am {1} ab. {0} wird deaktiviert, wenn die Lizenz abläuft.',
     'licenseExpiredDeactivated' => '{0} wurde deaktiviert, weil die Lizenz abgelaufen ist.',
     'addonDeactivated'          => '{0} wurde deaktiviert. Grund: {1}.',

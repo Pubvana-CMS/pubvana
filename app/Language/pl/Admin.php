@@ -1053,7 +1053,7 @@ return [
 
     // admin_notifications (persistent)
     'addonMisconfigured'        => '{0} jest nieprawidłowo skonfigurowany. Jeśli jesteś użytkownikiem końcowym, skontaktuj się z deweloperem. Jeśli jesteś deweloperem, zapoznaj się z dokumentacją.',
-    'addonMisconfiguredLink'    => '{0} jest nieprawidłowo skonfigurowany. Jeśli jesteś użytkownikiem końcowym, <a href="{1}">skontaktuj się z deweloperem</a>. Jeśli jesteś deweloperem, <a href="https://github.com/enlivenapp/pubvana">zapoznaj się z dokumentacją</a>.',
+    'addonMisconfiguredLink'    => '{0} jest nieprawidłowo skonfigurowany. Jeśli jesteś użytkownikiem końcowym, <a href="{1}">skontaktuj się z deweloperem</a>. Jeśli jesteś deweloperem, <a href="https://github.com/Pubvana-CMS/pubvana">zapoznaj się z dokumentacją</a>.',
     'licenseExpiringSoon'       => 'Licencja dla {0} wygasa {1}. {0} zostanie dezaktywowany po wygaśnięciu licencji.',
     'licenseExpiredDeactivated' => '{0} został dezaktywowany z powodu wygaśnięcia licencji.',
     'addonDeactivated'          => '{0} został dezaktywowany. Powód: {1}.',

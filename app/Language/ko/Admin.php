@@ -1053,7 +1053,7 @@ return [
 
     // admin_notifications (persistent)
     'addonMisconfigured'        => '{0}이(가) 잘못 구성되었습니다. 최종 사용자라면 개발자에게 문의하세요. 개발자라면 문서를 참조하세요.',
-    'addonMisconfiguredLink'    => '{0}이(가) 잘못 구성되었습니다. 최종 사용자라면 <a href="{1}">개발자에게 문의</a>하세요. 개발자라면 <a href="https://github.com/enlivenapp/pubvana">문서를 참조</a>하세요.',
+    'addonMisconfiguredLink'    => '{0}이(가) 잘못 구성되었습니다. 최종 사용자라면 <a href="{1}">개발자에게 문의</a>하세요. 개발자라면 <a href="https://github.com/Pubvana-CMS/pubvana">문서를 참조</a>하세요.',
     'licenseExpiringSoon'       => '{0}의 라이선스가 {1}에 만료됩니다. 라이선스가 만료되면 {0}이(가) 비활성화됩니다.',
     'licenseExpiredDeactivated' => '라이선스가 만료되어 {0}이(가) 비활성화되었습니다.',
     'addonDeactivated'          => '{0}이(가) 비활성화되었습니다. 이유: {1}.',

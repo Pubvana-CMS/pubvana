@@ -1049,7 +1049,7 @@ return [
     // =========================================================================
 
     'addonMisconfigured'        => '{0} 配置不正确。如果您是最终用户，请联系开发者。如果您是开发者，请查阅文档。',
-    'addonMisconfiguredLink'    => '{0} 配置不正确。如果您是最终用户，请<a href="{1}">联系开发者</a>。如果您是开发者，请<a href="https://github.com/enlivenapp/pubvana">查阅文档</a>。',
+    'addonMisconfiguredLink'    => '{0} 配置不正确。如果您是最终用户，请<a href="{1}">联系开发者</a>。如果您是开发者，请<a href="https://github.com/Pubvana-CMS/pubvana">查阅文档</a>。',
     'licenseExpiringSoon'       => '{0} 的许可证将于 {1} 到期，届时 {0} 将被停用。',
     'licenseExpiredDeactivated' => '{0} 已因许可证到期而停用。',
     'addonDeactivated'          => '{0} 已停用。原因：{1}。',

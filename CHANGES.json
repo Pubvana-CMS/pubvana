@@ -40,7 +40,7 @@
       "version": "2.3.2",
       "breaking_changes": [],
       "migration_notes": [
-        "Safe to Update: Disregard if not using Cronjobs : Cron Action Needed. Cron Jobs Changed.  use php spark cron {minute/quarterday/daily}. See http://github.com/enlivenapp/pubvana CHANGELOG.md for more information and instructions."
+        "Safe to Update: Disregard if not using Cronjobs : Cron Action Needed. Cron Jobs Changed.  use php spark cron {minute/quarterday/daily}. See http://github.com/Pubvana-CMS/pubvana CHANGELOG.md for more information and instructions."
       ],
       "min_php_version": "8.2",
       "min_ci_version": "4.7",

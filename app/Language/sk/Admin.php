@@ -889,7 +889,7 @@ return [
 
     // admin_notifications (persistent)
     'addonMisconfigured'        => '{0} je nesprávne nakonfigurovaný. Ak ste koncový používateľ, kontaktujte vývojára. Ak ste vývojár, pozrite dokumentáciu.',
-    'addonMisconfiguredLink'    => '{0} je nesprávne nakonfigurovaný. Ak ste koncový používateľ <a href="{1}">kontaktujte vývojára</a>. Ak ste vývojár <a href="https://github.com/enlivenapp/pubvana">pozrite dokumentáciu</a>.',
+    'addonMisconfiguredLink'    => '{0} je nesprávne nakonfigurovaný. Ak ste koncový používateľ <a href="{1}">kontaktujte vývojára</a>. Ak ste vývojár <a href="https://github.com/Pubvana-CMS/pubvana">pozrite dokumentáciu</a>.',
     'licenseExpiringSoon'       => 'Licencia pre {0} vyprší dňa {1}. {0} bude deaktivovaný po vypršaní licencie.',
     'licenseExpiredDeactivated' => '{0} bol deaktivovaný, pretože licencia vypršala.',
     'addonDeactivated'          => '{0} bol deaktivovaný. Dôvod: {1}.',

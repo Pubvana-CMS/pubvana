@@ -1053,7 +1053,7 @@ return [
 
     // admin_notifications (persistent)
     'addonMisconfigured'        => '{0} è configurato in modo errato. Se sei l\'utente finale, contatta lo sviluppatore. Se sei lo sviluppatore, consulta la documentazione.',
-    'addonMisconfiguredLink'    => '{0} è configurato in modo errato. Se sei l\'utente finale <a href="{1}">contatta lo sviluppatore</a>. Se sei lo sviluppatore <a href="https://github.com/enlivenapp/pubvana">consulta la documentazione</a>.',
+    'addonMisconfiguredLink'    => '{0} è configurato in modo errato. Se sei l\'utente finale <a href="{1}">contatta lo sviluppatore</a>. Se sei lo sviluppatore <a href="https://github.com/Pubvana-CMS/pubvana">consulta la documentazione</a>.',
     'licenseExpiringSoon'       => 'La licenza di {0} scade il {1}. {0} verrà disattivato alla scadenza della licenza.',
     'licenseExpiredDeactivated' => '{0} è stato disattivato perché la licenza è scaduta.',
     'addonDeactivated'          => '{0} è stato disattivato. Motivo: {1}.',

@@ -1053,7 +1053,7 @@ return [
 
     // admin_notifications (persistent)
     'addonMisconfigured'        => '{0} が正しく設定されていません。エンドユーザーの場合は開発者に連絡してください。開発者の場合はドキュメントを参照してください。',
-    'addonMisconfiguredLink'    => '{0} が正しく設定されていません。エンドユーザーの場合は<a href="{1}">開発者に連絡</a>してください。開発者の場合は<a href="https://github.com/enlivenapp/pubvana">ドキュメントを参照</a>してください。',
+    'addonMisconfiguredLink'    => '{0} が正しく設定されていません。エンドユーザーの場合は<a href="{1}">開発者に連絡</a>してください。開発者の場合は<a href="https://github.com/Pubvana-CMS/pubvana">ドキュメントを参照</a>してください。',
     'licenseExpiringSoon'       => '{0} のライセンスは {1} に期限切れになります。ライセンスが期限切れになると {0} は無効化されます。',
     'licenseExpiredDeactivated' => 'ライセンスが期限切れのため {0} が無効化されました。',
     'addonDeactivated'          => '{0} が無効化されました。理由：{1}。',

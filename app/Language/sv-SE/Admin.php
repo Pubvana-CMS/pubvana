@@ -1048,7 +1048,7 @@ return [
     // =========================================================================
 
     'addonMisconfigured'        => '{0} är felaktigt konfigurerat. Om du är slutanvändaren, kontakta utvecklaren. Om du är utvecklaren, läs dokumentationen.',
-    'addonMisconfiguredLink'    => '{0} är felaktigt konfigurerat. Om du är slutanvändaren <a href="{1}">kontakta utvecklaren</a>. Om du är utvecklaren <a href="https://github.com/enlivenapp/pubvana">läs dokumentationen</a>.',
+    'addonMisconfiguredLink'    => '{0} är felaktigt konfigurerat. Om du är slutanvändaren <a href="{1}">kontakta utvecklaren</a>. Om du är utvecklaren <a href="https://github.com/Pubvana-CMS/pubvana">läs dokumentationen</a>.',
     'licenseExpiringSoon'       => 'Licensen för {0} löper ut den {1}. {0} inaktiveras när licensen löper ut.',
     'licenseExpiredDeactivated' => '{0} har inaktiverats eftersom licensen har löpt ut.',
     'addonDeactivated'          => '{0} har inaktiverats. Anledning: {1}.',

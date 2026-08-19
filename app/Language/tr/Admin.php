@@ -1048,7 +1048,7 @@ return [
     // =========================================================================
 
     'addonMisconfigured'        => '{0} hatalı yapılandırılmış. Son kullanıcıysanız geliştiriciye başvurun. Geliştirici iseniz belgelere bakın.',
-    'addonMisconfiguredLink'    => '{0} hatalı yapılandırılmış. Son kullanıcıysanız <a href="{1}">geliştiriciye başvurun</a>. Geliştirici iseniz <a href="https://github.com/enlivenapp/pubvana">belgelere bakın</a>.',
+    'addonMisconfiguredLink'    => '{0} hatalı yapılandırılmış. Son kullanıcıysanız <a href="{1}">geliştiriciye başvurun</a>. Geliştirici iseniz <a href="https://github.com/Pubvana-CMS/pubvana">belgelere bakın</a>.',
     'licenseExpiringSoon'       => '{0} lisansı {1} tarihinde sona erecek. Lisans sona erdiğinde {0} devre dışı bırakılacak.',
     'licenseExpiredDeactivated' => '{0} lisansı sona erdiği için devre dışı bırakıldı.',
     'addonDeactivated'          => '{0} devre dışı bırakıldı. Neden: {1}.',

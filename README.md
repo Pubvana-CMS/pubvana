@@ -1,30 +1,26 @@
 # Pubvana
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Release](https://img.shields.io/badge/release-v2.3.6-blue)](https://github.com/enlivenapp/pubvana/releases)
+[![Release](https://img.shields.io/badge/release-v2.3.6-blue)](https://github.com/Pubvana-CMS/pubvana/releases)
 [![PHP](https://img.shields.io/badge/PHP-8.2%2B-blue.svg)](https://www.php.net)
 [![CodeIgniter](https://img.shields.io/badge/CodeIgniter-4.7-orange.svg)](https://codeigniter.com)
 [![Installs](https://img.shields.io/packagist/dt/enlivenapp/pubvana.svg)](https://packagist.org/packages/enlivenapp/pubvana)
-[![Stars](https://img.shields.io/github/stars/enlivenapp/pubvana?style=flat)](https://github.com/enlivenapp/pubvana/stargazers)
-[![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](https://github.com/enlivenapp/pubvana/issues)
+[![Stars](https://img.shields.io/github/stars/Pubvana-CMS/pubvana?style=flat)](https://github.com/Pubvana-CMS/pubvana/stargazers)
+[![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](https://github.com/Pubvana-CMS/pubvana/issues)
 
 ### Blogging and Small Business CMS
 
 Pubvana v2 is a full rewrite of Pubvana v1.x built on CodeIgniter 4, Authentication with Shield, a modern admin UI, dual content editors, theme, plugin & widget system, built-in marketplace, and many new features. We aim for Pubvana to be lean and fast without the bloat of other CMS and Blog software available.
 
-These instructions are for users comfortable with the command line and terminal. If you'd prefer a streamlined, no command line experience, [Pubvana Web Installer](https://github.com/enlivenapp/Pubvana-Web-Installer) (pubvanacms.com).
-
-### For Developers
-
-Developers looking to build themes or widgets for Pubvana can find everything they need in these guides:
-
-- **[ThemeBuilder.md](BuilderDocs/ThemeBuilder.md)** — Complete theme development guide
-- **[WidgetBuilder.md](BuilderDocs/WidgetBuilder.md)** — Complete widget development guide
-- **[PluginBuilder.md](BuilderDocs/PluginBuilder.md)** — Complete plugin development guide
-- **[ThirdPartyAddons.md](BuilderDocs/ThirdPartyAddons.md)** — Third-party addon distribution, licensing, and API protocol
-- **[CssClassReference.md](BuilderDocs/CssClassReference.md)** — Complete `cls_*` CSS class variable reference
-
 ## Installation
+
+**Web Based Installer** For Shared hosting and easy installs on pretty much any (L/M)AMP/Nginx/etc stack.
+[Pubvana Web Installer(free)](https://pubvanacms.com/dstore/product/pubvana-easy-installer).
+
+**Docker Installer** For Standalone VPS, Homelabs, etc where you have root/sudo access.
+[Docker Install(free)](https://github.com/Pubvana-CMS/v2-docker)
+
+**CLI Installation Instructions** This is the expert, manual way to install Pubvana where you have Composer, git, and/or more control over variables to install on shared hosting, stand alone VPSs, Homelabs, and understand your existing (L/M)AMP/Nginx/etc stack.
 
 ### 1. Prerequisites
 
@@ -54,12 +50,14 @@ composer create-project enlivenapp/pubvana .
   **For Development** : for contributors who want to run tests, build additional features and work on the codebase:
 
 ```
-  git clone https://github.com/enlivenapp/pubvana.git
+  git clone https://github.com/Pubvana-CMS/pubvana.git
   cd pubvana
   composer install
 ```
+*Contributions and PRs are always welcome*
 
- The remaining steps apply to production and development environments.
+
+ The remaining steps apply to both production and development environments.
 
 
 ### 3. Configure
@@ -107,7 +105,7 @@ The first command creates the account, the second prompts you to set a password,
 
 ### 5. Web Server
 
-Point your web server to the `public/` folder either by editing your available sites in Apache, or Nginx config. if you use Apache or Litespeed, your site should be available at `https://your-server/path-to-pubvana` with the provided ,htaccess files. You should see the homepage of your new website.
+Point your web server to the `public/` folder either by editing your available sites in Apache, or Nginx config. If you use Apache or Litespeed, your site should be available at `https://your-server/path-to-pubvana` with the provided .htaccess files. You should see the homepage of your new website.
 
 ### 6. Log In
 
@@ -134,7 +132,7 @@ Quick troubleshooting: If `writable/sessions`, `writable/cache`, and `writable/l
 | `php spark wp:import <file>` | Import posts/pages/tags from a WordPress WXR export file |
 | `php spark posts:publish` | Publish scheduled posts (also called by `cron minute`) |
 | `php spark links:check` | Scan all published posts and pages for broken external links |
-| `php spark marketplace:revalidate` | Re-validate installed premium item licences against pubvana.net |
+| `php spark marketplace:revalidate` | Re-validate installed premium item licences against pubvanacms.com |
 | `php spark pubvana:update [--dry-run]` | Check for and apply Pubvana core updates |
 
 ### Cron Jobs
@@ -156,13 +154,16 @@ Active plugins can register their own cron commands under any frequency via `plu
 
 ---
 
-## Requirements
+### For Developers
 
-- PHP 8.2+
-- MySQL 5.7+ / MariaDB 10.3+
-- Composer (highly recommended)
-- Apache `mod_rewrite` (or Nginx equivalent)
-- PHP extensions: `intl`, `mbstring`, `json`, `mysqlnd`, `gd`, `zip`
+Developers looking to build themes or widgets for Pubvana can find everything they need in these guides:
+
+- **[ThemeBuilder.md](BuilderDocs/ThemeBuilder.md)** — Complete theme development guide
+- **[WidgetBuilder.md](BuilderDocs/WidgetBuilder.md)** — Complete widget development guide
+- **[PluginBuilder.md](BuilderDocs/PluginBuilder.md)** — Complete plugin development guide
+- **[ThirdPartyAddons.md](BuilderDocs/ThirdPartyAddons.md)** — Third-party addon distribution, licensing, and API protocol
+- **[CssClassReference.md](BuilderDocs/CssClassReference.md)** — Complete `cls_*` CSS class variable reference
+
 
 ## Stack (v2)
 
@@ -180,7 +181,7 @@ Active plugins can register their own cron commands under any frequency via `plu
 - Posts & Pages with draft/published/scheduled workflow
 - Dual content editor — WYSIWYG HTML or Markdown, selectable per post
 - Theme system with sandboxed .tpl engine, widget areas, theme options, and framework-agnostic widgets
-- 8 built-in widgets with drag-and-drop area management
+- 14 built-in widgets with drag-and-drop area management
 - Configurable front page — blog index or any static page
 - Marketplace — browse and install free themes & widgets (live API + cache + mock fallback)
 - Role-based access — superadmin, admin, editor, author, subscriber
@@ -200,7 +201,7 @@ Active plugins can register their own cron commands under any frequency via `plu
 
 ### Reporting a Vulnerability
 
-Please **do not** open a public issue for security vulnerabilities. Email security reports to **cs@pubvana.net**. We aim to respond within 48 hours and will credit reporters in the changelog.
+Please **do not** open a public issue for security vulnerabilities. Email security reports to **cs@pubvanacms.com**. We aim to respond within 48 hours and will credit reporters in the changelog.
 
 ### hCaptcha (Spam Protection)
 
@@ -252,7 +253,7 @@ Post, page, and widget content is stored and rendered as raw HTML. This is inten
 | 2.0.4 | Revisions: authors restricted to own post revisions only |
 | 2.0.4 | Delete remember tokens on user ban to prevent cookie re-auth |
 | 2.0.4 | Site owner protected from modification/deletion by non-owners |
-| 2.0.2 | Marketplace ZIP installs: download URL restricted to `pubvana.net`; ZIP entries checked for path traversal |
+| 2.0.2 | Marketplace ZIP installs: download URL restricted to `pubvanacms.com`; ZIP entries checked for path traversal |
 | 2.0.2 | WordPress importer: switched to `LIBXML_NONET` to block XXE network fetches |
 | 2.0.2 | User profile IDOR: `profile` and `saveProfile` now verify ownership or `users.manage` permission |
 | 2.0.2 | Theme options: `options` and `saveOptions` now require `admin.themes` permission |
@@ -267,15 +268,15 @@ Post, page, and widget content is stored and rendered as raw HTML. This is inten
 
 ## Bug Reports & Feature Requests
 
-Please use the [Issues Tracker](https://github.com/enlivenapp/pubvana/issues).
+Please use the [Issues Tracker](https://github.com/Pubvana-CMS/pubvana/issues).
 
 ## Links
 
-[pubvana.net](https://pubvana.net) — Home & Addon Store (Themes, Widgets, Plugins and easy installer)
+[pubvanacms.com](https://pubvanacms.com) — Home & Addon Store (Themes, Widgets, Plugins and easy installer)
 
-[User Docs](https://pubvana.net/pvdocs)
+[User Docs](https://pubvanacms.com/pvdocs)
 
-[Facebook Page](https://www.facebook.com/pubvana.net)
+[Facebook Page](https://www.facebook.com/pubvanacms.com)
 
 ## License
 
@@ -293,73 +294,28 @@ Pubvana ships with 24 languages: English (source), Spanish (Latin American), Fre
 
 If you would like to help verify or add translations, please fork this repo and send a PR.
 
-Many Thanks to the folks who've provided translation. It is very apprciated.
+Many Thanks to the folks who've provided translation. It is very appreciated.
 
 * French — [Paul DUBOT](https://github.com/keeganpa), [Léonard GAURIAU](https://github.com/leoDisjonct), [Clément TRASSOUDAINE](https://github.com/intv0id), [Jean-Baptiste VALLADEAU](https://github.com/ignamarte), [Rhagngahr](https://github.com/Rhagngahr)
 * Indonesian — [Suhindra](https://github.com/suhindra)
 * Portuguese — [Samuel Fontebasso](https://github.com/fontebasso)
 * Slovak — Kristián Feldsam
 
-## Roadmap / Todo
+## Todo
 
-### Pubvana Core
-
-**Built-in Widgets**
-- [x] Recent Posts
-- [x] Tag Cloud
-- [x] Categories List
-- [x] Archive List
-- [x] Search Form
-- [x] Social Links
-- [x] Text Block
-- [x] Recent Comments
-- [x] Table of Contents
-- [x] Related Posts
-
-**Platform Features**
-- [x] Author Profiles & Bio Card
-- [x] Social OAuth Login (Google, Facebook)
-- [x] Social Auto-Share on Publish (Twitter, Facebook)
-- [x] Marketplace API with cache + refresh
-- [x] WordPress Importer (admin UI + `php spark wp:import` CLI)
-- [x] Post Revision History
-- [x] Maintenance Mode toggle
-- [x] Core update notifications + `php spark pubvana:update` CLI
-- [x] Content Preview Links (shareable draft URLs)
-- [x] Bulk Post Actions (publish / unpublish / delete many)
-- [x] Schema.org Markup (Article, BreadcrumbList, Author JSON-LD)
-- [x] Image WebP Auto-Convert on Upload
-- [x] Multi-language Support (22 languages, admin enable/disable, `{locale}` URL routing, `lang()` throughout views)
-- [x] Honeypot Spam Protection (CI4 built-in filter on comment + contact forms)
-- [x] Atom 1.0 Feed (`/atom` alongside existing RSS)
 - [ ] Links Manager / Blogroll (display a curated list of external links via widget)
-- [x] Scheduled Post Queue (calendar view)
-- [x] Content Analytics (page views, popular posts, referrers)
-- [x] Advanced SEO (OG image generation, schema breadcrumbs, news sitemap)
-- [x] Two-Factor Authentication (TOTP)
-- [x] Backup & Export (DB + uploads zip)
-- [x] Membership / Paywalled Posts
-- [x] Affiliate Link Manager (`/go/` short links + click tracking)
-- [x] Broken Link Checker
-- [x] Activity / Audit Log
-- [x] Author Bio widget
-- [x] Ad Unit / Custom HTML widget
-- [x] Social Follow Buttons widget
+- [ ] Remove Markdown editor
+- [ ] New Admin Panel skin
 
-
-**Todo**
-- [ ] Email Notifications / Subscriptions (subscribe to new posts, email verification, unsubscribe)
-
-**Premium Widgets** *(pubvana.net/store)*
+**Premium Widgets** *(pubvanacms.com)*
 
 - [ ] Reading Progress Bar
 - [ ] Countdown Timer
 - [ ] Google Calendar & Maps
-- [ ] YouTube Channel Feed ( 1 video/widget)
+- [ ] YouTube Channel Feed (1 video/widget)
 
-**Premium Plugins** *(pubvana.net/store)*
-- [x] PvDocs - Documentation for User & Dev facing docs
-- [x] Digital E-commerce (products, cart, checkout, orders)
+**Premium Plugins** *(pubvanacms.com)*
+
 - [ ] Physical goods store (w/ drop shipping and delivery integration)
 - [ ] Enhanced Search (AJAX live preview)
 - [ ] Tip Jar / Per-post donations
@@ -367,5 +323,5 @@ Many Thanks to the folks who've provided translation. It is very apprciated.
 - [ ] Gallery (masonry + lightbox)
 - [ ] Google Calendar & Maps
 - [ ] YouTube Channel Feed (fully searchable integration)
-
+- [ ] Email Notifications / Subscriptions (subscribe to new posts, email verification, unsubscribe)
 

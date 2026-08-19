@@ -1050,7 +1050,7 @@ return [
     // =========================================================================
 
     'addonMisconfigured'        => '{0} je nesprávně nakonfigurován. Pokud jste koncový uživatel, kontaktujte vývojáře. Pokud jste vývojář, prostudujte dokumentaci.',
-    'addonMisconfiguredLink'    => '{0} je nesprávně nakonfigurován. Pokud jste koncový uživatel, <a href="{1}">kontaktujte vývojáře</a>. Pokud jste vývojář, <a href="https://github.com/enlivenapp/pubvana">prostudujte dokumentaci</a>.',
+    'addonMisconfiguredLink'    => '{0} je nesprávně nakonfigurován. Pokud jste koncový uživatel, <a href="{1}">kontaktujte vývojáře</a>. Pokud jste vývojář, <a href="https://github.com/Pubvana-CMS/pubvana">prostudujte dokumentaci</a>.',
     'licenseExpiringSoon'       => 'Licence pro {0} vyprší dne {1}. {0} bude deaktivováno po vypršení licence.',
     'licenseExpiredDeactivated' => '{0} bylo deaktivováno, protože licence vypršela.',
     'addonDeactivated'          => '{0} bylo deaktivováno. Důvod: {1}.',

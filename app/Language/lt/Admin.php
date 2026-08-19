@@ -1053,7 +1053,7 @@ return [
 
     // admin_notifications (persistent)
     'addonMisconfigured'        => '{0} yra netinkamai sukonfigūruotas. Jei esate galutinis naudotojas, susisiekite su kūrėju. Jei esate kūrėjas, skaitykite dokumentaciją.',
-    'addonMisconfiguredLink'    => '{0} yra netinkamai sukonfigūruotas. Jei esate galutinis naudotojas, <a href="{1}">susisiekite su kūrėju</a>. Jei esate kūrėjas, <a href="https://github.com/enlivenapp/pubvana">skaitykite dokumentaciją</a>.',
+    'addonMisconfiguredLink'    => '{0} yra netinkamai sukonfigūruotas. Jei esate galutinis naudotojas, <a href="{1}">susisiekite su kūrėju</a>. Jei esate kūrėjas, <a href="https://github.com/Pubvana-CMS/pubvana">skaitykite dokumentaciją</a>.',
     'licenseExpiringSoon'       => '{0} licencija baigiasi {1}. {0} bus deaktyvuotas, kai pasibaigs licencija.',
     'licenseExpiredDeactivated' => '{0} buvo deaktyvuotas, nes licencija baigėsi.',
     'addonDeactivated'          => '{0} buvo deaktyvuotas. Priežastis: {1}.',

@@ -12,7 +12,7 @@ use App\Services\ProgressReporter;
 
 class UpdateService
 {
-    protected string $changesUrl = 'https://raw.githubusercontent.com/enlivenapp/pubvana/master/CHANGES.json';
+    protected string $changesUrl = 'https://raw.githubusercontent.com/Pubvana-CMS/pubvana/master/CHANGES.json';
     protected string $cacheKey   = 'pubvana_update_check';
     protected int    $cacheTtl   = 86400; // 24 hours
 
@@ -114,7 +114,7 @@ class UpdateService
                 'safe_target'     => $safeTarget,
                 'capped_by'       => $incompatible,
                 'versions_data'   => $data['versions'],
-                'zipball_url'     => 'https://github.com/enlivenapp/pubvana/releases/download/v' . ($safeTarget ?? $latest) . '/release.zip',
+                'zipball_url'     => 'https://github.com/Pubvana-CMS/pubvana/releases/download/v' . ($safeTarget ?? $latest) . '/release.zip',
                 'error'           => null,
             ];
 
