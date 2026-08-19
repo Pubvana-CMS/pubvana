@@ -64,6 +64,6 @@ jobs:
             writable/updates/.gitkeep
 
       - name: Upload release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2.2.2
         with:
           files: release.zip
