@@ -6,6 +6,9 @@
 
 Pubvana v3 is a FlightPHP-based CMS with a plugin architecture, Vision template engine, and shared-host friendly setup. Build blogs, small business sites, or content platforms without framework bloat.
 
+## Important Note: 
+v3 is currently in Alpha developement. Thing can change rapidly, and no update ability is available yet(you'd be stuck with composer for updates). If you need a stable release *right now* consider [Pubvana v2](https://github.com/Pubvana-CMS/pubvana/releases/tag/v2.3.6).  Thanks for considering Pubvana!
+
 ## Features
 
 - Posts and pages with draft/published/scheduled workflow
