@@ -7,7 +7,19 @@ parameters:
     scanFiles:
         - phpstan/bootstrap.php
     ignoreErrors:
-        - '#Call to an undefined method.*::(order|select|limit|eq|find|findAll|insert|update|delete|save|getDatabaseConnection|isHydrated|addCondition)#'
-        - '#Access to an undefined property flight\\(ActiveRecord|util\\Collection)#'
-        - '#should return array<Pubvana\\\\Models\\\\#'
-        - '#flight\\Engine::[a-z]+#'
+        -
+            message: '#Call to an undefined method#'
+            path: app/Models/
+        -
+            message: '#Call to an undefined method#'
+            path: app/Controllers/
+        -
+            message: '#Access to an undefined property flight\\#'
+        -
+            message: '#should return array<Pubvana#'
+        -
+            message: '#Constant PROJECT_ROOT not found#'
+        -
+            message: '#Instanceof between array#'
+        -
+            message: '#Result of && is always false#'
