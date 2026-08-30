@@ -181,7 +181,7 @@ class AdminController
     protected function groupForSource(string $source): string
     {
         $parts = explode('.', $source);
-        $ns = $parts[1] ?? $parts[0] ?? '';
+        $ns = $parts[1] ?? $parts[0];
 
         return match ($ns) {
             'users', 'groups', 'permissions', 'profiles', 'profile', 'admin' => 'people',

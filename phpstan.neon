@@ -4,4 +4,6 @@ parameters:
         - app/
     scanDirectories:
         - vendor/
+    scanFiles:
+        - phpstan/stubs/Engine.stub.php
     ignoreErrors: []
