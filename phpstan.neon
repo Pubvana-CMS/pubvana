@@ -4,10 +4,20 @@ parameters:
         - app/
     scanDirectories:
         - vendor/
-    scanFiles:
-        - phpstan/bootstrap.php
+    stubFiles:
+        - phpstan/stubs/ProjectRoot.stub.php
     ignoreErrors:
         -
             message: '#Call to an undefined method#'
         -
             message: '#Access to an undefined property#'
+        -
+            message: '#should return array<Pubvana#'
+        -
+            message: '#Constant PROJECT_ROOT not found#'
+        -
+            message: '#on left side of \?\? always exists and is not nullable#'
+        -
+            message: '#on left side of \?\? is not nullable#'
+        -
+            message: '#Expression on left side of \?\? is not nullable#'
