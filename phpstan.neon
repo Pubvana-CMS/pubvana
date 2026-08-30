@@ -1,5 +1,5 @@
 parameters:
-    level: 5
+    level: 3
     paths:
         - app/
     scanDirectories:
@@ -10,16 +10,4 @@ parameters:
         -
             message: '#Call to an undefined method#'
         -
-            message: '#Access to an undefined property flight\\#'
-        -
-            message: '#should return array<Pubvana#'
-        -
-            message: '#Constant PROJECT_ROOT not found#'
-        -
-            message: '#Instanceof between array#'
-        -
-            message: '#Result of && is always false#'
-        -
-            message: '#Variable .+ on left side of \?\? always exists and is not nullable#'
-        -
-            message: '#Strict comparison using .+ between .+ and null will always evaluate to true#'
+            message: '#Access to an undefined property#'
