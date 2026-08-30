@@ -4,6 +4,5 @@ parameters:
         - app/
     scanDirectories:
         - vendor/
-    scanFiles:
-        - phpstan/stubs/Engine.stub.php
-    ignoreErrors: []
+    ignoreErrors:
+        - '#Call to an undefined method flight\\Engine::#'
