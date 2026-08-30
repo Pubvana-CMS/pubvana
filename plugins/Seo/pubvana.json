@@ -1,0 +1,23 @@
+{
+    "name": "pubvana/seo",
+    "display_name": "SEO",
+    "description": "SEO management: meta tags, structured data, sitemaps, Open Graph, AI/GEO optimization",
+    "category": "tools",
+    "semver": "0.1.0",
+    "provides": {
+        "admin.menu": {
+            "settings": {
+                "seo": {
+                    "label": "SEO",
+                    "url": "/seo",
+                    "icon": "ti-seo",
+                    "priority": 15
+                }
+            }
+        },
+        "admin.dashboard": {
+            "cards": {},
+            "sections": {}
+        }
+    }
+}

@@ -1,0 +1,78 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Pubvana\Plugins\Forms\Models;
+
+/**
+ * @property int         $id
+ * @property int         $form_id
+ * @property string      $status
+ * @property string|null $ip_address
+ * @property string|null $user_agent
+ * @property string|null $referrer_url
+ * @property string|null $payload_json
+ * @property string|null $submitted_at
+ * @property string|null $created_at
+ * @property string|null $updated_at
+ */
+class FormSubmission extends \flight\ActiveRecord
+{
+    public function __construct($pdo = null, array $config = [])
+    {
+        parent::__construct($pdo, 'form_submissions', $config);
+    }
+
+    public function findById(int $id): ?self
+    {
+        $this->reset();
+        $this->eq('id', $id)->find();
+        return $this->isHydrated() ? $this : null;
+    }
+
+    public function paginate(int $page = 1, int $perPage = 25, ?int $formId = null): array
+    {
+        $query = new self($this->getDatabaseConnection());
+
+        if ($formId !== null) {
+            $query->eq('form_id', $formId);
+        }
+
+        return $query
+            ->order('id DESC')
+            ->limit($perPage)
+            ->offset(($page - 1) * $perPage)
+            ->findAll();
+    }
+
+    public function countAll(?int $formId = null): int
+    {
+        $query = new self($this->getDatabaseConnection());
+        $query->select('COUNT(*) as cnt');
+
+        if ($formId !== null) {
+            $query->eq('form_id', $formId);
+        }
+
+        $result = $query->find();
+
+        return (int) $result->cnt;
+    }
+
+    public function createRecord(array $data): self
+    {
+        $record = new self($this->getDatabaseConnection());
+        $now = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
+
+        foreach ($data as $key => $value) {
+            $record->$key = $value;
+        }
+
+        $record->submitted_at = $now;
+        $record->created_at = $now;
+        $record->updated_at = $now;
+        $record->insert();
+
+        return $record;
+    }
+}

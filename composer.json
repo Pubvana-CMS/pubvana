@@ -1,0 +1,35 @@
+{
+    "name": "pubvana/cms",
+    "description": "Pubvana CMS v3 - Publishing Nirvana",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "flightphp/core": "^3.0",
+        "flightphp/active-record": "^0.7",
+        "flightphp/runway": "^1.2",
+        "enlivenapp/flight-shield": "^0.3",
+        "enlivenapp/flight-csrf": "^0.2",
+        "enlivenapp/flight-sessions": "^0.1",
+        "enlivenapp/migrations": "^0.3",
+        "enlivenapp/vision": "^1.0",
+        "ezyang/htmlpurifier": "^4.19",
+        "vlucas/phpdotenv": "^5.6",
+        "phpmailer/phpmailer": "^7.1",
+        "league/commonmark": "^2.6",
+        "league/html-to-markdown": "^5.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "Pubvana\\": "app/",
+            "Pubvana\\Plugins\\": "plugins/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true
+    },
+    "require-dev": {
+        "flightphp/tracy-extensions": "^0.3.0",
+        "tracy/tracy": "^2.10"
+    }
+}

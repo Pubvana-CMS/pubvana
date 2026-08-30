@@ -1,0 +1,37 @@
+{
+    "name": "pubvana/ai",
+    "display_name": "AI Assistant",
+    "description": "AI Assistant for Pubvana CMS: API-key ingestion endpoints and per-key grants",
+    "category": "tools",
+    "semver": "0.1.0",
+    "provides": {
+        "admin.menu": {
+            "tools": {
+                "ai-assistant": {
+                    "label": "AI Assistant",
+                    "url": "/ai/manage",
+                    "icon": "ti-robot",
+                    "priority": 40,
+                    "submenu": {
+                        "manage": {
+                            "label": "Manage",
+                            "url": "/ai/manage",
+                            "icon": "ti-key",
+                            "priority": 10
+                        },
+                        "help": {
+                            "label": "Help",
+                            "url": "/ai/help",
+                            "icon": "ti-book",
+                            "priority": 20
+                        }
+                    }
+                }
+            }
+        },
+        "admin.dashboard": {
+            "cards": {},
+            "sections": {}
+        }
+    }
+}

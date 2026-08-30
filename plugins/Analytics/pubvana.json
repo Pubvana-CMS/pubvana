@@ -1,0 +1,23 @@
+{
+    "name": "pubvana/analytics",
+    "display_name": "Analytics",
+    "description": "Site traffic and reporting: page views, referrers, and per-section trends",
+    "category": "tools",
+    "semver": "0.1.0",
+    "provides": {
+        "admin.menu": {
+            "tools": {
+                "analytics": {
+                    "label": "Analytics",
+                    "url": "/analytics",
+                    "icon": "ti-report-analytics",
+                    "priority": 30
+                }
+            }
+        },
+        "admin.dashboard": {
+            "cards": {},
+            "sections": {}
+        }
+    }
+}

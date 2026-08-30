@@ -1,0 +1,19 @@
+{
+    "name": "pubvana/search",
+    "display_name": "Search",
+    "description": "Full site search with configurable content sources",
+    "category": "content",
+    "semver": "0.1.0",
+    "provides": {
+        "admin.menu": {
+            "content": {
+                "search": {
+                    "label": "Search",
+                    "icon": "ti-search",
+                    "url": "/search",
+                    "priority": 40
+                }
+            }
+        }
+    }
+}

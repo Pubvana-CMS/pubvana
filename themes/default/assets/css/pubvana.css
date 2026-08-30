@@ -1,0 +1,232 @@
+/* ── Block system ── BS5-compatible styles for Pubvana blocks ── */
+
+/* Wrapper */
+.block {
+    margin-bottom: 1rem;
+}
+
+/* Titles */
+.block-title {
+    font-size: .875rem;
+    font-weight: 600;
+    margin-bottom: .5rem;
+}
+
+/* Lists */
+.block-ul {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 0;
+}
+
+.block-li {
+    padding: .35rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, .05);
+}
+
+.block-li:last-child {
+    border-bottom: none;
+}
+
+.block-a {
+    color: var(--bs-primary, #0d6efd);
+    text-decoration: none;
+}
+
+.block-a:hover {
+    text-decoration: underline;
+}
+
+/* Meta (dates, counts) */
+.block-meta {
+    display: block;
+    color: var(--bs-secondary, #6c757d);
+    font-size: .75rem;
+}
+
+.block-count {
+    color: var(--bs-secondary, #6c757d);
+    font-size: .8rem;
+}
+
+.block-empty {
+    color: var(--bs-secondary, #6c757d);
+    font-size: .875rem;
+    font-style: italic;
+}
+
+/* Nav blocks */
+.block-primary-nav .block-ul .block-ul {
+    padding-left: 1rem;
+}
+
+.block-primary-nav .block-li {
+    border-bottom: none;
+    padding: .25rem 0;
+}
+
+.block-footer-nav .block-li {
+    border-bottom: none;
+    padding: .25rem 0;
+}
+
+.block-footer-nav .block-a {
+    color: rgba(255, 255, 255, .7);
+}
+
+.block-footer-nav .block-a:hover {
+    color: #fff;
+}
+
+/* Link list */
+.block-link-list .block-li {
+    border-bottom: none;
+    padding: .25rem 0;
+}
+
+/* Tags */
+.block-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem;
+}
+
+.block-tag {
+    display: inline-block;
+    padding: .2rem .5rem;
+    font-size: .75rem;
+    background-color: var(--bs-light, #f8f9fa);
+    border: 1px solid var(--bs-border-color, #dee2e6);
+    border-radius: .25rem;
+    color: var(--bs-body-color, #212529);
+    text-decoration: none;
+}
+
+.block-tag:hover {
+    background-color: var(--bs-primary, #0d6efd);
+    border-color: var(--bs-primary, #0d6efd);
+    color: #fff;
+    text-decoration: none;
+}
+
+/* Recent comments */
+.block-comment-author {
+    font-weight: 600;
+    font-size: .875rem;
+}
+
+.block-comment-on {
+    color: var(--bs-secondary, #6c757d);
+    font-size: .8rem;
+}
+
+/* Table of contents */
+.block-toc .block-li {
+    border-bottom: none;
+    padding: .2rem 0;
+}
+
+.block-toc-h3 {
+    padding-left: 1rem;
+}
+
+.block-toc-h4 {
+    padding-left: 2rem;
+}
+
+/* Search form */
+.block-search-form {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+}
+
+.block-label {
+    font-size: .875rem;
+    font-weight: 600;
+}
+
+.block-input {
+    display: block;
+    width: 100%;
+    padding: .375rem .75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--bs-body-color, #212529);
+    background-color: var(--bs-body-bg, #fff);
+    border: 1px solid var(--bs-border-color, #dee2e6);
+    border-radius: .375rem;
+    appearance: none;
+}
+
+.block-input:focus {
+    border-color: var(--bs-primary, #0d6efd);
+    outline: 0;
+    box-shadow: 0 0 0 .25rem rgba(13, 110, 253, .25);
+}
+
+.block-button {
+    display: inline-block;
+    padding: .375rem .75rem;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #fff;
+    background-color: var(--bs-primary, #0d6efd);
+    border: 1px solid var(--bs-primary, #0d6efd);
+    border-radius: .375rem;
+    cursor: pointer;
+    text-align: center;
+}
+
+.block-button:hover {
+    background-color: var(--bs-primary-dark, #0b5ed7);
+    border-color: var(--bs-primary-dark, #0b5ed7);
+}
+
+/* Text block */
+.block-content {
+    font-size: .875rem;
+    line-height: 1.6;
+}
+
+/* Footer context — lighter text by default */
+footer .block-title {
+    color: rgba(255, 255, 255, .9);
+}
+
+footer .block-a {
+    color: rgba(255, 255, 255, .7);
+}
+
+footer .block-a:hover {
+    color: #fff;
+}
+
+footer .block-meta,
+footer .block-count,
+footer .block-comment-on {
+    color: rgba(255, 255, 255, .5);
+}
+
+footer .block-tag {
+    background-color: rgba(255, 255, 255, .1);
+    border-color: rgba(255, 255, 255, .2);
+    color: rgba(255, 255, 255, .8);
+}
+
+footer .block-tag:hover {
+    background-color: var(--bs-primary, #0d6efd);
+    border-color: var(--bs-primary, #0d6efd);
+    color: #fff;
+}
+
+footer .block-input {
+    background-color: rgba(255, 255, 255, .1);
+    border-color: rgba(255, 255, 255, .2);
+    color: #fff;
+}
+
+footer .block-content {
+    color: rgba(255, 255, 255, .7);
+}

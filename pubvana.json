@@ -1,0 +1,6 @@
+{
+    "name": "pubvana/pubvana",
+    "display_name": "Pubvana CMS",
+    "description": "Generic blocks that don't belong to a specific content plugin",
+    "semver": "3.0.0"
+}

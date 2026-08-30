@@ -1,0 +1,10 @@
+/* Pubvana Admin Overrides */
+
+/* Jodit: dark mode for toolbar, wrapper, status bar (iframe handled by JS) */
+[data-bs-theme="dark"] .jodit-container .jodit-toolbar__box,
+[data-bs-theme="dark"] .jodit-container .jodit-workplace,
+[data-bs-theme="dark"] .jodit-container .jodit-status-bar {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    color: #e2e8f0 !important;
+}

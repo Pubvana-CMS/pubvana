@@ -1,0 +1,106 @@
+{
+    "display_name": "Default",
+    "description": "Pubvana default theme built on Bootswatch Flatly (Bootstrap 5).",
+    "category": "presentation",
+    "icon": "icon.svg",
+    "provides": {
+        "options": {
+            "layout": {
+                "label": "Layout",
+                "type": "group",
+                "fields": {
+                    "home_layout": {
+                        "type": "select",
+                        "label": "Homepage Layout",
+                        "default": "full-width",
+                        "choices": {
+                            "full-width": "Full Width",
+                            "sidebar-right": "Sidebar Right",
+                            "sidebar-left": "Sidebar Left"
+                        }
+                    },
+                    "blog_layout": {
+                        "type": "select",
+                        "label": "Blog Layout",
+                        "default": "sidebar-right",
+                        "choices": {
+                            "sidebar-right": "Sidebar Right",
+                            "sidebar-left": "Sidebar Left"
+                        }
+                    }
+                }
+            },
+            "breadcrumbs": {
+                "label": "Breadcrumbs",
+                "type": "group",
+                "fields": {
+                    "enabled": {
+                        "type": "toggle",
+                        "label": "Show Breadcrumbs",
+                        "default": "1"
+                    }
+                }
+            },
+            "hero": {
+                "label": "Hero Section",
+                "type": "group",
+                "fields": {
+                    "show": {
+                        "type": "toggle",
+                        "label": "Show Hero",
+                        "default": "0"
+                    },
+                    "background": {
+                        "type": "media",
+                        "label": "Background Image"
+                    },
+                    "title": {
+                        "type": "input",
+                        "label": "Title"
+                    }
+                }
+            },
+            "footer_bottom": {
+                "label": "Footer Bottom",
+                "type": "group",
+                "fields": {
+                    "enabled": {
+                        "type": "toggle",
+                        "label": "Footer Bottom",
+                        "default": "1"
+                    },
+                    "copyright": {
+                        "type": "input",
+                        "label": "Footer Text"
+                    }
+                }
+            }
+        },
+        "regions": [
+            {
+                "id": "sidebar",
+                "label": "Sidebar",
+                "description": "Right sidebar on archive and single post pages",
+                "fallback": "after-content"
+            },
+            {
+                "id": "footer-col-1",
+                "label": "Footer Column 1",
+                "description": "First footer column",
+                "fallback": "footer"
+            },
+            {
+                "id": "footer-col-2",
+                "label": "Footer Column 2",
+                "description": "Second footer column",
+                "fallback": "footer"
+            },
+            {
+                "id": "footer-col-3",
+                "label": "Footer Column 3",
+                "description": "Third footer column",
+                "fallback": "footer"
+            }
+        ]
+    }
+}

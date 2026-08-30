@@ -1,0 +1,35 @@
+{
+    "name": "pubvana/forms",
+    "display_name": "Forms",
+    "description": "Form builder for Pubvana CMS: create forms in admin, embed them on the public site, collect and review submissions.",
+    "category": "content",
+    "semver": "0.1.1",
+    "provides": {
+        "admin.menu": {
+            "content": {
+                "forms": {
+                    "label": "Forms",
+                    "url": "/forms",
+                    "icon": "ti-forms",
+                    "priority": 40,
+                    "submenu": {
+                        "forms": {
+                            "label": "Forms",
+                            "url": "/forms",
+                            "priority": 10
+                        },
+                        "submissions": {
+                            "label": "Submissions",
+                            "url": "/forms/submissions",
+                            "priority": 20
+                        }
+                    }
+                }
+            }
+        },
+        "admin.dashboard": {
+            "cards": {},
+            "sections": {}
+        }
+    }
+}

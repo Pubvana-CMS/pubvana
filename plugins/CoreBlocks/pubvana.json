@@ -1,0 +1,44 @@
+{
+    "name": "pubvana/core-blocks",
+    "display_name": "Core Blocks",
+    "description": "Generic blocks that don't belong to a specific content plugin",
+    "category": "blocks",
+    "semver": "0.1.0",
+    "provides": {
+        "block": {
+            "available": {
+                "pubvana.core-blocks.text": {
+                    "label": "Text",
+                    "description": "Free-form text content",
+                    "template": "pubvana/core-blocks/blocks/text",
+                    "priority": 100,
+                    "options": {
+                        "title": {
+                            "type": "input",
+                            "label": "Title",
+                            "default": ""
+                        },
+                        "content": {
+                            "type": "textarea",
+                            "label": "Content",
+                            "default": ""
+                        }
+                    }
+                },
+                "pubvana.core-blocks.html": {
+                    "label": "HTML",
+                    "description": "Free-form HTML content (unescaped)",
+                    "template": "pubvana/core-blocks/blocks/html",
+                    "priority": 110,
+                    "options": {
+                        "content": {
+                            "type": "textarea",
+                            "label": "Content",
+                            "default": ""
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,23 @@
+{
+    "name": "pubvana/media",
+    "display_name": "Media",
+    "description": "Media management module — images, video, embeds",
+    "category": "content",
+    "semver": "0.1.0",
+    "provides": {
+        "admin.menu": {
+            "content": {
+                "media": {
+                    "label": "Media",
+                    "url": "/media",
+                    "icon": "ti-photo",
+                    "priority": 20
+                }
+            }
+        },
+        "admin.dashboard": {
+            "cards": {},
+            "sections": {}
+        }
+    }
+}

@@ -1,0 +1,37 @@
+{
+    "name": "pubvana/redirects",
+    "display_name": "Redirects",
+    "description": "Redirection Manager for Pubvana CMS: 301/302 redirects and redirect-link (404) tracking",
+    "category": "tools",
+    "semver": "0.2.1",
+    "provides": {
+        "admin.menu": {
+            "tools": {
+                "url-manager": {
+                    "label": "URL Manager",
+                    "url": "/redirects",
+                    "icon": "ti-link",
+                    "priority": 20,
+                    "submenu": {
+                        "redirects": {
+                            "label": "Redirects",
+                            "url": "/redirects",
+                            "icon": "ti-route-2",
+                            "priority": 10
+                        },
+                        "404s": {
+                            "label": "404 Manager",
+                            "url": "/404-manager",
+                            "icon": "ti-link-off",
+                            "priority": 20
+                        }
+                    }
+                }
+            }
+        },
+        "admin.dashboard": {
+            "cards": {},
+            "sections": {}
+        }
+    }
+}

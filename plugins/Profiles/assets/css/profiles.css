@@ -1,0 +1,155 @@
+/* ── Pubvana Profiles public styles ── */
+
+.pv-profile {
+    display: grid;
+    gap: 1.5rem;
+}
+
+@media (min-width: 992px) {
+    .pv-profile {
+        grid-template-columns: 2fr 1fr;
+    }
+}
+
+.pv-profile-card {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: .25rem;
+    padding: 1.5rem;
+}
+
+.pv-profile-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.pv-profile-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.pv-profile-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.pv-profile-username {
+    color: #777;
+    margin: 0;
+}
+
+.pv-profile-section {
+    margin-bottom: 1.5rem;
+}
+
+.pv-profile-section-title {
+    font-size: .875rem;
+    font-weight: 600;
+    margin-bottom: .5rem;
+}
+
+.pv-profile-bio {
+    line-height: 1.6;
+}
+
+.pv-profile-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.pv-profile-links li {
+    padding: .25rem 0;
+}
+
+.pv-profile-links a {
+    color: #1a6b3c;
+    text-decoration: none;
+}
+
+.pv-profile-links a:hover {
+    text-decoration: underline;
+}
+
+.pv-profile-btn {
+    display: inline-block;
+    padding: .5rem 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    background-color: #1a6b3c;
+    border: 1px solid #1a6b3c;
+    border-radius: .25rem;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+}
+
+.pv-profile-btn:hover {
+    background-color: #145530;
+    border-color: #145530;
+}
+
+.pv-profile-btn-secondary {
+    color: #777;
+    background-color: transparent;
+    border-color: #ccc;
+}
+
+.pv-profile-btn-secondary:hover {
+    background-color: #eee;
+    border-color: #ccc;
+    color: #333;
+}
+
+.pv-profile-form {
+    display: grid;
+    gap: 1rem;
+}
+
+.pv-profile-form-field {
+    display: grid;
+    gap: .4rem;
+}
+
+.pv-profile-form-label {
+    font-size: .95rem;
+    font-weight: 600;
+}
+
+.pv-profile-form-input,
+.pv-profile-form-textarea {
+    display: block;
+    width: 100%;
+    padding: .5rem .65rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #333;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: .25rem;
+    appearance: none;
+}
+
+.pv-profile-form-textarea {
+    min-height: 6rem;
+    resize: vertical;
+}
+
+.pv-profile-form-input:focus,
+.pv-profile-form-textarea:focus {
+    border-color: #1a6b3c;
+    outline: 0;
+    box-shadow: 0 0 0 .2rem rgba(26, 107, 60, .2);
+}
+
+.pv-profile-form-actions {
+    display: flex;
+    gap: .5rem;
+    margin-top: .5rem;
+}

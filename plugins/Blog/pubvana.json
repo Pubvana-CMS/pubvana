@@ -1,0 +1,40 @@
+{
+    "name": "pubvana/blog",
+    "display_name": "Blog",
+    "description": "Blog module for Pubvana CMS",
+    "category": "content",
+    "semver": "0.1.0",
+    "provides": {
+        "admin.menu": {
+            "content": {
+                "blog": {
+                    "label": "Blog",
+                    "url": "/blog",
+                    "icon": "ti-article",
+                    "priority": 10,
+                    "submenu": {
+                        "posts": {
+                            "label": "Posts",
+                            "url": "/blog",
+                            "priority": 10
+                        },
+                        "categories": {
+                            "label": "Categories",
+                            "url": "/blog/categories",
+                            "priority": 20
+                        },
+                        "tags": {
+                            "label": "Tags",
+                            "url": "/blog/tags",
+                            "priority": 30
+                        }
+                    }
+                }
+            }
+        },
+        "admin.dashboard": {
+            "cards": {},
+            "sections": {}
+        }
+    }
+}

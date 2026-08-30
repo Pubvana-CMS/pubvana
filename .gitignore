@@ -1,0 +1,26 @@
+# Local project instructions / working docs (not published)
+AGENTS.md
+PLAN.md
+/docs/*
+
+# Composer
+/vendor/
+
+# Environment and local config
+.env
+.env.local
+
+# Runtime / install markers
+.migrations_installed
+
+# Writable application data
+/writable/cache/*
+/writable/logs/*
+!/writable/cache/.gitkeep
+!/writable/logs/.gitkeep
+
+# Public uploads (site media/content)
+/public/uploads/*
+
+# Built admin assets
+/public/assets/admin/dist/

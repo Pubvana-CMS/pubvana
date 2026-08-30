@@ -1,0 +1,22 @@
+{
+    "name": "pubvana/pages",
+    "display_name": "Pages",
+    "description": "Static pages module for Pubvana CMS",
+    "category": "content",
+    "semver": "0.1.0",
+    "provides": {
+        "admin.menu": {
+            "content": {
+                "pages": {
+                    "label": "Pages",
+                    "icon": "ti-file",
+                    "url": "/pages",
+                    "priority": 20
+                }
+            }
+        },
+        "admin.dashboard": {
+            "cards": {}
+        }
+    }
+}

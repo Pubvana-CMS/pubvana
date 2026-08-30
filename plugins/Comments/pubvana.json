@@ -1,0 +1,35 @@
+{
+    "name": "pubvana/comments",
+    "display_name": "Comments",
+    "description": "Nested, moderated comments for Pubvana with captcha support",
+    "category": "content",
+    "semver": "0.1.0",
+    "provides": {
+        "admin.menu": {
+            "content": {
+                "comments": {
+                    "label": "Comments",
+                    "url": "/comments",
+                    "icon": "ti-message-circle",
+                    "priority": 30,
+                    "submenu": {
+                        "manage": {
+                            "label": "Manage",
+                            "url": "/comments",
+                            "priority": 10
+                        },
+                        "settings": {
+                            "label": "Settings",
+                            "url": "/comments/settings",
+                            "priority": 20
+                        }
+                    }
+                }
+            }
+        },
+        "admin.dashboard": {
+            "cards": {},
+            "sections": {}
+        }
+    }
+}

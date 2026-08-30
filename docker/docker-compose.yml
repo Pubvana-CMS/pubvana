@@ -1,0 +1,41 @@
+services:
+  db:
+    image: mariadb:10.11
+    container_name: pubvana25-db
+    restart: unless-stopped
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: "1"
+      MYSQL_DATABASE: pubvana
+      MYSQL_USER: pubvana
+      MYSQL_PASSWORD: pubvana
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pubvana25-web
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    volumes:
+      - /tmp/pubvana25:/var/www/html
+    environment:
+      DB_HOSTNAME: db
+      DB_DATABASE: pubvana
+      DB_USERNAME: pubvana
+      DB_PASSWORD: pubvana
+      BASE_URL: http://localhost:8080
+
+volumes:
+  pubvana25-db-data:

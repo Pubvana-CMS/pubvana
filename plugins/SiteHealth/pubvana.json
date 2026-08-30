@@ -1,0 +1,23 @@
+{
+    "name": "pubvana/sitehealth",
+    "display_name": "Site Health",
+    "description": "Site health and diagnostics: configuration, security, environment and plugin checks",
+    "category": "tools",
+    "semver": "0.1.0",
+    "provides": {
+        "admin.menu": {
+            "tools": {
+                "site-health": {
+                    "label": "Site Health",
+                    "url": "/site-health",
+                    "icon": "ti-stethoscope",
+                    "priority": 40
+                }
+            }
+        },
+        "admin.dashboard": {
+            "cards": {},
+            "sections": {}
+        }
+    }
+}
