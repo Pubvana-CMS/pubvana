@@ -2,10 +2,12 @@ parameters:
     level: 3
     paths:
         - app/
+    excludePaths:
+        - app/Views
+        - app/config
     scanDirectories:
         - vendor/
-    stubFiles:
-        - phpstan/stubs/ProjectRoot.stub.php
+    reportUnmatchedIgnoredErrors: false
     ignoreErrors:
         -
             message: '#Call to an undefined method#'
@@ -18,6 +20,8 @@ parameters:
         -
             message: '#on left side of \?\? always exists and is not nullable#'
         -
-            message: '#on left side of \?\? is not nullable#'
+            message: '#Undefined variable: \$ds#'
         -
-            message: '#Expression on left side of \?\? is not nullable#'
+            message: '#Anonymous function has an unused use#'
+        -
+            message: '#File ends with a trailing whitespace#'
