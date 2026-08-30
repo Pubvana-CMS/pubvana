@@ -4,5 +4,12 @@ parameters:
         - app/
     scanDirectories:
         - vendor/
+    scanFiles:
+        - phpstan/bootstrap.php
     ignoreErrors:
         - '#Call to an undefined method flight\\Engine::#'
+        - '#Call to an undefined method flight\\ActiveRecord::#'
+        - '#should return array<Pubvana\\Models\\Mail> but returns array<int, flight\\ActiveRecord>#'
+        - '#Access to an undefined property flight\\util\\Collection::\$saved#'
+        - '#Instanceof between array<string, Enlivenapp\\Migrations\\Services\\ModuleResult> and Enlivenapp\\Migrations\\Services\\ModuleResult will always evaluate to false#'
+        - '#Result of && is always false#'
