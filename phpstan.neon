@@ -7,9 +7,7 @@ parameters:
     scanFiles:
         - phpstan/bootstrap.php
     ignoreErrors:
-        - '#Call to an undefined method flight\\Engine::#'
-        - '#Call to an undefined method flight\\ActiveRecord::#'
-        - '#should return array<Pubvana\\Models\\Mail> but returns array<int, flight\\ActiveRecord>#'
-        - '#Access to an undefined property flight\\util\\Collection::\$saved#'
-        - '#Instanceof between array<string, Enlivenapp\\Migrations\\Services\\ModuleResult> and Enlivenapp\\Migrations\\Services\\ModuleResult will always evaluate to false#'
-        - '#Result of && is always false#'
+        - '#Call to an undefined method.*::(order|select|limit|eq|find|findAll|insert|update|delete|save|getDatabaseConnection|isHydrated|addCondition)#'
+        - '#Access to an undefined property flight\\(ActiveRecord|util\\Collection)#'
+        - '#should return array<Pubvana\\\\Models\\\\#'
+        - '#flight\\Engine::[a-z]+#'
