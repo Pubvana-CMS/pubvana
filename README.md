@@ -134,18 +134,7 @@ Plugin and theme assets are served by AssetService at `/assets/{type}/{name}/{pa
 
 ## Developer Documentation
 
-- [Architecture](docs/architecture.md) - system design, plugin loading, data flow
-- [Bootstrapping](docs/bootstrapping.md) - boot order, configuration hierarchy
-- [Plugin Development](docs/plugin-development.md) - building plugins
-- [Plugin Integration](docs/plugin-integration.md) - converting Composer plugins to app-based
-- [Themes](docs/themes.md) - creating themes
-- [Vision](docs/vision.md) - template engine reference
-- [adext](docs/adext.md) - extension registry
-- [Runway](docs/runway.md) - CLI tooling
-- [Navigation](docs/navigation.md) - menus and nav
-- [Sessions](docs/sessions.md) - session handling
-- [Shield](docs/shield.md) - auth and permissions
-- [Email](docs/email.md) - SMTP mail
+- Coming Soon
 
 ## Stack
 
