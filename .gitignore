@@ -22,5 +22,8 @@ PLAN.md
 # Public uploads (site media/content)
 /public/uploads/*
 
-# Built admin assets
-/public/assets/admin/dist/
+# Node.js
+/node_modules/
+/package-lock.json
+node_modules
+node_modules

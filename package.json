@@ -1,0 +1,16 @@
+{
+  "name": "pubvana-cms",
+  "version": "3.0.0",
+  "private": true,
+  "description": "Pubvana CMS v3",
+  "scripts": {
+    "build": "npm run build:css && npm run build:js",
+    "build:css": "sass --style=compressed --load-path=node_modules --load-path=node_modules/@tabler/core/src node_modules/@tabler/core/src/scss/tabler.scss public/admin-assets/dist/css/tabler.min.css",
+    "build:css:dev": "sass --style=expanded --load-path=node_modules --load-path=node_modules/@tabler/core/src node_modules/@tabler/core/src/scss/tabler.scss public/admin-assets/dist/css/tabler.css",
+    "watch": "sass --watch --style=expanded --load-path=node_modules --load-path=node_modules/@tabler/core/src node_modules/@tabler/core/src/scss/tabler.scss public/admin-assets/dist/css/tabler.css"
+  },
+  "devDependencies": {
+    "@tabler/core": "1.0.0-beta20",
+    "sass": "^1.77.0"
+  }
+}
