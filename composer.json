@@ -30,6 +30,7 @@
     },
     "require-dev": {
         "flightphp/tracy-extensions": "^0.3.0",
-        "tracy/tracy": "^2.10"
+        "tracy/tracy": "^2.10",
+        "phpstan/phpstan": "^2.2"
     }
 }

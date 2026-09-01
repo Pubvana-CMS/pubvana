@@ -1,0 +1,29 @@
+.social-links-title {
+    margin: 0 0 0.75rem;
+}
+
+.social-links-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.social-links-item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.4em;
+    height: 2.4em;
+    font-size: 1.1rem;
+    color: inherit;
+    text-decoration: none;
+    border-radius: 50%;
+    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
+}
+
+.social-links-item:hover,
+.social-links-item:focus-visible {
+    color: inherit;
+    background-color: rgba(0, 0, 0, 0.06);
+}

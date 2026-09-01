@@ -1,0 +1,23 @@
+{
+    "name": "pubvana/social-links",
+    "display_name": "Social Links",
+    "description": "Central management of social profile links, rendered anywhere via a public block",
+    "category": "tools",
+    "semver": "0.1.0",
+    "provides": {
+        "admin.menu": {
+            "settings": {
+                "social-links": {
+                    "label": "Social Links",
+                    "url": "/social-links",
+                    "icon": "ti-share",
+                    "priority": 25
+                }
+            }
+        },
+        "admin.dashboard": {
+            "cards": {},
+            "sections": {}
+        }
+    }
+}
