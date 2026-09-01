@@ -21,7 +21,7 @@ class Plugin implements PluginInterface
 {
     public function register(Engine $app, Router $router, array $config = []): void
     {
-        // Store config on the app store for controller and CLI access
+        // Store the config under 'pubvana.backups' so the controller and CLI can read it
         $app->set('pubvana.backups', $config);
 
         // Map the backup service (singleton)

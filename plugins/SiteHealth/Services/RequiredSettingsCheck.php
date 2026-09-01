@@ -47,7 +47,7 @@ class RequiredSettingsCheck implements CheckInterface
 
     /**
      * Read a setting, preferring the settings service and falling back to
-     * the app store.
+     * the app's value.
      */
     private function settingsValue(string $key): string
     {

@@ -9,7 +9,7 @@
  *
  * Responsibilities, in order:
  *   1. Load .env once per process
- *   2. Apply those values on top of Flight's app store
+ *   2. Apply those values over the app's existing config
  *   3. Decide 'flight.force_https':
  *        FORCE_HTTPS wins if set; otherwise production => true,
  *        development => false.
@@ -98,12 +98,12 @@ $resolveEnv = static function (string $key): ?string {
 $envMap = [
     'APP_ENV'     => 'environment',
     // APP_DEBUG / FORCE_HTTPS are parsed strictly below rather than in this
-    // map, so raw strings can never reach the app store.
+    // map, so raw strings never end up as app config values.
     'SITE_NAME'   => 'CMS.siteName',
     'ADMIN_EMAIL' => 'CMS.adminEmail',
     'SITE_URL'    => 'CMS.siteUrl',
     // APP_DEBUG / FORCE_HTTPS are parsed strictly below rather than in this
-    // map, so raw strings can never reach the app store.
+    // map, so raw strings never end up as app config values.
     'DB_HOST'     => null,
     'DB_PORT'     => null,
     'DB_NAME'     => null,

@@ -48,7 +48,7 @@ class PluginLoader
     /** @var string Absolute path to the vendor/ directory (Composer packages) */
     protected string $vendorPath;
 
-    /** @var array Plugin config from the app store (enabled, priority, etc.) */
+    /** @var array Plugin config the app passes in (enabled, priority, etc.) */
     protected array $enabledPlugins;
 
     /** @var array Loaded plugin instances, keyed by plugin ID */
@@ -87,7 +87,7 @@ class PluginLoader
      * @param Router $router         The FlightPHP router
      * @param string $pluginPath     Absolute path to the plugins/ directory
      * @param string $vendorPath     Absolute path to the vendor/ directory
-     * @param array  $enabledPlugins Plugin config from the app store
+     * @param array  $enabledPlugins Plugin config the app passes in
      */
     public function __construct(Engine $app, Router $router, string $pluginPath, string $vendorPath, array $enabledPlugins = [])
     {
@@ -1185,7 +1185,7 @@ class PluginLoader
      * First-discovery defaults for a plugin with no plugin_state row yet.
      *
      * 1. Required core plugins (sessions/shield/csrf) are enabled + locked.
-     * 2. An explicit app store entry (enabled/priority) is inherited.
+     * 2. An explicit enabled/priority entry in the app-passed plugin config is inherited.
      * 3. Local plugins ship with Pubvana, so they are enabled by default.
      * 4. Anything else starts DISABLED — the pause. Its code runs nothing
      *    until an admin enables it on the Plugins page.
@@ -1220,7 +1220,7 @@ class PluginLoader
     /**
      * Build the enabled-gated migration/seed path list (core + enabled plugins).
      *
-     * Exposed to CLI tooling through the Flight app store so disabled plugin
+     * Passed to CLI tooling as an app value so disabled plugin
      * migrations never run from the command line either.
      *
      * @return array{paths: string[], seeds: array{paths: string[]}}

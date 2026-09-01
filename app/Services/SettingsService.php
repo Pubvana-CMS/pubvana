@@ -25,7 +25,7 @@ use Pubvana\Services\ExtensionRegistry;
  *
  * Resolution order for get(), strongest first:
  *   1. Database row (this table)
- *   2. Flight app store via $app->get($key) - which already encodes
+ *   2. The value at $app->get($key) - which already encodes
  *      real-env > .env > config.php thanks to env-overrides.php
  *   3. The declaration's 'default' (from the admin.settings registration)
  *   4. The caller's $default parameter (final safety net)
@@ -93,7 +93,7 @@ class SettingsService
     protected ?array $fieldDeclarations = null;
 
     /**
-     * @param Engine $app Flight application for db(), adext() and the app store
+     * @param Engine $app Flight application for db(), adext() and $app->get()
      */
     public function __construct(Engine $app)
     {
@@ -107,7 +107,7 @@ class SettingsService
     /**
      * Get a setting's resolved value.
      *
-     * Resolution order: DB row > app store (env > .env > config.php,
+     * Resolution order: DB row > the app's value (env > .env > config.php,
      * pre-applied by env-overrides.php) > declaration default >
      * caller's $default. Returns null when nothing resolves.
      *
@@ -123,7 +123,7 @@ class SettingsService
             return Setting::cast($row['type'], $row['value']);
         }
 
-        // 2. App store: env vars/.env/config.php already layered here.
+        // 2. The app's value here: env vars/.env/config.php already layered in.
         //    A declaration may point elsewhere via 'fallback'.
         $declaration = $this->declaredFields()[$key] ?? null;
         $fallbackKey = $declaration['fallback'] ?? $key;
@@ -163,7 +163,7 @@ class SettingsService
      * Get every setting in one namespace, merged across tiers.
      *
      * Merge order (weakest to strongest): declaration defaults <
-     * app store (env/.env/config.php) < database rows.
+     * the app's value (env/.env/config.php) < database rows.
      *
      * @param string $namespace Namespace before the dot (e.g. 'CMS', 'blog')
      * @return array<string, mixed>
@@ -189,7 +189,7 @@ class SettingsService
             }
         }
 
-        // Resolve each candidate down the chain: DB row > app store
+        // Resolve each candidate down the chain: DB row > the app's value
         // (env/.env/config.php) > declaration default. Keys that
         // resolve nowhere are omitted.
         $merged = [];

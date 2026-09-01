@@ -426,15 +426,15 @@ $pluginLoader = new \Pubvana\Services\PluginLoader(
     $app->router(),
     PROJECT_ROOT . $ds . 'plugins',
     PROJECT_ROOT . $ds . 'vendor',
-    // Read from the app store (not the raw config array) so .env
+    // Read from the value the app holds (not the raw config array) so .env
     // overrides applied by bootstrap's envMap are included.
     $app->get('plugins') ?? []
 );
 $app->map('pluginLoader', fn() => $pluginLoader);
 $pluginLoader->loadPlugins();
 
-// CLI tooling (runway) reads the enabled-gated migration set from the app
-// store via ConfigLoader, so disabled plugin migrations never run from the
+// CLI tooling (runway) reads the enabled-gated migration set as an app
+// value via ConfigLoader, so disabled plugin migrations never run from the
 // command line either. Same set, web and CLI.
 $app->set('migrations', $pluginLoader->getMigrationConfig());
 
