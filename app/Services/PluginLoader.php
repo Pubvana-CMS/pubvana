@@ -48,7 +48,7 @@ class PluginLoader
     /** @var string Absolute path to the vendor/ directory (Composer packages) */
     protected string $vendorPath;
 
-    /** @var array Plugin config from config.php (enabled, priority, etc.) */
+    /** @var array Plugin config from the app store (enabled, priority, etc.) */
     protected array $enabledPlugins;
 
     /** @var array Loaded plugin instances, keyed by plugin ID */
@@ -87,7 +87,7 @@ class PluginLoader
      * @param Router $router         The FlightPHP router
      * @param string $pluginPath     Absolute path to the plugins/ directory
      * @param string $vendorPath     Absolute path to the vendor/ directory
-     * @param array  $enabledPlugins Plugin config from config.php
+     * @param array  $enabledPlugins Plugin config from the app store
      */
     public function __construct(Engine $app, Router $router, string $pluginPath, string $vendorPath, array $enabledPlugins = [])
     {
@@ -728,8 +728,8 @@ class PluginLoader
      *
      * The source of truth is the plugin_state table (DB-backed). A plugin is
      * only loadable when its plugin_state row has enabled = true. Fallback to
-     * the app config array (config.php plugins) covers offline/CLI edge cases
-     * where the database is unavailable.
+     * the app config array (plugins) covers offline/CLI edge cases where the
+     * database is unavailable.
      *
      * @param string $pluginId Plugin ID
      * @return bool True if enabled
@@ -1185,7 +1185,7 @@ class PluginLoader
      * First-discovery defaults for a plugin with no plugin_state row yet.
      *
      * 1. Required core plugins (sessions/shield/csrf) are enabled + locked.
-     * 2. A config.php entry (transitional, pre-retirement) is inherited.
+     * 2. An explicit app store entry (enabled/priority) is inherited.
      * 3. Local plugins ship with Pubvana, so they are enabled by default.
      * 4. Anything else starts DISABLED — the pause. Its code runs nothing
      *    until an admin enables it on the Plugins page.

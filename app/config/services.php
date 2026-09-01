@@ -36,9 +36,9 @@ if (!defined('PROJECT_ROOT')) {
     define('PROJECT_ROOT', dirname(__DIR__, 2));
 }
 
-// Ensure config values are loaded into the app. No config.php exists
-// anymore, so $config is never populated under either boot path; values
-// come from env-overrides.php below.
+// Ensure config values are loaded into the app. There is no single config
+// file anymore, so $config is never populated under either boot path;
+// values come from env-overrides.php below.
 if ($app->get('database') === null && is_array($config ?? null)) {
     foreach ($config as $key => $value) {
         $app->set($key, $value);
@@ -176,7 +176,7 @@ $csrf = new \Enlivenapp\FlightCsrf\Middlewares\CsrfMiddleware($app);
 | The enabled-gated migration set comes from $pluginLoader->getMigrationConfig()
 | — the single source of truth — and is registered below so both web and CLI
 | (runway loads this file) resolve it from the Flight store. app/config/
-| migrations.php remains only as ConfigLoader's no-Flight fallback (core paths).
+| migrations.php remains only as a no-Flight fallback (core paths).
 */
 
 $app->map('adext', function () use ($app) {

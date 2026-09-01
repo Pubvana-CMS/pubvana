@@ -5,16 +5,14 @@
  *
  * This file is the second step after index.php. It:
  *   1. Loads Composer's autoloader
- *   2. Checks that config.php exists (user copies config_sample.php)
- *   3. Creates the FlightPHP app instance
- *   4. Loads config values into the app
- *   5. Applies .env overrides and derives the HTTPS policy (env-overrides.php,
+ *   2. Creates the FlightPHP app instance
+ *   3. Applies .env overrides and derives the HTTPS policy (env-overrides.php,
  *      shared with the CLI boot path so both resolve identical config)
- *   6. Enforces HTTPS when the policy demands it (before anything else runs,
+ *   4. Enforces HTTPS when the policy demands it (before anything else runs,
  *      Shield and sessions read this same flag later in boot)
- *   7. Loads services.php (DB, auth, settings, plugin loader, etc.)
- *   8. Loads core-admin.php + routes.php, registers stored routes
- *   9. Starts FlightPHP to process the request
+ *   5. Loads services.php (DB, auth, settings, plugin loader, etc.)
+ *   6. Loads core-admin.php + routes.php, registers stored routes
+ *   7. Starts FlightPHP to process the request
  *
  * @package Pubvana\config
  */
