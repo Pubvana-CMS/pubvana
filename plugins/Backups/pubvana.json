@@ -1,0 +1,23 @@
+{
+    "name": "pubvana/backups",
+    "display_name": "Backups",
+    "description": "Full-site backup and restore for Pubvana CMS",
+    "category": "tools",
+    "semver": "0.1.0",
+    "provides": {
+        "admin.menu": {
+            "tools": {
+                "backups": {
+                    "label": "Backups",
+                    "url": "/backups",
+                    "icon": "ti-database-export",
+                    "priority": 10
+                }
+            }
+        },
+        "admin.dashboard": {
+            "cards": {},
+            "sections": {}
+        }
+    }
+}

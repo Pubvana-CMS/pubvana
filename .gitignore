@@ -18,6 +18,8 @@ PLAN.md
 /writable/logs/*
 !/writable/cache/.gitkeep
 !/writable/logs/.gitkeep
+/writable/backups/*
+!/writable/backups/.gitkeep
 
 # Public uploads (site media/content)
 /public/uploads/*
