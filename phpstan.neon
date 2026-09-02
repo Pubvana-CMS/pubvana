@@ -1,27 +1,55 @@
 parameters:
-    level: 3
+    level: 8
     paths:
         - app/
+        - plugins/
     excludePaths:
         - app/Views
         - app/config
+        - plugins/*/Views
+        - plugins/*/Views/**
+        - plugins/*/views
+        - plugins/*/views/**
+        - plugins/*/config
+        - plugins/*/config/**
     scanDirectories:
         - vendor/
-    reportUnmatchedIgnoredErrors: false
+    stubFiles:
+        - phpstan-stubs.php
+    bootstrapFiles:
+        - phpstan-bootstrap.php
+    reportUnmatchedIgnoredErrors: true
     ignoreErrors:
         -
-            message: '#Call to an undefined method#'
+            # AbstractModel::find() returns parent::find(), whose vendor
+            # PHPDoc types the result as the base ActiveRecord. At runtime
+            # the vendor hydrates via `new $called_class`, so the result is
+            # always the concrete model (static). The override's body cannot
+            # prove that to PHPStan; the ignore lives here and only here.
+            message: '#Method Pubvana\\Models\\AbstractModel\:\:find\(\) should return static#'
+            path: app/Models/AbstractModel.php
         -
-            message: '#Access to an undefined property#'
+            # AbstractModel::findAll() returns parent::findAll(), whose vendor
+            # PHPDoc types the result as the base ActiveRecord. At runtime the
+            # vendor hydrates via `new $called_class`, so the result is always
+            # the concrete model (static). Same root cause as find(); the override
+            # body cannot prove it to PHPStan. Scoped to this file only.
+            message: '#Method Pubvana\\Models\\AbstractModel\:\:findAll\(\) should return array#'
+            path: app/Models/AbstractModel.php
         -
-            message: '#should return array.*Pubvana#'
+            # Flight's Route::addMiddleware() docblock omits object middlewares,
+            # but Engine::processMiddleware() calls ->before()/->after() on any
+            # object. Runtime-verified: objects are the intended shape.
+            message: '#Parameter \#1 \$middleware of method flight\\net\\Route\:\:addMiddleware\(\) expects .* object given#'
+            path: app/Services/ExtensionRegistry.php
         -
-            message: '#Constant PROJECT_ROOT not found#'
+            # Same vendor imprecision as above, for Router::group() middlewares.
+            message: '#Parameter \#3 \$groupMiddlewares of method flight\\net\\Router\:\:group\(\) expects .* given#'
+            path: app/Services/PluginLoader.php
         -
-            message: '#on left side of \?\? always exists and is not nullable#'
-        -
-            message: '#Undefined variable: \$ds#'
-        -
-            message: '#Anonymous function has an unused use#'
-        -
-            message: '#File ends with a trailing whitespace#'
+            # dataFor()/render() expose an $allowComments flag to comment hosts
+            # by contract; every current in-tree host happens to pass true, so
+            # PHPStan sees the branches as dead. The flag stays because
+            # third-party hosts pass the item's allow_comments value.
+            message: '#Left side of && is always true|Negated boolean expression is always false#'
+            path: plugins/Comments/Services/CommentService.php
