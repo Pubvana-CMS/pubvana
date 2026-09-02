@@ -6,6 +6,9 @@
 # Composer
 /vendor/
 
+# testing
+.phpunit.cache/
+
 # Environment and local config
 .env
 .env.local
