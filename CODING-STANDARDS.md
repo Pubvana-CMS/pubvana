@@ -86,8 +86,8 @@ Order matters; later steps assume earlier ones pass.
 5. Review your own diff       - no secrets, no debug, no unrelated changes
 
 On CI (`.github/workflows/`): `phpstan.yml` and `psalm.yml` enforce the two
-static-analysis gates on push/pull to `main`. Treat a red CI status like a
-blocked push.
+static-analysis gates and `test.yml` enforces the PHPUnit suite on push/pull
+to `main`. Treat a red CI status like a blocked push.
 
 ---
 

@@ -1,31 +1,25 @@
-# Pubvana
+<p align="center">
+  <img src="pubvana-nodrop-nobg.png" alt="Pubvana CMS" width="220">
+</p>
+
+# Pubvana CMS
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.2%2B-blue.svg)](https://www.php.net)
 [![FlightPHP](https://img.shields.io/badge/FlightPHP-3.0-orange.svg)](https://flightphp.com)
+[![Release](https://img.shields.io/github/v/release/Pubvana-CMS/pubvana)](https://github.com/Pubvana-CMS/pubvana/releases)
+[![PHPStan](https://github.com/Pubvana-CMS/pubvana/actions/workflows/phpstan.yml/badge.svg)](https://github.com/Pubvana-CMS/pubvana/actions/workflows/phpstan.yml)
+[![Psalm](https://github.com/Pubvana-CMS/pubvana/actions/workflows/psalm.yml/badge.svg)](https://github.com/Pubvana-CMS/pubvana/actions/workflows/psalm.yml)
+[![Tests](https://github.com/Pubvana-CMS/pubvana/actions/workflows/test.yml/badge.svg)](https://github.com/Pubvana-CMS/pubvana/actions/workflows/test.yml)
 
-Pubvana v3 is a FlightPHP-based CMS with a plugin architecture, Vision template engine, and shared-host friendly setup. Build blogs, small business sites, or content platforms without framework bloat.
+[![v3](https://img.shields.io/badge/v3-In%20Development-blue)](https://github.com/Pubvana-CMS/pubvana)
+[![Status](https://img.shields.io/github/v/tag/Pubvana-CMS/pubvana?label=Status)](https://github.com/Pubvana-CMS/pubvana/tags)
 
-## Important Note: 
-v3 is currently in Alpha developement. Thing can change rapidly, and no update ability is available yet(you'd be stuck with composer for updates). If you need a stable release *right now* consider [Pubvana v2](https://github.com/Pubvana-CMS/pubvana/releases/tag/v2.3.6).  Thanks for considering Pubvana!
+Pubvana v3 is a full-featured CMS built on the FlightPHP micro framework with plugins, Vision template engine, and shared-host friendly setup for personal blogs and small to medium businesses.
 
-## Features
+## Notice: 
+v3 is currently in Alpha developement. Thing change rapidly, and no update ability is available yet(you'd be stuck with composer for updates). If you need a stable release *right now* consider [Pubvana v2](https://github.com/Pubvana-CMS/pubvana/releases/tag/v2.3.6).  Thanks for considering Pubvana!
 
-- Posts and pages with draft/published/scheduled workflow
-- WYSIWYG editor (Jodit) for all content types
-- Plugin system with enable/disable from the admin panel
-- Vision templates for public pages (no PHP execution)
-- Region and block system with drag-and-drop placement
-- Media library with image editing
-- Built-in SEO (meta, sitemaps, schema, LLMs.txt)
-- Comment system with moderation
-- URL redirect manager with 404 tracking
-- Form builder with submissions
-- Server-side analytics with daily rollups
-- Search across all content types
-- Role-based access control (Shield)
-- SMTP email with encrypted credentials
-- Dark mode admin UI (Tabler/Bootstrap 5)
 
 ## Prerequisites
 
@@ -34,11 +28,15 @@ v3 is currently in Alpha developement. Thing can change rapidly, and no update a
 - Composer (getcomposer.org)
 - A web server (Apache with mod_rewrite, or Nginx)
 
-Create an empty MySQL database and a user with full privileges on it. You'll need the database name, username, and password for setup.
+Create an empty MySQL database and a user with full privileges on it. You'll need the database name, username, and password for setup.  *Composer* is optional in production builds (see Release Download `.zip` file).
 
-## Installation
+## Automated Installation
 
-**Production (clone and install):**
+See the Pubvana Website for [v2 web installer](https://pubvana.net/dstore/product/pubvana-easy-installer) or [v2 Docker Compose](https://github.com/Pubvana-CMS/v2-docker) on Github. 
+
+## Manual Installation (v3)  
+
+**Production (clone and install):** *Browser and Docker based installers coming soon.*
 
 ```bash
 cd ~/public_html/
@@ -56,13 +54,19 @@ composer install
 
 ## Configuration
 
+Generate a session key if you don't have one (don't reuse keys):
+
+```bash
+php -r 'echo bin2hex(random_bytes(32));'
+```
+
 Copy the sample environment file and edit it:
 
 ```bash
 cp .env.example .env
 ```
 
-At minimum, set these values:
+Edit `.env`: At minimum, set these values:
 
 ```
 APP_ENV=production
@@ -74,11 +78,6 @@ SITE_URL=https://your-domain.com/
 SESSION_ENCRYPTION_KEY=<64 hex characters>
 ```
 
-Generate a session key if you don't have one:
-
-```bash
-php -r 'echo bin2hex(random_bytes(32));'
-```
 
 ## Initialize the Database
 
@@ -135,6 +134,25 @@ Plugin and theme assets are served by AssetService at `/assets/{type}/{name}/{pa
 ## Developer Documentation
 
 - Coming Soon
+
+
+## Features
+
+- Posts and pages with draft/published/scheduled workflow
+- WYSIWYG editor (Jodit) for all content types
+- Plugin system with enable/disable from the admin panel
+- Vision templates for public pages (no PHP execution)
+- Region and block system with drag-and-drop placement
+- Media library with image editing
+- Built-in SEO (meta, sitemaps, schema, LLMs.txt)
+- Comment system with moderation
+- URL redirect manager with 404 tracking
+- Form builder with submissions
+- Server-side analytics with daily rollups
+- Search across all content types
+- Role-based access control (Shield)
+- SMTP email with encrypted credentials
+- Dark mode admin UI (Tabler/Bootstrap 5)
 
 ## Stack
 
