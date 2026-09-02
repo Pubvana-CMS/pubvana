@@ -80,7 +80,6 @@ class AssetService
         }
 
         // Sanitize inputs (prevent directory traversal)
-        $name = basename($name);
         $path = str_replace(['../', '..\\'], '', $path);
 
         // Build file path based on type
@@ -89,11 +88,13 @@ class AssetService
 
         switch ($type) {
             case 'plugin':
-                $filePath = $root . '/plugins/' . $name . '/assets/' . $path;
+                // $name is a single component (plugin id); strip any path
+                $filePath = $root . '/plugins/' . basename($name) . '/assets/' . $path;
                 break;
 
             case 'theme':
-                $filePath = $root . '/themes/' . $name . '/assets/' . $path;
+                // $name is a single component (theme id); strip any path
+                $filePath = $root . '/themes/' . basename($name) . '/assets/' . $path;
                 break;
 
             case 'vendor':
@@ -102,6 +103,7 @@ class AssetService
                 if (count($parts) !== 2) {
                     return null;
                 }
+                // Strip any path from each component to prevent traversal
                 $vendor = basename($parts[0]);
                 $package = basename($parts[1]);
                 $filePath = $root . '/vendor/' . $vendor . '/' . $package . '/assets/' . $path;
