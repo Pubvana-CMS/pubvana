@@ -4,10 +4,18 @@
 
 # Pubvana CMS
 
+Pubvana v3 is a full-featured CMS built on the FlightPHP micro framework with plugins, Vision template engine, and shared-host friendly setup for personal blogs and small to medium businesses.
+
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.2%2B-blue.svg)](https://www.php.net)
+
+## v2
+[![Latest Release](https://img.shields.io/github/v/release/Pubvana-CMS/pubvana)](https://github.com/Pubvana-CMS/pubvana/releases)
+[![Codeigniter 4](https://img.shields.io/badge/Codeigniter4-4.7-orange.svg)](https://codeigniter.com)
+[![status](https://img.shields.io/badge/status-maintenance-blue)](https://github.com/Pubvana-CMS/pubvana)
+
+## v3
 [![FlightPHP](https://img.shields.io/badge/FlightPHP-3.0-orange.svg)](https://flightphp.com)
-[![Release](https://img.shields.io/github/v/release/Pubvana-CMS/pubvana)](https://github.com/Pubvana-CMS/pubvana/releases)
 [![PHPStan](https://github.com/Pubvana-CMS/pubvana/actions/workflows/phpstan.yml/badge.svg)](https://github.com/Pubvana-CMS/pubvana/actions/workflows/phpstan.yml)
 [![Psalm](https://github.com/Pubvana-CMS/pubvana/actions/workflows/psalm.yml/badge.svg)](https://github.com/Pubvana-CMS/pubvana/actions/workflows/psalm.yml)
 [![Tests](https://github.com/Pubvana-CMS/pubvana/actions/workflows/test.yml/badge.svg)](https://github.com/Pubvana-CMS/pubvana/actions/workflows/test.yml)
@@ -15,7 +23,8 @@
 [![v3](https://img.shields.io/badge/v3-In%20Development-blue)](https://github.com/Pubvana-CMS/pubvana)
 [![Status](https://img.shields.io/github/v/tag/Pubvana-CMS/pubvana?label=Status)](https://github.com/Pubvana-CMS/pubvana/tags)
 
-Pubvana v3 is a full-featured CMS built on the FlightPHP micro framework with plugins, Vision template engine, and shared-host friendly setup for personal blogs and small to medium businesses.
+
+
 
 ## Notice: 
 v3 is currently in Alpha developement. Thing change rapidly, and no update ability is available yet(you'd be stuck with composer for updates). If you need a stable release *right now* consider [Pubvana v2](https://github.com/Pubvana-CMS/pubvana/releases/tag/v2.3.6).  Thanks for considering Pubvana!
