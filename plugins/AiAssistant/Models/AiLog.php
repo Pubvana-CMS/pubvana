@@ -25,9 +25,33 @@ namespace Pubvana\Plugins\AiAssistant\Models;
  *   created_at  - Request timestamp
  *
  * @package Pubvana\Plugins\AiAssistant\Models
+ *
+ * @property int         $id
+ * @property int|null    $key_id
+ * @property string|null $key_name
+ * @property string      $method
+ * @property string      $endpoint
+ * @property string|null $entity_type
+ * @property int|null    $entity_id
+ * @property string      $outcome      ok|denied|error
+ * @property string|null $detail
+ * @property string|null $ip
+ * @property string|null $created_at
+ *
+ * @method self eq(string $field, mixed $value, string $operator = 'AND')
+ * @method self like(string $field, mixed $value, string $operator = 'AND')
+ * @method self isNull(string $field, string $operator = 'AND')
+ * @method self order(string $field)
+ * @method self select(string $field, string ...$fields)
+ * @method self limit(int $limit)
+ * @method self offset(int $offset)
  */
-class AiLog extends \flight\ActiveRecord
+class AiLog extends \Pubvana\Models\AbstractModel
 {
+    /**
+     * @param \flight\database\DatabaseInterface|\PDO|\mysqli|null $pdo
+     * @param array<string, mixed>                                 $config
+     */
     public function __construct($pdo = null, array $config = [])
     {
         parent::__construct($pdo, 'ai_logs', $config);

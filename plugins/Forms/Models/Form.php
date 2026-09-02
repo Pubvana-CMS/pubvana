@@ -16,9 +16,22 @@ namespace Pubvana\Plugins\Forms\Models;
  * @property string|null $created_at
  * @property string|null $updated_at
  * @property string|null $deleted_at
- */
-class Form extends \flight\ActiveRecord
+ * @method self eq(string $field, mixed $value, string $operator = 'AND')
+ * @method self notEq(string $field, mixed $value, string $operator = 'AND')
+ * @method self isNull(string $field, string $operator = 'AND')
+ * @method self order(string $field)
+ * @method self select(string $field, string ...$fields)
+ * @method self limit(int $limit)
+ * @method self offset(int $offset)
+  *
+ * @property int $cnt Aggregate alias from COUNT(*) selects
+*/
+class Form extends \Pubvana\Models\AbstractModel
 {
+    /**
+     * @param \flight\database\DatabaseInterface|\PDO|\mysqli|null $pdo
+     * @param array<string, mixed>                                 $config
+     */
     public function __construct($pdo = null, array $config = [])
     {
         parent::__construct($pdo, 'forms', $config);
@@ -57,6 +70,9 @@ class Form extends \flight\ActiveRecord
         return (int) $result->cnt > 0;
     }
 
+    /**
+     * @return array<int, Form>
+     */
     public function paginate(int $page = 1, int $perPage = 25): array
     {
         return (new self($this->getDatabaseConnection()))
@@ -67,6 +83,9 @@ class Form extends \flight\ActiveRecord
             ->findAll();
     }
 
+    /**
+     * @return array<int, Form>
+     */
     public function listAll(): array
     {
         return (new self($this->getDatabaseConnection()))
@@ -85,6 +104,9 @@ class Form extends \flight\ActiveRecord
         return (int) $result->cnt;
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public function createRecord(array $data): self
     {
         $record = new self($this->getDatabaseConnection());
@@ -101,6 +123,9 @@ class Form extends \flight\ActiveRecord
         return $record;
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public function updateRecord(array $data): void
     {
         $allowed = ['name', 'description', 'status', 'submit_label', 'success_message', 'notification_emails'];

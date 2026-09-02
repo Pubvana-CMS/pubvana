@@ -70,8 +70,8 @@ class MediaAdminController extends AdminController
         }
 
         try {
-            $user  = $this->app->auth()->user();
-            $media = $this->service()->uploadImage($file, (int) $user->id);
+            $user = $this->app->auth()->user();
+            $media = $this->service()->uploadImage($file, (int) ($user->id ?? 0));
             $this->app->json($this->mediaToArray($media), 201);
         } catch (\InvalidArgumentException $e) {
             $this->app->json(['error' => $e->getMessage()], 422);
@@ -88,8 +88,8 @@ class MediaAdminController extends AdminController
         }
 
         try {
-            $user  = $this->app->auth()->user();
-            $media = $this->service()->uploadVideo($file, (int) $user->id);
+            $user = $this->app->auth()->user();
+            $media = $this->service()->uploadVideo($file, (int) ($user->id ?? 0));
             $this->app->json($this->mediaToArray($media), 201);
         } catch (\InvalidArgumentException $e) {
             $this->app->json(['error' => $e->getMessage()], 422);
@@ -105,8 +105,8 @@ class MediaAdminController extends AdminController
             return;
         }
 
-        $user  = $this->app->auth()->user();
-        $media = $this->service()->storeEmbed($url, (int) $user->id);
+        $user = $this->app->auth()->user();
+        $media = $this->service()->storeEmbed($url, (int) ($user->id ?? 0));
 
         $this->app->json($this->mediaToArray($media), 201);
     }
@@ -236,7 +236,10 @@ class MediaAdminController extends AdminController
         $this->app->json(['capabilities' => $this->service()->getCapabilities()]);
     }
 
-    private function mediaToArray($media): array
+    /**
+     * @return array<string, mixed>
+     */
+    private function mediaToArray(\Pubvana\Plugins\Media\Models\Media $media): array
     {
         $data = [
             'id'             => (int) $media->id,

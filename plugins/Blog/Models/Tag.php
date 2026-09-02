@@ -8,9 +8,22 @@ namespace Pubvana\Plugins\Blog\Models;
  * @property int    $id
  * @property string $name
  * @property string $slug
+ * @method self eq(string $field, mixed $value, string $operator = 'AND')
+ * @method self notEq(string $field, mixed $value, string $operator = 'AND')
+ * @method self like(string $field, mixed $value, string $operator = 'AND')
+ * @method self in(string $field, mixed $value, string $operator = 'AND')
+ * @method self isNull(string $field, string $operator = 'AND')
+ * @method self order(string $field)
+ * @method self select(string $field, string ...$fields)
+ * @method self limit(int $limit)
+ * @method self offset(int $offset)
  */
-class Tag extends \flight\ActiveRecord
+class Tag extends \Pubvana\Models\AbstractModel
 {
+    /**
+     * @param \flight\database\DatabaseInterface|\PDO|\mysqli|null $pdo
+     * @param array<string, mixed>                                 $config
+     */
     public function __construct($pdo = null, array $config = [])
     {
         parent::__construct($pdo, 'tags', $config);
@@ -71,15 +84,13 @@ class Tag extends \flight\ActiveRecord
         return $record;
     }
 
+    /**
+     * @return array<int, Tag>
+     */
     public function getAll(): array
     {
         return (new self($this->getDatabaseConnection()))
             ->order('name ASC')
             ->findAll();
-    }
-
-    public function delete(): void
-    {
-        parent::delete();
     }
 }

@@ -8,6 +8,7 @@ use Pubvana\Plugins\SiteHealth\Interfaces\CheckInterface;
 
 class WritableDirectoriesCheck implements CheckInterface
 {
+    /** @var array<string, string> */
     private array $directories;
 
     public function __construct(string $projectRoot)

@@ -36,7 +36,7 @@ use Pubvana\Plugins\Pages\Controllers\PagesPublicController;
  */
 class PluginLoader
 {
-    /** @var Engine The FlightPHP app instance */
+    /** @var Engine<object> The FlightPHP app instance */
     protected Engine $app;
 
     /** @var Router The FlightPHP router */
@@ -48,19 +48,19 @@ class PluginLoader
     /** @var string Absolute path to the vendor/ directory (Composer packages) */
     protected string $vendorPath;
 
-    /** @var array Plugin config the app passes in (enabled, priority, etc.) */
+    /** @var array<string, mixed> Plugin config the app passes in (enabled, priority, etc.) */
     protected array $enabledPlugins;
 
-    /** @var array Loaded plugin instances, keyed by plugin ID */
+    /** @var array<string, PluginInterface> Loaded plugin instances, keyed by plugin ID */
     protected array $loaded = [];
 
     /** @var bool Whether loadPlugins() has already completed in this process */
     protected bool $pluginsLoaded = false;
 
-    /** @var array Plugin config arrays, keyed by plugin ID */
+    /** @var array<string, array<string, mixed>> Plugin config arrays, keyed by plugin ID */
     protected array $pluginConfigs = [];
 
-    /** @var array Plugin manifest data, keyed by plugin ID (local plugins only) */
+    /** @var array<string, array<string, mixed>> Plugin manifest data, keyed by plugin ID (local plugins only) */
     protected array $pluginManifests = [];
 
     /** @var array<string, string> Vendor plugin root paths keyed by package name */
@@ -79,15 +79,15 @@ class PluginLoader
         'enlivenapp/flight-csrf'      => 10,
     ];
 
-    /** @var array<string, array> Discovered plugin info keyed by plugin ID (local + vendor) */
+    /** @var array<string, array<string, mixed>> Discovered plugin info keyed by plugin ID (local + vendor) */
     protected array $discoveredById = [];
 
     /**
-     * @param Engine $app            The FlightPHP app instance
-     * @param Router $router         The FlightPHP router
-     * @param string $pluginPath     Absolute path to the plugins/ directory
-     * @param string $vendorPath     Absolute path to the vendor/ directory
-     * @param array  $enabledPlugins Plugin config the app passes in
+     * @param Engine<object>       $app            The FlightPHP app instance
+     * @param Router               $router         The FlightPHP router
+     * @param string               $pluginPath     Absolute path to the plugins/ directory
+     * @param string               $vendorPath     Absolute path to the vendor/ directory
+     * @param array<string, mixed> $enabledPlugins Plugin config the app passes in
      */
     public function __construct(Engine $app, Router $router, string $pluginPath, string $vendorPath, array $enabledPlugins = [])
     {
@@ -117,7 +117,7 @@ class PluginLoader
      *      directories are never scanned, so their code never executes
      *   6. Sort by priority (DB-backed), load each enabled plugin
      *
-     * @return array Loaded plugin instances keyed by plugin ID
+     * @return array<string, PluginInterface> Loaded plugin instances keyed by plugin ID
      */
     public function loadPlugins(): array
     {
@@ -188,8 +188,8 @@ class PluginLoader
      *   - Routes.php / AdminRoutes.php at plugin root
      *   - Controllers/, Views/, Models/, Database/ directories
      *
-     * @param string $pluginId Plugin ID (e.g. 'pubvana/blog')
-     * @param array  $info     Plugin info from discoverLocal()
+     * @param string               $pluginId Plugin ID (e.g. 'pubvana/blog')
+     * @param array<string, mixed> $info     Plugin info from discoverLocal()
      */
     protected function loadLocalPlugin(string $pluginId, array $info): void
     {
@@ -211,9 +211,9 @@ class PluginLoader
      * configPrepend, and other settings, then merges any app-level
      * overrides from the plugins config array.
      *
-     * @param string $pluginId  Plugin ID
-     * @param string $pluginDir Plugin root directory
-     * @param array  $appConfig Config from enabledPlugins array
+     * @param string               $pluginId  Plugin ID
+     * @param string               $pluginDir Plugin root directory
+     * @param array<string, mixed> $appConfig Config from enabledPlugins array
      */
     protected function loadLocalPluginConfig(string $pluginId, string $pluginDir, array $appConfig): void
     {
@@ -246,8 +246,8 @@ class PluginLoader
      *   - src/Plugin.php (optional, implements PluginInterface)
      *   - src/Views/ (optional, registered for template resolution)
      *
-     * @param string $pluginId Package name (e.g. 'enlivenapp/flight-shield')
-     * @param array  $info     Package info from discoverVendor()
+     * @param string               $pluginId Package name (e.g. 'enlivenapp/flight-shield')
+     * @param array<string, mixed> $info     Package info from discoverVendor()
      */
     protected function loadVendorPackage(string $pluginId, array $info): void
     {
@@ -270,10 +270,10 @@ class PluginLoader
      *   1. PluginInterface implementation (our local plugins)
      *   2. A public register(Engine, Router, array) method (vendor packages)
      *
-     * @param string $pluginId  Plugin/package ID
-     * @param string $pluginFile Absolute path to Plugin.php
-     * @param string $namespace PSR-4 namespace prefix
-     * @param array  $config    Merged config
+     * @param string               $pluginId  Plugin/package ID
+     * @param string               $pluginFile Absolute path to Plugin.php
+     * @param string               $namespace PSR-4 namespace prefix
+     * @param array<string, mixed> $config    Merged config
      */
     protected function loadPluginClass(string $pluginId, string $pluginFile, string $namespace, array $config): void
     {
@@ -295,7 +295,9 @@ class PluginLoader
         if ($implementsInterface || $hasRegisterMethod) {
             $plugin = new $className();
             $plugin->register($this->app, $this->router, $config);
-            $this->loaded[$pluginId] = $plugin;
+            if ($plugin instanceof PluginInterface) {
+                $this->loaded[$pluginId] = $plugin;
+            }
         }
     }
 
@@ -311,19 +313,24 @@ class PluginLoader
      * Each folder must have a pubvana.json with at minimum a "name" key.
      * The name becomes the plugin ID (e.g. 'pubvana/blog').
      *
-     * @return array Plugin info arrays keyed by plugin ID
+     * @return array<string, array<string, mixed>> Plugin info arrays keyed by plugin ID
      */
     public function discoverLocal(): array
     {
         $plugins = [];
-        foreach (glob($this->pluginPath . '/*', GLOB_ONLYDIR) as $dir) {
+        foreach (glob($this->pluginPath . '/*', GLOB_ONLYDIR) ?: [] as $dir) {
             $folder = basename($dir);
             $manifestFile = $dir . DIRECTORY_SEPARATOR . 'pubvana.json';
             if (!is_file($manifestFile)) {
                 continue;
             }
 
-            $manifest = json_decode(file_get_contents($manifestFile), true);
+            $raw = file_get_contents($manifestFile);
+            if ($raw === false) {
+                continue;
+            }
+
+            $manifest = json_decode($raw, true);
             if (!is_array($manifest)) {
                 continue;
             }
@@ -352,7 +359,7 @@ class PluginLoader
      * "type" starts with "flightphp-" or equals "pubvana-plugin". Resolves
      * the plugin class from the first PSR-4 namespace + "\Plugin".
      *
-     * @return array Package info arrays keyed by package name
+     * @return array<string, array<string, mixed>> Package info arrays keyed by package name
      */
     public function discoverVendor(): array
     {
@@ -364,7 +371,12 @@ class PluginLoader
             return [];
         }
 
-        $installed = json_decode(file_get_contents($installedFile), true);
+        $raw = file_get_contents($installedFile);
+        if ($raw === false) {
+            return [];
+        }
+
+        $installed = json_decode($raw, true);
         // Composer 2 wraps in "packages" key
         $packages = $installed['packages'] ?? $installed;
 
@@ -474,8 +486,8 @@ class PluginLoader
      * Reads the "provides" section and registers each item with the
      * ExtensionRegistry.
      *
-     * @param string $pluginId Plugin ID
-     * @param array  $manifest Plugin manifest from pubvana.json
+     * @param string               $pluginId Plugin ID
+     * @param array<string, mixed> $manifest Plugin manifest from pubvana.json
      */
     protected function registerPluginHooks(string $pluginId, array $manifest): void
     {
@@ -556,9 +568,9 @@ class PluginLoader
      * Admin routes wrapped in /admin/ group.
      * Both use PluginViewContextMiddleware for template resolution.
      *
-     * @param string $pluginId  Plugin ID
-     * @param string $pluginDir Absolute path to plugin root
-     * @param array  $config    Plugin config
+     * @param string               $pluginId  Plugin ID
+     * @param string               $pluginDir Absolute path to plugin root
+     * @param array<string, mixed> $config    Plugin config
      */
     protected function loadPluginRoutes(string $pluginId, string $pluginDir, array $config): void
     {
@@ -643,7 +655,7 @@ class PluginLoader
 
         // 3. All other PHP files in Config/ (except handled ones)
         $handled = ['Config.php', 'Services.php', 'Routes.php', 'AdminRoutes.php'];
-        foreach (glob($configDir . DIRECTORY_SEPARATOR . '*.php') as $file) {
+        foreach (glob($configDir . DIRECTORY_SEPARATOR . '*.php') ?: [] as $file) {
             if (!in_array(basename($file), $handled, true)) {
                 require $file;
             }
@@ -775,8 +787,8 @@ class PluginLoader
      * Type alone is spoofable; namespace alone is just a normal plugin. Both are
      * required so a third party cannot self-declare as foundation.
      *
-     * @param string $pluginId Plugin/package ID
-     * @param array  $info     Plugin info array (source, type)
+     * @param string               $pluginId Plugin/package ID
+     * @param array<string, mixed> $info     Plugin info array (source, type)
      * @return bool True if foundation
      */
     public function isFoundationPackage(string $pluginId, array $info): bool
@@ -796,7 +808,7 @@ class PluginLoader
      * Look up the discovered info for a plugin (used before plugin_states sync).
      *
      * @param string $pluginId Plugin/package ID
-     * @return array|null Plugin info array, or null when not discovered
+     * @return array<string, mixed>|null Plugin info array, or null when not discovered
      */
     protected function foundationInfo(string $pluginId): ?array
     {
@@ -814,7 +826,7 @@ class PluginLoader
         return $this->pluginStates[$pluginId] ?? null;
     }
 
-    /** @return array Loaded plugin instances */
+    /** @return array<string, PluginInterface> Loaded plugin instances */
     public function getLoaded(): array
     {
         return $this->loaded;
@@ -824,7 +836,7 @@ class PluginLoader
      * Get a plugin's manifest data from pubvana.json.
      *
      * @param string $pluginId Plugin ID
-     * @return array|null Manifest data, or null if not found
+     * @return array<string, mixed>|null Manifest data, or null if not found
      */
     public function getManifest(string $pluginId): ?array
     {
@@ -840,7 +852,6 @@ class PluginLoader
      * Renders the chosen content directly on "/" (200) rather than
      * redirecting, which search engines index more favorably than a
      * forward from the site root.
-     */
     public function dispatchHomepage(): void
     {
         $type = $this->app->settings()->get('CMS.homepageType', 'blog');
@@ -875,7 +886,7 @@ class PluginLoader
      * core so the tables core seeds depend on (e.g. Shield's auth_permissions)
      * exist first. Never gated by plugin_state — they are required by definition.
      *
-     * @param array $foundation Discovered foundation packages keyed by plugin ID
+     * @param array<string, array<string, mixed>> $foundation Discovered foundation packages keyed by plugin ID
      */
     protected function runFoundationMigrations(array $foundation): void
     {
@@ -968,7 +979,7 @@ class PluginLoader
      * the migrations package recorded historically, so previously-applied
      * migrations stay applied.
      *
-     * @param array $all Discovered plugins keyed by plugin ID (see loadPlugins())
+     * @param array<string, array<string, mixed>> $all Discovered plugins keyed by plugin ID (see loadPlugins())
      */
     protected function runPluginMigrations(array $all): void
     {
@@ -1027,8 +1038,8 @@ class PluginLoader
      * 'plugins/Blog/Database/Migrations' → 'plugins/Blog'). Keeping these
      * names stable means already-applied migrations are never re-run.
      *
-     * @param string $pluginId Plugin/package ID
-     * @param array  $info     Plugin info array (source, folder)
+     * @param string               $pluginId Plugin/package ID
+     * @param array<string, mixed> $info     Plugin info array (source, folder)
      * @return array{0: string[], 1: string[]} [migration patterns, seed patterns]
      */
     public function pluginMigrationPatterns(string $pluginId, array $info): array
@@ -1072,8 +1083,8 @@ class PluginLoader
      * also carry one; when absent, the migrations package falls back to the
      * composer installed.json version.
      *
-     * @param string $pluginId Plugin/package ID
-     * @param array  $info     Plugin info array (source, folder, manifest)
+     * @param string               $pluginId Plugin/package ID
+     * @param array<string, mixed> $info     Plugin info array (source, folder, manifest)
      * @return string|null Semver string, or null when none is declared
      */
     public function pluginSemver(string $pluginId, array $info): ?string
@@ -1140,7 +1151,7 @@ class PluginLoader
      * else stays disabled until an admin enables it. Existing rows are never
      * modified here — state only changes through the admin Plugins page.
      *
-     * @param array $all Discovered plugins keyed by plugin ID (priorities overwritten in place)
+     * @param array<string, array<string, mixed>> $all Discovered plugins keyed by plugin ID (priorities overwritten in place)
      */
     protected function syncPluginStates(array &$all): void
     {
@@ -1190,8 +1201,8 @@ class PluginLoader
      * 4. Anything else starts DISABLED — the pause. Its code runs nothing
      *    until an admin enables it on the Plugins page.
      *
-     * @param string $pluginId Plugin/package ID
-     * @param array  $info     Plugin info array (source)
+     * @param string               $pluginId Plugin/package ID
+     * @param array<string, mixed> $info     Plugin info array (source)
      * @return array{enabled: bool, priority: int, required: bool}
      */
     protected function defaultState(string $pluginId, array $info): array

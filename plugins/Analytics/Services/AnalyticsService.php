@@ -25,7 +25,11 @@ use flight\Engine;
 class AnalyticsService
 {
     private \PDO $pdo;
+
+    /** @var Engine<object> */
     private Engine $app;
+
+    /** @var array<string, mixed> */
     private array $config;
 
     private ?bool $trackingEnabled = null;
@@ -47,6 +51,10 @@ class AnalyticsService
 
     private const RANGES = [7, 30, 90, 180, 365];
 
+    /**
+     * @param Engine<object>       $app
+     * @param array<string, mixed> $config
+     */
     public function __construct(\PDO $pdo, Engine $app, array $config = [])
     {
         $this->pdo = $pdo;
@@ -58,7 +66,7 @@ class AnalyticsService
      * Build the full report dataset for a period.
      *
      * @param string $range One of '7', '30', '90', '180', '365', 'all'
-     * @return array{range:string, totalViews:int, trends:array, topContent:array, referrers:array}
+     * @return array<string, mixed>
      */
     public function dashboard(string $range): array
     {
@@ -399,8 +407,8 @@ class AnalyticsService
 
         try {
             $model = new PageView($this->pdo);
-            $model->page_path = $this->clip($path, 255);
-            $model->page_group = $this->clip($this->groupForPath($path), 50);
+            $model->page_path = $this->clip($path, 255) ?? '';
+            $model->page_group = $this->clip($this->groupForPath($path), 50) ?? '';
             $model->referrer_domain = $this->clip($this->referrerDomain((string) ($_SERVER['HTTP_REFERER'] ?? '')), 255);
             $model->viewed_at = $this->now();
             $model->insert();
@@ -558,7 +566,8 @@ class AnalyticsService
         $days = $this->rangeDays($range) ?? $this->hotDays();
         $buckets = [];
         for ($i = $days - 1; $i >= 0; $i--) {
-            $buckets[] = date('Y-m-d', strtotime("-{$i} days"));
+            $ts = strtotime("-{$i} days");
+            $buckets[] = $ts === false ? date('Y-m-d') : date('Y-m-d', $ts);
         }
 
         return $buckets;
@@ -607,7 +616,11 @@ class AnalyticsService
     private function dailyBoundary(string $range): ?string
     {
         $days = $this->rangeDays($range);
-        return $days === null ? null : date('Y-m-d', strtotime("-{$days} days"));
+        if ($days === null) {
+            return null;
+        }
+        $ts = strtotime("-{$days} days");
+        return $ts === false ? date('Y-m-d') : date('Y-m-d', $ts);
     }
 
     /**
@@ -632,7 +645,8 @@ class AnalyticsService
 
     private function cutoff(int $days): string
     {
-        return date('Y-m-d H:i:s', strtotime("-{$days} days"));
+        $ts = strtotime("-{$days} days");
+        return $ts === false ? date('Y-m-d H:i:s') : date('Y-m-d H:i:s', $ts);
     }
 
     // -------------------------------------------------------------------------
@@ -649,8 +663,8 @@ class AnalyticsService
             return 'home';
         }
 
-        $segment = strtok($trimmed, '/');
-        $segment = $segment === false ? 'home' : strtolower(trim($segment));
+        $segment = (string) strtok($trimmed, '/');
+        $segment = strtolower(trim($segment));
 
         return $segment === '' ? 'home' : $segment;
     }
@@ -753,7 +767,8 @@ class AnalyticsService
 
     private function dayLabel(string $bucket): string
     {
-        return date('M j', strtotime($bucket));
+        $ts = strtotime($bucket);
+        return $ts === false ? $bucket : date('M j', $ts);
     }
 
     private function nextMonth(string $bucket): string

@@ -49,6 +49,10 @@ class SearchPublicController extends PublicController
     /**
      * Build pagination data (Blog-style) for the results template.
      */
+    /**
+     * @param array<string, mixed> $result
+     * @return array<string, mixed>|null
+     */
     private function buildPagination(array $result): ?array
     {
         $page    = (int) ($result['page'] ?? 1);

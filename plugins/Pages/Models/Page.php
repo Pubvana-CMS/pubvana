@@ -24,9 +24,24 @@ namespace Pubvana\Plugins\Pages\Models;
  *   deleted_at        - Soft-delete timestamp
  *
  * @package Pubvana\Plugins\Pages\Models
+ * @method self eq(string $field, mixed $value, string $operator = 'AND')
+ * @method self notEq(string $field, mixed $value, string $operator = 'AND')
+ * @method self like(string $field, mixed $value, string $operator = 'AND')
+ * @method self isNull(string $field, string $operator = 'AND')
+ * @method self order(string $field)
+ * @method self select(string $field, string ...$fields)
+ * @method self limit(int $limit)
+ * @method self offset(int $offset)
+ * @method self startWrap()
+ * @method self endWrap(string $op)
+ * @property int $cnt Aggregate alias from COUNT(*) selects
  */
-class Page extends \flight\ActiveRecord
+class Page extends \Pubvana\Models\AbstractModel
 {
+    /**
+     * @param \flight\database\DatabaseInterface|\PDO|\mysqli|null $pdo
+     * @param array<string, mixed>                                 $config
+     */
     public function __construct($pdo = null, array $config = [])
     {
         parent::__construct($pdo, 'pages', $config);
@@ -92,7 +107,7 @@ class Page extends \flight\ActiveRecord
               ->isNull('deleted_at');
 
         if ($excludeId !== null) {
-            $query->neq('id', $excludeId);
+            $query->notEq('id', $excludeId);
         }
 
         $result = $query->find();
@@ -112,7 +127,8 @@ class Page extends \flight\ActiveRecord
         $model = new self($this->getDatabaseConnection());
         return $model->isNull('deleted_at')
                      ->order('created_at DESC')
-                     ->limit($offset, $perPage)
+                     ->limit($perPage)
+                     ->offset($offset)
                      ->findAll();
     }
 
@@ -131,7 +147,7 @@ class Page extends \flight\ActiveRecord
         return $model->eq('status', 'published')
                      ->isNull('deleted_at')
                      ->order('title ASC')
-                     ->limit(0, $limit)
+                     ->limit($limit)
                      ->findAll();
     }
 
@@ -178,7 +194,7 @@ class Page extends \flight\ActiveRecord
      * owned by SearchService — this method only finds matching content.
      *
      * @param string $term Raw search term
-     * @return array<int, array<string, string|null>>
+     * @return list<array<string, mixed>>
      */
     public function searchContent(string $term): array
     {
@@ -249,7 +265,7 @@ class Page extends \flight\ActiveRecord
     /**
      * Update this page.
      *
-     * @param array{title?: string, content?: string, status?: string, allow_comments?: int} $data Fields to update
+     * @param array{title?: string, content?: string|null, status?: string, allow_comments?: mixed, ai_generated?: mixed} $data Fields to update
      */
     public function updatePage(array $data): void
     {
@@ -296,9 +312,9 @@ class Page extends \flight\ActiveRecord
     {
         $slug = strtolower(trim($title));
         $slug = str_replace('&', 'and', $slug);
-        $slug = preg_replace('/[^a-z0-9\s-]/', '', $slug);
-        $slug = preg_replace('/[\s]+/', '-', $slug);
-        $slug = preg_replace('/-+/', '-', $slug);
+        $slug = preg_replace('/[^a-z0-9\s-]/', '', $slug) ?? '';
+        $slug = preg_replace('/[\s]+/', '-', $slug) ?? '';
+        $slug = preg_replace('/-+/', '-', $slug) ?? '';
         $slug = trim($slug, '-');
 
         // Ensure uniqueness

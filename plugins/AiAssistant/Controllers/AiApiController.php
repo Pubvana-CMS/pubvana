@@ -736,6 +736,9 @@ class AiApiController extends PublicController
     /**
      * Resolve a post's target status and published_at with grant checks.
      *
+    /**
+     * @param array<string, mixed> $payload Posted payload
+     * @param \Pubvana\Plugins\Blog\Models\Post|null $existing Post being updated, or null when creating
      * @return array{0: string, 1: ?string} [status, published_at]
      */
     protected function resolvePostStatus(AiKey $key, array $payload, $existing): array
@@ -756,7 +759,8 @@ class AiApiController extends PublicController
                 $this->log($key, 'error', 'post', $existing !== null ? (int) $existing->id : null, 'Invalid publish_on.');
                 $this->fail(422, "status 'scheduled' requires a valid publish_on (e.g. 2026-09-01 09:00:00).");
             }
-            $publishedAt = date('Y-m-d H:i:s', strtotime($publishOn));
+            $ts = strtotime($publishOn);
+            $publishedAt = $ts !== false ? date('Y-m-d H:i:s', $ts) : null;
         } elseif ($status !== 'draft') {
             $this->log($key, 'error', 'post', $existing !== null ? (int) $existing->id : null, "Invalid status '{$status}'.");
             $this->fail(422, 'status must be one of: draft, published, scheduled.');
@@ -807,9 +811,9 @@ class AiApiController extends PublicController
                 $auth['key_known'] ?? null,
                 null,
                 null,
-                $auth['error']
+                $auth['error'] ?? 'Authentication failed.'
             );
-            $this->fail(401, $auth['error']);
+            $this->fail(401, $auth['error'] ?? 'Authentication failed.');
         }
 
         return $auth['key'];
@@ -831,6 +835,9 @@ class AiApiController extends PublicController
         $this->app->ai()->log($this->method(), $this->path(), $outcome, $key, $entityType, $entityId, $detail);
     }
 
+    /**
+     * @return mixed Whatever the named facade returns, or never (503 halt)
+     */
     protected function svc(string $name)
     {
         try {
@@ -841,6 +848,9 @@ class AiApiController extends PublicController
         }
     }
 
+    /**
+     * @param array<int|string, mixed> $data
+     */
     protected function ok(array $data): void
     {
         $this->app->jsonHalt([
@@ -850,7 +860,7 @@ class AiApiController extends PublicController
         ], 200);
     }
 
-    protected function fail(int $status, string $message): void
+    protected function fail(int $status, string $message): never
     {
         $this->app->jsonHalt([
             'status' => 'error',
@@ -861,7 +871,7 @@ class AiApiController extends PublicController
 
     protected function bearerToken(): ?string
     {
-        $header = $this->app->request()->getHeader('Authorization') ?? '';
+        $header = $this->app->request()->getHeader('Authorization');
 
         // Apache/mod_php does not always expose Authorization in
         // $_SERVER['HTTP_AUTHORIZATION']; getallheaders() sees it reliably.
@@ -887,16 +897,24 @@ class AiApiController extends PublicController
         return (string) parse_url($url, PHP_URL_PATH);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    /**
+     * @return array<string, mixed>
+     */
     protected function payload(): array
     {
         try {
-            $data = $this->app->request()->data->getData();
-            return is_array($data) ? $data : [];
+            return $this->app->request()->data->getData();
         } catch (\Throwable $e) {
             return [];
         }
     }
 
+    /**
+     * @param object $query Request query collection (flight\util\Collection)
+     */
     protected function searchParam($query): ?string
     {
         $search = $query->search ?? null;
@@ -909,6 +927,9 @@ class AiApiController extends PublicController
         return $search;
     }
 
+    /**
+     * @param array<string, mixed> $payload Posted payload
+     */
     protected function resolveContent(array $payload): ?string
     {
         $md = (string) ($payload['content_md'] ?? '');
@@ -933,6 +954,9 @@ class AiApiController extends PublicController
      * disabled (failing the whole create/update over optional SEO would be
      * wrong). Only explicitly-provided fields are written; others are left
      * untouched, matching SeoService::saveMeta()'s partial-update semantics.
+     */
+    /**
+     * @param array<string, mixed> $payload Posted payload
      */
     protected function saveSeo(string $contentType, int $contentId, array $payload): void
     {
@@ -974,6 +998,9 @@ class AiApiController extends PublicController
         $seo->saveMeta($contentType, $contentId, $fields);
     }
 
+    /**
+     * @return array<int, int>
+     */
     protected function categoryIds(mixed $raw): array
     {
         $raw = is_array($raw) ? $raw : [];

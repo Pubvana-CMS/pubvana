@@ -11,8 +11,12 @@ use flight\Engine;
  */
 class SeoPublicController
 {
+    /** @var Engine<object> */
     protected Engine $app;
 
+    /**
+     * @param Engine<object> $app
+     */
     public function __construct(Engine $app)
     {
         $this->app = $app;

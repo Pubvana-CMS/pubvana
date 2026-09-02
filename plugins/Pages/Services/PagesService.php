@@ -21,8 +21,13 @@ class PagesService
     private Page $pageModel;
     private PageRevision $revisionModel;
     private \PDO $pdo;
+
+    /** @var array<string, mixed> */
     private array $config;
 
+    /**
+     * @param array<string, mixed> $config
+    */
     public function __construct(\PDO $pdo, array $config = [])
     {
         $this->pageModel = new Page($pdo);
@@ -69,6 +74,9 @@ class PagesService
         return $this->pageModel->slugExists($slug, $excludeId);
     }
 
+    /**
+     * @param array<string, mixed> $data
+    */
     public function createPage(array $data, int $userId): Page
     {
         $page = $this->pageModel->createPage(
@@ -89,6 +97,9 @@ class PagesService
         return $page;
     }
 
+    /**
+     * @param array<string, mixed> $data
+    */
     public function updatePage(int $id, array $data, ?int $userId = null): ?Page
     {
         $page = $this->pageModel->findById($id);
@@ -123,6 +134,9 @@ class PagesService
 
     // ─── Revisions ──────────────────────────────────────────────────────
 
+    /**
+     * @return array<int, \Pubvana\Plugins\Pages\Models\PageRevision>
+    */
     public function getRevisions(int $pageId): array
     {
         return $this->revisionModel->getForPage($pageId);
@@ -171,6 +185,9 @@ class PagesService
 
     // ─── Host Integrations ───────────────────────────────────────────────
 
+    /**
+     * @return array<int, array<string, mixed>>
+    */
     public function searchProvider(string $term): array
     {
         return $this->pageModel->searchContent($term);
@@ -186,6 +203,9 @@ class PagesService
         );
 
         $items = [];
+        if ($stmt === false) {
+            return $items;
+        }
         while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
             $items[] = [
                 'label' => $row['title'],
@@ -207,6 +227,9 @@ class PagesService
         );
 
         $items = [];
+        if ($stmt === false) {
+            return $items;
+        }
         while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
             $items[] = [
                 'type'           => 'page',
@@ -221,6 +244,9 @@ class PagesService
 
     // ─── Dashboard ──────────────────────────────────────────────────────
 
+    /**
+     * @return array<int, array<string, mixed>>
+    */
     public function dashboardCards(): array
     {
         return [[
@@ -235,6 +261,9 @@ class PagesService
         ]];
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+    */
     public function dashboardSections(): array
     {
         $recent = $this->pageModel->findAllPaginated(1, 5);
@@ -243,7 +272,7 @@ class PagesService
         foreach ($recent as $page) {
             $items[] = [
                 'label'    => $page->title,
-                'meta'     => ucfirst((string) $page->status) . ' · ' . date('M j, Y g:ia', strtotime((string) $page->created_at)),
+                'meta'     => ucfirst((string) $page->status) . ' · ' . (($ts = strtotime((string) $page->created_at)) === false ? '' : date('M j, Y g:ia', $ts)),
                 'href'     => '/pages/' . (int) $page->id . '/edit',
                 'emphasis' => $page->status === 'published' ? 'success' : 'secondary',
             ];

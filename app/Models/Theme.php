@@ -21,10 +21,18 @@ namespace Pubvana\Models;
  * @property string|null $created_at
  * @property string|null $updated_at
  *
+ * @method self eq(string $field, mixed $value, string $operator = 'AND')
+ * @method self notEq(string $field, mixed $value, string $operator = 'AND')
+ * @method self order(string $field)
+ *
  * @package Pubvana\Models
  */
-class Theme extends \flight\ActiveRecord
+class Theme extends AbstractModel
 {
+    /**
+     * @param \flight\database\DatabaseInterface|\PDO|\mysqli|null $pdo
+     * @param array<string, mixed>                                 $config
+     */
     public function __construct($pdo = null, array $config = [])
     {
         parent::__construct($pdo, 'themes', $config);

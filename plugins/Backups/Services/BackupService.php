@@ -18,15 +18,22 @@ class BackupService
 {
     protected string $backupDir;
     protected int    $maxBackups;
+
+    /** @var list<string> Top-level directories included in file backups */
     protected array  $backupDirs;
+
+    /** @var list<string> Config files whose credentials are never backed up */
     protected array  $protectedConfigs;
+
     protected \PDO   $pdo;
+
+    /** @var array{host: string, port: int, dbname: string, user: string, password: string} */
     protected array  $dbCredentials;
 
     /**
-     * @param \PDO   $pdo           Database connection
-     * @param array  $config        Plugin config from Config.php
-     * @param array  $dbCredentials Raw DB credentials ['host','port','dbname','user','password']
+     * @param \PDO            $pdo           Database connection
+     * @param array<string, mixed> $config        Plugin config from Config.php
+     * @param array{host: string, port: int, dbname: string, user: string, password: string} $dbCredentials Raw DB credentials
      */
     public function __construct(\PDO $pdo, array $config, array $dbCredentials)
     {
@@ -89,7 +96,12 @@ class BackupService
 
         // Metadata
         $meta = $this->buildMeta($trigger, $triggeredBy);
-        $zip->addFromString('backup-meta.json', json_encode($meta, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        $metaJson = json_encode($meta, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        if ($metaJson === false) {
+            $zip->close();
+            throw new \RuntimeException('Unable to encode backup metadata.');
+        }
+        $zip->addFromString('backup-meta.json', $metaJson);
 
         // Package
         $step++;
@@ -110,6 +122,8 @@ class BackupService
 
     /**
      * Build the backup-meta.json data.
+     *
+     * @return array<string, string>
      */
     public function buildMeta(string $trigger, string $triggeredBy): array
     {
@@ -128,7 +142,7 @@ class BackupService
     /**
      * List all backups, newest first.
      *
-     * @return array<array{filename: string, size: string, created: string, path: string, meta: array|null}>
+     * @return list<array{filename: string, size: string, created: string, path: string, meta: array<string, mixed>|null}>
      */
     public function listBackups(): array
     {
@@ -136,10 +150,12 @@ class BackupService
         usort($files, fn($a, $b) => filemtime($b) - filemtime($a));
 
         return array_map(function (string $path): array {
+            $size = filesize($path);
+            $mtime = filemtime($path);
             return [
                 'filename' => basename($path),
-                'size'     => $this->humanSize(filesize($path)),
-                'created'  => date('Y-m-d H:i:s', filemtime($path)),
+                'size'     => $this->humanSize($size === false ? 0 : $size),
+                'created'  => date('Y-m-d H:i:s', $mtime === false ? 0 : $mtime),
                 'path'     => $path,
                 'meta'     => $this->readMeta($path),
             ];
@@ -148,6 +164,8 @@ class BackupService
 
     /**
      * Read backup-meta.json from inside a backup zip.
+     *
+     * @return array<string, mixed>|null
      */
     public function readMeta(string $zipPath): ?array
     {
@@ -248,24 +266,24 @@ class BackupService
     {
         $c = $this->dbCredentials;
 
-        $passArg = ($c['password'] ?? '') !== '' ? '-p' . escapeshellarg($c['password']) : '';
+        $passArg = $c['password'] !== '' ? '-p' . escapeshellarg($c['password']) : '';
         $cmd = sprintf(
             'mysqldump -h %s -P %s -u %s %s %s 2>/dev/null',
-            escapeshellarg($c['host'] ?? 'localhost'),
-            escapeshellarg((string) ($c['port'] ?? 3306)),
-            escapeshellarg($c['user'] ?? ''),
+            escapeshellarg($c['host']),
+            escapeshellarg((string) $c['port']),
+            escapeshellarg($c['user']),
             $passArg,
-            escapeshellarg($c['dbname'] ?? '')
+            escapeshellarg($c['dbname'])
         );
 
         $result = shell_exec($cmd);
-        return ($result !== null && $result !== '') ? $result : null;
+        return is_string($result) && $result !== '' ? $result : null;
     }
 
     private function dumpViaPHP(): string
     {
         $sql = '';
-        $dbName = $this->dbCredentials['dbname'] ?? '';
+        $dbName = $this->dbCredentials['dbname'];
 
         $sql .= "-- Pubvana DB Backup\n";
         $sql .= "-- Generated: " . date('Y-m-d H:i:s') . "\n";
@@ -313,14 +331,14 @@ class BackupService
         $tmpFile = $this->backupDir . 'restore_' . time() . '.sql';
         file_put_contents($tmpFile, $sqlData);
 
-        $passArg = ($c['password'] ?? '') !== '' ? '-p' . escapeshellarg($c['password']) : '';
+        $passArg = $c['password'] !== '' ? '-p' . escapeshellarg($c['password']) : '';
         $cmd = sprintf(
             'mysql -h %s -P %s -u %s %s %s < %s 2>/dev/null',
-            escapeshellarg($c['host'] ?? 'localhost'),
-            escapeshellarg((string) ($c['port'] ?? 3306)),
-            escapeshellarg($c['user'] ?? ''),
+            escapeshellarg($c['host']),
+            escapeshellarg((string) $c['port']),
+            escapeshellarg($c['user']),
             $passArg,
-            escapeshellarg($c['dbname'] ?? ''),
+            escapeshellarg($c['dbname']),
             escapeshellarg($tmpFile)
         );
 
@@ -333,7 +351,7 @@ class BackupService
 
     private function restoreViaPHP(string $sqlData): void
     {
-        $statements = preg_split('/;\s*\n/', $sqlData);
+        $statements = preg_split('/;\s*\n/', $sqlData) ?: [];
         foreach ($statements as $stmt) {
             $stmt = trim($stmt);
             if ($stmt === '' || str_starts_with($stmt, '--')) {
@@ -347,12 +365,18 @@ class BackupService
     // Private helpers - DB introspection
     // ------------------------------------------------------------------
 
+    /**
+     * @return array<int, string>
+     */
     private function getTableNames(): array
     {
         $tables = [];
         $stmt = $this->pdo->query('SHOW TABLES');
+        if ($stmt === false) {
+            throw new \RuntimeException('Unable to list database tables for backup.');
+        }
         foreach ($stmt->fetchAll(\PDO::FETCH_NUM) as $row) {
-            $tables[] = $row[0];
+            $tables[] = (string) $row[0];
         }
         return $tables;
     }
@@ -360,13 +384,25 @@ class BackupService
     private function getCreateTable(string $table): string
     {
         $stmt = $this->pdo->query("SHOW CREATE TABLE `{$table}`");
+        if ($stmt === false) {
+            throw new \RuntimeException("Unable to read schema for table '{$table}'.");
+        }
         $row = $stmt->fetch(\PDO::FETCH_NUM);
-        return $row[1];
+        if ($row === false || !isset($row[1])) {
+            throw new \RuntimeException("No schema returned for table '{$table}'.");
+        }
+        return (string) $row[1];
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     private function getAllRows(string $table): array
     {
         $stmt = $this->pdo->query("SELECT * FROM `{$table}`");
+        if ($stmt === false) {
+            throw new \RuntimeException("Unable to read rows of table '{$table}'.");
+        }
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
@@ -404,7 +440,9 @@ class BackupService
 
         while (count($files) > $this->maxBackups) {
             $oldest = array_pop($files);
-            @unlink($oldest);
+            if ($oldest !== null) {
+                @unlink($oldest);
+            }
         }
     }
 

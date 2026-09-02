@@ -17,10 +17,17 @@ namespace Pubvana\Models;
  *   - sort_order: display position within the region
  *   - options: JSON configuration specific to this block instance
  *
+ * @method self eq(string $field, mixed $value, string $operator = 'AND')
+ * @method self order(string $field)
+ *
  * @package Pubvana\Models
  */
-class BlockPlacement extends \flight\ActiveRecord
+class BlockPlacement extends AbstractModel
 {
+    /**
+     * @param \flight\database\DatabaseInterface|\PDO|\mysqli|null $pdo
+     * @param array<string, mixed>                                 $config
+     */
     public function __construct($pdo = null, array $config = [])
     {
         parent::__construct($pdo, 'block_placements', $config);
@@ -122,6 +129,14 @@ class BlockPlacement extends \flight\ActiveRecord
      */
     public function setOptions(array $options): void
     {
-        $this->options = json_encode($options);
+        $encoded = json_encode($options);
+        if ($encoded === false) {
+            // Malformed input (e.g. invalid UTF-8): store nothing rather
+            // than corrupt JSON; getOptions() treats null as empty.
+            error_log('BlockPlacement::setOptions: json_encode failed.');
+            $this->options = null;
+            return;
+        }
+        $this->options = $encoded;
     }
 }

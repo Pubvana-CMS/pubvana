@@ -117,9 +117,10 @@ This plugin has no `composer.json` and no test suite, unlike library plugins in 
 No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->`
 
 ## Coding standards
+- **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
 
 1. **`declare(strict_types=1);` at the top of every class file** (`Plugin.php:3`). No exceptions.
-2. **Models extend `\flight\ActiveRecord` and declare their table string in the constructor** (`Models/Post.php:27-32`). Do not hardcode table names in business logic.
+2. **Models extend `Pubvana\Models\AbstractModel` and declare their table string in the constructor** (`Models/Post.php:27-32`). Do not hardcode table names in business logic.
 3. **Prefer the ActiveRecord fluent query (eq, in, notEq, like, isNull, order, limit, offset) over raw SQL.** Raw PDO prepared statements are allowed only for cross-row mutations that the fluent API cannot express, and must carry a comment explaining why (see the `incrementViewsDirect()` rationale, `Models/Post.php:146-163`).
 4. **`updateRecord()` must stay whitelisted.** Only fields listed in the `$allowed` array may be written (`Models/Post.php:119-122`, `Models/Category.php:75`). Never pass raw request arrays into model writes; controllers unset `_csrf_token` first (`Controllers/BlogAdminController.php:56`).
 5. **Views render through Vision paths.** Admin views use `pubvana/blog/admin/{view}` and block templates use `pubvana/blog/public/blocks/{name}`; public pages render core templates (`post`, `archive`, `categories`, `tags`, `home`). Block templates are `.tpl` files.

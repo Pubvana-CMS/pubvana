@@ -19,12 +19,17 @@ use flight\Engine;
  */
 class ThemeService
 {
+
+    /** @var Engine<object> The FlightPHP app instance */
     protected Engine $app;
-    protected ?object $activeTheme = null;
+    protected ?Theme $activeTheme = null;
 
     /** @var array<string, bool> folder => isValid (populated after sync) */
     protected array $validationResults = [];
 
+    /**
+     * @param Engine<object> $app
+     */
     public function __construct(Engine $app)
     {
         $this->app = $app;
@@ -40,7 +45,7 @@ class ThemeService
         $themesPath = $this->getThemesPath();
         $themes = [];
 
-        foreach (glob($themesPath . '*', GLOB_ONLYDIR) as $dir) {
+        foreach (glob($themesPath . '*', GLOB_ONLYDIR) ?: [] as $dir) {
             $folder = basename($dir);
             $jsonFile = $dir . '/pubvana.json';
 
@@ -48,11 +53,12 @@ class ThemeService
                 continue;
             }
 
-            $info = json_decode(file_get_contents($jsonFile), true);
+            $raw = file_get_contents($jsonFile);
+            $info = is_string($raw) ? json_decode($raw, true) : null;
             $disabledReason = null;
 
             if (!is_array($info)) {
-                $disabledReason = "Invalid pubvana.json in theme '{$folder}'.";
+                $disabledReason = "Invalid or unreadable pubvana.json in theme '{$folder}'.";
                 $info = [];
             }
 
@@ -137,7 +143,7 @@ class ThemeService
             } else {
                 $changed = false;
 
-                if (($existing->name ?? '') !== $name) {
+                if ($existing->name !== $name) {
                     $existing->name = $name;
                     $changed = true;
                 }
@@ -192,7 +198,7 @@ class ThemeService
     /**
      * Get the currently active theme.
      */
-    public function getActive(): ?object
+    public function getActive(): ?Theme
     {
         if ($this->activeTheme !== null) {
             return $this->activeTheme;
@@ -262,6 +268,9 @@ class ThemeService
             }
 
             $content = file_get_contents($file->getPathname());
+            if ($content === false) {
+                return false;
+            }
             if (str_contains($content, '<?php') || str_contains($content, '<?=') || str_contains($content, '<%')) {
                 return false;
             }
@@ -317,8 +326,11 @@ class ThemeService
 
     /**
      * Seed default theme options from pubvana.json if they don't already exist.
+     *
+     * @param \Pubvana\Models\Theme $theme
+     * @param array<string, mixed>  $info
      */
-    protected function syncDefaultOptions(object $theme, array $info): void
+    protected function syncDefaultOptions(\Pubvana\Models\Theme $theme, array $info): void
     {
         $options = $info['provides']['options'] ?? [];
         if (empty($options)) {

@@ -21,8 +21,13 @@ class BlogService
     private PostTag $postTagModel;
     private PostRevision $revisionModel;
     private \PDO $pdo;
+
+    /** @var array<string, mixed> */
     private array $config;
 
+    /**
+     * @param array<string, mixed> $config
+    */
     public function __construct(\PDO $pdo, array $config = [])
     {
         $this->postModel         = new Post($pdo);
@@ -37,6 +42,9 @@ class BlogService
 
     // ─── Posts ────────────────────────────────────────────────────────────
 
+    /**
+     * @return array{items: array<int, Post>, total: int, page: int, per_page: int}
+     */
     public function listPosts(int $page = 1, int $perPage = 25, ?string $status = null): array
     {
         return [
@@ -47,6 +55,9 @@ class BlogService
         ];
     }
 
+    /**
+     * @return array{items: array<int, Post>, total: int, page: int, per_page: int}
+     */
     public function listPublished(int $page = 1, int $perPage = 25): array
     {
         return $this->listPosts($page, $perPage, 'published');
@@ -72,6 +83,9 @@ class BlogService
         return $this->postModel->slugExists($slug, $excludeId);
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public function createPost(array $data, int $userId): Post
     {
         $purify = $data['purify_content'] ?? true;
@@ -93,6 +107,9 @@ class BlogService
         return $post;
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public function updatePost(int $id, array $data, int $userId): ?Post
     {
         $purify = $data['purify_content'] ?? true;
@@ -126,6 +143,9 @@ class BlogService
         return true;
     }
 
+    /**
+     * @return array<int, PostRevision>
+     */
     public function getRevisions(int $postId): array
     {
         return $this->revisionModel->getForPost($postId);
@@ -167,6 +187,9 @@ class BlogService
 
     // ─── Categories ───────────────────────────────────────────────────────
 
+    /**
+     * @return array<int, Category>
+     */
     public function listCategories(): array
     {
         return $this->categoryModel->getAll();
@@ -182,11 +205,17 @@ class BlogService
         return $this->categoryModel->slugExists($slug, $excludeId);
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public function createCategory(array $data): Category
     {
         return $this->categoryModel->createRecord($data);
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public function updateCategory(int $id, array $data): ?Category
     {
         $category = $this->categoryModel->findById($id);
@@ -212,6 +241,9 @@ class BlogService
 
     // ─── Tags ─────────────────────────────────────────────────────────────
 
+    /**
+     * @return array<int, Tag>
+     */
     public function listTags(): array
     {
         return $this->tagModel->getAll();
@@ -236,11 +268,17 @@ class BlogService
 
     // ─── Taxonomy Sync ────────────────────────────────────────────────────
 
+    /**
+     * @return array<int, int>
+     */
     public function getPostCategoryIds(int $postId): array
     {
         return $this->postCategoryModel->getCategoryIds($postId);
     }
 
+    /**
+     * @return array<int, string>
+     */
     public function getPostTagNames(int $postId): array
     {
         $tagIds = $this->postTagModel->getTagIds($postId);
@@ -257,6 +295,9 @@ class BlogService
         return $names;
     }
 
+    /**
+     * @param array<int, int> $categoryIds
+     */
     public function syncPostCategories(int $postId, array $categoryIds): void
     {
         $this->postCategoryModel->syncForPost($postId, $categoryIds);
@@ -282,6 +323,10 @@ class BlogService
 
     // ─── Blocks ───────────────────────────────────────────────────────────
 
+     /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
     public function recentPostsBlock(array $options, string $prefix): array
     {
         $count = (int) ($options['count'] ?? 5);
@@ -300,6 +345,10 @@ class BlogService
         ];
     }
 
+    /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+    */
     public function categoriesBlock(array $options, string $prefix): array
     {
         $categories = $this->listCategories();
@@ -317,11 +366,19 @@ class BlogService
         ];
     }
 
+    /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+    */
     public function tagsBlock(array $options, string $prefix): array
     {
         $tags = $this->listTags();
         $list = [];
         foreach ($tags as $tag) {
+     /**
+     * @param array<string, mixed> $options
+     * @return array<int, array<string, mixed>>
+     */
             $list[] = [
                 'name' => $tag->name,
                 'slug' => $tag->slug,
@@ -334,6 +391,10 @@ class BlogService
         ];
     }
 
+    /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+    */
     public function archiveBlock(array $options, string $prefix): array
     {
         $stmt = $this->pdo->query(
@@ -344,13 +405,18 @@ class BlogService
              ORDER BY y DESC, m DESC
              LIMIT 24"
         );
+        if ($stmt === false) {
+            return ['title' => $options['title'] ?? 'Archives', 'months' => []];
+        }
+
         $months = [];
         foreach ($stmt->fetchAll(\PDO::FETCH_OBJ) as $row) {
+            $ts = strtotime($row->y . '-' . $row->m . '-01');
             $months[] = [
                 'year'  => $row->y,
                 'month' => str_pad((string) $row->m, 2, '0', STR_PAD_LEFT),
                 'count' => $row->c,
-                'label' => date('F Y', strtotime($row->y . '-' . $row->m . '-01')),
+                'label' => $ts === false ? $row->y . '-' . $row->m : date('F Y', $ts),
                 'url'   => $prefix . '/archive/' . $row->y . '/' . str_pad((string) $row->m, 2, '0', STR_PAD_LEFT),
             ];
         }
@@ -360,6 +426,11 @@ class BlogService
         ];
     }
 
+    /**
+     * @param array<string, mixed> $options
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>
+    */
     public function relatedPostsBlock(array $options, array $context, string $prefix): array
     {
         $postId = (int) ($context['post_id'] ?? 0);
@@ -404,6 +475,9 @@ class BlogService
 
     // ─── Search ───────────────────────────────────────────────────────────
 
+    /**
+     * @return array<int, array<string, mixed>>
+    */
     public function searchProvider(string $term, string $urlPrefix): array
     {
         $posts = (new Post($this->postModel->getDatabaseConnection()))
@@ -417,7 +491,7 @@ class BlogService
             ->findAll();
 
         $results = [];
-        $words = array_filter(preg_split('/\s+/', $term));
+        $words = array_filter(preg_split('/\s+/', $term) ?: []);
 
         foreach ($posts as $post) {
             $relevance = 0;
@@ -482,6 +556,7 @@ class BlogService
      * Enumerate published posts for the Comments host contract.
      *
      * @return array<int, array{type: string, id: int, title: string, url: string, allow_comments: bool}>
+     * @return array<int, array<string, mixed>>
      */
     public function commentHostItems(string $urlPrefix): array
     {
@@ -507,6 +582,9 @@ class BlogService
 
     // ─── Dashboard ────────────────────────────────────────────────────────
 
+    /**
+     * @return array<int, array<string, mixed>>
+    */
     public function dashboardCards(): array
     {
         $published = $this->listPosts(1, 1, 'published');
@@ -517,7 +595,7 @@ class BlogService
             [
                 'id'          => 'published-posts',
                 'label'       => 'Published Posts',
-                'value'       => (int) ($published['total'] ?? 0),
+                'value'       => (int) $published['total'],
                 'icon'        => 'ti-article',
                 'tone'        => 'success',
                 'group'       => 'content',
@@ -527,7 +605,7 @@ class BlogService
             [
                 'id'          => 'scheduled-posts',
                 'label'       => 'Scheduled Posts',
-                'value'       => (int) ($scheduled['total'] ?? 0),
+                'value'       => (int) $scheduled['total'],
                 'icon'        => 'ti-calendar-time',
                 'tone'        => 'info',
                 'group'       => 'content',
@@ -537,7 +615,7 @@ class BlogService
             [
                 'id'          => 'draft-posts',
                 'label'       => 'Draft Posts',
-                'value'       => (int) ($drafts['total'] ?? 0),
+                'value'       => (int) $drafts['total'],
                 'icon'        => 'ti-pencil',
                 'tone'        => 'warning',
                 'group'       => 'content',
@@ -547,13 +625,17 @@ class BlogService
         ];
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+    */
     public function dashboardSections(): array
     {
         $recent = $this->listPosts(1, 5);
         $items = [];
 
-        foreach (($recent['items'] ?? []) as $post) {
-            $publishedAt = $post->published_at ? date('M j, Y g:ia', strtotime((string) $post->published_at)) : 'Not published';
+        foreach ($recent['items'] as $post) {
+            $ts = strtotime((string) $post->published_at);
+            $publishedAt = $post->published_at ? ($ts === false ? (string) $post->published_at : date('M j, Y g:ia', $ts)) : 'Not published';
             $items[] = [
                 'label'    => $post->title,
                 'meta'     => ucfirst((string) $post->status) . ' · ' . $publishedAt,

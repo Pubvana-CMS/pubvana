@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Pubvana\Plugins\Seo\Models;
 
-use flight\ActiveRecord;
-
 /**
  * SeoMeta model — per-content SEO data.
  *
@@ -27,9 +25,17 @@ use flight\ActiveRecord;
  * @property string|null $hreflang
  * @property string|null $created_at
  * @property string|null $updated_at
+ *
+ * @method self eq(string $field, mixed $value, string $operator = 'AND')
+ * @method self notEq(string $field, mixed $value, string $operator = 'AND')
+ * @method self isNotNull(string $field, string $operator = 'AND')
+ * @method self order(string $field)
  */
-class SeoMeta extends ActiveRecord
+class SeoMeta extends \Pubvana\Models\AbstractModel
 {
+    /**
+     * @param \flight\database\DatabaseInterface|\PDO|\mysqli|null $databaseConnection
+     */
     public function __construct($databaseConnection = null)
     {
         parent::__construct($databaseConnection, 'seo_meta');
@@ -37,6 +43,8 @@ class SeoMeta extends ActiveRecord
 
     /**
      * Find SEO meta for a specific content item.
+     *
+     * @return self|null
      */
     public function findByContent(string $contentType, int $contentId): ?self
     {
@@ -82,7 +90,13 @@ class SeoMeta extends ActiveRecord
     public function setFocusKeywordsArray(array $keywords): void
     {
         $keywords = array_slice(array_filter(array_map('trim', $keywords)), 0, 5);
-        $this->focus_keywords = !empty($keywords) ? json_encode($keywords) : null;
+        if ($keywords === []) {
+            $this->focus_keywords = null;
+            return;
+        }
+        $encoded = json_encode($keywords);
+        // Invalid UTF-8 input: store nothing rather than corrupt JSON.
+        $this->focus_keywords = $encoded === false ? null : $encoded;
     }
 
     /**

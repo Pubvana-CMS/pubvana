@@ -81,6 +81,7 @@ php -l plugins/Analytics/Services/AnalyticsService.php
 - Coverage: none configured for this plugin. `<!-- TODO: add [coverage target] -->`
 
 ## Coding standards
+- **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
 
 Steps that go beyond the repo-wide style, derived from the existing code:
 

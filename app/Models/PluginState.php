@@ -17,10 +17,16 @@ namespace Pubvana\Models;
  * A disabled plugin runs nothing (no migrations, seeds, or registration code)
  * until an admin explicitly enables it on the Plugins admin page.
  *
+ * @method self eq(string $field, mixed $value, string $operator = 'AND')
+ *
  * @package Pubvana\Models
  */
-class PluginState extends \flight\ActiveRecord
+class PluginState extends AbstractModel
 {
+    /**
+     * @param \flight\database\DatabaseInterface|\PDO|\mysqli|null $pdo
+     * @param array<string, mixed>                                 $config
+     */
     public function __construct($pdo = null, array $config = [])
     {
         parent::__construct($pdo, 'plugin_state', $config);

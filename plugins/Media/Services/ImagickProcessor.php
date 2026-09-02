@@ -129,6 +129,9 @@ class ImagickProcessor implements ImageProcessorInterface
         $this->image->clear();
     }
 
+    /**
+     * @return array{width: int, height: int, mime: string}
+    */
     public function getInfo(string $path): array
     {
         $img  = new \Imagick($path);
@@ -142,6 +145,9 @@ class ImagickProcessor implements ImageProcessorInterface
         return $info;
     }
 
+    /**
+     * @return array<string, string>
+    */
     public function getExif(string $path): array
     {
         $img   = new \Imagick($path);
@@ -152,7 +158,7 @@ class ImagickProcessor implements ImageProcessorInterface
         $result = [];
 
         foreach ($props as $key => $value) {
-            $cleanKey = preg_replace('/^exif:/', '', $key);
+            $cleanKey = preg_replace('/^exif:/', '', $key) ?? $key;
 
             if (in_array($cleanKey, $skip, true)) {
                 continue;
@@ -171,6 +177,9 @@ class ImagickProcessor implements ImageProcessorInterface
         return $result;
     }
 
+    /**
+     * @return list<string>
+    */
     public function capabilities(): array
     {
         return ['crop', 'rotate', 'flip', 'resize', 'sharpen', 'brightness', 'contrast', 'auto_orient', 'strip_exif'];

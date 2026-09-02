@@ -17,6 +17,8 @@ use flight\Engine;
  */
 class AssetService
 {
+
+    /** @var Engine<object> The FlightPHP app instance */
     protected Engine $app;
 
     /** @var string[] Allowed asset types */
@@ -48,6 +50,9 @@ class AssetService
         'otf'   => 'font/otf',
     ];
 
+    /**
+     * @param Engine<object> $app
+     */
     public function __construct(Engine $app)
     {
         $this->app = $app;
@@ -156,6 +161,10 @@ class AssetService
 
         $mimeType = $this->getMimeType($filePath);
         $lastModified = filemtime($filePath);
+        if ($lastModified === false) {
+            $this->app->halt(404, 'Asset not found');
+            return;
+        }
         $etag = md5($filePath . $lastModified);
 
         // Check If-None-Match (ETag)

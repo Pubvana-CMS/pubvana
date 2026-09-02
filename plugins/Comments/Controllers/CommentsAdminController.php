@@ -40,7 +40,7 @@ class CommentsAdminController extends AdminController
             'rejected' => $service->countByStatus('rejected'),
         ];
 
-        $totalForStatus = $status ? $counts[$status] ?? 0 : $counts['all'];
+        $totalForStatus = $status !== null ? $counts[$status] : $counts['all'];
         $totalPages     = (int) ceil($totalForStatus / $perPage);
 
         $this->render('pubvana/comments/admin/index', [

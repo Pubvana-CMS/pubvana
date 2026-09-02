@@ -19,6 +19,9 @@ use flight\Engine;
  */
 class EmailAdminController extends AdminController
 {
+    /**
+     * @param Engine<object> $app
+     */
     public function __construct(Engine $app)
     {
         parent::__construct($app, 'pubvana');

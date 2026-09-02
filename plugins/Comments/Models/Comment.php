@@ -14,6 +14,7 @@ namespace Pubvana\Plugins\Comments\Models;
  * @property int         $id
  * @property string      $commentable_type
  * @property int         $commentable_id
+ * @property array<int, Comment> $children Virtual property: direct replies, attached by CommentService::buildTree() (not a DB column)
  * @property int|null    $parent_id
  * @property int|null    $user_id
  * @property string|null $guest_name
@@ -24,9 +25,20 @@ namespace Pubvana\Plugins\Comments\Models;
  * @property string|null $ip_address
  * @property string|null $created_at
  * @property string|null $updated_at
- */
-class Comment extends \flight\ActiveRecord
+ * @method self eq(string $field, mixed $value, string $operator = 'AND')
+ * @method self order(string $field)
+ * @method self select(string $field, string ...$fields)
+ * @method self limit(int $limit)
+ * @method self offset(int $offset)
+  *
+ * @property int $cnt Aggregate alias from COUNT(*) selects
+*/
+class Comment extends \Pubvana\Models\AbstractModel
 {
+    /**
+     * @param \flight\database\DatabaseInterface|\PDO|\mysqli|null $pdo
+     * @param array<string, mixed>                                 $config
+     */
     public function __construct($pdo = null, array $config = [])
     {
         parent::__construct($pdo, 'comments', $config);
@@ -44,6 +56,7 @@ class Comment extends \flight\ActiveRecord
 
     /**
      * Find all comments for a content item, ordered for tree building.
+     * @return array<int, Comment>
      */
     public function findByContent(string $type, int $id, ?string $status = 'approved'): array
     {
@@ -61,6 +74,8 @@ class Comment extends \flight\ActiveRecord
 
     /**
      * Paginated listing with optional status filter.
+     *
+     * @return array<int, Comment>
      */
     public function paginate(int $page = 1, int $perPage = 25, ?string $status = null): array
     {
@@ -115,14 +130,20 @@ class Comment extends \flight\ActiveRecord
         $sql .= ' GROUP BY commentable_type';
 
         $out = [];
-        foreach ($this->query($sql, $params) as $row) {
-            $out[(string) $row->commentable_type] = (int) $row->cnt;
+        // query() returns array|ActiveRecord depending on $single; this call
+        // is not single mode, so an array of rows is expected.
+        $rows = $this->query($sql, $params);
+        if (is_array($rows)) {
+            foreach ($rows as $row) {
+                $out[(string) $row->commentable_type] = (int) $row->cnt;
+            }
         }
         return $out;
     }
-
     /**
      * Create a new comment from an array of data.
+     *
+     * @param array<string, mixed> $data
      */
     public function createRecord(array $data): self
     {
@@ -175,6 +196,8 @@ class Comment extends \flight\ActiveRecord
 
     /**
      * Get direct children of a comment.
+     *
+     * @return array<int, Comment>
      */
     public function getChildren(int $parentId): array
     {

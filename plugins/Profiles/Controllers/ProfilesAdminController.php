@@ -11,7 +11,7 @@ class ProfilesAdminController extends AdminController
     public function index(): void
     {
         $user    = $this->app->auth()->user();
-        $profile = $this->app->profiles()->findOrCreate((int) $user->id);
+        $profile = $this->app->profiles()->findOrCreate((int) ($user?->id));
         $avatarPicker = $this->app->media()->avatarPicker('avatar', $profile->avatar ?? '');
 
         $this->render('pubvana/profiles/admin/profile/index', [
@@ -26,7 +26,7 @@ class ProfilesAdminController extends AdminController
     public function show(string $userId): void
     {
         $currentUser = $this->app->auth()->user();
-        if ((int) $currentUser->id !== (int) $userId && !$currentUser->can('profile.edit.any')) {
+        if ((int) ($currentUser?->id) !== (int) $userId && !$currentUser?->can('profile.edit.any')) {
             $this->app->session()->flash('error', 'You do not have permission to edit other users\' profiles.');
             $this->app->redirect('/admin/users');
             return;
@@ -34,16 +34,12 @@ class ProfilesAdminController extends AdminController
 
         $userModel = new \Enlivenapp\FlightShield\Models\User($this->app->db());
         $user = $userModel->find((int) $userId);
-        if (!$user) {
-            $this->app->redirect('/admin/users');
-            return;
-        }
 
         $profile    = $this->app->profiles()->findOrCreate((int) $userId);
         $avatarPicker = $this->app->media()->avatarPicker('avatar', $profile->avatar ?? '');
 
         $this->render('pubvana/profiles/admin/profile/index', [
-            'pageTitle'    => 'Edit Profile — ' . htmlspecialchars($user->username),
+            'pageTitle'    => 'Edit Profile — ' . htmlspecialchars((string) ($user->username ?? '')),
             'profile'      => $profile,
             'user'         => $user,
             'avatarPicker' => $avatarPicker,
@@ -54,7 +50,7 @@ class ProfilesAdminController extends AdminController
     public function update(string $userId): void
     {
         $currentUser = $this->app->auth()->user();
-        if ((int) $currentUser->id !== (int) $userId && !$currentUser->can('profile.edit.any')) {
+        if ((int) ($currentUser?->id) !== (int) $userId && !$currentUser?->can('profile.edit.any')) {
             $this->app->session()->flash('error', 'You do not have permission to edit other users\' profiles.');
             $this->app->redirect('/admin/users');
             return;

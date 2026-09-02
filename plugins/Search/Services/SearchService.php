@@ -24,8 +24,12 @@ use flight\Engine;
  */
 class SearchService
 {
+    /** @var Engine<object> */
     protected Engine $app;
 
+    /**
+     * @param Engine<object> $app
+    */
     public function __construct(Engine $app)
     {
         $this->app = $app;
@@ -36,7 +40,7 @@ class SearchService
      *
      * @param string $term Raw query
      * @param int    $page 1-based page
-     * @return array{items: array, total: int, page: int, per_page: int, query: string, error: ?string, from: string}
+     * @return array{items: array<int, array<string, mixed>>, total: int, page: int, per_page: int, query: string, error: ?string, from: string}
      */
     public function search(string $term, int $page = 1): array
     {
@@ -102,7 +106,7 @@ class SearchService
 
         // Sort by score desc, then recency desc as tiebreaker
         usort($allItems, function (array $a, array $b): int {
-            $score = ($b['_score'] ?? 0) <=> ($a['_score'] ?? 0);
+            $score = $b['_score'] <=> $a['_score'];
             if ($score !== 0) {
                 return $score;
             }
@@ -130,7 +134,7 @@ class SearchService
     /**
      * All registered search sources (undelegated, callables intact).
      *
-     * @return array<string, array> Keyed by source key
+     * @return array<string, array<string, mixed>> Keyed by source key
      */
     public function sources(): array
     {
@@ -141,7 +145,7 @@ class SearchService
      * Sources that contribute to search, in display order.
      *
      * @param bool $decorate When true, attach 'enabled' + 'label' to each
-     * @return array
+     * @return array<string, array<string, mixed>>
      */
     public function enabledSources(bool $decorate = true): array
     {
@@ -225,7 +229,7 @@ class SearchService
     /**
      * Score a single content item uniformly against the query tokens.
      *
-     * @param array    $item  Provider-supplied content match
+     * @param array<string, mixed> $item  Provider-supplied content match
      * @param string[] $words Tokenized (phrases + words) query
      * @return float
      */
@@ -304,6 +308,11 @@ class SearchService
      *
      * Escapes HTML first, then injects <mark> around case-insensitive matches.
      */
+    /**
+     * @param array<string, mixed> $item
+     * @param string[] $words
+     * @return array<string, mixed>
+     */
     protected function highlight(array $item, array $words): array
     {
         $wordMap = [];
@@ -318,7 +327,7 @@ class SearchService
             $text = htmlspecialchars((string) $item[$field], ENT_QUOTES, 'UTF-8');
             foreach ($wordMap as $regex => $escaped) {
                 $quoted = preg_quote($escaped, '/');
-                $text = preg_replace('/(' . $quoted . ')/iu', '<mark>$1</mark>', $text);
+                $text = preg_replace('/(' . $quoted . ')/iu', '<mark>$1</mark>', $text) ?? $text;
             }
             $item[$field] = $text;
         }
@@ -328,6 +337,9 @@ class SearchService
 
     /**
      * Human-friendly list of contributing source labels (for a "Results from" line).
+     */
+    /**
+     * @param array<int, array<string, mixed>> $items
      */
     protected function sourceLabel(array $items): string
     {

@@ -33,7 +33,7 @@ use flight\Engine;
  */
 class RegionManager
 {
-    /** @var array Platform regions always available regardless of theme */
+    /** @var array<string, array{id: string, label: string, description: string}> Platform regions always available regardless of theme */
     protected const PLATFORM_REGIONS = [
         'header'         => ['id' => 'header',         'label' => 'Header',         'description' => 'Site header area'],
         'footer'         => ['id' => 'footer',         'label' => 'Footer',         'description' => 'Site footer area'],
@@ -42,7 +42,7 @@ class RegionManager
         'after-content'  => ['id' => 'after-content',  'label' => 'After Content',  'description' => 'Below main content'],
     ];
 
-    /** @var Engine Flight application instance */
+    /** @var Engine<object> Flight application instance */
     protected Engine $app;
 
     /** @var BlockPlacement|null Cached placement model (lazy-loaded) */
@@ -55,7 +55,7 @@ class RegionManager
     private array $placementsByRegion = [];
 
     /**
-     * @param Engine $app Flight application for accessing db(), adext(), view()
+     * @param Engine<object> $app Flight application for accessing db(), adext(), view()
      */
     public function __construct(Engine $app)
     {
@@ -91,14 +91,14 @@ class RegionManager
         // Theme-declared regions from active theme's pubvana.json
         $themeRegions = $this->getThemeDeclaredRegions();
         foreach ($themeRegions as $region) {
-            $id = $region['id'] ?? '';
-            if ($id === '' || isset($regions[$id])) {
+            $id = $region['id'];
+            if (isset($regions[$id])) {
                 continue;
             }
             $regions[$id] = [
                 'id'          => $id,
-                'label'       => $region['label'] ?? $id,
-                'description' => $region['description'] ?? '',
+                'label'       => $region['label'],
+                'description' => $region['description'],
                 'source'      => 'theme',
             ];
         }
@@ -108,6 +108,9 @@ class RegionManager
 
     /**
      * Read theme-declared regions from the active theme's pubvana.json.
+     *
+     * Malformed region entries are skipped so callers get the declared
+     * shape unconditionally.
      *
      * @return array<array{id: string, label: string, description: string}> Theme regions
      */
@@ -125,8 +128,33 @@ class RegionManager
             return [];
         }
 
-        $manifest = json_decode(file_get_contents($manifestPath), true);
-        return $manifest['provides']['regions'] ?? [];
+        $raw = file_get_contents($manifestPath);
+        if ($raw === false) {
+            return [];
+        }
+
+        $manifest = json_decode($raw, true);
+        $regions = $manifest['provides']['regions'] ?? [];
+        if (!is_array($regions)) {
+            return [];
+        }
+
+        $declared = [];
+        foreach ($regions as $region) {
+            if (!is_array($region)
+                || !isset($region['id'])
+                || !is_string($region['id'])
+                || $region['id'] === '') {
+                continue;
+            }
+            $declared[] = [
+                'id'          => $region['id'],
+                'label'       => is_string($region['label'] ?? null) ? $region['label'] : $region['id'],
+                'description' => is_string($region['description'] ?? null) ? $region['description'] : '',
+            ];
+        }
+
+        return $declared;
     }
 
     // -----------------------------------------------------------------
@@ -136,11 +164,11 @@ class RegionManager
     /**
      * Get all blocks registered via adext.
      *
-     * @return array<string, array> Block definitions keyed by block_key
+     * @return array<string, array<string, mixed>> Block definitions keyed by block_key
      */
     public function getAvailableBlocks(): array
     {
-        $blocks = $this->app->adext()->get('block', 'available') ?? [];
+        $blocks = $this->app->adext()->get('block', 'available');
         uasort($blocks, fn($a, $b) => ($a['priority'] ?? 50) <=> ($b['priority'] ?? 50));
         return $blocks;
     }
@@ -332,8 +360,8 @@ class RegionManager
     /**
      * Save values for a placement.
      *
-     * @param int   $placementId Placement ID
-     * @param array $values      Key => value pairs (nested or flat)
+     * @param int                  $placementId Placement ID
+     * @param array<string, mixed> $values      Key => value pairs (nested or flat)
      */
     public function savePlacementValues(int $placementId, array $values): void
     {
@@ -390,8 +418,8 @@ class RegionManager
     /**
      * Render all blocks in a region via Vision.
      *
-     * @param string                          $regionId Region identifier
-     * @param array<string, array>            $blocks   Available block definitions
+     * @param string                              $regionId Region identifier
+     * @param array<string, array<string, mixed>> $blocks   Available block definitions
      * @return string Rendered HTML
      */
     protected function renderRegion(string $regionId, array $blocks): string
@@ -431,10 +459,10 @@ class RegionManager
     /**
      * Render a single block: call provider with saved values, resolve template, render with Vision.
      *
-     * @param array       $block   Block definition from adext
-     * @param array       $options Saved placement options (JSON-decoded)
-     * @param object      $vision  Vision template engine instance
-     * @param PluginView  $view    PluginView instance for template resolution
+     * @param array<string, mixed> $block   Block definition from adext
+     * @param array<string, mixed> $options Saved placement options (JSON-decoded)
+     * @param \Enlivenapp\Vision\Engine $vision Vision template engine instance
+     * @param PluginView                $view   PluginView instance for template resolution
      * @return string Rendered HTML, or empty string on failure
      */
     protected function renderBlock(array $block, array $options, object $vision, PluginView $view): string

@@ -16,9 +16,16 @@ namespace Pubvana\Plugins\Backups\Services;
 class RestoreService
 {
     protected BackupService $backupService;
+
+    /** @var list<string> Top-level directories restored from the archive */
     protected array $restoreDirs;
+
+    /** @var list<string> Config files whose credentials are never overwritten */
     protected array $protectedConfigs;
 
+    /**
+     * @param array<string, mixed> $config
+     */
     public function __construct(BackupService $backupService, array $config)
     {
         $this->backupService   = $backupService;
@@ -76,6 +83,9 @@ class RestoreService
             $sqlPath = $extractDir . 'database.sql';
             if (is_file($sqlPath)) {
                 $sqlData = file_get_contents($sqlPath);
+                if ($sqlData === false) {
+                    throw new \RuntimeException('Unable to read database.sql from the archive.');
+                }
                 $this->backupService->restoreDatabase($sqlData);
             }
 
@@ -167,7 +177,7 @@ class RestoreService
 
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $name = $zip->getNameIndex($i);
-            if (str_contains($name, '..')) {
+            if (is_string($name) && str_contains($name, '..')) {
                 $zip->close();
                 return false;
             }

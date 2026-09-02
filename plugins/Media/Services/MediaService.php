@@ -11,9 +11,15 @@ class MediaService
     private Media $model;
     private ImageProcessorInterface $processor;
     private VideoThumbnailService $videoThumb;
+
+    /** @var array<string, mixed> */
     private array $config;
+
     private string $publicPath;
 
+    /**
+     * @param array<string, mixed> $config
+     */
     public function __construct(\PDO $pdo, array $config, string $publicPath)
     {
         $this->model      = new Media($pdo);
@@ -38,6 +44,9 @@ class MediaService
 
     // ── Upload ─────────────────────────────────────────────────
 
+    /**
+     * @param array{name: string, type: string, tmp_name: string, error: int, size: int} $file $_FILES entry
+    */
     public function uploadImage(array $file, int $uploadedBy): Media
     {
         $this->validateUpload($file, 'image');
@@ -69,6 +78,9 @@ class MediaService
         ]);
     }
 
+    /**
+     * @param array{name: string, type: string, tmp_name: string, error: int, size: int} $file $_FILES entry
+    */
     public function uploadVideo(array $file, int $uploadedBy): Media
     {
         $this->validateUpload($file, 'video');
@@ -118,6 +130,9 @@ class MediaService
         ]);
     }
 
+    /**
+     * @param array{name: string, type: string, tmp_name: string, error: int, size: int} $file $_FILES entry
+    */
     public function uploadPoster(Media $media, array $file): Media
     {
         $this->validateUpload($file, 'image');
@@ -150,6 +165,9 @@ class MediaService
 
     // ── Editing ────────────────────────────────────────────────
 
+    /**
+     * @param array<string, mixed> $params Operation parameters
+    */
     public function applyEdit(int $id, string $operation, array $params = []): ?Media
     {
         $media = $this->model->findById($id);
@@ -187,7 +205,7 @@ class MediaService
         $filename = basename($media->path);
         $this->generateDerivatives($absDir, $filename);
 
-        $media->size       = filesize($workingPath);
+        $media->size       = filesize($workingPath) ?: 0;
         $media->updated_at = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
         $media->save();
 
@@ -214,13 +232,16 @@ class MediaService
         $filename = basename($media->path);
         $this->generateDerivatives($absDir, $filename);
 
-        $media->size       = filesize($workingPath);
+        $media->size       = filesize($workingPath) ?: 0;
         $media->updated_at = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
         $media->save();
 
         return $media;
     }
 
+    /**
+     * @return array{width: int, height: int, mime: string}|null
+    */
     public function getImageInfo(int $id): ?array
     {
         $media = $this->model->findById($id);
@@ -236,6 +257,9 @@ class MediaService
         return $this->processor->getInfo($workingPath);
     }
 
+    /**
+     * @return array<string, string>
+    */
     public function getExifData(int $id): array
     {
         $media = $this->model->findById($id);
@@ -251,6 +275,9 @@ class MediaService
         return $this->processor->getExif($workingPath);
     }
 
+    /**
+     * @return list<string>
+    */
     public function getCapabilities(): array
     {
         return $this->processor->capabilities();
@@ -279,6 +306,9 @@ class MediaService
 
     // ── Metadata ───────────────────────────────────────────────
 
+    /**
+     * @param array<string, mixed> $data Whitelisted keys only
+    */
     public function updateMeta(int $id, array $data): ?Media
     {
         $media = $this->model->findById($id);
@@ -337,6 +367,9 @@ class MediaService
 
     // ── Queries ────────────────────────────────────────────────
 
+    /**
+     * @return array{items: array<int, Media>, total: int, page: int, per_page: int}
+    */
     public function list(int $page = 1, int $perPage = 24, ?string $type = null): array
     {
         return [
@@ -352,6 +385,9 @@ class MediaService
         return $this->model->countAll($type);
     }
 
+    /**
+     * @return array<int, Media>
+    */
     public function recent(int $limit = 5, ?string $type = null): array
     {
         return $this->model->paginate(1, $limit, $type);
@@ -364,6 +400,9 @@ class MediaService
 
     // ── Widgets ────────────────────────────────────────────────
 
+    /**
+     * @return string Rendered widget HTML
+    */
     public function picker(string $inputName, string $currentValue = ''): string
     {
         static $counter = 0;
@@ -371,9 +410,12 @@ class MediaService
 
         ob_start();
         include __DIR__ . '/../Views/admin/picker.php';
-        return ob_get_clean();
+        return is_string($html = ob_get_clean()) ? $html : '';
     }
 
+    /**
+     * @return string Rendered widget HTML
+    */
     public function avatarPicker(string $inputName, string $currentValue = ''): string
     {
         static $counter = 0;
@@ -381,9 +423,13 @@ class MediaService
 
         ob_start();
         include __DIR__ . '/../Views/admin/avatar-picker.php';
-        return ob_get_clean();
+        return is_string($html = ob_get_clean()) ? $html : '';
     }
 
+    /**
+     * @param array<string, mixed> $options
+     * @return string Rendered init snippet
+    */
     public function joditInit(string $selector, array $options = []): string
     {
         static $counter = 0;
@@ -397,11 +443,14 @@ class MediaService
 
         ob_start();
         include __DIR__ . '/../Views/admin/jodit.php';
-        return ob_get_clean();
+        return is_string($html = ob_get_clean()) ? $html : '';
     }
 
     // ── Internal ───────────────────────────────────────────────
 
+    /**
+     * @param array{name: string, type: string, tmp_name: string, error: int, size: int} $file $_FILES entry
+    */
     private function validateUpload(array $file, string $kind): void
     {
         if ($file['error'] !== UPLOAD_ERR_OK) {

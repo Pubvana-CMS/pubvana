@@ -46,7 +46,7 @@ class PagesPublicController extends PublicController
         $page = $this->app->pages()->findPageBySlug($slug);
 
         if ($page === null) {
-            $this->app->stop(404, 'Page not found');
+            $this->app->halt(404, 'Page not found');
             return;
         }
 
@@ -54,7 +54,7 @@ class PagesPublicController extends PublicController
             'title'          => $page->title,
             'content'        => $page->content,
             'featured_image' => null,
-            'ai_disclosure'  => $this->aiDisclosure((int) ($page->ai_generated ?? 0)),
+            'ai_disclosure'  => $this->aiDisclosure((int) $page->ai_generated),
             'commentable'    => ['type' => 'page', 'id' => (int) $page->id],
             'allow_comments' => (bool) $page->allow_comments,
             'is_homepage'    => $isHomepage,

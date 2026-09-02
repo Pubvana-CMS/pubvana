@@ -21,9 +21,19 @@ namespace Pubvana\Plugins\Pages\Models;
  * @property string|null $created_at
  *
  * @package Pubvana\Plugins\Pages\Models
+ * @method self eq(string $field, mixed $value, string $operator = 'AND')
+ * @method self like(string $field, mixed $value, string $operator = 'AND')
+ * @method self isNull(string $field, string $operator = 'AND')
+ * @method self order(string $field)
+ * @method self select(string $field, string ...$fields)
+ * @method self limit(int $limit)
  */
-class PageRevision extends \flight\ActiveRecord
+class PageRevision extends \Pubvana\Models\AbstractModel
 {
+    /**
+     * @param \flight\database\DatabaseInterface|\PDO|\mysqli|null $pdo
+     * @param array<string, mixed>                                 $config
+     */
     public function __construct($pdo = null, array $config = [])
     {
         parent::__construct($pdo, 'pages_revisions', $config);
@@ -45,6 +55,9 @@ class PageRevision extends \flight\ActiveRecord
         return $this->isHydrated() ? $this : null;
     }
 
+    /**
+     * @return array<int, PageRevision>
+     */
     public function getForPage(int $pageId): array
     {
         return (new self($this->getDatabaseConnection()))

@@ -37,8 +37,8 @@ class PluginView extends View
     /** @var string|null Active theme's Views/ dir for theme override tier */
     protected ?string $themePath = null;
 
-    /** @var object|null Vision template engine instance (lazy-loaded) */
-    private ?object $visionEngine = null;
+    /** @var \Enlivenapp\Vision\Engine|null Vision template engine instance (lazy-loaded) */
+    private ?\Enlivenapp\Vision\Engine $visionEngine = null;
 
     /**
      * Register a plugin's Views/ directory for template resolution.
@@ -113,9 +113,9 @@ class PluginView extends View
      * Vision provides: {{ var }}, {% if %}, {% for %}, {% extends %},
      * {% block %}, {% csrf_field %}, and custom tags.
      *
-     * @return object|null Vision engine, or null if not installed
+     * @return \Enlivenapp\Vision\Engine|null Vision engine, or null if not installed
      */
-    public function vision(): ?object
+    public function vision(): ?\Enlivenapp\Vision\Engine
     {
         if ($this->visionEngine === null && $this->hasVision()) {
             $this->visionEngine = new \Enlivenapp\Vision\Engine();
@@ -159,7 +159,8 @@ class PluginView extends View
      */
     protected function isNativeRender(): bool
     {
-        $path = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '';
+        $parsedPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
+        $path = is_string($parsedPath) ? $parsedPath : '';
 
         // Strip the front-controller base (e.g. /public when index.php lives
         // in public/ and the redirect() helper prepends request()->base).
@@ -174,7 +175,8 @@ class PluginView extends View
         }
 
         // Strip base URL prefix (e.g. /public) so /public/admin matches /admin
-        $baseUrl = rtrim(parse_url(\Flight::get('CMS.siteUrl') ?? '', PHP_URL_PATH) ?? '', '/');
+        $parsedBase = parse_url(\Flight::get('CMS.siteUrl') ?? '', PHP_URL_PATH);
+        $baseUrl = rtrim(is_string($parsedBase) ? $parsedBase : '', '/');
         if ($baseUrl !== '' && str_starts_with($path, $baseUrl)) {
             $path = substr($path, strlen($baseUrl));
         }
@@ -203,12 +205,13 @@ class PluginView extends View
      * Public routes: Vision .tpl rendering - no PHP execution.
      *
      * @param string     $file         Template name (e.g. 'pubvana/blog/index')
-     * @param array|null $templateData Variables to pass to the template
+     * @param array<string, mixed>|null $templateData Variables to pass to the template
      */
     public function render(string $file, ?array $templateData = null): void
     {
         // Admin routes use native PHP templates for security
-        if (!$this->hasVision() || $this->isNativeRender()) {
+        $vision = $this->vision();
+        if (!$vision || $this->isNativeRender()) {
             $this->extension = '.php';
             parent::render($file, $templateData);
             return;
@@ -235,7 +238,7 @@ class PluginView extends View
             ? ($this->themePath . DIRECTORY_SEPARATOR)
             : (dirname($template) . '/');
 
-        echo $this->vision()->render($template, $data, $basePath);
+        echo $vision->render($template, $data, $basePath);
     }
 
     /**

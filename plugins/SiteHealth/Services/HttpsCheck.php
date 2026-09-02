@@ -9,6 +9,9 @@ use Pubvana\Plugins\SiteHealth\Interfaces\CheckInterface;
 
 class HttpsCheck implements CheckInterface
 {
+    /**
+     * @param Engine<object> $app
+     */
     public function __construct(private Engine $app) {}
 
     public function run(): CheckResult
@@ -29,7 +32,7 @@ class HttpsCheck implements CheckInterface
             );
         }
 
-        if ($isHttps && !$forceHttps) {
+        if ($isHttps) {
             return new CheckResult(
                 id: 'https',
                 name: 'HTTPS',
@@ -71,7 +74,7 @@ class HttpsCheck implements CheckInterface
     {
         $siteUrl = '';
 
-        if (method_exists($this->app, 'settings') && $this->app->settings() !== null) {
+        if (method_exists($this->app, 'settings')) {
             $siteUrl = (string) $this->app->settings()->get('CMS.siteUrl', '');
         }
         if (empty($siteUrl)) {

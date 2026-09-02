@@ -22,10 +22,21 @@ namespace Pubvana\Models;
  *   - created_at: Row creation timestamp
  *   - updated_at: Last modification timestamp
  *
+ * @method self eq(string $field, mixed $value, string $operator = 'AND')
+ * @method self order(string $field)
+ * @method self select(string $field)
+ *
+ * @property array<int, NavigationItem> $children Virtual property: direct
+ * descendants, attached by NavigationService::buildTree() (not a DB column)
+ *
  * @package Pubvana\Models
  */
-class NavigationItem extends \flight\ActiveRecord
+class NavigationItem extends AbstractModel
 {
+    /**
+     * @param \flight\database\DatabaseInterface|\PDO|\mysqli|null $pdo
+     * @param array<string, mixed>                                 $config
+     */
     public function __construct($pdo = null, array $config = [])
     {
         parent::__construct($pdo, 'navigation', $config);

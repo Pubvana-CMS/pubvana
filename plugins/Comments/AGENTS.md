@@ -90,9 +90,10 @@ This plugin has no `composer.json` and no test suite, unlike library plugins in 
 No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->`
 
 ## Coding standards
+- **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
 
 1. **`declare(strict_types=1);` at the top of every class file** (`Plugin.php:3`). No exceptions.
-2. **Models extend `\flight\ActiveRecord` and declare their table string in the constructor** (`Models/Comment.php:28-33`).
+2. **Models extend `Pubvana\Models\AbstractModel` and declare their table string in the constructor** (`Models/Comment.php:28-33`).
 3. **Prefer the ActiveRecord fluent query; raw SQL only for `GROUP BY` aggregates.** `countByType()` is the single raw query and uses named placeholders for status (`Models/Comment.php:100-122`).
 4. **Use `DateTimeImmutable` for all timestamp writes** (`Models/Comment.php:129, 155`). Do not call `date()` for stored values.
 5. **Keep views dumb and dependency-free.** The injectable partial consumes the `dataFor()` array verbatim (`Views/public/comments.tpl`); do not call services from templates.

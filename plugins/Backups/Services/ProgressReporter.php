@@ -36,10 +36,11 @@ class ProgressReporter
     public function acquireLock(): bool
     {
         if (is_file($this->lockFile)) {
-            $lock = json_decode(file_get_contents($this->lockFile), true);
+            $raw = file_get_contents($this->lockFile);
+            $lock = is_string($raw) ? json_decode($raw, true) : null;
 
             // Stale lock (> 30 minutes)
-            if (isset($lock['started_at'])) {
+            if (is_array($lock) && isset($lock['started_at'])) {
                 $age = time() - strtotime($lock['started_at']);
                 if ($age > 1800) {
                     @unlink($this->lockFile);
@@ -92,6 +93,8 @@ class ProgressReporter
 
     /**
      * Mark operation as completed.
+     *
+     * @param array<string, mixed> $extra
      */
     public function complete(array $extra = []): void
     {
@@ -130,13 +133,17 @@ class ProgressReporter
 
     /**
      * Read the current progress data.
+     *
+     * @return array<string, mixed>|null
      */
     public function read(): ?array
     {
         if (!is_file($this->progressFile)) {
             return null;
         }
-        return json_decode(file_get_contents($this->progressFile), true);
+        $raw = file_get_contents($this->progressFile);
+        $data = is_string($raw) ? json_decode($raw, true) : null;
+        return is_array($data) ? $data : null;
     }
 
     /**
@@ -150,8 +157,11 @@ class ProgressReporter
     private function getStartedAt(): string
     {
         if (is_file($this->lockFile)) {
-            $lock = json_decode(file_get_contents($this->lockFile), true);
-            return $lock['started_at'] ?? date('c');
+            $raw = file_get_contents($this->lockFile);
+            $lock = is_string($raw) ? json_decode($raw, true) : null;
+            if (is_array($lock) && isset($lock['started_at']) && is_string($lock['started_at'])) {
+                return $lock['started_at'];
+            }
         }
         return date('c');
     }

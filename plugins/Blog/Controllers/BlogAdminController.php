@@ -83,7 +83,7 @@ class BlogAdminController extends AdminController
             'is_featured'      => !empty($post['is_featured']) ? 1 : 0,
             'allow_comments'   => !empty($post['allow_comments']) ? 1 : 0,
             'purify_content'   => !empty($post['purify_content']),
-        ], (int) $user->id);
+        ], (int) ($user?->id));
 
         $this->app->blog()->syncPostCategories((int) $newPost->id, $post['categories'] ?? []);
         $this->app->blog()->syncPostTags((int) $newPost->id, $post['tags_raw'] ?? '');
@@ -146,7 +146,7 @@ class BlogAdminController extends AdminController
             'is_featured'      => !empty($post['is_featured']) ? 1 : 0,
             'allow_comments'   => !empty($post['allow_comments']) ? 1 : 0,
             'purify_content'   => !empty($post['purify_content']),
-        ], (int) $user->id);
+        ], (int) ($user?->id));
 
         $this->app->blog()->syncPostCategories((int) $id, $post['categories'] ?? []);
         $this->app->blog()->syncPostTags((int) $id, $post['tags_raw'] ?? '');
@@ -183,7 +183,7 @@ class BlogAdminController extends AdminController
     public function restore(string $id, string $revisionId): void
     {
         $user = $this->app->auth()->user();
-        $this->app->blog()->restoreRevision((int) $id, (int) $revisionId, (int) $user->id);
+        $this->app->blog()->restoreRevision((int) $id, (int) $revisionId, (int) ($user?->id));
         $this->app->session()->flash('success', 'Revision restored.');
         $this->app->redirect('/admin/blog/' . $id . '/edit');
     }

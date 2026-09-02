@@ -9,6 +9,9 @@ use Pubvana\Plugins\SiteHealth\Interfaces\CheckInterface;
 
 class RequiredSettingsCheck implements CheckInterface
 {
+    /**
+     * @param Engine<object> $app
+     */
     public function __construct(private Engine $app) {}
 
     public function run(): CheckResult
@@ -51,7 +54,7 @@ class RequiredSettingsCheck implements CheckInterface
      */
     private function settingsValue(string $key): string
     {
-        if (method_exists($this->app, 'settings') && $this->app->settings() !== null) {
+        if (method_exists($this->app, 'settings')) {
             $value = $this->app->settings()->get($key, '');
             if (is_scalar($value)) {
                 return (string) $value;

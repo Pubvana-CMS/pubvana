@@ -14,8 +14,11 @@ namespace Pubvana\Plugins\SocialLinks\Models;
  * @property int         $is_active
  * @property string|null $created_at
  * @property string|null $updated_at
+ *
+ * @method self eq(string $field, mixed $value, string $operator = 'AND')
+ * @method self order(string $field)
  */
-class SocialLink extends \flight\ActiveRecord
+class SocialLink extends \Pubvana\Models\AbstractModel
 {
     /**
      * @param \PDO|\flight\database\DatabaseInterface|null $pdo Optional database connection,

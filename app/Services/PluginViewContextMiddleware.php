@@ -25,15 +25,15 @@ use flight\Engine;
  */
 class PluginViewContextMiddleware
 {
-    /** @var Engine The FlightPHP app instance */
+    /** @var Engine<object> The FlightPHP app instance */
     protected Engine $app;
 
     /** @var string Plugin ID to set as active context */
     protected string $pluginId;
 
     /**
-     * @param Engine $app      The FlightPHP app instance
-     * @param string $pluginId Plugin ID (e.g. 'pubvana/blog')
+     * @param Engine<object> $app      The FlightPHP app instance
+     * @param string         $pluginId Plugin ID (e.g. 'pubvana/blog')
      */
     public function __construct(Engine $app, string $pluginId)
     {

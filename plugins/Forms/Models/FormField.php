@@ -18,14 +18,28 @@ namespace Pubvana\Plugins\Forms\Models;
  * @property int         $sort_order
  * @property string|null $created_at
  * @property string|null $updated_at
+ * @method self eq(string $field, mixed $value, string $operator = 'AND')
+ * @method self notEq(string $field, mixed $value, string $operator = 'AND')
+ * @method self isNull(string $field, string $operator = 'AND')
+ * @method self order(string $field)
+ * @method self select(string $field, string ...$fields)
+ * @method self limit(int $limit)
+ * @method self offset(int $offset)
  */
-class FormField extends \flight\ActiveRecord
+class FormField extends \Pubvana\Models\AbstractModel
 {
+    /**
+     * @param \flight\database\DatabaseInterface|\PDO|\mysqli|null $pdo
+     * @param array<string, mixed>                                 $config
+     */
     public function __construct($pdo = null, array $config = [])
     {
         parent::__construct($pdo, 'form_fields', $config);
     }
 
+    /**
+     * @return array<int, FormField>
+     */
     public function forForm(int $formId): array
     {
         return (new self($this->getDatabaseConnection()))
@@ -34,6 +48,9 @@ class FormField extends \flight\ActiveRecord
             ->findAll();
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public function createRecord(array $data): self
     {
         $record = new self($this->getDatabaseConnection());

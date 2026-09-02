@@ -25,7 +25,7 @@ class Plugin implements PluginInterface
     public function register(Engine $app, Router $router, array $config = []): void
     {
         // Map the comments service as a singleton.
-        $app->map('comments', function () use ($app, $config) {
+        $app->map('comments', function () use ($app) {
             static $instance = null;
             if ($instance === null) {
                 $instance = new Services\CommentService($app->db(), $app);
@@ -91,9 +91,10 @@ class Plugin implements PluginInterface
                     $host = $app->comments()->hostItem((string) $comment->commentable_type, (int) $comment->commentable_id);
                     $label = ($host['title'] ?? $comment->commentable_type . ' #' . $comment->commentable_id);
 
+                    $ts = strtotime((string) $comment->created_at);
                     $items[] = [
                         'label'    => $author . ' on ' . $label,
-                        'meta'     => $comment->created_at ? date('M j, Y g:ia', strtotime((string) $comment->created_at)) : '',
+                        'meta'     => $comment->created_at && $ts !== false ? date('M j, Y g:ia', $ts) : '',
                         'href'     => '/comments/' . (int) $comment->id,
                         'emphasis' => 'warning',
                     ];

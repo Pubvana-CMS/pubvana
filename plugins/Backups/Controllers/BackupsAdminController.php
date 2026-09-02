@@ -34,6 +34,8 @@ class BackupsAdminController extends AdminController
 
     /**
      * Get the plugin config array.
+     *
+     * @return array<string, mixed>
      */
     protected function pluginConfig(): array
     {
@@ -128,7 +130,10 @@ class BackupsAdminController extends AdminController
         $response->header('Content-Type', 'application/zip');
         $response->header('Content-Disposition', 'attachment; filename="' . basename($path) . '"');
         $response->header('Content-Length', (string) filesize($path));
-        $response->write(file_get_contents($path));
+        $content = file_get_contents($path);
+        if ($content !== false) {
+            $response->write($content);
+        }
         $response->send();
     }
 

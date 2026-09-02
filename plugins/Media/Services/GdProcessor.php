@@ -10,6 +10,20 @@ class GdProcessor implements ImageProcessorInterface
     private string $mime;
     private string $loadedPath;
 
+    /**
+     * The loaded image, or a LogicException-safe failure for call-order bugs.
+     *
+     * Every edit method requires load() to have run; without this guard the
+     * failure would surface as an opaque TypeError inside the GD extension.
+     */
+    private function requireImage(): \GdImage
+    {
+        if ($this->image === null) {
+            throw new \LogicException('No image loaded. Call load() first.');
+        }
+        return $this->image;
+    }
+
     public function load(string $path): static
     {
         $info = getimagesize($path);
@@ -19,13 +33,17 @@ class GdProcessor implements ImageProcessorInterface
         $this->mime       = $info['mime'];
         $this->loadedPath = $path;
 
-        $this->image = match ($this->mime) {
+        $image = match ($this->mime) {
             'image/jpeg' => imagecreatefromjpeg($path),
             'image/png'  => imagecreatefrompng($path),
             'image/gif'  => imagecreatefromgif($path),
             'image/webp' => imagecreatefromwebp($path),
             default      => throw new \InvalidArgumentException("Unsupported image type: {$this->mime}"),
         };
+        if ($image === false) {
+            throw new \InvalidArgumentException("Unable to decode image: {$path}");
+        }
+        $this->image = $image;
 
         imagealphablending($this->image, true);
         imagesavealpha($this->image, true);
@@ -35,21 +53,25 @@ class GdProcessor implements ImageProcessorInterface
 
     public function resize(int $width): static
     {
-        $origWidth  = imagesx($this->image);
-        $origHeight = imagesy($this->image);
+        if ($width < 1) {
+            throw new \InvalidArgumentException("Resize width must be at least 1, got {$width}");
+        }
+        $image      = $this->requireImage();
+        $origWidth  = imagesx($image);
+        $origHeight = imagesy($image);
 
         if ($origWidth <= $width) {
             return $this;
         }
 
-        $height  = (int) round($origHeight * ($width / $origWidth));
+        $height  = max(1, (int) round($origHeight * ($width / $origWidth)));
         $resized = imagecreatetruecolor($width, $height);
 
         imagealphablending($resized, false);
         imagesavealpha($resized, true);
-        imagecopyresampled($resized, $this->image, 0, 0, 0, 0, $width, $height, $origWidth, $origHeight);
+        imagecopyresampled($resized, $image, 0, 0, 0, 0, $width, $height, $origWidth, $origHeight);
 
-        imagedestroy($this->image);
+        imagedestroy($image);
         $this->image = $resized;
 
         return $this;
@@ -57,12 +79,16 @@ class GdProcessor implements ImageProcessorInterface
 
     public function crop(int $x, int $y, int $width, int $height): static
     {
+        if ($width < 1 || $height < 1) {
+            throw new \InvalidArgumentException("Crop dimensions must be at least 1, got {$width}x{$height}");
+        }
+        $image   = $this->requireImage();
         $cropped = imagecreatetruecolor($width, $height);
         imagealphablending($cropped, false);
         imagesavealpha($cropped, true);
-        imagecopy($cropped, $this->image, 0, 0, $x, $y, $width, $height);
+        imagecopy($cropped, $image, 0, 0, $x, $y, $width, $height);
 
-        imagedestroy($this->image);
+        imagedestroy($image);
         $this->image = $cropped;
 
         return $this;
@@ -70,11 +96,15 @@ class GdProcessor implements ImageProcessorInterface
 
     public function rotate(int $degrees): static
     {
-        $rotated = imagerotate($this->image, -$degrees, 0);
+        $image   = $this->requireImage();
+        $rotated = imagerotate($image, -$degrees, 0);
+        if ($rotated === false) {
+            return $this;
+        }
         imagealphablending($rotated, true);
         imagesavealpha($rotated, true);
 
-        imagedestroy($this->image);
+        imagedestroy($image);
         $this->image = $rotated;
 
         return $this;
@@ -83,7 +113,7 @@ class GdProcessor implements ImageProcessorInterface
     public function flip(string $direction): static
     {
         $mode = ($direction === 'horizontal') ? IMG_FLIP_VERTICAL : IMG_FLIP_HORIZONTAL;
-        imageflip($this->image, $mode);
+        imageflip($this->requireImage(), $mode);
         return $this;
     }
 
@@ -94,7 +124,7 @@ class GdProcessor implements ImageProcessorInterface
             [-1, 5, -1],
             [0, -1, 0],
         ];
-        imageconvolution($this->image, $matrix, 1, 0);
+        imageconvolution($this->requireImage(), $matrix, 1, 0);
         return $this;
     }
 
@@ -104,7 +134,7 @@ class GdProcessor implements ImageProcessorInterface
             return $this;
         }
         $gdLevel = (int) round($level * 2.55);
-        imagefilter($this->image, IMG_FILTER_BRIGHTNESS, $gdLevel);
+        imagefilter($this->requireImage(), IMG_FILTER_BRIGHTNESS, $gdLevel);
         return $this;
     }
 
@@ -113,7 +143,7 @@ class GdProcessor implements ImageProcessorInterface
         if ($level === 0) {
             return $this;
         }
-        imagefilter($this->image, IMG_FILTER_CONTRAST, -$level);
+        imagefilter($this->requireImage(), IMG_FILTER_CONTRAST, -$level);
         return $this;
     }
 
@@ -128,43 +158,51 @@ class GdProcessor implements ImageProcessorInterface
             return $this;
         }
 
+        $image = $this->requireImage();
+
         switch ($exif['Orientation']) {
             case 2:
-                imageflip($this->image, IMG_FLIP_HORIZONTAL);
+                imageflip($image, IMG_FLIP_HORIZONTAL);
                 break;
             case 3:
-                $rotated = imagerotate($this->image, 180, 0);
-                imagedestroy($this->image);
-                $this->image = $rotated;
+                $this->replaceImage(imagerotate($image, 180, 0));
                 break;
             case 4:
-                imageflip($this->image, IMG_FLIP_VERTICAL);
+                imageflip($image, IMG_FLIP_VERTICAL);
                 break;
             case 5:
-                $rotated = imagerotate($this->image, -90, 0);
-                imagedestroy($this->image);
-                $this->image = $rotated;
-                imageflip($this->image, IMG_FLIP_HORIZONTAL);
+                $this->replaceImage(imagerotate($image, -90, 0));
+                imageflip($this->requireImage(), IMG_FLIP_HORIZONTAL);
                 break;
             case 6:
-                $rotated = imagerotate($this->image, -90, 0);
-                imagedestroy($this->image);
-                $this->image = $rotated;
+                $this->replaceImage(imagerotate($image, -90, 0));
                 break;
             case 7:
-                $rotated = imagerotate($this->image, 90, 0);
-                imagedestroy($this->image);
-                $this->image = $rotated;
-                imageflip($this->image, IMG_FLIP_HORIZONTAL);
+                $this->replaceImage(imagerotate($image, 90, 0));
+                imageflip($this->requireImage(), IMG_FLIP_HORIZONTAL);
                 break;
             case 8:
-                $rotated = imagerotate($this->image, 90, 0);
-                imagedestroy($this->image);
-                $this->image = $rotated;
+                $this->replaceImage(imagerotate($image, 90, 0));
                 break;
         }
 
         return $this;
+    }
+
+    /**
+     * Swap in a rotated image, destroying the previous one. Keeps the
+     * current image untouched when GD fails to rotate.
+     */
+    private function replaceImage(\GdImage|false $newImage): void
+    {
+        if ($newImage === false) {
+            return;
+        }
+        $old = $this->requireImage();
+        imagealphablending($newImage, true);
+        imagesavealpha($newImage, true);
+        imagedestroy($old);
+        $this->image = $newImage;
     }
 
     public function stripExif(): static
@@ -174,27 +212,32 @@ class GdProcessor implements ImageProcessorInterface
 
     public function toWebp(string $outputPath, int $quality = 85): void
     {
-        imagewebp($this->image, $outputPath, $quality);
-        imagedestroy($this->image);
+        $image = $this->requireImage();
+        imagewebp($image, $outputPath, $quality);
+        imagedestroy($image);
         $this->image = null;
     }
 
     public function save(string $outputPath, ?int $quality = null): void
     {
+        $image = $this->requireImage();
         $ext = strtolower(pathinfo($outputPath, PATHINFO_EXTENSION));
 
         match ($ext) {
-            'jpg', 'jpeg' => imagejpeg($this->image, $outputPath, $quality ?? 92),
-            'png'         => imagepng($this->image, $outputPath, 9),
-            'gif'         => imagegif($this->image, $outputPath),
-            'webp'        => imagewebp($this->image, $outputPath, $quality ?? 85),
-            default       => imagejpeg($this->image, $outputPath, $quality ?? 92),
+            'jpg', 'jpeg' => imagejpeg($image, $outputPath, $quality ?? 92),
+            'png'         => imagepng($image, $outputPath, 9),
+            'gif'         => imagegif($image, $outputPath),
+            'webp'        => imagewebp($image, $outputPath, $quality ?? 85),
+            default       => imagejpeg($image, $outputPath, $quality ?? 92),
         };
 
-        imagedestroy($this->image);
+        imagedestroy($image);
         $this->image = null;
     }
 
+    /**
+     * @return array{width: int, height: int, mime: string}
+     */
     public function getInfo(string $path): array
     {
         $info = getimagesize($path);
@@ -209,6 +252,9 @@ class GdProcessor implements ImageProcessorInterface
         ];
     }
 
+    /**
+     * @return array<string, string> Cleaned EXIF key => value pairs
+     */
     public function getExif(string $path): array
     {
         if (!function_exists('exif_read_data')) {
@@ -263,6 +309,9 @@ class GdProcessor implements ImageProcessorInterface
         return $result;
     }
 
+    /**
+     * @return list<string> Supported edit operation names
+     */
     public function capabilities(): array
     {
         $caps = ['crop', 'rotate', 'flip', 'resize', 'sharpen', 'brightness', 'contrast', 'strip_exif'];

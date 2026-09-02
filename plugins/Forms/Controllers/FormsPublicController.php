@@ -19,7 +19,7 @@ class FormsPublicController extends PublicController
         $form = $this->app->forms()->findForm((int) $id);
 
         if ($form === null || ($form->status ?? '') !== 'published') {
-            $this->app->stop(404, 'Form not found');
+            $this->app->halt(404, 'Form not found');
             return;
         }
 

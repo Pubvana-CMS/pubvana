@@ -17,9 +17,14 @@ use flight\Engine;
  */
 class AdminController
 {
+    /** @var Engine<object> The FlightPHP app instance */
     protected Engine $app;
     protected string $configPrepend;
 
+    /**
+     * @param Engine<object> $app            The FlightPHP app instance
+     * @param string         $configPrepend  Config key prefix for plugin settings
+     */
     public function __construct(Engine $app, string $configPrepend = 'pubvana')
     {
         $this->app = $app;
@@ -94,23 +99,19 @@ class AdminController
     /**
      * Flatten adext dashboard contributions into a sorted entries array.
      *
-     * @param array  $contributors Adext contributions keyed by source
-     * @param string $requiredKey  Key that each card/section must contain
-     * @return array
+     * @param array<string, array<string, mixed>> $contributors Adext contributions keyed by source
+     * @param string               $requiredKey  Key that each card/section must contain
+     * @return list<array<string, mixed>>
      */
     protected function normalizeDashboardEntries(array $contributors, string $requiredKey): array
     {
         $entries = [];
 
         foreach ($contributors as $source => $contribution) {
-            if (!is_array($contribution)) {
-                continue;
-            }
-
             $candidates = $this->flattenCandidates($contribution);
 
             foreach ($candidates as $entry) {
-                if (!is_array($entry) || !isset($entry[$requiredKey])) {
+                if (!isset($entry[$requiredKey])) {
                     continue;
                 }
                 $entry['source'] = $source;
@@ -128,21 +129,21 @@ class AdminController
      * Only groups that actually contain entries are included. Unknown group
      * tokens are appended at the end in first-seen order.
      *
-     * @param array $entries Flat list of normalized cards/sections
-     * @param array $groups  Group map from dashboardGroups()
-     * @return array Groups in display order: each is ['id', 'label', 'items' => [...]]
+     * @param list<array<string, mixed>> $entries Flat list of normalized cards/sections
+     * @param array<string, array<string, mixed>> $groups  Group map from dashboardGroups()
+     * @return list<array<string, mixed>> Groups in display order, each with id, label, items
      */
     protected function groupDashboardEntries(array $entries, array $groups): array
     {
         // Order groups by the map, then append any unknown groups.
         $order = [];
         foreach ($groups as $token => $def) {
-            $order[$token] = $def['priority'] ?? 50;
+            $order[$token] = (int) ($def['priority'] ?? 50);
         }
         foreach ($entries as $entry) {
             $token = $entry['group'] ?? 'other';
             if (!isset($order[$token])) {
-                $order[$token] = max($order) + 1;
+                $order[$token] = ($order === [] ? 0 : max($order)) + 1;
             }
         }
 
@@ -201,8 +202,8 @@ class AdminController
      * Handles flat lists ([card, card]), single envelopes ([card]) and the
      * legacy double-wrap ([[card]]) so no contributor is dropped.
      *
-     * @param array $contribution
-     * @return array
+     * @param array<int|string, mixed> $contribution
+     * @return list<array<string, mixed>>
      */
     protected function flattenCandidates(array $contribution): array
     {
@@ -225,8 +226,8 @@ class AdminController
     /**
      * Prepend /admin to relative URLs in a dashboard card or section.
      *
-     * @param array $entry Single dashboard card or section
-     * @return array
+     * @param array<string, mixed> $entry Single dashboard card or section
+     * @return array<string, mixed>
      */
     protected function normalizeDashboardUrls(array $entry): array
     {
@@ -254,6 +255,8 @@ class AdminController
      * Render an admin view wrapped in the Tabler UI layout.
      *
      * Set $layout to false for HTMX partial responses (no full page wrapper).
+     *
+     * @param array<string, mixed> $data
      */
     protected function render(string $view, array $data = [], bool $layout = true): void
     {

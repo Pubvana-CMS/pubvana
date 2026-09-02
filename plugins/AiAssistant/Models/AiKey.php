@@ -24,9 +24,32 @@ namespace Pubvana\Plugins\AiAssistant\Models;
  *   updated_at       - Last update timestamp
  *
  * @package Pubvana\Plugins\AiAssistant\Models
+ *
+ * @property int         $id
+ * @property string      $name
+ * @property string      $key_hash
+ * @property string      $key_prefix
+ * @property int         $enabled              0|1
+ * @property int         $failed_attempts
+ * @property string|null $blocked_until
+ * @property string|null $last_used_at
+ * @property string|null $created_at
+ * @property string|null $updated_at
+ *
+ * @method self eq(string $field, mixed $value, string $operator = 'AND')
+ * @method self like(string $field, mixed $value, string $operator = 'AND')
+ * @method self isNull(string $field, string $operator = 'AND')
+ * @method self order(string $field)
+ * @method self select(string $field, string ...$fields)
+ * @method self limit(int $limit)
+ * @method self offset(int $offset)
  */
-class AiKey extends \flight\ActiveRecord
+class AiKey extends \Pubvana\Models\AbstractModel
 {
+    /**
+     * @param \flight\database\DatabaseInterface|\PDO|\mysqli|null $pdo
+     * @param array<string, mixed>                                 $config
+     */
     public function __construct($pdo = null, array $config = [])
     {
         parent::__construct($pdo, 'ai_keys', $config);

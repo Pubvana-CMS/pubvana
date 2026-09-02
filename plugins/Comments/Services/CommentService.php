@@ -24,9 +24,11 @@ use flight\Engine;
 class CommentService
 {
     private Comment $model;
+
+    /** @var Engine<object> */
     private Engine $app;
 
-    /** Cached set of commentable_types owned by hosts the admin has opted in. */
+    /** @var list<string>|null Cached set of commentable_types owned by hosts the admin has opted in. */
     private ?array $enabledTypesCache = null;
 
     /**
@@ -49,6 +51,9 @@ class CommentService
         'recaptcha' => 'g-recaptcha-response',
     ];
 
+    /**
+     * @param Engine<object> $app
+     */
     public function __construct(\PDO $pdo, Engine $app)
     {
         $this->model = new Comment($pdo);
@@ -139,6 +144,8 @@ class CommentService
 
     /**
      * Paginated comment list for admin, optionally filtered by status.
+     *
+     * @return array<int, Comment>
      */
     public function list(int $page = 1, int $perPage = 25, ?string $status = null): array
     {
@@ -147,6 +154,8 @@ class CommentService
 
     /**
      * Get a threaded comment tree for a content item (public display).
+     *
+     * @return array<int, Comment>
      */
     public function findForContent(string $type, int $id): array
     {
@@ -181,6 +190,9 @@ class CommentService
      *
      * @throws \InvalidArgumentException When validation fails (callers
      *         catch this and surface a user-facing message).
+     */
+    /**
+     * @param array<string, mixed> $data
      */
     public function create(array $data): Comment
     {
@@ -286,12 +298,13 @@ class CommentService
 
         // Resolve the .tpl partial through the 3-tier override chain.
         $template = $this->resolveTemplate($view);
-        if ($template === '') {
+        $vision = $template === '' ? null : $view->vision();
+        if ($template === '' || $vision === null) {
             return '';
         }
 
         try {
-            return $view->vision()->render($template, $data);
+            return $vision->render($template, $data);
         } catch (\Throwable $e) {
             return '';
         }
@@ -412,7 +425,7 @@ class CommentService
         $items = [];
 
         foreach ($this->app->adext()->get('comments.host', 'content') as $hostKey => $contribution) {
-            if (!is_string($hostKey) || !$this->isHostEnabled($hostKey)) {
+            if (!$this->isHostEnabled((string) $hostKey)) {
                 continue;
             }
             if (empty($contribution['callable']) || !is_callable($contribution['callable'])) {
@@ -449,6 +462,8 @@ class CommentService
 
     /**
      * Resolve a single host item by type + id (for enriching comment displays).
+     *
+     * @return array{type: string, id: int, title: string, url: string, allow_comments: bool}|null
      */
     public function hostItem(string $type, int $id): ?array
     {
@@ -464,7 +479,7 @@ class CommentService
     /**
      * All registered comment hosts (undelegated, callables intact).
      *
-     * @return array<string, array> Keyed by host key
+     * @return array<string, array<string, mixed>> Keyed by host key
      */
     public function hosts(): array
     {
@@ -475,7 +490,7 @@ class CommentService
      * Hosts that accept comments, in display order.
      *
      * @param bool $decorate When true, attach 'enabled' + 'label' to each
-     * @return array
+     * @return array<string, mixed>
      */
     public function enabledHosts(bool $decorate = true): array
     {
@@ -573,7 +588,7 @@ class CommentService
 
         foreach ($typesToHost as $type => $hostKey) {
             $out[$hostKey]['comments'] += (int) ($all[$type] ?? 0);
-            $out[$hostKey]['pending']  += (int) ($pending[$type] ?? 0);
+            $out[$hostKey]['pending'] = ($out[$hostKey]['pending'] ?? 0) + (int) ($pending[$type] ?? 0);
         }
 
         return $out;
@@ -657,6 +672,10 @@ class CommentService
      * host content title/URL via the registered 'comments.host' entries.
      *
      * @return array{title: string, comments: array<int, array{author: string, post_title: string, url: string, date: ?string}>}
+     */
+    /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
      */
     public function recentCommentsBlock(array $options): array
     {
@@ -754,6 +773,10 @@ class CommentService
     /**
      * Build a nested tree from a flat array of comments.
      */
+    /**
+     * @param array<int, Comment> $comments
+     * @return array<int, Comment>
+     */
     private function buildTree(array $comments): array
     {
         $map = [];
@@ -782,6 +805,10 @@ class CommentService
 
     /**
      * Flatten a nested comment tree into a depth-annotated, template-ready array.
+     */
+    /**
+     * @param array<int, Comment> $tree
+     * @return list<array<string, mixed>>
      */
     private function flattenComments(array $tree, int $depth = 0): array
     {

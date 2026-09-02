@@ -16,8 +16,12 @@ use flight\Engine;
 class SitemapService
 {
     protected \PDO $pdo;
+    /** @var Engine<object> */
     protected Engine $app;
 
+    /**
+     * @param Engine<object> $app
+     */
     public function __construct(\PDO $pdo, Engine $app)
     {
         $this->pdo = $pdo;
@@ -59,6 +63,9 @@ class SitemapService
     /**
      * Get published page URLs, excluding noindex pages.
      */
+    /**
+     * @return array<int, array{loc: string, lastmod: string}>
+     */
     protected function getPageUrls(string $siteUrl): array
     {
         $pages = $this->app->pages()->listPublished();
@@ -81,6 +88,9 @@ class SitemapService
 
     /**
      * Get published post URLs, excluding noindex posts.
+     */
+    /**
+     * @return array<int, array{loc: string, lastmod: string}>
      */
     protected function getPostUrls(string $siteUrl): array
     {
@@ -105,6 +115,9 @@ class SitemapService
     /**
      * Get category archive URLs.
      */
+    /**
+     * @return array<int, array{loc: string, lastmod: string}>
+     */
     protected function getCategoryUrls(string $siteUrl): array
     {
         $categories = $this->app->blog()->listCategories();
@@ -123,6 +136,9 @@ class SitemapService
     /**
      * Get tag archive URLs.
      */
+    /**
+     * @return array<int, array{loc: string, lastmod: string}>
+     */
     protected function getTagUrls(string $siteUrl): array
     {
         $tags = $this->app->blog()->listTags();
@@ -140,6 +156,9 @@ class SitemapService
 
     /**
      * Build the XML string from URL entries.
+     */
+    /**
+     * @param array<int, array{loc: string, lastmod: string}> $urls
      */
     protected function buildXml(array $urls): string
     {
@@ -165,7 +184,8 @@ class SitemapService
         if (empty($datetime)) {
             return date('Y-m-d');
         }
-        return date('Y-m-d', strtotime($datetime));
+        $ts = strtotime($datetime);
+        return $ts === false ? date('Y-m-d') : date('Y-m-d', $ts);
     }
 
     protected function getSiteUrl(): string

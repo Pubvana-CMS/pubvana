@@ -15,9 +15,9 @@ class ContentAnalysisService
     /**
      * Analyze content for SEO quality.
      *
-     * @param array $data Keys: title, content, meta_title, meta_description,
-     *                    focus_keywords (array), slug, has_images, image_alts (array)
-     * @return array{score: int, checks: array}
+     * @param array<string, mixed> $data Keys: title, content, meta_title, meta_description,
+     *                                    focus_keywords (array), slug, has_images, image_alts (array)
+     * @return array{score: int, checks: array<int, array<string, string>>}
      */
     public function analyze(array $data): array
     {
@@ -62,10 +62,10 @@ class ContentAnalysisService
         $checks[] = $this->checkParagraphLength($content);
         $checks[] = $this->checkSentenceLength($contentPlain);
 
-        // Calculate score
+        // Calculate score (15 checks are appended above, so $total > 0 always)
         $passed = count(array_filter($checks, fn($c) => $c['status'] === 'pass'));
         $total = count($checks);
-        $score = $total > 0 ? (int) round(($passed / $total) * 100) : 0;
+        $score = (int) round(($passed / $total) * 100);
 
         return [
             'score'  => $score,
@@ -77,6 +77,9 @@ class ContentAnalysisService
     // Individual checks
     // -----------------------------------------------------------------
 
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
     protected function checkTitleLength(string $title): array
     {
         $len = mb_strlen($title);
@@ -89,9 +92,15 @@ class ContentAnalysisService
         if ($len === 0) {
             return ['id' => 'title_length', 'status' => 'fail', 'message' => 'No title set.'];
         }
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
         return ['id' => 'title_length', 'status' => 'fail', 'message' => "Title length ({$len} chars) is outside the recommended 50–60 range."];
     }
 
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
     protected function checkTitleKeyword(string $title, string $keyword): array
     {
         if (empty($keyword)) {
@@ -104,38 +113,65 @@ class ContentAnalysisService
             }
             return ['id' => 'title_keyword', 'status' => 'warning', 'message' => 'Focus keyword is in the title but not near the beginning.'];
         }
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
         return ['id' => 'title_keyword', 'status' => 'fail', 'message' => 'Focus keyword not found in the title.'];
     }
 
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
     protected function checkDescriptionLength(string $description): array
     {
         $len = mb_strlen($description);
         if ($len >= 120 && $len <= 160) {
             return ['id' => 'desc_length', 'status' => 'pass', 'message' => "Meta description length is optimal ({$len} characters)."];
         }
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
         if ($len > 0 && $len < 120) {
             return ['id' => 'desc_length', 'status' => 'warning', 'message' => "Meta description ({$len} chars) is short. Aim for 120–160."];
         }
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
         if ($len > 160) {
             return ['id' => 'desc_length', 'status' => 'warning', 'message' => "Meta description ({$len} chars) may be truncated. Keep under 160."];
         }
         return ['id' => 'desc_length', 'status' => 'fail', 'message' => 'No meta description set.'];
     }
 
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
     protected function checkDescriptionKeyword(string $description, string $keyword): array
     {
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
         if (empty($keyword)) {
             return ['id' => 'desc_keyword', 'status' => 'warning', 'message' => 'No focus keyword set.'];
         }
         if (empty($description)) {
             return ['id' => 'desc_keyword', 'status' => 'fail', 'message' => 'No meta description to check.'];
         }
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
         if (mb_stripos($description, $keyword) !== false) {
             return ['id' => 'desc_keyword', 'status' => 'pass', 'message' => 'Focus keyword found in meta description.'];
         }
         return ['id' => 'desc_keyword', 'status' => 'fail', 'message' => 'Focus keyword not found in meta description.'];
     }
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
 
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
     protected function checkContentLength(int $wordCount): array
     {
         if ($wordCount >= 1000) {
@@ -147,12 +183,21 @@ class ContentAnalysisService
         return ['id' => 'content_length', 'status' => 'fail', 'message' => "Content is thin ({$wordCount} words). Aim for at least 300 words."];
     }
 
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
     protected function checkKeywordInFirstParagraph(string $content, string $keyword): array
     {
         if (empty($keyword)) {
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
             return ['id' => 'keyword_first_para', 'status' => 'warning', 'message' => 'No focus keyword set.'];
         }
 
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
         // Get first paragraph text
         $firstPara = '';
         if (preg_match('/<p[^>]*>(.*?)<\/p>/is', $content, $match)) {
@@ -168,12 +213,18 @@ class ContentAnalysisService
         return ['id' => 'keyword_first_para', 'status' => 'fail', 'message' => 'Focus keyword not found in the first paragraph.'];
     }
 
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
     protected function checkKeywordDensity(string $plainText, string $keyword, int $wordCount): array
     {
         if (empty($keyword) || $wordCount === 0) {
             return ['id' => 'keyword_density', 'status' => 'warning', 'message' => 'Cannot calculate keyword density.'];
         }
 
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
         $keywordCount = mb_substr_count(mb_strtolower($plainText), mb_strtolower($keyword));
         $keywordWords = str_word_count($keyword);
         $density = ($keywordCount * $keywordWords / $wordCount) * 100;
@@ -187,9 +238,15 @@ class ContentAnalysisService
         if ($keywordCount === 0) {
             return ['id' => 'keyword_density', 'status' => 'fail', 'message' => 'Focus keyword not found in content.'];
         }
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
         return ['id' => 'keyword_density', 'status' => 'warning', 'message' => sprintf('Keyword density is %.1f%% — consider using the keyword more.', $density)];
     }
 
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
     protected function checkHeadingsPresent(string $content): array
     {
         if (preg_match('/<h[2-6][^>]*>/i', $content)) {
@@ -198,6 +255,9 @@ class ContentAnalysisService
         return ['id' => 'headings_present', 'status' => 'fail', 'message' => 'No subheadings (H2–H6) found. Use headings to structure content.'];
     }
 
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
     protected function checkKeywordInHeading(string $content, string $keyword): array
     {
         if (empty($keyword)) {
@@ -209,15 +269,24 @@ class ContentAnalysisService
                 if (mb_stripos(strip_tags($heading), $keyword) !== false) {
                     return ['id' => 'keyword_heading', 'status' => 'pass', 'message' => 'Focus keyword found in a subheading.'];
                 }
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
             }
         }
         return ['id' => 'keyword_heading', 'status' => 'warning', 'message' => 'Focus keyword not found in any subheading.'];
     }
 
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
     protected function checkInternalLinks(string $content): array
     {
         $linkCount = preg_match_all('/<a\s[^>]*href\s*=\s*["\'][^"\']*["\'][^>]*>/i', $content);
         if ($linkCount >= 2) {
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
             return ['id' => 'internal_links', 'status' => 'pass', 'message' => "Content contains {$linkCount} links."];
         }
         if ($linkCount === 1) {
@@ -226,6 +295,9 @@ class ContentAnalysisService
         return ['id' => 'internal_links', 'status' => 'fail', 'message' => 'No links found. Add internal links to other content.'];
     }
 
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
     protected function checkSlugKeyword(string $slug, string $keyword): array
     {
         if (empty($keyword)) {
@@ -237,11 +309,17 @@ class ContentAnalysisService
 
         $slugWords = str_replace('-', ' ', $slug);
         if (mb_stripos($slugWords, mb_strtolower($keyword)) !== false) {
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
             return ['id' => 'slug_keyword', 'status' => 'pass', 'message' => 'Focus keyword found in URL slug.'];
         }
         return ['id' => 'slug_keyword', 'status' => 'warning', 'message' => 'Focus keyword not found in URL slug.'];
     }
 
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
     protected function checkImagesPresent(bool $hasImages): array
     {
         if ($hasImages) {
@@ -250,11 +328,21 @@ class ContentAnalysisService
         return ['id' => 'images_present', 'status' => 'warning', 'message' => 'No images found. Visual content improves engagement.'];
     }
 
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
+    /**
+     * @param array<int, string> $alts
+     * @return array{id: string, status: string, message: string}
+     */
     protected function checkImageAlts(array $alts, string $keyword): array
     {
         if (empty($alts)) {
             return ['id' => 'image_alts', 'status' => 'warning', 'message' => 'No images to check alt text for.'];
         }
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
 
         $hasAll = true;
         $hasKeyword = false;
@@ -276,6 +364,9 @@ class ContentAnalysisService
         return ['id' => 'image_alts', 'status' => 'fail', 'message' => 'Some images are missing alt text.'];
     }
 
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
     protected function checkParagraphLength(string $content): array
     {
         preg_match_all('/<p[^>]*>(.*?)<\/p>/is', $content, $matches);
@@ -297,6 +388,9 @@ class ContentAnalysisService
         return ['id' => 'paragraph_length', 'status' => 'warning', 'message' => "{$longCount} paragraph(s) exceed 150 words. Consider breaking them up."];
     }
 
+    /**
+     * @return array{id: string, status: string, message: string}
+    */
     protected function checkSentenceLength(string $plainText): array
     {
         $sentences = preg_split('/[.!?]+/', $plainText, -1, PREG_SPLIT_NO_EMPTY);

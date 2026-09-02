@@ -27,9 +27,14 @@ use Pubvana\Models\Mail;
  */
 class Mailer
 {
+
+    /** @var Engine<object> The FlightPHP app instance */
     protected Engine $app;
     protected \Pubvana\Services\SettingsService $settings;
 
+    /**
+     * @param Engine<object> $app
+     */
     public function __construct(Engine $app)
     {
         $this->app = $app;
@@ -39,12 +44,10 @@ class Mailer
     /**
      * Send an HTML message.
      *
-     * @param string $to      Recipient address
-     * @param string $subject Message subject
-     * @param string $bodyHtml HTML body
-     * @param array  $opts    Optional: 'alt' plain-text alternative,
-     *                        'replyTo' address, 'from' / 'fromName' overrides
-     *
+     * @param string                                $to      Recipient address
+     * @param string                                $subject Message subject
+     * @param string                                $bodyHtml HTML body
+     * @param array{from?: string, fromName?: string, alt?: string, replyTo?: string} $opts Optional overrides
      * @throws \RuntimeException When the send fails
      */
     public function sendHtml(string $to, string $subject, string $bodyHtml, array $opts = []): void
@@ -55,13 +58,13 @@ class Mailer
             $mail = $this->transport();
             $mail->setFrom($from['address'], $from['name']);
             $mail->addAddress($to);
-            if (isset($opts['replyTo']) && is_string($opts['replyTo']) && $opts['replyTo'] !== '') {
+            if (isset($opts['replyTo']) && $opts['replyTo'] !== '') {
                 $mail->addReplyTo($opts['replyTo']);
             }
             $mail->Subject = $subject;
             $mail->isHTML(true);
             $mail->Body = $bodyHtml;
-            if (isset($opts['alt']) && is_string($opts['alt']) && $opts['alt'] !== '') {
+            if (isset($opts['alt']) && $opts['alt'] !== '') {
                 $mail->AltBody = $opts['alt'];
             }
 
@@ -88,7 +91,8 @@ class Mailer
         $from = $this->fromDefaults([]);
 
         try {
-            $mail = $this->transport($buffer);
+            $mail = $this->transport();
+            $this->captureDebug($mail, $buffer);
             $mail->setFrom($from['address'], $from['name']);
             $mail->addAddress($to);
             $siteName = (string) ($this->app->get('CMS.siteName') ?? 'Pubvana');
@@ -107,9 +111,9 @@ class Mailer
             $error = $e->getMessage();
         }
 
-        $this->log($to, $subject ?? 'Test message', 'failed', $error ?? 'Unknown SMTP error', $from['address']);
+        $this->log($to, $subject ?? 'Test message', 'failed', $error, $from['address']);
 
-        return ['ok' => false, 'debug' => $buffer, 'error' => $error ?? 'Unknown SMTP error'];
+        return ['ok' => false, 'debug' => $buffer, 'error' => $error];
     }
 
     /**
@@ -117,7 +121,7 @@ class Mailer
      * admin Email page. The SMTP password is encrypted before storage;
      * a blank posted password keeps whatever is already stored.
      *
-     * @param array $post Raw posted values, keyed by full setting key
+     * @param array<string, mixed> $post Raw posted values, keyed by full setting key
      * @return array{saved: int, rejected: list<string>}
      */
     public function saveSettings(array $post): array
@@ -187,11 +191,8 @@ class Mailer
 
     /**
      * Build a configured PHPMailer instance. SMTP is the only transport.
-     *
-     * @param string|null $debugBuffer When given, SMTP debug output is
-     *                                 appended to this string reference.
      */
-    protected function transport(?string &$debugBuffer = null): PHPMailer
+    protected function transport(): PHPMailer
     {
         $mail = new PHPMailer(true); // exceptions
         $mail->isSMTP();
@@ -214,20 +215,25 @@ class Mailer
         $mail->Timeout = 10;
         $mail->SMTPAutoTLS = true;
 
-        if ($debugBuffer !== null) {
-            $mail->SMTPDebug = SMTP::DEBUG_CONNECTION;
-            $mail->Debugoutput = function (string $line, int $level) use (&$debugBuffer): void {
-                $debugBuffer .= $line;
-            };
-        }
-
         return $mail;
+    }
+
+    /**
+     * Enable SMTP-level debug capture on a transport, appending each debug
+     * line to the given buffer. Call before send().
+     */
+    protected function captureDebug(PHPMailer $mail, string &$buffer): void
+    {
+        $mail->SMTPDebug = SMTP::DEBUG_CONNECTION;
+        $mail->Debugoutput = function (string $line, int $level) use (&$buffer): void {
+            $buffer .= $line;
+        };
     }
 
     /**
      * Resolve the effective From address/name for a message.
      *
-     * @param array $opts Optional per-call 'from' / 'fromName' overrides
+     * @param array{from?: string, fromName?: string} $opts Optional per-call 'from' / 'fromName' overrides
      * @return array{address: string, name: string}
      */
     protected function fromDefaults(array $opts): array

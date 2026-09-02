@@ -15,8 +15,12 @@ use flight\Engine;
  */
 class AssetController
 {
+    /** @var Engine<object> The FlightPHP app instance */
     protected Engine $app;
 
+    /**
+     * @param Engine<object> $app
+     */
     public function __construct(Engine $app)
     {
         $this->app = $app;

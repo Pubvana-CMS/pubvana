@@ -36,13 +36,22 @@ use flight\Engine;
 class AiService
 {
     private \PDO $pdo;
+
+    /** @var Engine<object> */
     private Engine $app;
+
+    /** @var array<string, mixed> */
     private array $config;
+
     private ?string $domainKey = null;
 
-    /** @var array<int, array<string, true>> Cached grant sets per key id */
+    /** @var array<int, array<string, int>> Cached grant sets per key id (permission => original index) */
     private array $grantsCache = [];
 
+    /**
+     * @param Engine<object> $app
+     * @param array<string, mixed> $config
+     */
     public function __construct(\PDO $pdo, Engine $app, array $config = [])
     {
         $this->pdo = $pdo;
@@ -185,7 +194,7 @@ class AiService
      * Authenticate a raw bearer token.
      *
      * @param string $token Raw token from the Authorization header
-     * @return array{key: ?AiKey, error: ?string} key is null on failure
+     * @return array{key: ?AiKey, error: ?string, key_known?: AiKey} key is null on failure
      */
     public function authenticate(string $token): array
     {
@@ -454,7 +463,7 @@ class AiService
     /**
      * Apply the search term as an OR-wrapped LIKE across searchable fields.
      *
-     * @param object       $query  Active record query builder
+     * @param \Pubvana\Plugins\Blog\Models\Post|\Pubvana\Plugins\Pages\Models\Page $query  Active record query builder
      * @param string|null  $search
      * @param bool         $includeExcerpt  Posts also search the excerpt
      */
@@ -604,8 +613,8 @@ class AiService
      * works on the NavigationItem model directly to honour admin-side
      * update semantics.
      *
-     * @param int   $id
-     * @param array $data Allowed: label, url, nav_group, parent_id, sort_order, target
+     * @param int                  $id
+     * @param array<string, mixed> $data Allowed: label, url, nav_group, parent_id, sort_order, target
      * @return array<string, mixed>|null Normalized item, or null when not found
      */
     public function updateNavigationItem(int $id, array $data): ?array
@@ -717,6 +726,8 @@ class AiService
      * Returns null when the item has no seo_meta row or the SEO plugin is
      * disabled. Mirrors the nested "seo" object accepted on writes so the
      * assistant can round-trip the same shape.
+     *
+     * @return array<string, mixed>|null
      */
     protected function seoBlock(string $contentType, int $contentId): ?array
     {

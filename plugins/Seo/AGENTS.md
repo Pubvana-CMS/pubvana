@@ -95,9 +95,10 @@ This plugin has no `composer.json` and no test suite, unlike library plugins in 
 No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->`
 
 ## Coding standards
+- **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
 
 1. **`declare(strict_types=1);` at the top of every class file** (`Plugin.php:3`). No exceptions.
-2. **Models extend `\flight\ActiveRecord`, declare their table string in the constructor, and keep the `@property` docblock matched to the migration** (`Models/SeoMeta.php:9-36`).
+2. **Models extend `Pubvana\Models\AbstractModel`, declare their table string in the constructor, and keep the `@property` docblock matched to the migration** (`Models/SeoMeta.php:9-36`).
 3. **Keep focus keywords as a JSON column handled only through `getFocusKeywordsArray()`/`setFocusKeywordsArray()` (max 5)** (`Models/SeoMeta.php:67-86`).
 4. **Emitted markup is always escaped** (`htmlspecialchars`, `ENT_QUOTES`); XML uses `ENT_XML1`. No raw interpolation in tag builders.
 5. **Settings are read with explicit defaults every time**; booleans written as `true`/`false` via `settings->set()` (`Controllers/SeoAdminController.php:76-84`).

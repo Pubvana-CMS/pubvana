@@ -26,6 +26,16 @@ class ConfigDefaultsCheck implements CheckInterface
         }
 
         $lines = file($envFile, FILE_IGNORE_NEW_LINES);
+        if ($lines === false) {
+            return new CheckResult(
+                id: 'config-defaults',
+                name: 'Configuration File',
+                category: CheckResult::CAT_CONFIGURATION,
+                status: CheckResult::CRITICAL,
+                message: 'Could not read the .env file. File permissions may prevent access.',
+                remediation: 'Ensure the web server can read .env and that the file is not empty.',
+            );
+        }
         $parsed = [];
         foreach ($lines as $line) {
             $trimmed = trim($line);

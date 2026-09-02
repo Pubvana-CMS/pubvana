@@ -24,9 +24,9 @@ class Plugin implements PluginInterface
     /**
      * Register the plugin's routes with adext.
      *
-     * @param Engine $app       Flight application
+     * @param Engine<object> $app       Flight application
      * @param Router $router    Flight router (unused, routes go through adext)
-     * @param array  $config    Plugin configuration
+     * @param array<string, mixed>  $config    Plugin configuration
      * @return void
      */
     public function register(Engine $app, Router $router, array $config = []): void

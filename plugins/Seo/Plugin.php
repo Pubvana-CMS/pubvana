@@ -147,13 +147,16 @@ class Plugin implements PluginInterface
 
     /**
      * Dashboard cards showing SEO overview stats.
+     *
+     * @param Engine<object> $app
+     * @return array<int, array<string, mixed>>
      */
     protected function getDashboardCards(Engine $app): array
     {
         $seoModel = new SeoMeta($app->db());
 
         $totalPages = count($app->pages()->listPublished());
-        $totalPosts = (int) ($app->blog()->listPosts(1, 1, 'published')['total'] ?? 0);
+        $totalPosts = (int) ($app->blog()->listPosts(1, 1, 'published')['total']);
         $totalContent = $totalPages + $totalPosts;
 
         $withMeta = $seoModel->countWithMetaTitle();

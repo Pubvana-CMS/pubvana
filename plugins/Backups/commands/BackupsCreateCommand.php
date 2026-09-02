@@ -39,7 +39,7 @@ class BackupsCreateCommand extends AbstractBaseCommand
 
     public function execute(): int
     {
-        $io = $this->app()->io();
+        $io = $this->io();
 
         $trigger     = $this->trigger ?? 'manual';
         $triggeredBy = $this->user ?? 'cli';

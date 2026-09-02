@@ -9,6 +9,9 @@ use Pubvana\Plugins\SiteHealth\Interfaces\CheckInterface;
 
 class PluginMigrationsCheck implements CheckInterface
 {
+    /**
+     * @param array<string, mixed> $migrationConfig
+     */
     public function __construct(private \PDO $pdo, private array $migrationConfig = []) {}
 
     public function run(): CheckResult

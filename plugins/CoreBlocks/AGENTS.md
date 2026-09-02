@@ -61,6 +61,7 @@ This plugin has no `composer.json` and no test suite. It is a declarative plugin
 No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->`
 
 ## Coding standards
+- **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
 
 1. **`declare(strict_types=1);` at the top of the class file** (`Plugin.php:3`).
 2. **Prefer declarative registration over PHP registration.** Static blocks with static options belong in `pubvana.json`, not in `register()`.

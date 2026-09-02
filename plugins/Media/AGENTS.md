@@ -92,9 +92,10 @@ This plugin has no `composer.json` and no test suite, unlike library plugins in 
 No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->`
 
 ## Coding standards
+- **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
 
 1. **`declare(strict_types=1);` at the top of every class file** (`Plugin.php:3`). No exceptions.
-2. **Models extend `\flight\ActiveRecord` and declare their table string in the constructor** (`Models/Media.php:7-12`).
+2. **Models extend `Pubvana\Models\AbstractModel` and declare their table string in the constructor** (`Models/Media.php:7-12`).
 3. **Keep the two processors symmetric.** Both implement the interface fully; when changing one, change both, and confirm identical `capabilities()` where possible.
 4. **`updateMeta()` must stay whitelisted.** Only `alt_text`, `title`, `poster_path` are writable, and values are trimmed to `null` when empty (`Models/Media.php:67-79`). Never pass raw request data.
 5. **Use `DateTimeImmutable` for all timestamp writes** (`Models/Media.php:52, 77`).

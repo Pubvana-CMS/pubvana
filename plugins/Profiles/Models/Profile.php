@@ -4,8 +4,29 @@ declare(strict_types=1);
 
 namespace Pubvana\Plugins\Profiles\Models;
 
-class Profile extends \flight\ActiveRecord
+ /**
+ * @property int         $id
+ * @property int         $user_id       Unique FK to auth users
+ * @property string|null $display_name
+ * @property string|null $bio
+ * @property string|null $avatar        Relative path within media storage
+ * @property string|null $website
+ * @property string|null $twitter
+ * @property string|null $facebook
+ * @property string|null $linkedin
+ * @property string|null $job_title
+ * @property string|null $works_for
+ * @property string|null $created_at
+ * @property string|null $updated_at
+ *
+ * @method self eq(string $field, mixed $value, string $operator = 'AND')
+ */
+class Profile extends \Pubvana\Models\AbstractModel
 {
+    /**
+     * @param \flight\database\DatabaseInterface|\PDO|\mysqli|null $pdo
+     * @param array<string, mixed>                                 $config
+     */
     public function __construct($pdo = null, array $config = [])
     {
         parent::__construct($pdo, 'profiles', $config);
@@ -35,6 +56,9 @@ class Profile extends \flight\ActiveRecord
         return $new;
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public function updateProfile(int $userId, array $data): self
     {
         $profile = $this->findOrCreate($userId);
@@ -42,6 +66,9 @@ class Profile extends \flight\ActiveRecord
         return $profile;
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public function updateFromArray(array $data): void
     {
         $allowed = ['display_name', 'bio', 'avatar', 'website', 'twitter', 'facebook', 'linkedin', 'job_title', 'works_for'];

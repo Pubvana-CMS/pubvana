@@ -13,9 +13,15 @@ use flight\Engine;
 class RedirectLinksService
 {
     private \PDO $pdo;
+    /** @var Engine<object> */
     private Engine $app;
+    /** @var array<string, mixed> */
     private array $config;
 
+    /**
+     * @param Engine<object> $app
+     * @param array<string, mixed> $config
+     */
     public function __construct(\PDO $pdo, Engine $app, array $config = [])
     {
         $this->pdo = $pdo;

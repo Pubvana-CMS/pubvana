@@ -18,8 +18,13 @@ use flight\Engine;
  */
 class NavigationService
 {
+
+    /** @var Engine<object> The FlightPHP app instance */
     protected Engine $app;
 
+    /**
+     * @param Engine<object> $app
+     */
     public function __construct(Engine $app)
     {
         $this->app = $app;
@@ -33,7 +38,7 @@ class NavigationService
      * children are nested under ->children arrays.
      *
      * @param string $group Navigation group (e.g. 'primary', 'footer')
-     * @return array Nested tree of NavigationItem objects with ->children arrays
+     * @return list<\Pubvana\Models\NavigationItem> Nested tree, children attached to each item
      */
     public function getTree(string $group = 'primary'): array
     {
@@ -75,10 +80,10 @@ class NavigationService
      *
      * Auto-calculates sort_order if not provided. Sets timestamps.
      *
-     * @param array $data Item data (label, url, nav_group, parent_id, target)
-     * @return NavigationItem The created item
+     * @param array<string, mixed> $data Item data (label, url, nav_group, parent_id, target)
+     * @return \Pubvana\Models\NavigationItem The created item
      */
-    public function create(array $data): NavigationItem
+    public function create(array $data): \Pubvana\Models\NavigationItem
     {
         $now = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
         $group = $data['nav_group'] ?? 'primary';
@@ -186,9 +191,9 @@ class NavigationService
      * Items with parent_id = 0 or null are top-level. Each item gets
      * a ->children array of its direct descendants.
      *
-     * @param NavigationItem[] $flat     Flat list of items (already sorted by sort_order)
+     * @param \Pubvana\Models\NavigationItem[] $flat     Flat list of items (already sorted by sort_order)
      * @param int              $parentId Parent ID to filter for (0 = top-level)
-     * @return array Nested tree
+     * @return list<\Pubvana\Models\NavigationItem> Nested tree
      */
     protected function buildTree(array $flat, int $parentId = 0): array
     {

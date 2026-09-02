@@ -105,9 +105,11 @@ class Plugin implements PluginInterface
             'callable' => function (array $context) use ($app): array {
                 $items = [];
                 foreach ($app->redirectLinks()->recent('active', 5) as $entry) {
+                    $lastSeen = strtotime((string) $entry->last_seen_at);
+                    $lastSeen = $lastSeen === false ? time() : $lastSeen;
                     $items[] = [
                         'label'    => $entry->source_path,
-                        'meta'     => ((int) $entry->hit_count) . ' hits · Last seen ' . date('M j, Y g:ia', strtotime((string) $entry->last_seen_at)),
+                        'meta'     => ((int) $entry->hit_count) . ' hits · Last seen ' . date('M j, Y g:ia', $lastSeen),
                         'href'     => '/404-manager',
                         'emphasis' => 'danger',
                     ];

@@ -250,7 +250,7 @@ class ExtensionRegistry
     /**
      * All registered extensions, keyed by type, then slot, then contributor key.
      *
-     * @var array<string, array<string, array<string, array>>>
+     * @var array<string, array<string, array<string, array<string, mixed>>>>
      */
     protected array $extensions = [];
 
@@ -262,7 +262,7 @@ class ExtensionRegistry
      * source is the registering key (e.g. 'pubvana.users', 'pubvana.blog').
      * isCore marks routes that cannot be overridden by plugins.
      *
-     * @var array<array{method: string, path: string, handler: callable|array, middleware: array, scope: string, source: string, isCore: bool}>
+     * @var array<int, array{method: string, path: string, handler: callable|array{0: class-string, 1: string}, middleware: array<int, mixed>, scope: string, source: string, isCore: bool}>
      */
     protected array $routes = [];
 
@@ -300,10 +300,10 @@ class ExtensionRegistry
      *   - admin.* types: auto-prefixes /admin
      *   - public.* types: no prefix
      *
-     * @param string      $type   The extension type (must exist in TYPES)
-     * @param string      $slot   The slot name (must exist in TYPES[$type]['slots'])
-     * @param string|array $key   Single key string, or array of key => config pairs
-     * @param array       $config Data being registered (single mode only)
+     * @param string               $type   The extension type (must exist in TYPES)
+     * @param string               $slot   The slot name (must exist in TYPES[$type]['slots'])
+     * @param string|array<string, mixed> $key    Single key string, or array of key => config pairs
+     * @param array<string, mixed> $config Data being registered (single mode only)
      *
      * @return void
      */
@@ -399,11 +399,11 @@ class ExtensionRegistry
      * the callable is invoked with the context and its return value is
      * merged into the contribution.
      *
-     * @param string $type    The extension type (e.g. 'admin.menu', 'public.nav')
-     * @param string $slot    The slot name (e.g. 'content', 'main')
-     * @param array  $context Optional context passed to callable contributors
+     * @param string                                 $type    The extension type (e.g. 'admin.menu', 'public.nav')
+     * @param string                                 $slot    The slot name (e.g. 'content', 'main')
+     * @param array<string, mixed>                   $context Optional context passed to callable contributors
      *
-     * @return array<string, array> Contributions sorted by priority
+     * @return array<string, array<string, mixed>> Contributions sorted by priority
      */
     public function get(string $type, string $slot, array $context = []): array
     {
@@ -452,12 +452,12 @@ class ExtensionRegistry
      * Store a single route definition for later registration.
      *
      * @param string         $method     HTTP method (GET, POST, etc.)
-     * @param string         $path       URL path (e.g. '/blog', '/users/@id/edit')
-     * @param callable|array $handler    Route handler (closure, [Controller::class, 'method'], etc.)
-     * @param array          $middleware  Middleware instances to apply
-     * @param string         $scope      'admin' or 'public' - determines /admin prefix
-     * @param string         $source     Registering key (e.g. 'pubvana.users', 'pubvana.blog')
-     * @param bool           $isCore     Whether this is a core route (cannot be overridden)
+     * @param string                    $path       URL path (e.g. '/blog', '/users/@id/edit')
+     * @param callable|array{0: class-string, 1: string} $handler    Route handler (closure, [Controller::class, 'method'], etc.)
+     * @param array<int, mixed>         $middleware  Middleware instances to apply
+     * @param string                    $scope      'admin' or 'public' - determines /admin prefix
+     * @param string                    $source     Registering key (e.g. 'pubvana.users', 'pubvana.blog')
+     * @param bool                      $isCore     Whether this is a core route (cannot be overridden)
      *
      * @return int Number of routes successfully added (0 or 1)
      */
@@ -480,10 +480,10 @@ class ExtensionRegistry
      *   - First registered route wins on conflict
      *   - Rejected routes are logged with the conflicting source
      *
-     * @param string  $scope   'admin' or 'public' - determines /admin prefix
-     * @param array   $routes  Array of route definitions
-     * @param string  $source  Registering key (e.g. 'pubvana.core', 'pubvana.blog')
-     * @param bool    $isCore  Whether these are core routes (cannot be overridden)
+     * @param string               $scope   'admin' or 'public' - determines /admin prefix
+     * @param array<int, array<int|string, mixed>> $routes  Array of route definitions: [method, path, handler, middleware?]
+     * @param string               $source  Registering key (e.g. 'pubvana.core', 'pubvana.blog')
+     * @param bool                 $isCore  Whether these are core routes (cannot be overridden)
      *
      * @return int Number of routes successfully added
      */
@@ -561,7 +561,7 @@ class ExtensionRegistry
      * Call this after all plugins have loaded. For admin routes, the /admin
      * prefix is automatically prepended to the path.
      *
-     * @param Engine $app The FlightPHP app instance
+     * @param Engine<object> $app The FlightPHP app instance
      *
      * @return void
      */
@@ -577,11 +577,11 @@ class ExtensionRegistry
             $fullPath = $route['method'] . ' ' . $path;
             $flightRoute = $router->map($fullPath, $route['handler']);
 
-            if ($flightRoute !== null) {
-                foreach ($route['middleware'] as $mw) {
-                    if (is_object($mw)) {
-                        $flightRoute->addMiddleware($mw);
-                    }
+            // Non-object entries (null placeholders, class strings) are skipped
+            // on purpose; only middleware instances are applied here.
+            foreach ($route['middleware'] as $mw) {
+                if (is_object($mw)) {
+                    $flightRoute->addMiddleware($mw);
                 }
             }
         }
@@ -590,7 +590,7 @@ class ExtensionRegistry
     /**
      * Get all stored routes.
      *
-     * @return array<int, array{method: string, path: string, handler: callable|array, middleware: array, scope: string}>
+     * @return array<int, array{method: string, path: string, handler: callable|array{0: class-string, 1: string}, middleware: array<int, mixed>, scope: string, source: string, isCore: bool}>
      */
     public function getRoutes(): array
     {

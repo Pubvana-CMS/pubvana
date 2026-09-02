@@ -340,6 +340,8 @@ class ThemesController extends AdminController
 
     /**
      * Read pubvana.json for a theme folder.
+     *
+     * @return array<string, mixed>
      */
     private function readThemeInfo(string $folder): array
     {
@@ -350,6 +352,11 @@ class ThemesController extends AdminController
             return [];
         }
 
-        return json_decode(file_get_contents($path), true) ?? [];
+        $raw = file_get_contents($path);
+        if ($raw === false) {
+            return [];
+        }
+
+        return json_decode($raw, true) ?? [];
     }
 }

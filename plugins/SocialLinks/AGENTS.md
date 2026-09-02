@@ -85,9 +85,10 @@ This plugin has no `composer.json` and no test suite, like other in-tree Pubvana
 No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->`
 
 ## Coding standards
+- **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
 
 1. **`declare(strict_types=1);` at the top of every class file** (`Plugin.php:3`). No exceptions.
-2. **Models extend `\flight\ActiveRecord` and declare their table string in the constructor** (`Models/SocialLink.php:15-20`).
+2. **Models extend `Pubvana\Models\AbstractModel` and declare their table string in the constructor** (`Models/SocialLink.php:15-20`).
 3. **Keep the `@property` column docblocks in sync with the migrations** (`Models/SocialLink.php:7-17`).
 4. **Pull fresh model instances through a private `model()` helper** (`Services/SocialLinksService.php:269-272`). Reason: a shared instance would hold query state across calls.
 5. **Use `DateTimeImmutable` for every timestamp write** (`Services/SocialLinksService.php:190, 223, 277`).

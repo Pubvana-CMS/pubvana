@@ -8,6 +8,7 @@ use Pubvana\Plugins\SiteHealth\Interfaces\CheckInterface;
 
 class DatabaseCheck implements CheckInterface
 {
+    /** @var array<string, string> */
     private array $minimumVersions = [
         'mysql'   => '5.7.0',
         'mariadb' => '10.3.0',

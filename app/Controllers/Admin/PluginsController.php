@@ -30,6 +30,9 @@ use flight\Engine;
  */
 class PluginsController extends AdminController
 {
+    /**
+     * @param Engine<object> $app
+     */
     public function __construct(Engine $app)
     {
         parent::__construct($app, 'pubvana');
@@ -140,8 +143,14 @@ class PluginsController extends AdminController
                         'migrations' => ['paths' => $paths, 'seeds' => ['paths' => $seeds]],
                     ]);
                     $result = $migrate->runMigrate();
-                    if ($result instanceof \Enlivenapp\Migrations\Services\ModuleResult
-                        && $result->hasMigrationFailure()) {
+                    $failed = false;
+                    foreach ($result as $moduleResult) {
+                        if ($moduleResult->hasMigrationFailure()) {
+                            $failed = true;
+                            break;
+                        }
+                    }
+                    if ($failed) {
                         $failures[$id] = 'Migration failed';
                         continue; // stay disabled
                     }

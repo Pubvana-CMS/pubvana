@@ -31,9 +31,9 @@ interface PluginInterface
      *   - Loading helper functions
      *   - Any other custom setup
      *
-     * @param Engine $app    The FlightPHP application instance
-     * @param Router $router The FlightPHP router instance
-     * @param array  $config Merged config (plugin defaults + app overrides)
+     * @param Engine<object>       $app    The FlightPHP application instance
+     * @param Router               $router The FlightPHP router instance
+     * @param array<string, mixed> $config Merged config (plugin defaults + app overrides)
      * @return void
      */
     public function register(Engine $app, Router $router, array $config = []): void;

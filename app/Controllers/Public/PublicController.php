@@ -22,15 +22,15 @@ use flight\Engine;
  */
 abstract class PublicController
 {
-    /** @var Engine The FlightPHP app instance */
+    /** @var Engine<object> The FlightPHP app instance */
     protected Engine $app;
 
     /** @var string Config key prefix for this plugin's settings */
     protected string $configPrepend;
 
     /**
-     * @param Engine $app            The FlightPHP app instance
-     * @param string $configPrepend  Config key prefix for plugin settings
+     * @param Engine<object> $app            The FlightPHP app instance
+     * @param string         $configPrepend  Config key prefix for plugin settings
      */
     public function __construct(Engine $app, string $configPrepend = 'pubvana')
     {
@@ -45,8 +45,8 @@ abstract class PublicController
      * sets the page title, and renders through PluginView's template
      * resolution chain (app override → theme → plugin default).
      *
-     * @param string $template  Template name (e.g. 'page', 'pubvana/blog/post')
-     * @param array  $data      Route-specific variables (title, content, etc.)
+     * @param string               $template  Template name (e.g. 'page', 'pubvana/blog/post')
+     * @param array<string, mixed> $data      Route-specific variables (title, content, etc.)
      */
     protected function render(string $template, array $data = []): void
     {
@@ -129,9 +129,10 @@ abstract class PublicController
         }
 
         // 2. Theme root: themes/{active}/Views/{template}.tpl
-        $candidates[] = PROJECT_ROOT . DIRECTORY_SEPARATOR . 'themes'
+        $themeCandidate = PROJECT_ROOT . DIRECTORY_SEPARATOR . 'themes'
             . DIRECTORY_SEPARATOR . $themeName . DIRECTORY_SEPARATOR . 'Views'
             . DIRECTORY_SEPARATOR . $template . '.tpl';
+        $candidates[] = $themeCandidate;
 
         foreach ($candidates as $candidate) {
             if (is_file($candidate)) {
@@ -152,7 +153,7 @@ abstract class PublicController
 
         // Fall back to the theme root candidate so the engine reports a
         // meaningful missing-template error against the theme.
-        return $candidates[1];
+        return $themeCandidate;
     }
 
     /**
@@ -199,8 +200,8 @@ abstract class PublicController
      * Every public page receives this data. Route-specific data (title,
      * content, etc.) is merged on top by render().
      *
-     * @param array $routeData Variables from the child controller
-     * @return array Complete layout data
+     * @param array<string, mixed> $routeData Variables from the child controller
+     * @return array<string, mixed> Complete layout data
      */
     protected function buildGlobalData(array $routeData = []): array
     {
@@ -248,12 +249,13 @@ abstract class PublicController
      * The last segment uses the page title from route data if available.
      * Home (/) returns an empty array (no breadcrumbs on the homepage).
      *
-     * @param array $routeData Route data containing optional 'title' or 'archive_title'
+     * @param array<string, mixed> $routeData Route data containing optional 'title' or 'archive_title'
      * @return array<array{label: string, url: string|null}>
      */
     protected function buildBreadcrumbs(array $routeData = []): array
     {
-        $uri = trim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH), '/');
+        $parsedPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+        $uri = trim(is_string($parsedPath) ? $parsedPath : '', '/');
 
         if ($uri === '' || $uri === '/') {
             return [];
@@ -289,7 +291,7 @@ abstract class PublicController
      *
      * Flat keys like 'hero.show' become ['hero']['show'].
      *
-     * @return array Nested options for the active theme
+     * @return array<string, mixed> Nested options for the active theme
      */
     protected function getThemeOptions(): array
     {
@@ -304,7 +306,11 @@ abstract class PublicController
         foreach ($flat as $key => $value) {
             $parts = explode('.', $key);
             if (count($parts) === 2) {
-                $nested[$parts[0]][$parts[1]] = $value;
+                $group = $parts[0];
+                if (!isset($nested[$group]) || !is_array($nested[$group])) {
+                    $nested[$group] = [];
+                }
+                $nested[$group][$parts[1]] = $value;
             } else {
                 $nested[$key] = $value;
             }
@@ -345,7 +351,7 @@ abstract class PublicController
      * comments is present. The theme places {! comments_html !} wherever it
      * likes in the content section.
      *
-     * @param array $routeData Route data containing an optional 'commentable' hint
+     * @param array<string, mixed> $routeData Route data containing an optional 'commentable' hint
      * @return string Rendered comment thread HTML, or '' when unavailable
      */
     protected function buildCommentsHtml(array $routeData = []): string
@@ -387,7 +393,7 @@ abstract class PublicController
      * or the group has no items.
      *
      * @param string $group Navigation group (e.g. 'primary', 'footer')
-     * @return array Nested tree of navigation items with ->children arrays
+     * @return list<\Pubvana\Models\NavigationItem> Nested tree of navigation items with ->children arrays
      */
     protected function getNavigation(string $group = 'primary'): array
     {
@@ -484,6 +490,9 @@ abstract class PublicController
         return $html;
     }
 
+    /**
+     * @param array<string, mixed> $header
+     */
     protected function buildHeadHtml(array $header): string
     {
         $html = '<title>' . htmlspecialchars($header['title']) . '</title>' . "\n";

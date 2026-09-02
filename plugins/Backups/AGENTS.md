@@ -92,6 +92,7 @@ php runway backups:restore 2026-01-01_000000-full.zip  # exercise the CLI restor
 - Coverage: none configured for this plugin. `<!-- TODO: add [coverage target] -->`
 
 ## Coding standards
+- **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
 
 Steps that go beyond the repo-wide style, derived from the existing code:
 

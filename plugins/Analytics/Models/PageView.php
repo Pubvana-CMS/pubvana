@@ -12,9 +12,14 @@ namespace Pubvana\Plugins\Analytics\Models;
  * @property string      $page_group
  * @property string|null $referrer_domain
  * @property string      $viewed_at
+ * @method self eq(string $field, mixed $value, string $operator = 'AND')
  */
-class PageView extends \flight\ActiveRecord
+class PageView extends \Pubvana\Models\AbstractModel
 {
+    /**
+     * @param \flight\database\DatabaseInterface|\PDO|\mysqli|null $pdo
+     * @param array<string, mixed>                                 $config
+     */
     public function __construct($pdo = null, array $config = [])
     {
         parent::__construct($pdo, 'analytics_page_views', $config);

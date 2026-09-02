@@ -80,9 +80,10 @@ This plugin has no `composer.json` and no test suite, unlike library plugins in 
 No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->`
 
 ## Coding standards
+- **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
 
 1. **`declare(strict_types=1);` at the top of every class file** (`Plugin.php:3`). No exceptions.
-2. **Models extend `\flight\ActiveRecord` and declare their table string in the constructor** (`Models/Profile.php:7-12`).
+2. **Models extend `Pubvana\Models\AbstractModel` and declare their table string in the constructor** (`Models/Profile.php:7-12`).
 3. **Use `DateTimeImmutable` for all model timestamps** (`Models/Profile.php:28, 53`).
 4. **Controllers strip `_csrf_token` (and `return_url`, where consumed) before calling the facade** (`Controllers/ProfilesAdminController.php:63-65`, `Controllers/ProfilesPublicController.php:79-80`).
 5. **Views render the CSRF field with `csrf_field()` and escape every echoed value with `htmlspecialchars`** (`Views/admin/profile/index.php:17-18, 22-23`).

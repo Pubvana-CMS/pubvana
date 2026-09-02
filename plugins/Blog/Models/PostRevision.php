@@ -13,9 +13,22 @@ namespace Pubvana\Plugins\Blog\Models;
  * @property string|null $excerpt
  * @property string      $status
  * @property string      $created_at
+ * @method self eq(string $field, mixed $value, string $operator = 'AND')
+ * @method self notEq(string $field, mixed $value, string $operator = 'AND')
+ * @method self like(string $field, mixed $value, string $operator = 'AND')
+ * @method self in(string $field, mixed $value, string $operator = 'AND')
+ * @method self isNull(string $field, string $operator = 'AND')
+ * @method self order(string $field)
+ * @method self select(string $field, string ...$fields)
+ * @method self limit(int $limit)
+ * @method self offset(int $offset)
  */
-class PostRevision extends \flight\ActiveRecord
+class PostRevision extends \Pubvana\Models\AbstractModel
 {
+    /**
+     * @param \flight\database\DatabaseInterface|\PDO|\mysqli|null $pdo
+     * @param array<string, mixed>                                 $config
+     */
     public function __construct($pdo = null, array $config = [])
     {
         parent::__construct($pdo, 'post_revisions', $config);
@@ -28,6 +41,9 @@ class PostRevision extends \flight\ActiveRecord
         return $this->isHydrated() ? $this : null;
     }
 
+    /**
+     * @return array<int, PostRevision>
+     */
     public function getForPost(int $postId): array
     {
         return (new self($this->getDatabaseConnection()))

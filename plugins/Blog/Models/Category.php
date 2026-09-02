@@ -12,9 +12,24 @@ namespace Pubvana\Plugins\Blog\Models;
  * @property int|null    $parent_id
  * @property string      $created_at
  * @property string      $updated_at
- */
-class Category extends \flight\ActiveRecord
+ * @method self eq(string $field, mixed $value, string $operator = 'AND')
+ * @method self notEq(string $field, mixed $value, string $operator = 'AND')
+ * @method self like(string $field, mixed $value, string $operator = 'AND')
+ * @method self in(string $field, mixed $value, string $operator = 'AND')
+ * @method self isNull(string $field, string $operator = 'AND')
+ * @method self order(string $field)
+ * @method self select(string $field, string ...$fields)
+ * @method self limit(int $limit)
+ * @method self offset(int $offset)
+  *
+ * @property int $cnt Aggregate alias from COUNT(*) selects
+*/
+class Category extends \Pubvana\Models\AbstractModel
 {
+    /**
+     * @param \flight\database\DatabaseInterface|\PDO|\mysqli|null $pdo
+     * @param array<string, mixed>                                 $config
+     */
     public function __construct($pdo = null, array $config = [])
     {
         parent::__construct($pdo, 'categories', $config);
@@ -47,6 +62,9 @@ class Category extends \flight\ActiveRecord
         return ((int) $result->cnt) > 0;
     }
 
+    /**
+     * @return array<int, Category>
+     */
     public function getAll(): array
     {
         return (new self($this->getDatabaseConnection()))
@@ -54,6 +72,9 @@ class Category extends \flight\ActiveRecord
             ->findAll();
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public function createRecord(array $data): self
     {
         $now = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
@@ -70,6 +91,9 @@ class Category extends \flight\ActiveRecord
         return $record;
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public function updateRecord(array $data): void
     {
         $allowed = ['name', 'slug', 'description', 'parent_id'];
@@ -82,10 +106,5 @@ class Category extends \flight\ActiveRecord
 
         $this->updated_at = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
         $this->save();
-    }
-
-    public function delete(): void
-    {
-        parent::delete();
     }
 }

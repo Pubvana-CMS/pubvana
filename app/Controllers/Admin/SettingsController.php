@@ -25,6 +25,9 @@ use flight\Engine;
  */
 class SettingsController extends AdminController
 {
+    /**
+     * @param Engine<object> $app
+     */
     public function __construct(Engine $app)
     {
         parent::__construct($app, 'pubvana');
@@ -38,7 +41,7 @@ class SettingsController extends AdminController
         $this->render('admin/settings/general', [
             'pageTitle' => 'Settings',
             'tabs'      => $this->tabs(),
-            'saved'     => $this->app->request()->query->saved === '1',
+            'saved'     => ($this->app->request()->query->saved ?? null) === '1',
             'flash'     => $this->app->session()->pullFlash('settings_flash'),
         ]);
     }
@@ -104,7 +107,7 @@ class SettingsController extends AdminController
     /**
      * Collect tabs with resolved values for their fields.
      *
-     * @return array<int, array{label: string, description: string, fields: array}>
+     * @return array<int, array{label: string, description: string, fields: list<array<string, mixed>>}>
      */
     protected function tabs(): array
     {

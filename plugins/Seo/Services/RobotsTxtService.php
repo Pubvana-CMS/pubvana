@@ -14,6 +14,7 @@ use flight\Engine;
  */
 class RobotsTxtService
 {
+    /** @var Engine<object> */
     protected Engine $app;
 
     /**
@@ -36,6 +37,9 @@ class RobotsTxtService
         'cohere-ai'          => 'block',
     ];
 
+    /**
+     * @param Engine<object> $app
+     */
     public function __construct(Engine $app)
     {
         $this->app = $app;
@@ -80,6 +84,9 @@ class RobotsTxtService
 
     /**
      * Build AI crawler allow/block directives from settings.
+     */
+    /**
+     * @return array<int, string>
      */
     protected function buildAiCrawlerDirectives(): array
     {
@@ -131,7 +138,7 @@ class RobotsTxtService
                 'bot'         => $bot,
                 'default'     => $defaultStance,
                 'current'     => $current,
-                'description' => $descriptions[$bot] ?? '',
+                'description' => $descriptions[$bot],
             ];
         }
 

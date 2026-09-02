@@ -16,9 +16,16 @@ namespace Pubvana\Plugins\Redirects\Models;
  * @property string|null $resolved_at
  * @property string|null $first_seen_at
  * @property string|null $last_seen_at
+ * @method self eq(string $field, mixed $value, string $operator = 'AND')
+ * @method self isNull(string $field, string $operator = 'AND')
+ * @method self order(string $field)
  */
-class RedirectLink extends \flight\ActiveRecord
+class RedirectLink extends \Pubvana\Models\AbstractModel
 {
+    /**
+     * @param \flight\database\DatabaseInterface|\PDO|\mysqli|null $pdo
+     * @param array<string, mixed>                                 $config
+     */
     public function __construct($pdo = null, array $config = [])
     {
         parent::__construct($pdo, 'redirects_links', $config);

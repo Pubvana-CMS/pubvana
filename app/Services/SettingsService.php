@@ -59,7 +59,7 @@ class SettingsService
      */
     protected const KEY_PATTERN = '/^[A-Za-z][A-Za-z0-9_]*\.[A-Za-z0-9_.]+$/';
 
-    /** @var Engine Flight application instance */
+    /** @var Engine<object> Flight application instance */
     protected Engine $app;
 
     /**
@@ -93,7 +93,7 @@ class SettingsService
     protected ?array $fieldDeclarations = null;
 
     /**
-     * @param Engine $app Flight application for db(), adext() and $app->get()
+     * @param Engine<object> $app Flight application for db(), adext() and $app->get()
      */
     public function __construct(Engine $app)
     {
@@ -306,7 +306,7 @@ class SettingsService
 
         $this->fieldDeclarations = [];
 
-        $slots = ExtensionRegistry::TYPES['admin.settings']['slots'] ?? [];
+        $slots = ExtensionRegistry::TYPES['admin.settings']['slots'];
         foreach ($slots as $slot) {
             foreach ($this->app->adext()->get('admin.settings', $slot) as $contributor => $tab) {
                 foreach ($tab['fields'] ?? [] as $index => $field) {

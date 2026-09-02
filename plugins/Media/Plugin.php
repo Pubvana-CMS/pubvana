@@ -100,9 +100,10 @@ class Plugin implements PluginInterface
                     if ($thumb === null) {
                         $thumbType = 'icon';
                     }
+                    $ts = strtotime((string) $media->created_at);
                     $items[] = [
                         'label'     => $media->title ?: $media->filename,
-                        'sub'       => $format . ' · ' . date('M j, Y g:ia', strtotime((string) $media->created_at)),
+                        'sub'       => $format . ' · ' . ($ts === false ? '' : date('M j, Y g:ia', $ts)),
                         'href'      => '/media',
                         'thumb'     => $thumb,
                         'thumb_type' => $thumbType,

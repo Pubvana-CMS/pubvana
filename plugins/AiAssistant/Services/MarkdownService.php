@@ -22,12 +22,12 @@ use League\HTMLToMarkdown\HtmlConverter;
 class MarkdownService
 {
     private MarkdownConverter $converter;
-    private array $config;
 
+    /**
+     * @param array<string, mixed> $config
+     */
     public function __construct(array $config = [])
     {
-        $this->config = $config;
-
         $defaults = [
             'html_input'         => 'strip',
             'allow_unsafe_links' => false,

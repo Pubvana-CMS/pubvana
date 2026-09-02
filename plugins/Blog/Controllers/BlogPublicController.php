@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Pubvana\Plugins\Blog\Controllers;
 
 use Pubvana\Controllers\Public\PublicController;
+use Pubvana\Plugins\Blog\Models\Post;
 
 /**
  * BlogPublicController - Public-facing blog routes.
@@ -95,7 +96,7 @@ class BlogPublicController extends PublicController
         $post = $this->app->blog()->findPostBySlug($slug);
 
         if ($post === null || $post->status !== 'published') {
-            $this->app->stop(404, 'Post not found');
+            $this->app->halt(404, 'Post not found');
             return;
         }
 
@@ -136,7 +137,7 @@ class BlogPublicController extends PublicController
         }
 
         if ($category === null) {
-            $this->app->stop(404, 'Category not found');
+            $this->app->halt(404, 'Category not found');
             return;
         }
 
@@ -173,7 +174,7 @@ class BlogPublicController extends PublicController
         }
 
         if ($tag === null) {
-            $this->app->stop(404, 'Tag not found');
+            $this->app->halt(404, 'Tag not found');
             return;
         }
 
@@ -203,7 +204,7 @@ class BlogPublicController extends PublicController
         $post = $this->app->blog()->findPostByPreviewToken($token);
 
         if ($post === null) {
-            $this->app->stop(404, 'Preview not found');
+            $this->app->halt(404, 'Preview not found');
             return;
         }
 
@@ -227,6 +228,9 @@ class BlogPublicController extends PublicController
 
     /**
      * Format a post record into a template-ready array.
+     *
+     * @param Post $post
+     * @return array<string, mixed>
      */
     private function formatPost(object $post): array
     {
@@ -246,6 +250,9 @@ class BlogPublicController extends PublicController
 
     /**
      * Look up the author for a post.
+     *
+     * @param Post $post
+     * @return array<string, mixed>|null
      */
     private function getAuthor(object $post): ?array
     {
@@ -280,6 +287,8 @@ class BlogPublicController extends PublicController
 
     /**
      * Get categories assigned to a post, formatted for templates.
+     *
+     * @return array<int, array<string, mixed>>
      */
     private function getPostCategories(int $postId): array
     {
@@ -303,6 +312,8 @@ class BlogPublicController extends PublicController
 
     /**
      * Get tags assigned to a post, formatted for templates.
+     *
+     * @return array<int, array<string, mixed>>
      */
     private function getPostTags(int $postId): array
     {
@@ -329,6 +340,10 @@ class BlogPublicController extends PublicController
      * URLs use clean, crawlable paths: /blog for page 1 and
      * /blog/page/@page for subsequent pages. Returns prev_url,
      * next_url and the page-number list expected by the partial.
+     */
+    /**
+     * @param array<string, mixed> $result List result as returned by BlogService::listPosts()
+     * @return array<string, mixed>|null
      */
     private function buildPagination(array $result, string $baseUrl): ?array
     {
@@ -419,6 +434,8 @@ class BlogPublicController extends PublicController
 
     /**
      * Generate RSS 2.0 XML from posts.
+     *
+     * @param array{items: array<int, Post>, total: int, page: int, per_page: int} $posts
      */
     private function generateRss(array $posts): string
     {
@@ -445,7 +462,7 @@ class BlogPublicController extends PublicController
             $xml .= '<title>' . htmlspecialchars($post->title) . '</title>' . "\n";
             $xml .= '<link>' . htmlspecialchars($postUrl) . '</link>' . "\n";
             $xml .= '<guid isPermaLink="true">' . htmlspecialchars($postUrl) . '</guid>' . "\n";
-            $xml .= '<pubDate>' . date('r', strtotime($post->published_at)) . '</pubDate>' . "\n";
+            $xml .= '<pubDate>' . $this->feedDate($post->published_at, 'r') . '</pubDate>' . "\n";
 
             $author = $this->getAuthor($post);
             if ($author) {
@@ -472,6 +489,8 @@ class BlogPublicController extends PublicController
 
     /**
      * Generate Atom XML from posts.
+     *
+     * @param array{items: array<int, Post>, total: int, page: int, per_page: int} $posts
      */
     private function generateAtom(array $posts): string
     {
@@ -488,7 +507,7 @@ class BlogPublicController extends PublicController
 
         if (!empty($posts['items'])) {
             $firstPost = $posts['items'][0];
-            $xml .= '<updated>' . date('c', strtotime($firstPost->updated_at ?? $firstPost->published_at)) . '</updated>' . "\n";
+            $xml .= '<updated>' . $this->feedDate($firstPost->updated_at ?? $firstPost->published_at, 'c') . '</updated>' . "\n";
         }
 
         foreach ($posts['items'] as $post) {
@@ -500,8 +519,8 @@ class BlogPublicController extends PublicController
             $xml .= '<title>' . htmlspecialchars($post->title) . '</title>' . "\n";
             $xml .= '<link href="' . htmlspecialchars($postUrl) . '"/>' . "\n";
             $xml .= '<id>' . htmlspecialchars($postUrl) . '</id>' . "\n";
-            $xml .= '<published>' . date('c', strtotime($post->published_at)) . '</published>' . "\n";
-            $xml .= '<updated>' . date('c', strtotime($post->updated_at ?? $post->published_at)) . '</updated>' . "\n";
+            $xml .= '<published>' . $this->feedDate($post->published_at, 'c') . '</published>' . "\n";
+            $xml .= '<updated>' . $this->feedDate($post->updated_at ?? $post->published_at, 'c') . '</updated>' . "\n";
 
             $author = $this->getAuthor($post);
             if ($author) {
@@ -523,5 +542,14 @@ class BlogPublicController extends PublicController
         $xml .= '</feed>';
 
         return $xml;
+    }
+
+    /**
+     * Format a nullable timestamp for feed output, falling back to empty string.
+     */
+    private function feedDate(?string $date, string $format): string
+    {
+        $ts = strtotime((string) $date);
+        return $ts === false ? '' : date($format, $ts);
     }
 }

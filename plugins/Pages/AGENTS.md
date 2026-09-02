@@ -93,9 +93,10 @@ This plugin has no `composer.json` and no test suite, unlike library plugins in 
 No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->`
 
 ## Coding standards
+- **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
 
 1. **`declare(strict_types=1);` at the top of every class file** (`Plugin.php:3`). No exceptions.
-2. **Models extend `\flight\ActiveRecord` and declare their table string in the constructor** (`Models/Page.php:30-33`, `Models/PageRevision.php:27-30`).
+2. **Models extend `Pubvana\Models\AbstractModel` and declare their table string in the constructor** (`Models/Page.php:30-33`, `Models/PageRevision.php:27-30`).
 3. **De-notated, typed column properties on models** (e.g. `public string $status = 'draft';` at `Models/Page.php:39`). Keep them in sync with the migration schema and the `@property` docblock (`Models/PageRevision.php:14-22`).
 4. **`DateTimeImmutable` for every timestamp write** (`Models/Page.php:234, 272, 281`).
 5. **Controllers strip `_csrf_token` from posts before passing to the service** (`Controllers/PagesAdminController.php:48, 84`). Never forward raw request data wholesale.

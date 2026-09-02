@@ -15,6 +15,10 @@ class HealthService
     /** @var CheckInterface[] */
     private array $additionalChecks = [];
 
+    /**
+     * @param Engine<object> $app
+     * @param array<string, mixed> $config
+     */
     public function __construct(
         private Engine $app,
         private \PDO $pdo,
@@ -34,7 +38,7 @@ class HealthService
      * Run all checks (or return cached results if still valid).
      *
      * @param bool $force Bypass cache
-     * @return array{results: array, summary: array, cached_at: string|null}
+     * @return array<string, mixed>
      */
     public function runAll(bool $force = false): array
     {
@@ -76,6 +80,8 @@ class HealthService
 
     /**
      * Dashboard card data. Returns empty array when no issues (card won't render).
+     *
+     * @return array<int, array<string, string>>
      */
     public function dashboardCards(): array
     {
@@ -118,7 +124,8 @@ class HealthService
     /**
      * Categorize results by category.
      *
-     * @return array<string, array>
+     * @param array<int, array<string, mixed>> $results
+     * @return array<string, array<int, array<string, mixed>>>
      */
     public function groupByCategory(array $results): array
     {
@@ -175,6 +182,10 @@ class HealthService
         return array_merge($checks, $this->additionalChecks);
     }
 
+    /**
+     * @param array<int, array<string, mixed>> $results
+     * @return array<string, int|string>
+     */
     private function summarize(array $results): array
     {
         $summary = ['critical' => 0, 'warning' => 0, 'pass' => 0, 'total' => count($results)];
@@ -197,6 +208,9 @@ class HealthService
         return $summary;
     }
 
+    /**
+     * @return array<string, mixed>|null
+     */
     private function loadCache(): ?array
     {
         if (!file_exists($this->cachePath)) {
@@ -218,6 +232,9 @@ class HealthService
         return $data;
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     private function saveCache(array $data): void
     {
         $dir = dirname($this->cachePath);

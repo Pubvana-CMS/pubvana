@@ -25,7 +25,7 @@ class ProfilesPublicController extends PublicController
         $profile = $this->app->profiles()->findOrCreate((int) $user->id);
 
         $auth = $this->app->auth();
-        $isOwner = $auth->loggedIn() && (int) $auth->user()->id === (int) $user->id;
+        $isOwner = $auth->loggedIn() && (int) ($auth->user()?->id) === (int) $user->id;
 
         $avatarUrl = '';
         if (!empty($profile->avatar)) {
@@ -48,7 +48,7 @@ class ProfilesPublicController extends PublicController
             $this->app->halt(404, 'User not found');
             return;
         }
-        if ((int) $this->app->auth()->user()->id !== (int) $user->id) {
+        if ((int) ($this->app->auth()->user()?->id) !== (int) $user->id) {
             $this->app->session()->flash('danger', 'You can only edit your own profile.');
             $this->app->redirect('/');
             return;
@@ -70,7 +70,7 @@ class ProfilesPublicController extends PublicController
             $this->app->halt(404, 'User not found');
             return;
         }
-        if ((int) $this->app->auth()->user()->id !== (int) $user->id) {
+        if ((int) ($this->app->auth()->user()?->id) !== (int) $user->id) {
             $this->app->session()->flash('danger', 'You can only edit your own profile.');
             $this->app->redirect('/profile/' . $username);
             return;

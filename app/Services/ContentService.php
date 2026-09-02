@@ -21,8 +21,15 @@ use flight\Engine;
  */
 class ContentService
 {
-    public function __construct(private Engine $app)
+    /** @var Engine<object> */
+    private Engine $app;
+
+    /**
+     * @param Engine<object> $app
+     */
+    public function __construct(Engine $app)
     {
+        $this->app = $app;
     }
 
     /**

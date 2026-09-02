@@ -16,17 +16,21 @@ use flight\Engine;
 class SeoService
 {
     protected \PDO $pdo;
+    /** @var Engine<object> */
     protected Engine $app;
 
-    /** @var array Current page SEO context, auto-detected from request. */
+    /** @var array<string, mixed> Current page SEO context, auto-detected from request. */
     protected array $context = [];
 
-    /** @var array Extra meta tags injected by other plugins: [{name, content}] */
+    /** @var array<int, array{name: string, content: string}> Extra meta tags injected by other plugins: [{name, content}] */
     protected array $extraMeta = [];
 
-    /** @var array Extra raw tags injected by other plugins (arbitrary HTML strings) */
+    /** @var array<int, string> Extra raw tags injected by other plugins (arbitrary HTML strings) */
     protected array $extraTags = [];
 
+    /**
+     * @param Engine<object> $app
+     */
     public function __construct(\PDO $pdo, Engine $app)
     {
         $this->pdo = $pdo;
@@ -44,7 +48,7 @@ class SeoService
     {
         $uri = $this->app->request()->url ?? ($_SERVER['REQUEST_URI'] ?? '/');
         $uri = strtok($uri, '?');
-        $uri = trim($uri, '/');
+        $uri = $uri === false ? '' : trim($uri, '/');
 
         if ($uri === '') {
             $this->context = ['content_type' => 'home'];
@@ -157,11 +161,17 @@ class SeoService
     // Context access
     // -----------------------------------------------------------------
 
+    /**
+     * @param array<string, mixed> $context
+     */
     public function setContext(array $context): void
     {
         $this->context = $context;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getContext(): array
     {
         return $this->context;
@@ -182,6 +192,9 @@ class SeoService
 
     /**
      * Save or update SEO meta for a content item.
+     */
+    /**
+     * @param array<string, mixed> $data
      */
     public function saveMeta(string $contentType, int $contentId, array $data): SeoMeta
     {

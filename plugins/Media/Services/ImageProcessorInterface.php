@@ -30,9 +30,18 @@ interface ImageProcessorInterface
 
     public function save(string $outputPath, ?int $quality = null): void;
 
+    /**
+     * @return array{width: int, height: int, mime: string}
+     */
     public function getInfo(string $path): array;
 
+    /**
+     * @return array<string, string>
+     */
     public function getExif(string $path): array;
 
+    /**
+     * @return list<string>
+     */
     public function capabilities(): array;
 }

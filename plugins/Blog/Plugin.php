@@ -185,6 +185,9 @@ class Plugin implements PluginInterface
                 $stmt = $app->db()->query(
                     "SELECT title, slug FROM posts WHERE status = 'published' AND deleted_at IS NULL ORDER BY published_at DESC"
                 );
+                if ($stmt === false) {
+                    return [];
+                }
                 $items = [];
                 while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
                     $items[] = [

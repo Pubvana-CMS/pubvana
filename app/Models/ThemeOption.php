@@ -14,10 +14,16 @@ namespace Pubvana\Models;
  * @property string      $option_key
  * @property string|null $option_value
  *
+ * @method self eq(string $field, mixed $value, string $operator = 'AND')
+ *
  * @package Pubvana\Models
  */
-class ThemeOption extends \flight\ActiveRecord
+class ThemeOption extends AbstractModel
 {
+    /**
+     * @param \flight\database\DatabaseInterface|\PDO|\mysqli|null $pdo
+     * @param array<string, mixed>                                 $config
+     */
     public function __construct($pdo = null, array $config = [])
     {
         parent::__construct($pdo, 'theme_options', $config);

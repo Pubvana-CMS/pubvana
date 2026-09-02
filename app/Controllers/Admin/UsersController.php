@@ -96,7 +96,7 @@ class UsersController extends AdminController
         );
 
         if (!$result->isOK()) {
-            $this->app->session()->flash('error', $result->getMessage() ?: 'Failed to create user.');
+            $this->app->session()->flash('error', $result->reason() ?: 'Failed to create user.');
             $this->app->redirect('/admin/users/create');
             return;
         }

@@ -11,15 +11,22 @@ use flight\Engine;
 
 class FormsService
 {
+    /** @var Engine<object> */
     private Engine $app;
     private Form $forms;
     private FormField $fields;
     private FormSubmission $submissions;
+
+    /** @var array<string, mixed> */
     private array $config;
 
     /** @var bool Whether the inline form style block has already been emitted */
     private static bool $styleEmitted = false;
 
+    /**
+     * @param Engine<object>       $app
+     * @param array<string, mixed> $config
+     */
     public function __construct(\PDO $pdo, Engine $app, array $config = [])
     {
         $this->app = $app;
@@ -29,6 +36,9 @@ class FormsService
         $this->config = $config;
     }
 
+    /**
+     * @return array{items: array<int, Form>, total: int, page: int, per_page: int}
+     */
     public function listForms(int $page = 1, ?int $perPage = null): array
     {
         $perPage ??= (int) ($this->config['per_page'] ?? 25);
@@ -41,6 +51,9 @@ class FormsService
         ];
     }
 
+    /**
+     * @return array<int, Form>
+     */
     public function listAllForms(): array
     {
         return $this->forms->listAll();
@@ -61,6 +74,9 @@ class FormsService
         return $this->forms->slugExists($slug, $excludeId);
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public function createForm(array $data): Form
     {
         $fieldDefinitions = $this->decodeFieldDefinitions($data['field_definitions'] ?? '[]');
@@ -72,6 +88,9 @@ class FormsService
         return $form;
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public function updateForm(int $id, array $data): ?Form
     {
         $form = $this->forms->findById($id);
@@ -99,6 +118,9 @@ class FormsService
         return true;
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     public function getFieldDefinitions(int $formId): array
     {
         $definitions = [];
@@ -118,6 +140,9 @@ class FormsService
         return $definitions;
     }
 
+    /**
+     * @return array{items: array<int, FormSubmission>, total: int, page: int, per_page: int}
+     */
     public function listSubmissions(int $page = 1, ?int $formId = null, ?int $perPage = null): array
     {
         $perPage ??= (int) ($this->config['submissions_per_page'] ?? 25);
@@ -135,11 +160,17 @@ class FormsService
         return $this->submissions->findById($id);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function decodeSubmissionPayload(?string $json): array
     {
         return $this->decodeJsonArray($json);
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     public function dashboardCards(): array
     {
         $all = $this->listAllForms();
@@ -180,6 +211,9 @@ class FormsService
         ];
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     public function defaultFieldDefinitions(): array
     {
         return [
@@ -216,6 +250,10 @@ class FormsService
         ];
     }
 
+    /**
+     * @param array<string, mixed> $values
+     * @param array<string, string> $errors
+     */
     public function renderPublicForm(Form $form, array $values = [], array $errors = []): string
     {
         $flash = $this->consumeSubmissionFlash((int) $form->id);
@@ -333,6 +371,9 @@ class FormsService
         return $html;
     }
 
+    /**
+     * @param array<int|string, mixed> $args
+     */
     public function renderTag(array $args): string
     {
         $form = $this->resolvePublishedFormFromArgs($args);
@@ -346,11 +387,11 @@ class FormsService
     public function renderContentEmbeds(string $content): string
     {
         $content = preg_replace_callback('/\{\{\s*forms\s*:\s*(.*?)\s*\}\}/i', function (array $matches): string {
-            return $this->renderEmbeddedFormFromAttributeString($matches[1] ?? '');
+            return $this->renderEmbeddedFormFromAttributeString($matches[1]);
         }, $content) ?? $content;
 
         $content = preg_replace_callback('/\{%\s*forms\s+(.*?)\s*%\}/i', function (array $matches): string {
-            return $this->renderEmbeddedFormFromTagString($matches[1] ?? '');
+            return $this->renderEmbeddedFormFromTagString($matches[1]);
         }, $content) ?? $content;
 
         return $content;
@@ -375,6 +416,11 @@ class FormsService
         return '';
     }
 
+    /**
+     * @param array<string, mixed>       $values
+     * @param array<string, mixed>       $requestMeta
+     * @return array<string, mixed>
+     */
     public function submitForm(Form $form, array $values, array $requestMeta = []): array
     {
         unset($values['_csrf_token']);
@@ -468,10 +514,6 @@ class FormsService
     {
         $candidate = $returnUrl ?: $referrer ?: '/';
 
-        if (!is_string($candidate) || $candidate === '') {
-            return '/';
-        }
-
         if (preg_match('#^https?://#i', $candidate)) {
             $base = (string) ($this->app->get('flight.base_url') ?? '');
             if ($base !== '' && str_starts_with($candidate, rtrim($base, '/'))) {
@@ -488,12 +530,18 @@ class FormsService
         return $candidate;
     }
 
+    /**
+     * @param array<string, mixed> $result Submit result as returned by submitForm()
+     */
     public function storeSubmissionFlash(int $formId, array $result): void
     {
         $this->startSession();
         $_SESSION['pubvana_forms_flash'][$formId] = $result;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function consumeSubmissionFlash(int $formId): array
     {
         $this->startSession();
@@ -502,12 +550,15 @@ class FormsService
         return is_array($flash) ? $flash : [];
     }
 
+    /**
+     * @param array<int, array<string, mixed>> $definitions
+     */
     private function syncFields(int $formId, array $definitions): void
     {
         $this->fields->deleteForForm($formId);
 
         foreach (array_values($definitions) as $index => $definition) {
-            if (!is_array($definition) || empty($definition['name']) || empty($definition['type'])) {
+            if (empty($definition['name']) || empty($definition['type'])) {
                 continue;
             }
 
@@ -526,12 +577,18 @@ class FormsService
         }
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     private function decodeFieldDefinitions(string $json): array
     {
         $decoded = json_decode($json, true);
         return is_array($decoded) ? $decoded : [];
     }
 
+    /**
+     * @param array<int|string, mixed> $args
+     */
     private function resolvePublishedFormFromArgs(array $args): ?Form
     {
         if (count($args) === 1) {
@@ -581,7 +638,7 @@ class FormsService
         preg_match_all('/"[^"]*"|\'[^\']*\'|\S+/', $raw, $matches);
         $tokens = array_map(static function (string $token): string {
             return trim($token, " \t\n\r\0\x0B'\"");
-        }, $matches[0] ?? []);
+        }, $matches[0]);
 
         return $this->renderTag($tokens);
     }
@@ -611,6 +668,9 @@ class FormsService
         $_SESSION['pubvana_forms_rate']['form_' . $formId] = time();
     }
 
+    /**
+     * @param array<string, mixed> $payload
+     */
     private function dispatchNotifications(Form $form, array $payload): void
     {
         $emails = array_filter(array_map('trim', explode(',', (string) ($form->notification_emails ?? ''))));
@@ -715,6 +775,9 @@ class FormsService
         return $value === '';
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function decodeJsonArray(?string $json): array
     {
         if ($json === null || $json === '') {

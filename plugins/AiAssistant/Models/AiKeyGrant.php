@@ -17,9 +17,20 @@ namespace Pubvana\Plugins\AiAssistant\Models;
  *   permission  - Granted permission alias (e.g. 'posts.create')
  *
  * @package Pubvana\Plugins\AiAssistant\Models
+ * @method self eq(string $field, mixed $value, string $operator = 'AND')
+ * @method self like(string $field, mixed $value, string $operator = 'AND')
+ * @method self isNull(string $field, string $operator = 'AND')
+ * @method self order(string $field)
+ * @method self select(string $field, string ...$fields)
+ * @method self limit(int $limit)
+ * @method self offset(int $offset)
  */
-class AiKeyGrant extends \flight\ActiveRecord
+class AiKeyGrant extends \Pubvana\Models\AbstractModel
 {
+    /**
+     * @param \flight\database\DatabaseInterface|\PDO|\mysqli|null $pdo
+     * @param array<string, mixed>                                 $config
+     */
     public function __construct($pdo = null, array $config = [])
     {
         parent::__construct($pdo, 'ai_key_grants', $config);

@@ -32,7 +32,7 @@ class SecurityHeadersMiddleware
     protected array $headers;
 
     /**
-     * @param array $config Additional headers to merge (overrides defaults)
+     * @param array<string, string> $config Additional headers to merge (overrides defaults)
      */
     public function __construct(array $config = [])
     {

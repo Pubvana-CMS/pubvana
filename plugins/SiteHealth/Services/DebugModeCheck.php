@@ -9,6 +9,9 @@ use Pubvana\Plugins\SiteHealth\Interfaces\CheckInterface;
 
 class DebugModeCheck implements CheckInterface
 {
+    /**
+     * @param Engine<object> $app
+     */
     public function __construct(private Engine $app) {}
 
     public function run(): CheckResult

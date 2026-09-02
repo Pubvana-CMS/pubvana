@@ -15,6 +15,7 @@ use flight\Engine;
  */
 class SchemaService
 {
+    /** @var Engine<object> */
     protected Engine $app;
 
     /**
@@ -25,6 +26,9 @@ class SchemaService
      */
     protected const DIGITAL_SOURCE_TYPE_AI = 'https://schema.org/TrainedAlgorithmicMediaDigitalSource';
 
+    /**
+     * @param Engine<object> $app
+    */
     public function __construct(Engine $app)
     {
         $this->app = $app;
@@ -33,7 +37,7 @@ class SchemaService
     /**
      * Render all applicable JSON-LD for the current page as one @graph.
      *
-     * @param array $context SEO context from SeoService
+     * @param array<string, mixed> $context SEO context from SeoService
      * @return string HTML <script type="application/ld+json"> block
      */
     public function render(array $context): string
@@ -102,6 +106,9 @@ class SchemaService
     // Node builders
     // -----------------------------------------------------------------
 
+    /**
+     * @return array<string, mixed>
+    */
     protected function buildOrganizationNode(string $id): ?array
     {
         $settings = $this->app->settings();
@@ -138,6 +145,9 @@ class SchemaService
         return $node;
     }
 
+    /**
+     * @return array<string, mixed>
+    */
     protected function buildWebSiteNode(string $id): array
     {
         $siteName = $this->app->settings()->get('CMS.siteName') ?? '';
@@ -157,7 +167,8 @@ class SchemaService
     }
 
     /**
-     * @param array{name: string, username: string, url: string, sameAs: string[], jobTitle: ?string, worksFor: ?string} $author
+     * @param array{name: string, username?: string, url?: string, sameAs?: list<string>, jobTitle?: ?string, worksFor?: ?string} $author
+     * @return array<string, mixed>
      */
     protected function buildAuthorNode(string $id, array $author): array
     {
@@ -186,6 +197,10 @@ class SchemaService
         return $node;
     }
 
+    /**
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>
+    */
     protected function buildArticleNode(array $context, string $type, string $id, ?string $authorId, string $orgId): array
     {
         $node = [
@@ -217,6 +232,10 @@ class SchemaService
         return $node;
     }
 
+    /**
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>
+    */
     protected function buildWebPageNode(array $context, string $id, string $orgId): array
     {
         $node = [
@@ -239,6 +258,10 @@ class SchemaService
         return $node;
     }
 
+    /**
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>
+    */
     protected function buildBreadcrumbNode(array $context, string $id): ?array
     {
         $breadcrumbs = $context['breadcrumbs'] ?? [];
@@ -273,6 +296,9 @@ class SchemaService
         return (bool) $this->app->settings()->get('Seo.ai_disclosure_enabled', true);
     }
 
+    /**
+     * @param array<string, mixed> $context
+    */
     protected function isHomepage(array $context): bool
     {
         $url = $context['url'] ?? $this->getCurrentUrl();

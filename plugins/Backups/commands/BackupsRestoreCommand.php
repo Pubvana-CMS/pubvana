@@ -40,7 +40,7 @@ class BackupsRestoreCommand extends AbstractBaseCommand
 
     public function execute(string $filename): int
     {
-        $io = $this->app()->io();
+        $io = $this->io();
 
         $triggeredBy = $this->user ?? 'cli';
 

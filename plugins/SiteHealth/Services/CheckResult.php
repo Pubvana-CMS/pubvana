@@ -24,6 +24,9 @@ class CheckResult
         public readonly string $remediation = '',
     ) {}
 
+    /**
+     * @return array<string, string>
+     */
     public function toArray(): array
     {
         return [

@@ -13,9 +13,15 @@ use flight\Engine;
 class RedirectsService
 {
     private \PDO $pdo;
+    /** @var Engine<object> */
     private Engine $app;
+    /** @var array<string, mixed> */
     private array $config;
 
+    /**
+     * @param Engine<object> $app
+     * @param array<string, mixed> $config
+     */
     public function __construct(\PDO $pdo, Engine $app, array $config = [])
     {
         $this->pdo = $pdo;
@@ -65,7 +71,7 @@ class RedirectsService
     /**
      * Create a new redirect from form data.
      *
-     * @param array $data POST data with source_path, target_url, status_code, enabled, notes
+     * @param array<string, mixed> $data POST data with source_path, target_url, status_code, enabled, notes
      * @return Redirect
      */
     public function create(array $data): Redirect
@@ -92,7 +98,7 @@ class RedirectsService
      * Update an existing redirect.
      *
      * @param int   $id   Redirect ID
-     * @param array $data Updated field values
+     * @param array<string, mixed> $data Updated field values
      * @return Redirect|null Null if not found
      */
     public function update(int $id, array $data): ?Redirect
@@ -134,7 +140,7 @@ class RedirectsService
     /**
      * Get grouped target URL suggestions from pages and blog posts.
      *
-     * @return array<string, array> Group label => list of [label, url] items
+     * @return array<string, array<int, array<string, string|null>>> Group label => list of [label, url] items
      */
     public function getTargetSuggestions(): array
     {
@@ -158,7 +164,7 @@ class RedirectsService
         try {
             $result = $this->app->blog()->listPosts(1, 100, 'published');
             $items = [];
-            foreach (($result['items'] ?? []) as $post) {
+            foreach ($result['items'] as $post) {
                 $items[] = [
                     'label' => $post->title,
                     'url'   => $this->app->pluginLoader()->routePrefix('pubvana/blog') . '/' . $post->slug,
@@ -212,6 +218,10 @@ class RedirectsService
         exit;
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
     private function preparePayload(array $data): array
     {
         $statusCode = (int) ($data['status_code'] ?? 301);

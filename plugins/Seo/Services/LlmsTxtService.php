@@ -19,8 +19,12 @@ use flight\Engine;
 class LlmsTxtService
 {
     protected \PDO $pdo;
+    /** @var Engine<object> */
     protected Engine $app;
 
+    /**
+     * @param Engine<object> $app
+     */
     public function __construct(\PDO $pdo, Engine $app)
     {
         $this->pdo = $pdo;
@@ -91,6 +95,9 @@ class LlmsTxtService
         return implode("\n", $lines);
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     protected function getPublishedPages(): array
     {
         $pages = $this->app->pages()->listPublished();
@@ -112,6 +119,9 @@ class LlmsTxtService
         return $result;
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     protected function getPublishedPosts(): array
     {
         $posts = $this->app->blog()->listPosts(1, 50, 'published');
@@ -133,6 +143,9 @@ class LlmsTxtService
         return $result;
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     protected function getCategories(): array
     {
         $categories = $this->app->blog()->listCategories();
