@@ -119,8 +119,9 @@ namespace flight {
      * @phpstan-method \Pubvana\Plugins\Backups\Services\BackupService backups()
      * @phpstan-method \Pubvana\Plugins\SiteHealth\Services\HealthService health()
      * @phpstan-method \Pubvana\Plugins\SocialLinks\Services\SocialLinksService socialLinks()
-     * @phpstan-method \Pubvana\Plugins\AiAssistant\Services\AiService ai()
-     * @phpstan-method \Pubvana\Plugins\AiAssistant\Services\MarkdownService aiMarkdown()
+* @phpstan-method \Pubvana\Plugins\AiAssistant\Services\AiService ai()
+* @phpstan-method \Pubvana\Plugins\AiAssistant\Services\MarkdownService aiMarkdown()
+* @phpstan-method \Pubvana\Plugins\ActivityLog\Services\ActivityLogService activityLog()
      */
     class Engine
     {
@@ -361,6 +362,12 @@ namespace Pubvana\Plugins\AiAssistant\Services {
     }
 
     class MarkdownService
+    {
+    }
+}
+
+namespace Pubvana\Plugins\ActivityLog\Services {
+    class ActivityLogService
     {
     }
 }

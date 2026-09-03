@@ -1,6 +1,6 @@
 {
     "name": "pubvana/pubvana",
     "display_name": "Pubvana CMS",
-    "description": "Generic blocks that don't belong to a specific content plugin",
+    "description": "Publishing Nirvana, full-featured CMS built on the FlightPHP micro framework with plugins, Vision template engine, and shared-host friendly setup for personal blogs and small to medium businesses.",
     "semver": "3.0.0"
 }

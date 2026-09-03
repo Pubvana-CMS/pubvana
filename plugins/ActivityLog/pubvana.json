@@ -1,0 +1,22 @@
+{
+    "name": "pubvana/activity-log",
+    "display_name": "Activity Log",
+    "description": "Audit trail of admin actions",
+    "semver": "0.1.0",
+    "category": "tools",
+    "provides": {
+        "admin.menu": {
+            "tools": {
+                "activity-log": {
+                    "label": "Activity Log",
+                    "url": "/activity-log",
+                    "icon": "ti-activity",
+                    "priority": 15
+                }
+            }
+        },
+        "admin.dashboard": {
+            "cards": {}
+        }
+    }
+}

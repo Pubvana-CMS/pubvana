@@ -23,7 +23,7 @@
  */
 
 use flight\Engine;
-use flight\database\PdoWrapper;
+use flight\database\SimplePdo;
 use flight\debug\database\PdoQueryCapture;
 use flight\debug\tracy\TracyExtensionLoader;
 use Tracy\Debugger;
@@ -110,7 +110,7 @@ if ($app->get('environment') === 'development') {
 |--------------------------------------------------------------------------
 | Creates a PDO connection to MySQL/MariaDB. In development with Tracy's
 | debug bar active, wraps it with PdoQueryCapture for the query panel.
-| In production, uses the standard PdoWrapper.
+| In production, uses SimplePdo (the successor to the deprecated PdoWrapper).
 |
 | Access anywhere with: Flight::db() or $app->db()
 */
@@ -120,7 +120,7 @@ $dsn = "{$db['driver']}:host={$db['host']};port={$db['port']};dbname={$db['dbnam
 if ($app->get('environment') === 'development' && Debugger::$showBar === true) {
     $pdo = new PdoQueryCapture($dsn, $db['user'], $db['password']);
 } else {
-    $pdo = new PdoWrapper($dsn, $db['user'], $db['password']);
+    $pdo = new SimplePdo($dsn, $db['user'], $db['password']);
 }
 
 $app->set('db', $pdo);
