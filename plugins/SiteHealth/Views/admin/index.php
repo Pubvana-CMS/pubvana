@@ -12,9 +12,9 @@
 
 $statusBadge = function (string $status): string {
     return match ($status) {
-        'critical' => '<span class="badge bg-danger">Critical</span>',
-        'warning'  => '<span class="badge bg-warning">Warning</span>',
-        default    => '<span class="badge bg-success">Pass</span>',
+        'critical' => '<span class="badge bg-red-lt">Critical</span>',
+        'warning'  => '<span class="badge bg-yellow-lt">Warning</span>',
+        default    => '<span class="badge bg-success-lt">Pass</span>',
     };
 };
 

@@ -245,6 +245,37 @@ class ExtensionRegistry
             'required' => ['callable'],
             'optional' => ['label', 'priority'],
         ],
+
+        /*
+        |------------------------------------------------------------------
+        | Broken Links Source Type
+        |------------------------------------------------------------------
+        | Content plugins register their content as scan sources for the
+        | Broken Links plugin. Each contribution's callable returns an
+        | array of content items to scan:
+        |   type      - the source type token (e.g. 'post', 'page')
+        |   id        - the content record id
+        |   title     - human-readable title
+        |   content   - the content body to scan for outbound links
+        |
+        | Registration (from a plugin's Plugin.php register()):
+        |   $adext->register('brokenlinks', 'source', 'pubvana.myplugin', [
+        |       'label'    => 'My Plugin Items',
+        |       'callable' => fn() => [[
+        |           'type'    => 'item',
+        |           'id'      => 1,
+        |           'title'   => 'Item title',
+        |           'content' => '<a href="https://example.com">Example</a>',
+        |       ]],
+        |   ]);
+        |
+        | The BrokenLinksService reads them via $app->adext()->get('brokenlinks', 'source').
+        */
+        'brokenlinks' => [
+            'slots'    => ['source'],
+            'required' => ['label', 'callable'],
+            'optional' => ['priority'],
+        ],
     ];
 
     /**

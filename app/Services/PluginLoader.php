@@ -852,6 +852,7 @@ class PluginLoader
      * Renders the chosen content directly on "/" (200) rather than
      * redirecting, which search engines index more favorably than a
      * forward from the site root.
+     */
     public function dispatchHomepage(): void
     {
         $type = $this->app->settings()->get('CMS.homepageType', 'blog');

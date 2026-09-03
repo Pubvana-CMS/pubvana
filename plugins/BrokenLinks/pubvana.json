@@ -1,0 +1,23 @@
+{
+    "name": "pubvana/brokenlinks",
+    "display_name": "Broken Links",
+    "description": "Scans outbound links in posts and pages, reports broken URLs",
+    "category": "tools",
+    "semver": "0.1.0",
+    "provides": {
+        "admin.menu": {
+            "tools": {
+                "broken-links": {
+                    "label": "Broken Links",
+                    "url": "/broken-links",
+                    "icon": "ti-link-off",
+                    "priority": 30
+                }
+            }
+        },
+        "admin.dashboard": {
+            "cards": {},
+            "sections": {}
+        }
+    }
+}

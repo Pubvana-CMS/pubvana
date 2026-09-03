@@ -161,5 +161,23 @@ final class Sqlite
                 updated_at  TEXT
             )'
         );
+
+        $pdo->exec(
+            'CREATE TABLE broken_links (
+                id                INTEGER PRIMARY KEY AUTOINCREMENT,
+                source_type       TEXT NOT NULL,
+                source_id         INTEGER NOT NULL,
+                source_title      TEXT NOT NULL,
+                url               TEXT NOT NULL,
+                url_hash          TEXT NOT NULL,
+                http_status       INTEGER,
+                error_message     TEXT,
+                dismissed         INTEGER NOT NULL DEFAULT 0,
+                last_checked_at   TEXT,
+                created_at        TEXT,
+                updated_at        TEXT,
+                UNIQUE (source_type, source_id, url_hash)
+            )'
+        );
     }
 }

@@ -177,6 +177,30 @@ class Plugin implements PluginInterface
             'callable' => fn() => $app->blog()->commentHostItems($prefix),
         ]);
 
+        // ─── Broken Links Source ────────────────────────────────────────
+
+        $adext->register('brokenlinks', 'source', 'pubvana.blog', [
+            'label'    => 'Blog Posts',
+            'callable' => function () use ($app): array {
+                $stmt = $app->db()->query(
+                    "SELECT id, title, content FROM posts WHERE status = 'published' AND deleted_at IS NULL"
+                );
+                if ($stmt === false) {
+                    return [];
+                }
+                $items = [];
+                while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+                    $items[] = [
+                        'type'    => 'post',
+                        'id'      => (int) $row['id'],
+                        'title'   => $row['title'],
+                        'content' => (string) ($row['content'] ?? ''),
+                    ];
+                }
+                return $items;
+            },
+        ]);
+
         // ─── Navigation Linkable ────────────────────────────────────────
 
         $adext->register('nav.linkable', 'default', 'pubvana.blog', [
