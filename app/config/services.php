@@ -174,7 +174,7 @@ $csrf = new \Enlivenapp\FlightCsrf\Middlewares\CsrfMiddleware($app);
 | Migrations & Seeds
 |--------------------------------------------------------------------------
 | The enabled-gated migration set comes from $pluginLoader->getMigrationConfig()
-| — the single source of truth — and is registered below so both web and CLI
+| (the single source of truth) and is registered below so both web and CLI
 | (runway loads this file) resolve it from the Flight store. app/config/
 | migrations.php remains only as a no-Flight fallback (core paths).
 */
@@ -356,6 +356,24 @@ $app->map('content', function () use ($app) {
 
 /*
 |--------------------------------------------------------------------------
+| Cron Service
+|--------------------------------------------------------------------------
+| Runs plugin-registered cron tasks. The root `cron` script, called by
+| system crontabs at 1m, 4h, and 24h, boots the app and calls
+| $app->cron()->run($interval). No web routes involved.
+|
+| Access anywhere with: $app->cron()->run('1m')
+*/
+$app->map('cron', function () use ($app) {
+    static $instance = null;
+    if ($instance === null) {
+        $instance = new \Pubvana\Services\CronService($app);
+    }
+    return $instance;
+});
+
+/*
+|--------------------------------------------------------------------------
 | Asset Service
 |--------------------------------------------------------------------------
 | Unified asset serving for themes, plugins, and vendor packages.
@@ -377,10 +395,10 @@ $app->map('asset', function () use ($app) {
 |--------------------------------------------------------------------------
 | MOVED to bootstrap.php, after core-admin.php. The settings service's
 | declaredFields() cache must not be populated before adext registrations
-| exist — calling settings()->get() here would lock in an empty cache
-| and no settings would ever save.
+| exist (calling settings()->get() here would lock in an empty cache
+| and no settings would ever save).
 |
-| @see bootstrap.php — timezone block after core-admin require
+| @see bootstrap.php, timezone block after core-admin require
 */
 
 /*

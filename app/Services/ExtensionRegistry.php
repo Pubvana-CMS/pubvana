@@ -276,6 +276,31 @@ class ExtensionRegistry
             'required' => ['label', 'callable'],
             'optional' => ['priority'],
         ],
+
+        /*
+        |------------------------------------------------------------------
+        | Cron Task Type
+        |------------------------------------------------------------------
+        | Plugins register callables that run on a fixed interval. There are
+        | three slots, each driven by a system crontab line calling the root
+        | `cron` script: 1m (every minute), 4h, and 24h. No web routes are
+        | involved; the script is CLI-only and not web-exposed.
+        |
+        | Registration (from a plugin's Plugin.php register()):
+        |   $app->adext()->register('cron', '1m', 'pubvana.blog', [
+        |       'label'    => 'Ping feeds',
+        |       'callable' => fn() => $this->pingFeeds(),
+        |   ]);
+        |
+        | CronService reads these via $app->adext()->get('cron', $interval)
+        | and runs each callable in priority order. One failing task never
+        | blocks the rest.
+        */
+        'cron' => [
+            'slots'    => ['1m', '4h', '24h'],
+            'required' => ['callable'],
+            'optional' => ['label', 'priority'],
+        ],
     ];
 
     /**

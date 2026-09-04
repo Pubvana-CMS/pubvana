@@ -1,0 +1,34 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Cron entry point. System crontabs call this script on three schedules
+ * (every minute, every 4 hours, every 24 hours) and it runs the
+ * plugin-registered tasks for the given interval. See docs/cron.md for
+ * the crontab lines.
+ *
+ * Boots the full application (plugins included, so their Plugin.php
+ * register() calls can add tasks through adext), then hands the interval
+ * to CronService. Not web-exposed: the docroot is public/.
+ *
+ * Exit codes (from CronService): 0 ran fine or skipped via lock, 1 bad
+ * interval, 2 ran but at least one task failed.
+ */
+
+use Pubvana\Services\CronService;
+
+require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/app/config/services.php';
+
+$interval = $argv[1] ?? '';
+
+if (!in_array($interval, CronService::INTERVALS, true)) {
+    fwrite(STDERR, 'Usage: php cron {' . implode('|', CronService::INTERVALS) . '}' . PHP_EOL);
+    exit(CronService::EXIT_ERROR);
+}
+
+$app = Flight::app();
+
+exit($app->cron()->run($interval));

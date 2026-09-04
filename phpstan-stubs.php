@@ -93,6 +93,7 @@ namespace flight {
      * @phpstan-method \Pubvana\Services\SettingsService settings()
      * @phpstan-method \Pubvana\Services\Mailer mailer()
      * @phpstan-method \Pubvana\Services\ContentService content()
+     * @phpstan-method \Pubvana\Services\CronService cron()
      * @phpstan-method \Pubvana\Services\AssetService asset()
      * @phpstan-method \Pubvana\Services\PluginLoader pluginLoader()
      * @phpstan-method \Enlivenapp\FlightSessions\SessionManager session()
@@ -215,6 +216,10 @@ namespace Pubvana\Services {
     }
 
     class ContentService
+    {
+    }
+
+    class CronService
     {
     }
 
