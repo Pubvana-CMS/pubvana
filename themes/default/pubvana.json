@@ -3,6 +3,7 @@
     "description": "Pubvana default theme built on Bootswatch Flatly (Bootstrap 5).",
     "category": "presentation",
     "icon": "icon.svg",
+    "semver": "1.4.12",
     "provides": {
         "options": {
             "layout": {

@@ -1,7 +1,7 @@
 services:
   db:
     image: mariadb:10.11
-    container_name: pubvana25-db
+    container_name: pubvana3-db
     restart: unless-stopped
     environment:
       MYSQL_RANDOM_ROOT_PASSWORD: "1"
@@ -21,15 +21,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: pubvana25-web
+    container_name: pubvana3
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
     ports:
-      - "8080:80"
+      - "80:80"
     volumes:
-      - /tmp/pubvana25:/var/www/html
+      - /tmp/pubvana3:/var/www/html
     environment:
       DB_HOSTNAME: db
       DB_DATABASE: pubvana
@@ -38,4 +38,4 @@ services:
       BASE_URL: http://localhost:8080
 
 volumes:
-  pubvana25-db-data:
+  pubvana3-db-data:
