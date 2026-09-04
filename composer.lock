@@ -273,16 +273,16 @@
         },
         {
             "name": "enlivenapp/flight-sessions",
-            "version": "0.1.2",
+            "version": "0.1.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/enlivenapp/flight-sessions.git",
-                "reference": "ce53d1f313bef23bc7d65bd4f8ff63656462dad7"
+                "reference": "797987e1765a68df5c06fadf5a60b9a420fcb940"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/enlivenapp/flight-sessions/zipball/ce53d1f313bef23bc7d65bd4f8ff63656462dad7",
-                "reference": "ce53d1f313bef23bc7d65bd4f8ff63656462dad7",
+                "url": "https://api.github.com/repos/enlivenapp/flight-sessions/zipball/797987e1765a68df5c06fadf5a60b9a420fcb940",
+                "reference": "797987e1765a68df5c06fadf5a60b9a420fcb940",
                 "shasum": ""
             },
             "require": {
@@ -293,6 +293,9 @@
             },
             "require-dev": {
                 "phpunit/phpunit": "^11.0"
+            },
+            "suggest": {
+                "enlivenapp/migrations": "Runs the bundled sessions table migration (php runway migrate:all)"
             },
             "type": "flightphp-foundation",
             "autoload": {
@@ -313,22 +316,22 @@
             "description": "Database-backed sessions for FlightPHP — encrypted payloads, unified API, AJAX-friendly",
             "support": {
                 "issues": "https://github.com/enlivenapp/flight-sessions/issues",
-                "source": "https://github.com/enlivenapp/flight-sessions/tree/0.1.2"
+                "source": "https://github.com/enlivenapp/flight-sessions/tree/0.1.3"
             },
-            "time": "2026-08-28T04:07:55+00:00"
+            "time": "2026-09-01T03:34:28+00:00"
         },
         {
             "name": "enlivenapp/flight-shield",
-            "version": "0.3.3",
+            "version": "0.3.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/enlivenapp/FlightPHP-Shield.git",
-                "reference": "99157434ac51b98340c8f442c85ca5f667394eaf"
+                "reference": "7abdf9f78a69f12d3d6aade33533d58ab721b249"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/enlivenapp/FlightPHP-Shield/zipball/99157434ac51b98340c8f442c85ca5f667394eaf",
-                "reference": "99157434ac51b98340c8f442c85ca5f667394eaf",
+                "url": "https://api.github.com/repos/enlivenapp/FlightPHP-Shield/zipball/7abdf9f78a69f12d3d6aade33533d58ab721b249",
+                "reference": "7abdf9f78a69f12d3d6aade33533d58ab721b249",
                 "shasum": ""
             },
             "require": {
@@ -368,9 +371,9 @@
             "description": "Authentication and authorization for FlightPHP, ported from CodeIgniter Shield",
             "support": {
                 "issues": "https://github.com/enlivenapp/FlightPHP-Shield/issues",
-                "source": "https://github.com/enlivenapp/FlightPHP-Shield/tree/0.3.3"
+                "source": "https://github.com/enlivenapp/FlightPHP-Shield/tree/0.3.4"
             },
-            "time": "2026-08-28T04:07:56+00:00"
+            "time": "2026-09-01T03:42:13+00:00"
         },
         {
             "name": "enlivenapp/migrations",
@@ -421,16 +424,16 @@
         },
         {
             "name": "enlivenapp/vision",
-            "version": "1.0.2",
+            "version": "1.0.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/enlivenapp/Vision.git",
-                "reference": "8f1e171d9bd8b3930e5918496fb81bf532f30e98"
+                "reference": "738d33fee95b8428efd5f0ea837be693dc52186c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/enlivenapp/Vision/zipball/8f1e171d9bd8b3930e5918496fb81bf532f30e98",
-                "reference": "8f1e171d9bd8b3930e5918496fb81bf532f30e98",
+                "url": "https://api.github.com/repos/enlivenapp/Vision/zipball/738d33fee95b8428efd5f0ea837be693dc52186c",
+                "reference": "738d33fee95b8428efd5f0ea837be693dc52186c",
                 "shasum": ""
             },
             "require": {
@@ -455,9 +458,9 @@
             "description": "Lightweight template engine with auto-escaping, extends, includes, filters, and custom tags",
             "support": {
                 "issues": "https://github.com/enlivenapp/Vision/issues",
-                "source": "https://github.com/enlivenapp/Vision/tree/1.0.2"
+                "source": "https://github.com/enlivenapp/Vision/tree/1.0.3"
             },
-            "time": "2026-05-03T19:52:47+00:00"
+            "time": "2026-09-01T15:28:39+00:00"
         },
         {
             "name": "ezyang/htmlpurifier",
@@ -587,16 +590,16 @@
         },
         {
             "name": "flightphp/core",
-            "version": "v3.19.1",
+            "version": "v3.19.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/flightphp/core.git",
-                "reference": "d8fe78449cbd76d0d54560efaefd10c98f1235a4"
+                "reference": "24640dcbcbda710a151316676ed8f02bfdec7aee"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/flightphp/core/zipball/d8fe78449cbd76d0d54560efaefd10c98f1235a4",
-                "reference": "d8fe78449cbd76d0d54560efaefd10c98f1235a4",
+                "url": "https://api.github.com/repos/flightphp/core/zipball/24640dcbcbda710a151316676ed8f02bfdec7aee",
+                "reference": "24640dcbcbda710a151316676ed8f02bfdec7aee",
                 "shasum": ""
             },
             "require": {
@@ -629,6 +632,9 @@
             },
             "type": "library",
             "autoload": {
+                "files": [
+                    "flight/autoload.php"
+                ],
                 "psr-4": {
                     "flight\\": "flight"
                 },
@@ -663,9 +669,9 @@
             "homepage": "https://docs.flightphp.com",
             "support": {
                 "issues": "https://github.com/flightphp/core/issues",
-                "source": "https://github.com/flightphp/core/tree/v3.19.1"
+                "source": "https://github.com/flightphp/core/tree/v3.19.3"
             },
-            "time": "2026-08-11T05:29:08+00:00"
+            "time": "2026-09-04T03:49:59+00:00"
         },
         {
             "name": "flightphp/runway",
@@ -721,24 +727,24 @@
         },
         {
             "name": "graham-campbell/result-type",
-            "version": "v1.1.4",
+            "version": "v1.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/GrahamCampbell/Result-Type.git",
-                "reference": "e01f4a821471308ba86aa202fed6698b6b695e3b"
+                "reference": "adccca3324eece92ca35463648c12b9e6293c05b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/GrahamCampbell/Result-Type/zipball/e01f4a821471308ba86aa202fed6698b6b695e3b",
-                "reference": "e01f4a821471308ba86aa202fed6698b6b695e3b",
+                "url": "https://api.github.com/repos/GrahamCampbell/Result-Type/zipball/adccca3324eece92ca35463648c12b9e6293c05b",
+                "reference": "adccca3324eece92ca35463648c12b9e6293c05b",
                 "shasum": ""
             },
             "require": {
                 "php": "^7.2.5 || ^8.0",
-                "phpoption/phpoption": "^1.9.5"
+                "phpoption/phpoption": "^1.10"
             },
             "require-dev": {
-                "phpunit/phpunit": "^8.5.41 || ^9.6.22 || ^10.5.45 || ^11.5.7"
+                "phpunit/phpunit": "^8.5.52 || ^9.6.34 || ^10.5.63 || ^11.5.55 || ^12.5.14"
             },
             "type": "library",
             "autoload": {
@@ -767,7 +773,7 @@
             ],
             "support": {
                 "issues": "https://github.com/GrahamCampbell/Result-Type/issues",
-                "source": "https://github.com/GrahamCampbell/Result-Type/tree/v1.1.4"
+                "source": "https://github.com/GrahamCampbell/Result-Type/tree/v1.2.0"
             },
             "funding": [
                 {
@@ -779,7 +785,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2025-12-27T19:43:20+00:00"
+            "time": "2026-08-24T09:06:52+00:00"
         },
         {
             "name": "league/commonmark",
@@ -1375,16 +1381,16 @@
         },
         {
             "name": "phpoption/phpoption",
-            "version": "1.9.5",
+            "version": "1.10.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/schmittjoh/php-option.git",
-                "reference": "75365b91986c2405cf5e1e012c5595cd487a98be"
+                "reference": "67b192b6a42ec03944b972d6e633ddec78ad2c6d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/schmittjoh/php-option/zipball/75365b91986c2405cf5e1e012c5595cd487a98be",
-                "reference": "75365b91986c2405cf5e1e012c5595cd487a98be",
+                "url": "https://api.github.com/repos/schmittjoh/php-option/zipball/67b192b6a42ec03944b972d6e633ddec78ad2c6d",
+                "reference": "67b192b6a42ec03944b972d6e633ddec78ad2c6d",
                 "shasum": ""
             },
             "require": {
@@ -1392,7 +1398,7 @@
             },
             "require-dev": {
                 "bamarni/composer-bin-plugin": "^1.8.2",
-                "phpunit/phpunit": "^8.5.44 || ^9.6.25 || ^10.5.53 || ^11.5.34"
+                "phpunit/phpunit": "^8.5.54 || ^9.6.36 || ^10.5.64 || ^11.5.56 || ^12.5.33"
             },
             "type": "library",
             "extra": {
@@ -1434,7 +1440,7 @@
             ],
             "support": {
                 "issues": "https://github.com/schmittjoh/php-option/issues",
-                "source": "https://github.com/schmittjoh/php-option/tree/1.9.5"
+                "source": "https://github.com/schmittjoh/php-option/tree/1.10.0"
             },
             "funding": [
                 {
@@ -1446,7 +1452,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2025-12-27T19:41:33+00:00"
+            "time": "2026-08-24T00:54:40+00:00"
         },
         {
             "name": "psr/event-dispatcher",
@@ -1823,23 +1829,23 @@
         },
         {
             "name": "vlucas/phpdotenv",
-            "version": "v5.6.4",
+            "version": "v5.7.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/vlucas/phpdotenv.git",
-                "reference": "416df702837983f8d5ff48c9c3fee4f5f57b980b"
+                "reference": "301c07936b16d88628b126b01d082ba153cf4c40"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/vlucas/phpdotenv/zipball/416df702837983f8d5ff48c9c3fee4f5f57b980b",
-                "reference": "416df702837983f8d5ff48c9c3fee4f5f57b980b",
+                "url": "https://api.github.com/repos/vlucas/phpdotenv/zipball/301c07936b16d88628b126b01d082ba153cf4c40",
+                "reference": "301c07936b16d88628b126b01d082ba153cf4c40",
                 "shasum": ""
             },
             "require": {
                 "ext-pcre": "*",
-                "graham-campbell/result-type": "^1.1.4",
+                "graham-campbell/result-type": "^1.2",
                 "php": "^7.2.5 || ^8.0",
-                "phpoption/phpoption": "^1.9.5",
+                "phpoption/phpoption": "^1.10",
                 "symfony/polyfill-ctype": "^1.26",
                 "symfony/polyfill-mbstring": "^1.26",
                 "symfony/polyfill-php80": "^1.26"
@@ -1883,7 +1889,7 @@
                     "homepage": "https://github.com/vlucas"
                 }
             ],
-            "description": "Loads environment variables from `.env` to `getenv()`, `$_ENV` and `$_SERVER` automagically.",
+            "description": "Loads environment variables from `.env` to `$_ENV` and `$_SERVER` automagically, and optionally to `getenv()`.",
             "keywords": [
                 "dotenv",
                 "env",
@@ -1891,7 +1897,7 @@
             ],
             "support": {
                 "issues": "https://github.com/vlucas/phpdotenv/issues",
-                "source": "https://github.com/vlucas/phpdotenv/tree/v5.6.4"
+                "source": "https://github.com/vlucas/phpdotenv/tree/v5.7.0"
             },
             "funding": [
                 {
@@ -1903,7 +1909,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-07-06T19:11:50+00:00"
+            "time": "2026-08-24T18:07:49+00:00"
         }
     ],
     "packages-dev": [
@@ -3958,11 +3964,11 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "2.2.12",
+            "version": "2.2.13",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/174b0d88710f00a42598886504dd7a146f91ace5",
-                "reference": "174b0d88710f00a42598886504dd7a146f91ace5",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/9ba9ac76ee9c5cf5b56d58eb5deec6315b7a0260",
+                "reference": "9ba9ac76ee9c5cf5b56d58eb5deec6315b7a0260",
                 "shasum": ""
             },
             "require": {
@@ -4018,7 +4024,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-08-31T19:09:43+00:00"
+            "time": "2026-09-03T20:38:19+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",

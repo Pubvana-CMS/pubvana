@@ -8,7 +8,7 @@
 
 declare(strict_types=1);
 
-namespace Pubvana\Plugins\Backups\Commands;
+namespace Pubvana\Plugins\Backups\commands;
 
 use flight\commands\AbstractBaseCommand;
 use Pubvana\Plugins\Backups\Services\BackupService;
