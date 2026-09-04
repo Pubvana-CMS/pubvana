@@ -65,7 +65,9 @@ The callable must return an array of items with `type`, `id`, `title`, and `cont
 
 ## Cron
 
-A cron stub (`broken-links:cron`) exists for future scheduling integration. When the cron infrastructure is built, it wires up to the same scan logic.
+A daily scan runs through the core cron system: the plugin registers a `24h` task that calls the same `scan()` used by the admin UI and CLI. Findings are surfaced on the admin screen; failures in the scan never abort the cron run.
+
+You can also trigger the scan manually with the `broken-links:cron` runway command.
 
 ## Notes
 

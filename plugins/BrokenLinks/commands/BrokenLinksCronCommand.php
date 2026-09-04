@@ -8,19 +8,17 @@ use Pubvana\Plugins\BrokenLinks\Services\BrokenLinksService;
 use flight\commands\AbstractBaseCommand;
 
 /**
- * Cron stub for automated broken link scanning.
+ * Manual cron-style trigger for automated broken link scanning.
  *
- * TODO: Wire this into the cron infrastructure when it is built.
- * The cron system should call this command on a configurable schedule
- * (recommended: daily or weekly). The execute() method delegates to
- * the same scan logic used by the CLI command, so wiring requires
- * only a single call in the cron runner.
+ * Mirrors the 24h core cron task (registered in Plugin.php); both delegate
+ * to the same scan logic. Kept as a standalone runway command so operators
+ * can run the daily scan on demand without touching the scheduler.
  */
 class BrokenLinksCronCommand extends AbstractBaseCommand
 {
     public function __construct(array $config)
     {
-        parent::__construct('broken-links:cron', 'Scan for broken links (cron stub).', $config);
+        parent::__construct('broken-links:cron', 'Scan for broken links.', $config);
     }
 
     /**
