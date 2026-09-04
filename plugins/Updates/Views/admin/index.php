@@ -106,6 +106,9 @@ $renderConstraints = static function () use ($constraints, $latest): void {
         <div class="row align-items-start">
             <div class="col-md-4 mb-3 mb-md-0">
                 <label class="d-block fw-bold small mb-1">Pubvana Auto-Update</label>
+                <small class="form-text text-muted d-block">
+                    When <b>Automatic</b>, Pubvana updates are applied automatically if there are no breaking changes.  Breaking changes require your approval. If Automatic and you visit this page it will trigger and automatic update if one is available.
+                </small>
                 <div class="btn-group" role="group" aria-label="Pubvana Auto-Update">
                     <input type="radio" class="btn-check" name="auto_update" id="auto-update-manual"
                            value="0" autocomplete="off" <?= !$auto ? 'checked' : '' ?>>
@@ -114,16 +117,10 @@ $renderConstraints = static function () use ($constraints, $latest): void {
                            value="1" autocomplete="off" <?= $auto ? 'checked' : '' ?>>
                     <label class="btn btn-outline-secondary" for="auto-update-automatic">Automatic</label>
                 </div>
-                <small class="form-text text-muted d-block">
-                    When enabled, Pubvana updates without breaking changes are applied automatically.
-                </small>
+                
             </div>
             <div class="col-md-4 mb-3 mb-md-0">
-                <label class="d-block fw-bold small mb-1">Update Checks</label>
-                <p class="small mb-0">
-                    Checks run when you open this page, on the dashboard,
-                    and on the daily cron task, cached for 24 hours.
-                </p>
+                
             </div>
             <div class="col-md-4">
                 <label class="d-block fw-bold small mb-1">Cron</label>
@@ -131,7 +128,7 @@ $renderConstraints = static function () use ($constraints, $latest): void {
                 <code class="d-block bg-secondary-lt p-2 rounded small user-select-all mb-1">7 */4 * * *  <?= htmlspecialchars($phpBinary) ?> <?= htmlspecialchars(PROJECT_ROOT) ?>/cron 4h</code>
                 <code class="d-block bg-secondary-lt p-2 rounded small user-select-all">15 3 * * *   <?= htmlspecialchars($phpBinary) ?> <?= htmlspecialchars(PROJECT_ROOT) ?>/cron 24h</code>
                 <small class="form-text text-muted d-block">
-                    Add these lines to your server's crontab to run Pubvana's cron tasks.
+                    Add these lines to your server's crontab to run Pubvana's cron tasks. <b>Highly Recommended</b>
                 </small>
             </div>
         </div>
