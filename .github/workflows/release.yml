@@ -1,0 +1,82 @@
+name: Release
+
+# Builds the self-contained release.zip (vendor included) and attaches it
+# to the GitHub release, so Updates-plugin sites can pull it via the
+# download_url recorded in releases.json.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    name: Build and attach release.zip
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify tag matches pubvana.json semver
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          SEMVER="$(php -r '$d = json_decode(file_get_contents("pubvana.json"), true); echo $d["semver"];')"
+          echo "Tag version: $TAG, manifest semver: $SEMVER"
+          if [ "$TAG" != "$SEMVER" ]; then
+            echo "::error::Tag v$TAG does not match pubvana.json semver $SEMVER"
+            exit 1
+          fi
+
+      - name: Verify CHANGELOG documents the release
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          if ! grep -Eq "^## \[?${TAG//./\\.}(\]| )?" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no section for $TAG"
+            exit 1
+          fi
+
+      - name: Verify releases.json documents the release
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          php -r '
+            $tag = $argv[1];
+            $data = json_decode(file_get_contents("releases.json"), true);
+            foreach ($data["releases"] ?? [] as $release) {
+                if (($release["version"] ?? null) === $tag) {
+                    if (empty($release["download_url"])) {
+                        fwrite(STDERR, "releases.json entry for $tag has no download_url" . PHP_EOL);
+                        exit(1);
+                    }
+                    exit(0);
+                }
+            }
+            fwrite(STDERR, "releases.json has no entry for $tag" . PHP_EOL);
+            exit(1);
+          ' "$TAG"
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: Install production dependencies
+        run: composer install --no-dev --prefer-dist --no-progress --optimize-autoloader
+
+      - name: Build release.zip
+        run: |
+          zip -r release.zip \
+            app public vendor plugins themes \
+            pubvana.json releases.json CHANGELOG.md README.md \
+            LICENSE SECURITY.md CODE_OF_CONDUCT.md CONTRIBUTING.md \
+            .env.example .htaccess runway \
+            composer.json composer.lock .runway-config.json \
+            -x "*.DS_Store"
+
+      - name: Attach release.zip to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release.zip

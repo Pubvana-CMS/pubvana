@@ -1,0 +1,23 @@
+{
+    "name": "pubvana/updates",
+    "display_name": "Updates",
+    "description": "Checks for new Pubvana releases and applies core updates, manually or automatically",
+    "category": "tools",
+    "semver": "0.1.0",
+    "provides": {
+        "admin.menu": {
+            "tools": {
+                "updates": {
+                    "label": "Updates",
+                    "url": "/updates",
+                    "icon": "ti-refresh",
+                    "priority": 2
+                }
+            }
+        },
+        "admin.dashboard": {
+            "cards": {},
+            "sections": {}
+        }
+    }
+}

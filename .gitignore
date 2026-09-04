@@ -23,6 +23,8 @@
 !/writable/logs/.gitkeep
 /writable/backups/*
 !/writable/backups/.gitkeep
+/writable/updates/*
+!/writable/updates/.gitkeep
 
 # Public uploads (site media/content)
 /public/uploads/*

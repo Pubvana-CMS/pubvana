@@ -5,6 +5,26 @@ All notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [3.0.0-alpha.3] - 2026-09-03
+
+### Added
+- New Updates plugin: checks releases.json for new Pubvana versions, with manual and opt-in automatic updates
+- Updates page in the v2 layout: Update Settings card (Manual/Automatic toggle + crontab lines), status banners, preflight table with Required/Optional badges, and a confirmation modal before applying
+- Granular update progress (preflight, backup, download, validate, extract, copy, migrate, cleanup) with live polling in the admin
+- Mandatory pre-update backup through the Backups plugin; a failed backup aborts the update
+- Safe-target capping: never jumps past a version blocked by an installed plugin or theme declaring min/max_pubvana_version
+- Per-version skip list, so a troublesome release can be passed over
+- CLI commands: `runway updates:check`, `runway updates:apply`, `runway updates:auto-update`, with the auto-update chain registered as a daily task on the core cron system
+- Release packaging workflow (`.github/workflows/release.yml`) that builds `release.zip` including vendor/, verifies the tag against pubvana.json, and keeps CHANGELOG.md in sync with releases.json
+- New Cron system: `CronService` runs plugin-registered tasks on fixed intervals (every minute / 4 hours / daily) through a root `cron` script, with run locks against overlapping crontab hits, per-task error isolation, and cron.log
+- New Broken Links plugin: scans outbound links in published posts and pages, with a Tools > Broken Links admin (run scan, recheck, dismiss); wired as a daily task on the cron system
+- New Activity Log plugin: records admin activity
+- PHPUnit CI workflow (`.github/workflows/test.yml`)
+
+### Changed
+- Database access moved to SimplePDO
+- README restructured: badges, project logo, and the v2/v3 separation note
+
 ## [3.0.0-alpha.2] - 2026-09-02
 
 ### Added
