@@ -113,6 +113,9 @@ class PluginView extends View
      * Vision provides: {{ var }}, {% if %}, {% for %}, {% extends %},
      * {% block %}, {% csrf_field %}, and custom tags.
      *
+     * {% block %} is Vision's inheritance slot, unrelated to the region
+     * system's content blocks (see {% region %} below).
+     *
      * @return \Enlivenapp\Vision\Engine|null Vision engine, or null if not installed
      */
     public function vision(): ?\Enlivenapp\Vision\Engine
@@ -129,7 +132,9 @@ class PluginView extends View
      *
      * Tags:
      *   {% csrf_field %}  - outputs a hidden CSRF token input
-     *   {% region 'id' %} - renders a content region with all its blocks
+     *   {% region 'id' %} - renders a content region with all its blocks.
+     *                      These blocks are the region system's content blocks,
+     *                      not Vision's {% block %} tag.
      */
     protected function registerDefaultTags(): void
     {

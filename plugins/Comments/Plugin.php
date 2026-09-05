@@ -36,6 +36,12 @@ class Plugin implements PluginInterface
         $adext = $app->adext();
         $authMiddleware = null;
 
+        // Public CSS: served from assets/css/comments.css
+        $adext->register('public.css', 'default', 'pubvana.comments', [
+            'url'      => '/assets/plugin/Comments/css/comments.css',
+            'priority' => 50,
+        ]);
+
         // ─── Admin Routes ──────────────────────────────────────────────
 
         $adext->addRoutes('admin', [

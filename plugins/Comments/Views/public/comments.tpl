@@ -3,22 +3,7 @@
    a host plugin's view. Consumes the data array from CommentService::dataFor(). #}
 {% if comments_enabled %}
 <div class="pv-comments">
-    <style>
-        .pv-comments { margin-top: 2rem; }
-        .pv-comments-list { list-style: none; margin: 0; padding: 0; }
-        .pv-comment { padding: .75rem .75rem 0 0; }
-        .pv-comment-depth-1 { margin-left: 1.25rem; }
-        .pv-comment-depth-2 { margin-left: 2.5rem; }
-        .pv-comment-depth-3 { margin-left: 3.75rem; }
-        .pv-comment-depth-4 { margin-left: 5rem; }
-        .pv-comment-meta { display: flex; gap: .75rem; align-items: baseline; }
-        .pv-comment-body { margin-top: .25rem; }
-        .pv-comment-form { margin-top: 1.25rem; display: grid; gap: .5rem; }
-        .pv-comment-form textarea,
-        .pv-comment-form input { width: 100%; box-sizing: border-box; }
-        .pv-comments-error { color: #b3261e; margin-bottom: .75rem; }
-        .pv-comments-closed, .pv-comments-empty { color: var(--pv-muted, #6b7280); }
-    </style>
+    {# Styles ship in assets/css/comments.css, registered via adext public.css. #}
 
     <h3>Comments</h3>
 

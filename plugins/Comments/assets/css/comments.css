@@ -1,0 +1,20 @@
+/* Comments plugin public styles.
+   Served at /assets/plugin/Comments/css/comments.css and registered through
+   adext public.css. Plugin CSS loads before the theme stylesheet, so a theme
+   overrides these selectors with plain rules at equal specificity. A theme
+   can also replace this file entirely by shipping
+   themes/{theme}/assets/Comments/css/comments.css (see docs/Themes.md). */
+.pv-comments { margin-top: 2rem; }
+.pv-comments-list { list-style: none; margin: 0; padding: 0; }
+.pv-comment { padding: .75rem .75rem 0 0; }
+.pv-comment-depth-1 { margin-left: 1.25rem; }
+.pv-comment-depth-2 { margin-left: 2.5rem; }
+.pv-comment-depth-3 { margin-left: 3.75rem; }
+.pv-comment-depth-4 { margin-left: 5rem; }
+.pv-comment-meta { display: flex; gap: .75rem; align-items: baseline; }
+.pv-comment-body { margin-top: .25rem; }
+.pv-comment-form { margin-top: 1.25rem; display: grid; gap: .5rem; }
+.pv-comment-form textarea,
+.pv-comment-form input { width: 100%; box-sizing: border-box; }
+.pv-comments-error { color: #b3261e; margin-bottom: .75rem; }
+.pv-comments-closed, .pv-comments-empty { color: var(--pv-muted, #6b7280); }

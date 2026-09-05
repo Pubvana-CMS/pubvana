@@ -1,3 +1,4 @@
+{# Profile edit form. Extends the master layout. #}
 {% extends 'layout' %}
 
 {% block content %}
@@ -5,9 +6,13 @@
     <div class="col-lg-8">
         <div class="pv-profile-card">
             <h3 class="pv-profile-section-title">Edit Profile</h3>
+            {# Plain HTML form: POSTs to the profile update endpoint. #}
             <form method="post" action="/profile/{{ user.username }}/update" class="pv-profile-form">
+                {# Custom tag: emits the hidden CSRF token input the framework validates on POST. #}
                 {% csrf_field %}
 
+                {# Every field follows the same pattern: label, input, value from the profile. #}
+                {# Escaped output in each value attribute. #}
                 <div class="pv-profile-form-field">
                     <label class="pv-profile-form-label" for="display_name">Display Name</label>
                     <input type="text" class="pv-profile-form-input" id="display_name" name="display_name"
@@ -21,6 +26,7 @@
 
                 <div class="pv-profile-form-field">
                     <label class="pv-profile-form-label">Avatar</label>
+                    {# Custom tag: the Media plugin's picker, arguments are the field name and current value. #}
                     {% media_picker 'avatar' profile.avatar %}
                 </div>
 
@@ -68,7 +74,8 @@
         </div>
     </div>
     <div class="col-lg-4">
-        {! theme_regions.sidebar !}
+        {# Region: sidebar content blocks. #}
+        {% region 'sidebar' %}
     </div>
 </div>
 {% endblock %}

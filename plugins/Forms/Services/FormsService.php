@@ -20,9 +20,6 @@ class FormsService
     /** @var array<string, mixed> */
     private array $config;
 
-    /** @var bool Whether the inline form style block has already been emitted */
-    private static bool $styleEmitted = false;
-
     /**
      * @param Engine<object>       $app
      * @param array<string, mixed> $config
@@ -272,7 +269,7 @@ class FormsService
             trim($this->config['routePrepend'] ?? 'forms', '/') . '/submit/' . (int) $form->id;
         $returnUrl = $this->currentRequestPath();
 
-        $html = self::inlineStyleBlock();
+        $html = '';
 
         if (($flash['ok'] ?? false) === true) {
             $html .= '<div class="pv-form-success">' . htmlspecialchars((string) $form->success_message) . '</div>';
@@ -786,40 +783,5 @@ class FormsService
 
         $decoded = json_decode($json, true);
         return is_array($decoded) ? $decoded : [];
-    }
-
-    /**
-     * Emit the public form styles inline (plugins/ is blocked by .htaccess,
-     * so an external forms.css would return 403).
-     */
-    private function inlineStyleBlock(): string
-    {
-        if (self::$styleEmitted) {
-            return '';
-        }
-        self::$styleEmitted = true;
-
-        return <<<CSS
-<style>
-.pv-form{display:grid;gap:1rem;}
-.pv-form-field{display:grid;gap:.4rem;}
-.pv-form-label{font-size:.95rem;font-weight:600;}
-.pv-form-input,.pv-form-select,.pv-form-textarea{display:block;width:100%;padding:.5rem .65rem;font-size:1rem;line-height:1.5;color:#333;background-color:#fff;border:1px solid #ccc;border-radius:.25rem;appearance:none;}
-.pv-form-textarea{min-height:8rem;resize:vertical;}
-.pv-form-input:focus,.pv-form-select:focus,.pv-form-textarea:focus{border-color:#1a6b3c;outline:0;box-shadow:0 0 0 .2rem rgba(26,107,60,.2);}
-.pv-form-choices{display:grid;gap:.5rem;}
-.pv-form-choice{display:flex;align-items:flex-start;gap:.6rem;}
-.pv-form-choice-input{margin-top:.2rem;}
-.pv-form-choice-label{line-height:1.4;}
-.pv-form-hidden{display:none;}
-.pv-form-help{color:#777;font-size:.875rem;}
-.pv-form-submit{display:inline-block;padding:.6rem .9rem;font-size:1rem;font-weight:600;line-height:1.2;color:#fff;background-color:#1a6b3c;border:1px solid #1a6b3c;border-radius:.25rem;cursor:pointer;text-align:center;width:fit-content;min-width:10rem;}
-.pv-form-submit:hover{background-color:#145530;border-color:#145530;}
-.pv-form-errors,.pv-form-success{padding:.875rem 1rem;border-radius:.25rem;}
-.pv-form-errors{color:#842029;background-color:#f8d7da;border:1px solid #f5c2c7;}
-.pv-form-success{color:#0f5132;background-color:#d1e7dd;border:1px solid #badbcc;}
-.pv-form-errors-list{margin:0;padding-left:1.1rem;}
-</style>
-CSS;
     }
 }

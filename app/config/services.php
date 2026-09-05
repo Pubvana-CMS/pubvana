@@ -265,7 +265,7 @@ $app->map('themes', function () use ($app) {
 |--------------------------------------------------------------------------
 | Manages content regions and block placements for the public theme system.
 | Regions are named areas in a page layout (header, sidebar, footer, etc.).
-| Blocks are content widgets placed into regions via the admin UI.
+| Blocks are content blocks placed into regions via the admin UI.
 |
 | Access anywhere with: $app->regions()
 */

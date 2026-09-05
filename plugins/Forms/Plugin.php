@@ -69,6 +69,14 @@ class Plugin implements PluginInterface
             'callable' => fn(array $context) => $app->forms()->renderContentEmbeds((string) ($context['content'] ?? '')),
         ]);
 
+        // ─── Public CSS ─────────────────────────────────────────────────
+
+        // Served from assets/css/forms.css
+        $adext->register('public.css', 'default', 'pubvana.forms', [
+            'url'      => '/assets/plugin/Forms/css/forms.css',
+            'priority' => 50,
+        ]);
+
         // ─── Block ──────────────────────────────────────────────────────
 
         $adext->register('block', 'available', 'pubvana.forms.form', [

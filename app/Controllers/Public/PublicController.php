@@ -10,9 +10,8 @@ use flight\Engine;
  * PublicController - Base controller for all public-facing routes.
  *
  * Builds the full layout data structure (site, header, nav, theme_options,
- * theme_regions, breadcrumbs, before/after_content, footer) and merges it
- * with route-specific data before rendering through the theme's Vision
- * template system.
+ * breadcrumbs, scripts_footer) and merges it with route-specific data before
+ * rendering through the theme's Vision template system.
  *
  * Child controllers call $this->render($template, $data) which injects
  * all global layout data. The layout template and its partials receive
@@ -206,7 +205,6 @@ abstract class PublicController
     protected function buildGlobalData(array $routeData = []): array
     {
         $siteName = $this->getSiteName();
-        $themeRegions = $this->buildThemeRegions();
 
         return [
             'site' => [
@@ -227,15 +225,10 @@ abstract class PublicController
             ],
             'nav'            => $this->getNavigation('primary'),
             'nav_footer'     => $this->getNavigation('footer'),
-            'before_content' => $themeRegions['before_content'] ?? '',
-            'after_content'  => $themeRegions['after_content'] ?? '',
             'comments_html'  => $this->buildCommentsHtml($routeData),
             'theme_options'  => $this->getThemeOptions(),
             'breadcrumbs'    => $this->buildBreadcrumbs($routeData),
-            'theme_regions'  => $themeRegions,
-            'footer' => [
-                'js' => $this->getPublicJs(),
-            ],
+            'scripts_footer' => $this->buildFooterScripts(),
         ];
     }
 
@@ -317,28 +310,6 @@ abstract class PublicController
         }
 
         return $nested;
-    }
-
-    // -----------------------------------------------------------------
-    // Theme Regions
-    // -----------------------------------------------------------------
-
-    /**
-     * Build rendered HTML for all theme regions.
-     *
-     * Returns region_id => rendered HTML. Platform regions (header, footer,
-     * navbar, before-content, after-content) and theme-declared regions
-     * (sidebar, footer-col-*, etc.) are all included.
-     *
-     * @return array<string, string> Region ID => HTML
-     */
-    protected function buildThemeRegions(): array
-    {
-        try {
-            return $this->app->regions()->buildAllRegions();
-        } catch (\Throwable) {
-            return [];
-        }
     }
 
     /**
@@ -450,6 +421,10 @@ abstract class PublicController
     /**
      * Collect CSS file paths registered by plugins via public.css adext.
      *
+     * Each plugin URL is checked against the active theme for a same-named
+     * replacement (see swapPluginCss()); when the theme ships one, the
+     * theme's URL is collected and the plugin's file does not load.
+     *
      * @return string[] URLs of CSS files to include in <head>
      */
     protected function getPublicCss(): array
@@ -458,10 +433,49 @@ abstract class PublicController
         foreach ($this->app->adext()->get('public.css', 'default') as $entry) {
             $url = $entry['url'] ?? '';
             if ($url !== '') {
-                $css[] = $url;
+                $css[] = $this->swapPluginCss($url);
             }
         }
         return $css;
+    }
+
+    /**
+     * Point a plugin CSS registration at the theme's replacement file when
+     * the theme ships one. Plugin URLs look like
+     * `/assets/plugin/{Name}/css/{file}.css`; the expected replacement is
+     * `themes/{active}/assets/{Name}/css/{file}.css`, served at
+     * `/assets/theme/{active}/{Name}/css/{file}.css`. No replacement means
+     * the plugin URL loads as registered.
+     *
+     * @param string $url A public.css registration URL
+     */
+    protected function swapPluginCss(string $url): string
+    {
+        if (preg_match('#^/assets/plugin/([^/]+)/([a-zA-Z0-9/._-]+)$#', $url, $m) !== 1) {
+            return $url;
+        }
+        if (str_contains($m[2], '..')) {
+            return $url;
+        }
+
+        $view = $this->app->view();
+        $themePath = ($view instanceof \Pubvana\Services\PluginView) ? $view->getThemePath() : null;
+        if ($themePath === null || $themePath === '') {
+            return $url;
+        }
+
+        // themePath points at themes/{name}/Views; the swap file sits in the
+        // theme root's assets/ for that plugin name.
+        $candidate = dirname($themePath)
+            . DIRECTORY_SEPARATOR . 'assets'
+            . DIRECTORY_SEPARATOR . $m[1]
+            . DIRECTORY_SEPARATOR . $m[2];
+        if (!is_file($candidate)) {
+            return $url;
+        }
+
+        $themeName = basename(dirname($themePath));
+        return '/assets/theme/' . $themeName . '/' . $m[1] . '/' . $m[2];
     }
 
     /**
@@ -479,6 +493,20 @@ abstract class PublicController
             }
         }
         return $js;
+    }
+
+    /**
+     * Assemble plugin scripts into one finished <script> block, the footer
+     * counterpart to buildHeadHtml(). Themes output it whole with
+     * {! scripts_footer !}; there is nothing left to loop over.
+     */
+    protected function buildFooterScripts(): string
+    {
+        $html = '';
+        foreach ($this->getPublicJs() as $js) {
+            $html .= '<script src="' . htmlspecialchars($js) . '"></script>' . "\n";
+        }
+        return $html;
     }
 
     protected function getPublicHead(): string

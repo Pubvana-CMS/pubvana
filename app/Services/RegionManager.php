@@ -11,7 +11,7 @@ use flight\Engine;
  * RegionManager - Manages content regions and block placements.
  *
  * Regions are named areas in a page layout (header, sidebar, footer, etc.).
- * Blocks are content widgets (recent posts, tag cloud, etc.) that get
+ * Blocks are content blocks (recent posts, tag cloud, etc.) that get
  * placed into regions. This service handles:
  *
  *   - Defining available regions (platform + theme)
@@ -379,29 +379,6 @@ class RegionManager
     // -----------------------------------------------------------------
     // Rendering
     // -----------------------------------------------------------------
-
-    /**
-     * Build rendered HTML for all regions.
-     *
-     * Queries placements for each region, calls each block's data provider,
-     * renders the block template via Vision, concatenates per region.
-     *
-     * @return array<string, string> region_id => rendered HTML (hyphens normalized to underscores)
-     */
-    public function buildAllRegions(): array
-    {
-        $regions = $this->getRegions();
-        $blocks = $this->getAvailableBlocks();
-        $output = [];
-
-        foreach (array_keys($regions) as $regionId) {
-            // Normalize hyphens to underscores for template access
-            $key = str_replace('-', '_', $regionId);
-            $output[$key] = $this->renderRegion($regionId, $blocks);
-        }
-
-        return $output;
-    }
 
     /**
      * Render all placed blocks for a single region.

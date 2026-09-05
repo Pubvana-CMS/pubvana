@@ -8,7 +8,7 @@ Forms is a form builder for Pubvana: admins build forms with a JSON field-defini
 
 - **Package:** `pubvana/forms` (`pubvana.json:2`), semver `0.1.1`, category `content`
 - **License:** MIT, matching the main project (repo `composer.json` declares `"license": "MIT"`)
-- **PHP floor:** not declared in the plugin; the main project requires PHP `^8.2` (repo `composer.json`), and the code stays within that floor (`match` at `Services/FormsService.php:308`, `str_starts_with` at `Services/FormsService.php:477`, typed static property `private static bool $styleEmitted` at `Services/FormsService.php:21`, `mixed` types)
+- **PHP floor:** not declared in the plugin; the main project requires PHP `^8.2` (repo `composer.json`), and the code stays within that floor (`match` at `Services/FormsService.php:308`, `str_starts_with` at `Services/FormsService.php:477`, `mixed` types)
 - **Namespace:** `Pubvana\Plugins\Forms` (`Plugin.php:5`), with `Controllers`, `Services`, `Models`, and `Database\Migrations` sub-namespaces
 - **Runtime dependencies (declared at the app level, not in the plugin):** `flightphp/active-record` (model base), `enlivenapp/migrations` (migration base), `ezyang/htmlpurifier` (optional, guarded by `class_exists` at `Services/FormsService.php:697`), PHPMailer through the core mailer (`$this->app->mailer()->sendHtml()`, `Services/FormsService.php:630`); core engine services used as `$app->forms()`, `db()`, `adext()`, `pluginLoader()`, `request()`, `session()`, `slugify`, `redirect`; core helper `csrf_field()`; config value `flight.base_url`
 - **Config:** `Config/Config.php`: `routePrepend` (`forms`), `per_page` (25), `submissions_per_page` (25), `rate_limit_seconds` (10)
@@ -24,7 +24,7 @@ Forms is a form builder for Pubvana: admins build forms with a JSON field-defini
 6. **Sanitize by field type in `sanitizeScalarValue()`.** `textarea` goes through HTMLPurifier (fallback `strip_tags`), `email` through `FILTER_SANITIZE_EMAIL`, everything else is trimmed and `strip_tags`-ed (`Services/FormsService.php:672-693`). Reason: submission payloads are stored raw in JSON and later echoed in the admin; they must arrive clean.
 7. **Never let a mail failure break a submission.** `dispatchNotifications()` swallows every `\Throwable` from the mailer (`Services/FormsService.php:628-634`). Reason: an SMTP hiccup must not lose a visitor's submission.
 8. **Always pass `_return_url` through `normalizeReturnUrl()` before redirecting.** It strips an allowed `flight.base_url` prefix, rejects foreign absolute URLs, and forces a leading `/` (`Services/FormsService.php:467-489`). Reason: raw referrer/return values would otherwise be an open-redirect vector.
-9. **Keep the inline style block emitted at most once per request.** `inlineStyleBlock()` uses a static flag and returns `''` on repeat calls (`Services/FormsService.php:732-738`). Reason: plugins directory assets are blocked by `.htaccess` (`Services/FormsService.php:729`), so the CSS is inlined; repeating it would bloat every embed.
+9. **Ship form styles through adext `public.css`, never inline.** Public CSS lives in `assets/css/forms.css` and registers in `Plugin.php` as type `public.css` (served at `/assets/plugin/Forms/css/forms.css`). Reason: direct `plugins/` access is blocked by `.htaccess`, but AssetService serves `assets/` URLs, so an inline `<style>` block only escapes browser caching and loses to the theme's stylesheet overrides.
 10. **Use the per-form session flash for error/values round-trips.** `storeSubmissionFlash()`/`consumeSubmissionFlash()` key `pubvana_forms_flash[formId]` (`Services/FormsService.php:491-503`), read back on the next render to repopulate the form (`Services/FormsService.php:221-228`). Reason: redirects after POST keep validation state without re-posting.
 11. **Start sessions defensively in the service.** `startSession()` only starts when no session is active and headers are not sent (`Services/FormsService.php:637-642`). Reason: the service may run before the core session layer initializes.
 
@@ -48,6 +48,7 @@ plugins/Forms/
 │   ├── FormField.php                  form_fields; forForm ordered, deleteForForm
 │   └── FormSubmission.php             form_submissions; find/paginate/count, dedicated timestamps
 ├── Services/FormsService.php          Singleton mapped as $app->forms() (Plugin.php:24-30); lifecycle owner
+├── assets/css/forms.css               Public styles (registered via adext public.css)
 ├── Plugin.php                         Entry point; routes, dashboard, content.render hook, block
 ├── pubvana.json                       Manifest; provides admin.menu (Forms/Submissions) and admin.dashboard
 ├── Views/
@@ -69,7 +70,7 @@ plugins/Forms/
 
 **Data model.** `forms` holds name, slug, description, status (`draft`/`published`), submit label, success message, notification emails; soft-deleted via `deleted_at`. `form_fields` holds per-field `type`, `name`, `label`, `help_text`, `placeholder`, `is_required`, `width`, `options_json`, `sort_order` (renders in this order). `form_submissions` stores `status`, `ip_address`, `user_agent`, `referrer_url`, and the sanitized payload as `payload_json`.
 
-**Render path.** `renderPublicForm()` resolves the field rows from the DB, builds the action URL from `flight.base_url` plus `routePrepend`, emits the one-shot inline style block, and renders each field by type (`text`, `email`, `phone`, `hidden`, `textarea`, `select`, `radio`, `checkbox`). The submit button label and success message come from the `forms` row (`Services/FormsService.php:219-334`).
+**Render path.** `renderPublicForm()` resolves the field rows from the DB, builds the action URL from `flight.base_url` plus `routePrepend`, and renders each field by type (`text`, `email`, `phone`, `hidden`, `textarea`, `select`, `radio`, `checkbox`). Public styling ships in `assets/css/forms.css` via adext `public.css`. The submit button label and success message come from the `forms` row (`Services/FormsService.php:219-334`).
 
 **Submission path.** The public controller loads the published form, delegates to `submitForm()` (honeypot, rate limit, per-field validation and sanitization), normalizes and redirects to `_return_url`, and stores a session flash so the next render repopulates values or errors (`Controllers/FormsPublicController.php:17-40`, `Services/FormsService.php:378-465`).
 

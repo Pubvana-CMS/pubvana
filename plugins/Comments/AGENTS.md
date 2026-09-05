@@ -42,6 +42,7 @@ plugins/Comments/
 │   └── Seeds/Seed.php                 Seed: 8 "Comments.*" settings rows + comments.moderate permission
 ├── Models/Comment.php                 comments table; find, paginate, count, status updates, depth walk
 ├── Services/CommentService.php        Singleton mapped as $app->comments() (Plugin.php:28-34); lifecycle owner
+├── assets/css/comments.css            Public styles (registered via adext public.css)
 ├── Plugin.php                         Entry point; routes, dashboard, block, host-manager glue
 ├── pubvana.json                       Manifest; provides admin.menu (Manage/Settings) and admin.dashboard
 ├── Views/
