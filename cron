@@ -6,15 +6,16 @@ declare(strict_types=1);
 /**
  * Cron entry point. System crontabs call this script on three schedules
  * (every minute, every 4 hours, every 24 hours) and it runs the
- * plugin-registered tasks for the given interval. See docs/cron.md for
+ * plugin-registered tasks for the given interval. See docs/Cron.md for
  * the crontab lines.
  *
  * Boots the full application (plugins included, so their Plugin.php
  * register() calls can add tasks through adext), then hands the interval
  * to CronService. Not web-exposed: the docroot is public/.
  *
- * Exit codes (from CronService): 0 ran fine or skipped via lock, 1 bad
- * interval, 2 ran but at least one task failed.
+ * Exit codes (from CronService): 0 tasks ran, 1 bad interval, 2 ran but
+ * at least one task failed, 3 skipped because the previous run still
+ * holds the lock.
  */
 
 use Pubvana\Services\CronService;

@@ -65,7 +65,7 @@ class Plugin implements PluginInterface
             ]);
         }
 
-        // Core cron system (docs/cron.md): daily task runs the auto-update
+        // Core cron system (docs/Cron.md): daily task runs the auto-update
         // chain. Only real failures throw, so CronService logs FAILED and
         // exits 2; "nothing to do" outcomes stay quiet.
         $adext->register('cron', '24h', 'pubvana.updates', [

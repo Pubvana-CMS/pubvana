@@ -83,13 +83,13 @@ schedule.
 ### Scheduled (cron)
 
 Updates registers a daily task with Pubvana's core cron system (the 24h
-slot, see `docs/cron.md`). The task runs the same chain as the command
+slot, see `docs/Cron.md`). The task runs the same chain as the command
 above: it applies a pending update only while automatic updates are
 switched on, refuses to cross breaking changes, and aborts unless the
 pre-update backup succeeds. With automatic updates off it just refreshes
 the release check.
 
-The cron system needs the three crontab lines from `docs/cron.md` added
+The cron system needs the three crontab lines from `docs/Cron.md` added
 to the site's crontab once; every plugin's tasks then run on those
 schedules. A run where this task fails lands in
 `writable/logs/cron.log` and exits with code 2, so deployment monitoring

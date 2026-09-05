@@ -13,7 +13,13 @@ Open an issue on [GitHub](https://github.com/Pubvana-CMS/pubvana/issues) with:
 - Steps to reproduce
 - PHP version, database, and web server
 
-**Security vulnerabilities** - use [GitHub Security Advisories](https://github.com/Pubvana-CMS/pubvana/security/advisories/new) instead of opening a public issue.
+If you're a developer and would like to fix the bug or add functionality we gratefully accept PRs. See below.
+
+---
+
+## Security Issues
+
+Found a security issue? Report it through [GitHub Security Advisories](https://github.com/Pubvana-CMS/pubvana/security/advisories/new) instead of a public issue.
 
 ---
 
@@ -25,44 +31,13 @@ Open an issue with the **feature request** label. Describe the problem you're tr
 
 ## Development Setup
 
-```bash
-git clone https://github.com/Pubvana-CMS/pubvana.git
-cd pubvana
-composer install
-```
-
-You'll need:
-
-- PHP 8.2+
-- MySQL 5.7+ or MariaDB 10.3+
-- Composer
-
-Create a `.env` from the sample and set `APP_ENV=development`. Then run:
-
-```bash
-php runway migrate:all
-```
-
-Create an admin user:
-
-```bash
-php runway shield:user create -n yourusername -e you@example.com
-php runway shield:user password -e you@example.com
-php runway shield:user addgroup -e you@example.com -g superadmin
-```
-
-Point your web server to the `public/` directory.
+See [README.md](README.md) for installation instructions.
 
 ---
 
-## Submitting Code
+## Submitting a PR
 
-1. Fork the repo on GitHub
-2. Create a branch from `main` (`git checkout -b fix/something`)
-3. Make your changes
-4. Test locally
-5. Commit with a clear message
-6. Push and open a pull request
+[CODING-STANDARDS.md](CODING-STANDARDS.md).
 
 ### What to include in your PR
 
@@ -72,44 +47,15 @@ Point your web server to the `public/` directory.
 
 ---
 
-## Code Conventions
+## Code Standards
 
-- **PHP 8.2+** - no 8.3 or 8.4 features (shared host compatibility)
-- **PSR-4 namespacing** - follow the existing `App\` namespace structure
-- **MVC** - controllers handle requests, models handle data, views handle display
-- **Inline JS only** - `.htaccess` blocks direct access to `plugins/`, so no external `.js` files in plugins
-- **Vision templates** - public-facing templates use `.tpl` (no PHP execution). Admin templates use `.php`
-- **Plugin prefix on views** - `$this->render('pubvana/blog/admin/index', ...)`
-- **Service facade** - register with `$app->map('name', ...)` in Plugin.php, access via `$app->name()`
-- **Tabler UI** - Bootstrap 5 admin with dark mode toggle
-- **All plugins implement `PluginInterface`**
-- **Language files** - add user-facing strings to `app/Language/en/` (or the relevant file)
-
----
-
-## Translations
-
-To help with translations:
-
-1. Fork the repo
-2. Edit the files in `app/Language/{locale}/`
-3. Submit a pull request
-
-See `app/Language/en/` for the source strings.
+Standards are in [CODING-STANDARDS.md](CODING-STANDARDS.md).
 
 ---
 
 ## Plugin and Theme Development
 
-Developer documentation is in the `docs/` directory:
-
-- [Architecture](docs/architecture.md) - system design, plugin loading, data flow
-- [Plugin Development](docs/plugin-development.md) - building plugins
-- [Plugin Integration](docs/plugin-integration.md) - converting Composer plugins to app-based
-- [Themes](docs/themes.md) - creating themes
-- [Vision](docs/vision.md) - template engine reference
-- [adext](docs/adext.md) - extension registry
-- [Runway](docs/runway.md) - CLI tooling
+<!-- TODO: publish developer documentation -->
 
 ---
 
@@ -119,7 +65,6 @@ Developer documentation is in the `docs/` directory:
 app/                  - Core code (controllers, services, models, views)
 plugins/              - One folder per plugin (each has pubvana.json)
 themes/               - Theme folders with Vision templates
-docs/                 - Developer documentation
 ```
 
-Plugin and theme assets are served by AssetService at `/assets/{type}/{name}/{path}`. Do not copy assets to `public/`.
+Plugin and theme assets are served by AssetService at `/assets/{type}/{name}/{path}`. Don't copy assets to `public/`.

@@ -73,4 +73,4 @@ Assets are served by the AssetService at `/assets/theme/default/{path}`; they ar
 
 ## See Also
 
-- `docs/` — build and extension documentation, including **docs/themes.md** for creating a new theme.
+- `docs/` — build and extension documentation, including **docs/Themes.md** for creating a new theme.

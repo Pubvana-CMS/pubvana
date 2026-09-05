@@ -25,17 +25,24 @@ use Throwable;
  *   ]);
  *
  * Each run:
- *   - Skips silently (exit 0) when a previous run of the same interval
- *     still holds its lock, so overlapping crontab hits never stack up.
+ *   - Skips (exit 3) when a previous run of the same interval still holds
+ *     its lock, so overlapping crontab hits never stack up. Skipped runs
+ *     log the skip and still call run_result callbacks.
  *   - Runs tasks in priority order (lowest first), each guarded by
  *     try/catch: one failing task never blocks the rest.
  *   - Appends one line per task to writable/logs/cron.log.
  *
+ * An optional 'run_result' callable per task receives the outcome of
+ * every completed run, skipped or not: the interval, the task key, the
+ * run's exit code, and that task's status (ok/failed/skipped), duration,
+ * and the Throwable when it failed. A throwing run_result is logged and
+ * never alters the run's exit code.
+ *
  * Lock files live in writable/cache/ (gitignored, like the logs).
  *
- * Exit codes: 0 ran fine (or skipped via lock), 1 bad interval, 2 the
- * run happened but at least one task failed. The `cron` script exits
- * with whatever run() returns.
+ * Exit codes: 0 tasks ran, 1 bad interval, 2 the run happened but at
+ * least one task failed, 3 the run skipped because the lock was held.
+ * The `cron` script exits with whatever run() returns.
  *
  * @package Pubvana\Services
  */
@@ -48,7 +55,7 @@ class CronService
      */
     public const INTERVALS = ['1m', '4h', '24h'];
 
-    /** Everything ran, or the run was skipped because the lock was held. */
+    /** Every task ran without failing. */
     public const EXIT_OK = 0;
 
     /** Bad interval, nothing ran. */
@@ -56,6 +63,9 @@ class CronService
 
     /** The run happened but at least one task failed. */
     public const EXIT_TASK_FAILED = 2;
+
+    /** The run skipped because a previous run of the interval holds the lock. */
+    public const EXIT_SKIPPED = 3;
 
     /** @var Engine<object> */
     private Engine $app;
@@ -83,7 +93,7 @@ class CronService
      * Run every task registered for an interval.
      *
      * @param string $interval One of CronService::INTERVALS
-     * @return int Exit code: EXIT_OK, EXIT_ERROR, or EXIT_TASK_FAILED
+     * @return int Exit code: EXIT_OK, EXIT_ERROR, EXIT_TASK_FAILED, or EXIT_SKIPPED
      */
     public function run(string $interval): int
     {
@@ -98,11 +108,15 @@ class CronService
         $lock = $this->acquireLock($interval);
         if ($lock === null) {
             $this->log($interval, 'run skipped: previous run still holds the lock');
-            return self::EXIT_OK;
+            $exitCode = self::EXIT_SKIPPED;
+            $this->notifyResults($interval, $exitCode, []);
+            return $exitCode;
         }
 
         try {
-            return $this->runTasks($interval);
+            $result = $this->runTasks($interval);
+            $this->notifyResults($interval, $result['exitCode'], $result['outcomes']);
+            return $result['exitCode'];
         } finally {
             flock($lock, LOCK_UN);
             fclose($lock);
@@ -113,17 +127,23 @@ class CronService
      * Execute the interval's tasks, isolating failures per task.
      *
      * @param string $interval The validated interval
-     * @return int EXIT_OK or EXIT_TASK_FAILED
+     * @return array{exitCode: int, outcomes: array<string, array{status: string, duration: ?float, error: ?Throwable}>}
      */
-    private function runTasks(string $interval): int
+    private function runTasks(string $interval): array
     {
         $tasks = $this->app->adext()->get('cron', $interval);
         $failed = 0;
+        $outcomes = [];
 
         foreach ($tasks as $key => $task) {
             $callable = $task['callable'] ?? null;
             if (!is_callable($callable)) {
                 $failed++;
+                $outcomes[$key] = [
+                    'status'   => 'failed',
+                    'duration' => null,
+                    'error'    => null,
+                ];
                 $this->log($interval, 'task ' . $key . ' FAILED: registered callable is not callable');
                 continue;
             }
@@ -131,10 +151,20 @@ class CronService
             $started = hrtime(true);
             try {
                 call_user_func($callable);
-                $elapsed = number_format((hrtime(true) - $started) / 1e9, 3, '.', '');
-                $this->log($interval, 'task ' . $key . ' ok (' . $elapsed . 's)');
+                $elapsed = (hrtime(true) - $started) / 1e9;
+                $outcomes[$key] = [
+                    'status'   => 'ok',
+                    'duration' => round($elapsed, 3),
+                    'error'    => null,
+                ];
+                $this->log($interval, 'task ' . $key . ' ok (' . number_format($elapsed, 3, '.', '') . 's)');
             } catch (Throwable $e) {
                 $failed++;
+                $outcomes[$key] = [
+                    'status'   => 'failed',
+                    'duration' => round((hrtime(true) - $started) / 1e9, 3),
+                    'error'    => $e,
+                ];
                 $this->log(
                     $interval,
                     'task ' . $key . ' FAILED: ' . get_class($e) . ': ' . $e->getMessage()
@@ -143,7 +173,53 @@ class CronService
             }
         }
 
-        return $failed > 0 ? self::EXIT_TASK_FAILED : self::EXIT_OK;
+        return [
+            'exitCode' => $failed > 0 ? self::EXIT_TASK_FAILED : self::EXIT_OK,
+            'outcomes' => $outcomes,
+        ];
+    }
+
+    /**
+     * Call each task's optional run_result callback with the run's outcome.
+     *
+     * The result is per-task: run exit code, task key, that task's status,
+     * duration, and the Throwable when it failed. Tasks without a callable
+     * run_result are ignored; a throwing one is logged and swallowed so the
+     * run's exit code is never changed downstream.
+     *
+     * @param string $interval
+     * @param int    $exitCode
+     * @param array<string, array{status: string, duration: ?float, error: ?Throwable}> $outcomes
+     */
+    private function notifyResults(string $interval, int $exitCode, array $outcomes): void
+    {
+        $tasks = $this->app->adext()->get('cron', $interval);
+
+        foreach ($tasks as $key => $task) {
+            $callback = $task['run_result'] ?? null;
+            if (!is_callable($callback)) {
+                continue;
+            }
+
+            $outcome = $outcomes[$key] ?? [
+                'status'   => 'skipped',
+                'duration' => null,
+                'error'    => null,
+            ];
+
+            try {
+                call_user_func($callback, [
+                    'interval'  => $interval,
+                    'task'      => $key,
+                    'exit_code' => $exitCode,
+                    'status'    => $outcome['status'],
+                    'duration'  => $outcome['duration'],
+                    'error'     => $outcome['error'],
+                ]);
+            } catch (Throwable $e) {
+                $this->log($interval, 'task ' . $key . ' run_result FAILED: ' . $e->getMessage());
+            }
+        }
     }
 
     /**

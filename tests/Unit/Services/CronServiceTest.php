@@ -167,7 +167,7 @@ final class CronServiceTest extends TestCase
 
         $service = $this->makeService($registry);
 
-        self::assertSame(CronService::EXIT_OK, $service->run('1m'));
+        self::assertSame(CronService::EXIT_SKIPPED, $service->run('1m'));
         self::assertSame([], $holder->calls);
 
         flock($handle, LOCK_UN);
@@ -223,5 +223,93 @@ final class CronServiceTest extends TestCase
 
         flock($handle, LOCK_UN);
         fclose($handle);
+    }
+
+    public function testRunResultReceivesOkOutcome(): void
+    {
+        $registry = new ExtensionRegistry();
+        $captured = [];
+        $registry->register('cron', '1m', 'pubvana.minute', [
+            'callable'   => fn (): null => null,
+            'run_result' => function (array $result) use (&$captured): void {
+                $captured = $result;
+            },
+        ]);
+
+        $service = $this->makeService($registry);
+
+        self::assertSame(CronService::EXIT_OK, $service->run('1m'));
+        self::assertSame('1m', $captured['interval']);
+        self::assertSame('pubvana.minute', $captured['task']);
+        self::assertSame(CronService::EXIT_OK, $captured['exit_code']);
+        self::assertSame('ok', $captured['status']);
+        self::assertNull($captured['error']);
+        self::assertIsFloat($captured['duration']);
+    }
+
+    public function testRunResultReceivesFailureWithThrowable(): void
+    {
+        $registry = new ExtensionRegistry();
+        $captured = [];
+        $boom = new RuntimeException('boom');
+        $registry->register('cron', '1m', 'pubvana.broken', [
+            'callable'   => fn (): never => throw $boom,
+            'run_result' => function (array $result) use (&$captured): void {
+                $captured = $result;
+            },
+        ]);
+
+        $service = $this->makeService($registry);
+
+        self::assertSame(CronService::EXIT_TASK_FAILED, $service->run('1m'));
+        self::assertSame(CronService::EXIT_TASK_FAILED, $captured['exit_code']);
+        self::assertSame('failed', $captured['status']);
+        self::assertSame($boom, $captured['error']);
+    }
+
+    public function testRunResultFiresWhenRunSkips(): void
+    {
+        $registry = new ExtensionRegistry();
+        $captured = [];
+        $registry->register('cron', '1m', 'pubvana.minute', [
+            'callable'   => fn (): null => null,
+            'run_result' => function (array $result) use (&$captured): void {
+                $captured = $result;
+            },
+        ]);
+
+        $handle = fopen($this->tmpDir . '/cron-1m.lock', 'c');
+        self::assertNotFalse($handle);
+        flock($handle, LOCK_EX | LOCK_NB);
+
+        $service = $this->makeService($registry);
+
+        self::assertSame(CronService::EXIT_SKIPPED, $service->run('1m'));
+        self::assertSame(CronService::EXIT_SKIPPED, $captured['exit_code']);
+        self::assertSame('skipped', $captured['status']);
+        self::assertNull($captured['error']);
+
+        flock($handle, LOCK_UN);
+        fclose($handle);
+    }
+
+    public function testRunResultIsOptionalAndIgnoredWhenMissing(): void
+    {
+        $service = $this->makeService(new ExtensionRegistry());
+
+        self::assertSame(CronService::EXIT_OK, $service->run('1m'));
+    }
+
+    public function testThrowingRunResultDoesNotChangeExitCode(): void
+    {
+        $registry = new ExtensionRegistry();
+        $registry->register('cron', '1m', 'pubvana.minute', [
+            'callable'   => fn (): null => null,
+            'run_result' => fn (array $result): never => throw new RuntimeException('result handler boom'),
+        ]);
+
+        $service = $this->makeService($registry);
+
+        self::assertSame(CronService::EXIT_OK, $service->run('1m'));
     }
 }

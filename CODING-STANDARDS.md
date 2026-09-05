@@ -1,29 +1,21 @@
 # Pubvana Coding Standards & Pre-Push Checklist
 
-This is the single source of truth for how Pubvana code must be written and
-what must pass before code leaves your machine. It supplements
-`CONTRIBUTING.md` (process) and `AGENTS.md` (agent workflow); where they
-conflict, this file wins for concrete, verifiable rules.
-
-Run the whole checklist before pushing. Every check has a command; every line
-is mandatory unless marked otherwise.
+We use the processes below to write Pubvana. When sending a PR we ask that you follow it too by running the checklist below.
 
 ---
 
-## 1. Static analysis (mandatory, both tools)
+## 1. Static analysis
 
-PHPStan owns general type/code checking. Psalm owns taint/security analysis.
-Run both. If either reports errors you introduced, fix them before pushing.
+We use PHPStan for general code analysis, Psalm for security, and PHPunit for tests, and lint for syntax. Run all of these before sending your PR.
 
 ### PHPStan, Level 8
 
 ```bash
 composer phpstan        # phpstan analyse  (phpstan.neon, level 8)
 ```
+If you're adding functionality that requires phpstan.neon to be updated or changed:
 
-No errors allowed. The 5 `ignoreErrors` entries in `phpstan.neon` are required;
-do not add new ones to hide real problems. `reportUnmatchedIgnoredErrors: true`
-stays on so stale ignores are caught.
+The 5 `ignoreErrors` entries in `phpstan.neon` are required for our framework. `reportUnmatchedIgnoredErrors: true` should not be changed.
 
 ### Psalm, taint analysis
 
@@ -31,20 +23,14 @@ stays on so stale ignores are caught.
 composer psalm          # psalm --no-progress --taint-analysis
 ```
 
-Psalm 6.4.0 is pinned in `require-dev` because newer versions require
-PHP >= 8.3.16 (the project floor is PHP ^8.2 and the build image ships
-8.3.6). Do not bump Psalm without confirming it runs on the build PHP.
+Psalm 6.4.0 is pinned in `require-dev` because newer versions need PHP >= 8.3.16; the minimum is PHP ^8.2 and the build image ships 8.3.6. Before bumping Psalm, confirm it runs on the build PHP.
 
-Taint analysis is enabled in `psalm.xml` (`runTaintAnalysis="true"`).
-`psalm-stubs.php` declares the Flight request accessors as taint sources so
-user input arriving through Flight's abstraction (not `$_GET`/`$_POST`) is
-traced. Use `@psalm-taint-source input` and only valid taint kinds; an
-invalid kind silently disables the annotation.
+Taint analysis is enabled in `psalm.xml` (`runTaintAnalysis="true"`). `psalm-stubs.php` declares the Flight request accessors as taint sources so user input arriving through Flight's abstraction (not `$_GET`/`$_POST`) is traced. We use `@psalm-taint-source input` and only valid taint kinds; an invalid kind silently disables the annotation.
 
 `psalm-baseline.xml` whitelists a small set of confirmed false positives
-(validated Media uploads). If a baselined occurrence is ever a real bug, fix
-the code, do not extend the baseline. Generation: `psalm --taint-analysis
---set-baseline=psalm-baseline.xml`.
+(validated Media uploads). If a baselined occurrence turns out to be a real
+bug, fix the code, don't extend the baseline. Regenerate with
+`psalm --taint-analysis --set-baseline=psalm-baseline.xml`.
 
 ### Syntax
 
@@ -52,32 +38,33 @@ the code, do not extend the baseline. Generation: `psalm --taint-analysis
 composer lint            # php -l over every PHP file in app/ and plugins/
 ```
 
-Adds nothing over the syntax check; new files must not introduce parse errors.
+A parse check. New files parse clean.
 
 ---
 
-## 2. Tests (mandatory once PHPUnit is set up)
+## 2. Tests
 
-Test runner is PHPUnit 11 (PHP ^8.2 compatible). A minimal `phpunit.xml` and
-`composer test` are part of the scaffolding; flesh out real coverage per test:
+Tests use PHPUnit 11. `composer test` runs them.
 
 ```bash
 composer test            # phpunit  (phpunit.xml, tests/)
 ```
 
-- Tests live in `tests/`, mirroring the class under test (`tests/Unit`,
-  `tests/Feature`, etc.).
-- Unit tests cover services and models in isolation; feature tests exercise
-  routes/controllers through the app.
-- New or changed behavior must ship with a test that fails without the change
-  and passes with it.
-- Do not skip a test to make CI green; skip only with a stated reason.
+Two suites, `tests/Unit` and `tests/Feature`, under the `Pubvana\Tests\`
+namespace. The base test case in `tests/Support/TestCase.php` provides
+`invoke()` for calling private/protected methods and `app()` for a fresh
+Flight engine with services mapped. DB-backed tests use an in-memory SQLite
+database (`tests/Support/Sqlite.php`) because ActiveRecord accepts any PDO
+and the migration runner is MySQL-only; call `recreate()` in setUp() when a
+test needs a clean slate.
+
+If you have to skip a test, tell us why.
 
 ---
 
 ## 3. Pre-push checklist
-
-Order matters; later steps assume earlier ones pass.
+Before a PR goes out we run these in order. Later steps assume earlier ones
+pass.
 
 1. `composer lint`            - no PHP parse errors
 2. `composer phpstan`         - Level 8, 0 errors
@@ -85,30 +72,35 @@ Order matters; later steps assume earlier ones pass.
 4. `composer test`            - full suite green (relevant tests at minimum)
 5. Review your own diff       - no secrets, no debug, no unrelated changes
 
-On CI (`.github/workflows/`): `phpstan.yml` and `psalm.yml` enforce the two
-static-analysis gates and `test.yml` enforces the PHPUnit suite on push/pull
-to `main`. Treat a red CI status like a blocked push.
+On CI (`.github/workflows/`): `phpstan.yml` and `psalm.yml` run the two
+static-analysis checks and `test.yml` runs the PHPUnit suite on push/pull to
+`main`. A red CI status blocks the push.
+---
+
+## 4. Standards we strive for
+
+These are the PSRs we target:
+
+- PSR-12: Coding Style
+- PSR-4: Autoloading
+- PSR-7: HTTP Messages
+- PSR-3: Logging
 
 ---
 
-## 4. Style rules that matter
+## 5. Our Coding Conventions
 
-- PHP floor is **8.2**. No 8.3/8.4 features (shared-host compatibility).
+- PHP 8.2. No 8.3/8.4 features (shared-host compatibility).
 - `declare(strict_types=1);` at the top of every class file.
-- PSR-4 autoloading (`Pubvana\` -> `app/`, `Pubvana\Plugins\` -> `plugins/`).
+- MVC layering: controllers handle requests, models handle data, views handle display.
 - Controllers: `{Package}AdminController` / `{Package}PublicController`.
-- Models: `Models/{Package}Model` extending `Pubvana\Models\AbstractModel`
-  with the table string in the constructor.
-- Services: `Service/{Package}Service` when singleton; `$app->map()` in
-  `Plugin.php`, accessed via `$app->{name}()`. First-class shorthand is fine
-  for non-singleton helpers.
-- Clean up after yourself: `php -l` every file you touch; no dead code; no
-  leftover debug output; no secrets in code, docs, or commits.
-
----
-
-## 5. Scope
-
-This file is maintained in sync with the actual CI/composer setup. If you add
-a new gate (tool, script, workflow), update this checklist and the CI in the
-same change, and note it here so the list never drifts from reality.
+- Models: `Models/{Package}Model` extending `Pubvana\Models\AbstractModel` with the table string in the constructor.
+- Services: `Service/{Package}Service` when singleton; `$app->map()` in `Plugin.php`, accessed via `$app->{name}()`. First-class shorthand is fine for non-singleton helpers.
+- Every plugin implements `PluginInterface`.
+- Vision templates: public-facing templates use `.tpl` (no PHP execution); admin templates use `.php`.
+- Plugin view prefix: `$this->render('pubvana/blog/admin/index', ...)`.
+- UI follows Tabler (Bootstrap 5 admin) with dark mode toggle.
+- Inline JS only in plugins; `.htaccess` blocks direct access to `plugins/`, so no external `.js` files in plugins.
+- User-facing strings go to `app/Language/en/` (or the relevant locale file).
+- We keep the tree clean: `php -l` what you touch, no dead code, no debug
+  leftovers, no secrets in code, docs, or commits.

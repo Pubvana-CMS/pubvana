@@ -299,7 +299,7 @@ class ExtensionRegistry
         'cron' => [
             'slots'    => ['1m', '4h', '24h'],
             'required' => ['callable'],
-            'optional' => ['label', 'priority'],
+            'optional' => ['label', 'priority', 'run_result'],
         ],
     ];
 
