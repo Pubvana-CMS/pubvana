@@ -33,12 +33,11 @@
     {% region 'before-content' %}
 
     {# Vision block: the page body. Every page template (home, post, page, ...) overrides this one slot. #}
+    {# Each page template renders the after-content region itself, so blocks land inside the #}
+    {# content column on split pages instead of full width below the whole layout. #}
     <main class="container my-4">
         {% block content %}{% endblock %}
     </main>
-
-    {# Region: content blocks placed below the main content area. #}
-    {% region 'after-content' %}
 
     {# Include: footer columns, footer region, and the copyright line. #}
     {% include 'partials/footer' %}

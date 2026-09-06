@@ -17,4 +17,7 @@
 {# Else branch: nothing published yet. #}
 <p>No posts yet.</p>
 {% endif %}
+
+{# Region: content blocks placed below the post list. Full width here: this template has no sidebar. #}
+{% region 'after-content' %}
 {% endblock %}

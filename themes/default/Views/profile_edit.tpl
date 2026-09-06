@@ -72,6 +72,9 @@
                 </div>
             </form>
         </div>
+
+        {# Region: content blocks placed below the form, inside the content column. #}
+        {% region 'after-content' %}
     </div>
     <div class="col-lg-4">
         {# Region: sidebar content blocks. #}

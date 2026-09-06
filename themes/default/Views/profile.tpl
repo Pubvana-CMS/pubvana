@@ -55,6 +55,9 @@
             <a href="/profile/{{ user.username }}/edit" class="pv-profile-btn">Edit Profile</a>
             {% endif %}
         </div>
+
+        {# Region: content blocks placed below the profile, inside the content column. #}
+        {% region 'after-content' %}
     </div>
     <div class="col-lg-4">
         {# Region: sidebar content blocks. #}

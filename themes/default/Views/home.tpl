@@ -13,6 +13,9 @@
     <div class="col-lg-8">
         {# Include: the post cards partial, partials/post-list.tpl. #}
         {% include 'partials/post-list' %}
+
+        {# Region: content blocks placed below the post list, inside the content column. #}
+        {% region 'after-content' %}
     </div>
 </div>
 {% else %}
@@ -21,6 +24,9 @@
     <div class="col-lg-8">
         {# Include: the post cards partial. #}
         {% include 'partials/post-list' %}
+
+        {# Region: content blocks placed below the post list, inside the content column. #}
+        {% region 'after-content' %}
     </div>
     <div class="col-lg-4">
         {# Region: sidebar content blocks. #}

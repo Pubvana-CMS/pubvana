@@ -19,6 +19,12 @@
                             "icon": "ti-key",
                             "priority": 10
                         },
+                        "fact-checking": {
+                            "label": "Fact Checking",
+                            "url": "/ai/fact-checks",
+                            "icon": "ti-certificate",
+                            "priority": 15
+                        },
                         "help": {
                             "label": "Help",
                             "url": "/ai/help",

@@ -24,6 +24,9 @@
         {# Else branch: no tags exist yet. #}
         <p>No tags found.</p>
         {% endif %}
+
+        {# Region: content blocks placed below the tag list, inside the content column. #}
+        {% region 'after-content' %}
     </div>
 </div>
 {% else %}
@@ -42,6 +45,9 @@
         {% else %}
         <p>No tags found.</p>
         {% endif %}
+
+        {# Region: content blocks placed below the tag list, inside the content column. #}
+        {% region 'after-content' %}
     </div>
     <div class="col-lg-4">
         {# Region: sidebar content blocks. #}

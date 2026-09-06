@@ -86,6 +86,9 @@
             Search the site by entering a term above. Results are pulled from the content sources enabled in the admin.
         </p>
         {% endif %}
+
+        {# Region: content blocks placed below the results, inside the content column. #}
+        {% region 'after-content' %}
     </div>
     <div class="col-lg-4">
         {# Region: sidebar content blocks. #}

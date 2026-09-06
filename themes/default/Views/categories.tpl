@@ -31,6 +31,9 @@
         {# Else branch: no categories exist yet. #}
         <p>No categories found.</p>
         {% endif %}
+
+        {# Region: content blocks placed below the category list, inside the content column. #}
+        {% region 'after-content' %}
     </div>
 </div>
 {% else %}
@@ -56,6 +59,9 @@
         {% else %}
         <p>No categories found.</p>
         {% endif %}
+
+        {# Region: content blocks placed below the category list, inside the content column. #}
+        {% region 'after-content' %}
     </div>
     <div class="col-lg-4">
         {# Region: sidebar content blocks. #}

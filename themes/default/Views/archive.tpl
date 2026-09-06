@@ -65,6 +65,9 @@
         {# Else branch: nothing published in this archive yet. #}
         <p>No posts found.</p>
         {% endif %}
+
+        {# Region: content blocks placed below the archive list, inside the content column. #}
+        {% region 'after-content' %}
     </div>
 </div>
 {% else %}
@@ -123,6 +126,9 @@
         {% else %}
         <p>No posts found.</p>
         {% endif %}
+
+        {# Region: content blocks placed below the archive list, inside the content column. #}
+        {% region 'after-content' %}
     </div>
     <div class="col-lg-4">
         {# Region: sidebar content blocks. #}

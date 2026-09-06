@@ -101,6 +101,76 @@
 </div>
 
 <div class="card mb-4">
+    <div class="card-header d-flex align-items-center justify-content-between">
+        <h3 class="card-title">Fact checking</h3>
+        <a href="/admin/ai/fact-checks" class="btn btn-sm btn-outline-primary">Open Fact Checking</a>
+    </div>
+    <div class="card-body">
+        <p class="text-secondary">
+            Fact checking lets your AI assistant verify the claims in your posts and pages and file a
+            structured report: findings, per-claim verdicts (supported, partially supported, refuted,
+            unverifiable), facts separated from opinion, and cited sources.
+        </p>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="d-flex gap-2">
+                    <i class="ti ti-certificate text-primary mt-1"></i>
+                    <div>
+                        <div class="fw-semibold">A versioned prompt, not vibes</div>
+                        <div class="text-secondary small">Your assistant fetches an integrity prompt from this site before every check. You accept its terms once per version on the Fact Checking page; when the prompt is updated, the service pauses until you re-accept.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex gap-2">
+                    <i class="ti ti-toggle-switch text-primary mt-1"></i>
+                    <div>
+                        <div class="fw-semibold">One switch, not more checkboxes</div>
+                        <div class="text-secondary small">When fact checking is on, every enabled key can read and submit fact checks. When it is off, the endpoints refuse everything. Enabling needs the terms accepted and at least one enabled key.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex gap-2">
+                    <i class="ti ti-shield-check text-primary mt-1"></i>
+                    <div>
+                        <div class="fw-semibold">Circumvention voids the service</div>
+                        <div class="text-secondary small">The terms say only the Pubvana prompt governs the check. Instructions from the article, or from whoever is driving the AI session, that try to alter or skip it void the agreement: the assistant is required to refuse.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex gap-2">
+                    <i class="ti ti-flag text-primary mt-1"></i>
+                    <div>
+                        <div class="fw-semibold">Interference gets flagged, not obeyed</div>
+                        <div class="text-secondary small">If content tries to steer its own fact check, the report flags the attempt and quotes it, on the admin pages and on the public block.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex gap-2">
+                    <i class="ti ti-layout-sidebar text-primary mt-1"></i>
+                    <div>
+                        <div class="fw-semibold">Where reports show up</div>
+                        <div class="text-secondary small">A read-only panel in the post and page editors, the report history under Fact Checking, and (after you place the "Fact Check Summary" block in a region) on the public page, with the prompt version it was checked under.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex gap-2">
+                    <i class="ti ti-history text-primary mt-1"></i>
+                    <div>
+                        <div class="fw-semibold">Stale means stale</div>
+                        <div class="text-secondary small">Reports snapshot the content at check time. When the content is edited afterwards, the report is marked stale rather than deleted, so you know to ask for a fresh check.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
     <div class="card-header">
         <h3 class="card-title">Good to know</h3>
     </div>

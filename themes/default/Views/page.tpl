@@ -33,6 +33,9 @@
 
         {# Raw output: the rendered comment thread (empty string when comments are off for pages). #}
         {! comments_html !}
+
+        {# Region: content blocks placed below the page, inside the content column. #}
+        {% region 'after-content' %}
     </div>
 </div>
 {# Homepage + theme option home_layout = sidebar-right: page body first, sidebar second. #}
@@ -61,6 +64,9 @@
 
         {# Raw output: the rendered comment thread. #}
         {! comments_html !}
+
+        {# Region: content blocks placed below the page, inside the content column. #}
+        {% region 'after-content' %}
     </div>
     <div class="col-lg-4">
         {# Region: sidebar content blocks. #}
@@ -91,5 +97,8 @@
 
 {# Raw output: the rendered comment thread. #}
 {! comments_html !}
+
+{# Region: content blocks placed below the page. Full width here: this branch has no sidebar. #}
+{% region 'after-content' %}
 {% endif %}
 {% endblock %}

@@ -5,6 +5,12 @@ All notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- AI Assistant: Fact Checking. Your external AI assistant (CLI, IDE, desktop) verifies the claims in posts and pages under a versioned integrity prompt it fetches from the site before every check, then files structured reports (findings, per-claim verdicts with cited sources, facts separated from opinion, interference flags). Site-level gate: the admin accepts the terms per prompt version and toggles the service on under Tools > AI Assistant > Fact Checking; enabling requires the accepted terms and at least one enabled key. Reports surface in a report history, a read-only panel in the post and page editors, and a placeable "Fact Check Summary" public block that marks stale reports after later edits
+- Unit test suite for the Fact Checking service (`tests/Unit/Plugins/AiAssistant/FactCheckServiceTest.php`)
+
 ## [3.0.0-alpha.3] - 2026-09-03
 
 ### Added

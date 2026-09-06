@@ -7,7 +7,9 @@ namespace Pubvana\Plugins\AiAssistant;
 use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 use Pubvana\Plugins\AiAssistant\Controllers\AiAdminController;
 use Pubvana\Plugins\AiAssistant\Controllers\AiApiController;
+use Pubvana\Plugins\AiAssistant\Controllers\AiFactCheckAdminController;
 use Pubvana\Plugins\AiAssistant\Services\AiService;
+use Pubvana\Plugins\AiAssistant\Services\FactCheckService;
 use Pubvana\Plugins\AiAssistant\Services\MarkdownService;
 use Pubvana\Services\PluginInterface;
 use flight\Engine;
@@ -16,13 +18,17 @@ use flight\net\Router;
 /**
  * AI Assistant Plugin - API-key ingestion endpoints and per-key grants.
  *
- * Registers the `ai` and `aiMarkdown` services, the admin screens under
- * Tools > AI Assistant, and the sessionless `/ai/*` REST API. Every
- * public endpoint authenticates with a per-request bearer API key;
- * grants are deny-all until an admin explicitly grants a permission to
- * a key. The core CSRF middleware skips `/ai/*` (see
+ * Registers the `ai`, `aiFactCheck`, and `aiMarkdown` services, the
+ * admin screens under Tools > AI Assistant, and the sessionless `/ai/*`
+ * REST API. Every public endpoint authenticates with a per-request
+ * bearer API key; grants are deny-all until an admin explicitly grants a
+ * permission to a key. The core CSRF middleware skips `/ai/*` (see
  * app/config/services.php) because these endpoints cannot present a
  * session token.
+ *
+ * Fact Checking is the one site-level feature: instead of per-key
+ * grants, its endpoints open when the admin accepts the prompt's terms
+ * and flips the toggle, and stay shut otherwise.
  *
  * @package Pubvana\Plugins\AiAssistant
  */
@@ -34,6 +40,14 @@ class Plugin implements PluginInterface
             static $instance = null;
             if ($instance === null) {
                 $instance = new AiService($app->db(), $app, $config);
+            }
+            return $instance;
+        });
+
+        $app->map('aiFactCheck', function () use ($app, $config) {
+            static $instance = null;
+            if ($instance === null) {
+                $instance = new FactCheckService($app->db(), $app, $config);
             }
             return $instance;
         });
@@ -62,6 +76,11 @@ class Plugin implements PluginInterface
             ['POST', '/ai/manage/keys/@id/delete',    [AiAdminController::class, 'deleteKey'],    [$manageMiddleware]],
             ['POST', '/ai/manage/author',             [AiAdminController::class, 'saveAuthor'],   [$manageMiddleware]],
             ['GET',  '/ai/help',                      [AiAdminController::class, 'help'],         [$manageMiddleware]],
+            ['GET',  '/ai/fact-checks',               [AiFactCheckAdminController::class, 'index'],       [$manageMiddleware]],
+            ['GET',  '/ai/fact-checks/@id',           [AiFactCheckAdminController::class, 'show'],        [$manageMiddleware]],
+            ['POST', '/ai/fact-checks/terms',         [AiFactCheckAdminController::class, 'acceptTerms'], [$manageMiddleware]],
+            ['POST', '/ai/fact-checks/toggle',        [AiFactCheckAdminController::class, 'toggle'],      [$manageMiddleware]],
+            ['POST', '/ai/fact-checks/@id/delete',    [AiFactCheckAdminController::class, 'delete'],      [$manageMiddleware]],
         ], 'pubvana.ai');
 
         // ─── Public REST API (sessionless, bearer-key auth) ─────────────
@@ -95,8 +114,42 @@ class Plugin implements PluginInterface
             ['POST', $prefix . '/navigation',                   [AiApiController::class, 'createNavigation']],
             ['POST', $prefix . '/navigation/@id/update',        [AiApiController::class, 'updateNavigation']],
             ['POST', $prefix . '/navigation/@id/delete',        [AiApiController::class, 'deleteNavigation']],
+            ['GET',  $prefix . '/fact-check/prompt',            [AiApiController::class, 'factCheckPrompt']],
+            ['GET',  $prefix . '/fact-checks',                  [AiApiController::class, 'factChecks']],
+            ['GET',  $prefix . '/fact-checks/@id',              [AiApiController::class, 'factCheck']],
+            ['POST', $prefix . '/posts/@id/fact-check',         [AiApiController::class, 'submitPostFactCheck']],
+            ['POST', $prefix . '/pages/@id/fact-check',         [AiApiController::class, 'submitPageFactCheck']],
             ['GET',  $prefix . '/broken-links',                 [AiApiController::class, 'brokenLinks']],
             ['GET',  $prefix . '/analytics',                    [AiApiController::class, 'analytics']],
         ], 'pubvana.ai');
+
+        // ─── Content Edit Panel (read-only, in Blog/Pages editors) ─────
+
+        $adext->register('content.edit.panel', 'default', 'pubvana.ai.factcheck', [
+            'label'    => 'Fact Check',
+            'priority' => 60,
+            'callable' => function (array $context) use ($app): string {
+                $contentType = ($context['content_type'] ?? '') === 'page' ? 'page' : 'post';
+                $contentId = (int) ($context['content_id'] ?? 0);
+
+                return $app->view()->fetch('pubvana/ai/admin/fact-check-panel', [
+                    'panel'       => $app->aiFactCheck()->panelData($contentType, $contentId),
+                    'content_id'  => $contentId,
+                ]);
+            },
+        ]);
+
+        // ─── Public Block: Fact Check Summary ──────────────────────────
+
+        $adext->register('block', 'available', 'pubvana.ai.fact-check-summary', [
+            'label'       => 'Fact Check Summary',
+            'description' => 'Shows the fact-check findings and verdict for the post or page being viewed. Renders nothing where no report exists.',
+            'provider'    => fn (array $options) => $app->aiFactCheck()->blockData($options),
+            'template'    => 'pubvana/ai/public/blocks/fact-check-summary',
+            'priority'    => 60,
+            'options'     => [
+                'title' => ['type' => 'input', 'label' => 'Title', 'default' => 'Fact Check'],
+            ],
+        ]);
     }
 }

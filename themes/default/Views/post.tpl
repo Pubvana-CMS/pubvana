@@ -59,6 +59,9 @@
 
         {# Raw output: the rendered comment thread (empty string when the Comments plugin is off). #}
         {! comments_html !}
+
+        {# Region: content blocks placed below the post, inside the content column. #}
+        {% region 'after-content' %}
     </div>
     <div class="col-lg-4">
         {# Region: sidebar content blocks. #}
@@ -117,6 +120,9 @@
 
         {# Raw output: the rendered comment thread. #}
         {! comments_html !}
+
+        {# Region: content blocks placed below the post, inside the content column. #}
+        {% region 'after-content' %}
     </div>
     <div class="col-lg-4">
         {# Region: sidebar content blocks. #}
