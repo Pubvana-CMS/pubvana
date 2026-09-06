@@ -93,6 +93,31 @@ abstract class PublicController
         // extends/includes/regions all resolve from the theme. The theme (and
         // PublicController) decides layout; a plugin never controls it.
         $view = $this->app->view();
+
+        // Sync the View basePath with the active theme from the database.
+        // services.php keys themePath off the 'active_theme' config key, which
+        // nothing sets, so it would stay 'default'. resolveTemplate() reads
+        // the DB (getActiveThemeName) and picks the right top-level file, but
+        // {% extends %}, {% include %}, and region block overrides resolve
+        // against themePath: without this sync, a themed child template
+        // renders inside the default theme's layout.
+        if ($view instanceof \Pubvana\Services\PluginView) {
+            try {
+                $activeTheme = $this->app->themes()->getActive();
+                if ($activeTheme !== null) {
+                    $activeThemePath = PROJECT_ROOT . DIRECTORY_SEPARATOR . 'themes'
+                        . DIRECTORY_SEPARATOR . $activeTheme->folder
+                        . DIRECTORY_SEPARATOR . 'Views';
+                    if ($view->getThemePath() !== rtrim($activeThemePath, DIRECTORY_SEPARATOR)) {
+                        $view->setThemePath($activeThemePath);
+                    }
+                }
+            } catch (\Throwable) {
+                // Themes table missing on fresh installs; boot already
+                // placed a fallback theme path.
+            }
+        }
+
         $templateFile = $this->resolveTemplate($template, $view);
 
         if ($view instanceof \Pubvana\Services\PluginView) {

@@ -301,6 +301,33 @@ class ExtensionRegistry
             'required' => ['callable'],
             'optional' => ['label', 'priority', 'run_result'],
         ],
+
+        /*
+        |------------------------------------------------------------------
+        | CSRF Exempt Type
+        |------------------------------------------------------------------
+        | Plugins register URL path prefixes whose state-changing requests
+        | skip CSRF validation, e.g. sessionless webhook and API endpoints
+        | that authenticate with per-request gateway signatures or bearer
+        | keys and cannot present a session token. The core CSRF gate in
+        | app/config/services.php reads these prefixes from the registry
+        | instead of a hardcoded path list.
+        |
+        | Registration (from a plugin's Plugin.php register()):
+        |   $adext->register('csrf.exempt', 'default', 'pubvana.mystore', [
+        |       'prefix' => '/store/webhook/',
+        |       'label'  => 'Digital Store webhooks',
+        |   ]);
+        |
+        | The prefix must be a path prefix ending in '/' unless the
+        | exemption targets one exact path. Admin child pages must not be
+        | registered here; they start with /admin and stay protected.
+        */
+        'csrf.exempt' => [
+            'slots'    => ['default'],
+            'required' => ['prefix'],
+            'optional' => ['label', 'description', 'priority'],
+        ],
     ];
 
     /**

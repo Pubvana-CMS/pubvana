@@ -459,12 +459,21 @@ $app->set('migrations', $pluginLoader->getMigrationConfig());
 // CSRF middleware starts AFTER plugins: it reads/writes session data and
 // must use the DB-backed session service from enlivenapp/flight-sessions.
 //
-// Sessionless API routes under /ai/* (AI Assistant plugin) are excluded.
-// Those endpoints authenticate with per-request bearer API keys, so they
-// can neither read nor present a CSRF token. Admin child pages like
-// /admin/ai/manage still start with /admin and remain protected.
-$aiRequestPath = (string) parse_url($app->request()->url ?? '/', PHP_URL_PATH);
-if (!str_starts_with($aiRequestPath, '/ai/')) {
+// Sessionless API and webhook paths registered under the csrf.exempt
+// extension type (e.g. the AI Assistant's /ai/* API) are excluded because
+// they authenticate with per-request bearer keys or gateway signatures and
+// cannot present a session CSRF token. Admin child pages still start with
+// /admin and remain protected.
+$requestPath = (string) parse_url($app->request()->url ?? '/', PHP_URL_PATH);
+$csrfExempt = false;
+foreach ($app->adext()->get('csrf.exempt', 'default') as $exempt) {
+    $prefix = $exempt['prefix'] ?? '';
+    if ($prefix !== '' && str_starts_with($requestPath, $prefix)) {
+        $csrfExempt = true;
+        break;
+    }
+}
+if (!$csrfExempt) {
     $csrf->before();
 }
 

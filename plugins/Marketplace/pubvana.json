@@ -1,0 +1,23 @@
+{
+    "name": "pubvana/marketplace",
+    "display_name": "Marketplace",
+    "description": "Companion app for the Pubvana Digital Store: browse the catalog on pubvanacms.com, push to your account-bound cart, pay there, then verify and install what you bought straight from this site.",
+    "category": "commerce",
+    "semver": "0.1.0",
+    "provides": {
+        "admin.menu": {
+            "tools": {
+                "marketplace": {
+                    "label": "Marketplace",
+                    "icon": "ti-shopping-bag",
+                    "url": "/marketplace",
+                    "priority": 50,
+                    "submenu": {
+                        "marketplace.catalog": { "label": "Catalog", "url": "/marketplace", "priority": 10 },
+                        "marketplace.purchases": { "label": "Purchases", "url": "/marketplace/purchases", "priority": 20 }
+                    }
+                }
+            }
+        }
+    }
+}

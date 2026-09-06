@@ -126,6 +126,7 @@ namespace flight {
  * @phpstan-method \Pubvana\Plugins\ActivityLog\Services\ActivityLogService activityLog()
      * @phpstan-method \Pubvana\Plugins\BrokenLinks\Services\BrokenLinksService brokenLinks()
      * @phpstan-method \Pubvana\Plugins\Updates\Services\UpdateService updates()
+     * @phpstan-method \Pubvana\Plugins\Marketplace\Services\MarketplaceService marketplace()
      */
     class Engine
     {
@@ -392,6 +393,12 @@ namespace Pubvana\Plugins\BrokenLinks\Services {
 
 namespace Pubvana\Plugins\Updates\Services {
     class UpdateService
+    {
+    }
+}
+
+namespace Pubvana\Plugins\Marketplace\Services {
+    class MarketplaceService
     {
     }
 }

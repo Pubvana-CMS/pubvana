@@ -1,0 +1,10 @@
+<?php
+
+return [
+    'routePrepend'    => 'marketplace',
+    'store_url'       => 'https://pubvanacms.com/store',
+    'api_timeout'     => 10,
+    'catalog_cache_ttl' => 3600,
+    'verify_days'     => 14,
+    'revalidate_days' => 90,
+];

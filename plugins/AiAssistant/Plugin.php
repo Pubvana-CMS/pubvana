@@ -22,9 +22,9 @@ use flight\net\Router;
  * admin screens under Tools > AI Assistant, and the sessionless `/ai/*`
  * REST API. Every public endpoint authenticates with a per-request
  * bearer API key; grants are deny-all until an admin explicitly grants a
- * permission to a key. The core CSRF middleware skips `/ai/*` (see
- * app/config/services.php) because these endpoints cannot present a
- * session token.
+ * permission to a key. The plugin registers its `/ai/*` prefix under the
+ * csrf.exempt extension type so the core CSRF middleware skips these
+ * sessionless endpoints (they cannot present a session token).
  *
  * Fact Checking is the one site-level feature: instead of per-key
  * grants, its endpoints open when the admin accepts the prompt's terms
@@ -62,6 +62,12 @@ class Plugin implements PluginInterface
 
         $adext = $app->adext();
         $prefix = $app->pluginLoader()->routePrefix('pubvana/ai');
+
+        // Exempt the sessionless /ai/* API from CSRF validation.
+        $adext->register('csrf.exempt', 'default', 'pubvana.ai', [
+            'prefix' => $prefix . '/',
+            'label'  => 'AI Assistant API',
+        ]);
 
         // Admin screens require the seeded ai.manage permission.
         $manageMiddleware = new PermissionMiddleware($app, 'ai.manage');

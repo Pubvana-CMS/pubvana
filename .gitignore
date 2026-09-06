@@ -6,6 +6,12 @@
 # Composer
 /vendor/
 
+
+# Pubvana's store
+/plugins/Pvstore/*
+
+#Pubvana's official theme
+/themes/official/*
 # testing
 .phpunit.cache/
 
