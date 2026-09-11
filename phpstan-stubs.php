@@ -451,3 +451,9 @@ namespace Pubvana\Plugins\Import\Services {
     {
     }
 }
+
+namespace Pubvana\Plugins\Pvstore\Services {
+    class PvstoreService
+    {
+    }
+}
