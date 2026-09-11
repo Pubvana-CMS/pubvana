@@ -281,19 +281,53 @@ class AdminController
 
         $adext = $this->app->adext();
 
+        $topNav = (array) ($this->app->get('admin.topNav') ?? []);
+        $nav = [];
+
+        foreach ($topNav as $navKey => $navDef) {
+            if (!is_array($navDef)) {
+                continue;
+            }
+
+            $navDef = (array) $navDef;
+            $entries = [];
+
+            foreach ((array) ($navDef['subLabels'] ?? []) as $labelKey => $labelDef) {
+                $labelDef = is_array($labelDef) ? $labelDef : [];
+                $links = $adext->get('admin.menu', $navKey . '.' . $labelKey);
+
+                if (!empty($links)) {
+                    $entries[] = [
+                        'type'  => 'label',
+                        'label' => (string) ($labelDef['label'] ?? $labelKey),
+                        'icon'  => (string) ($labelDef['icon'] ?? 'ti-point'),
+                        'items' => $links,
+                    ];
+                }
+            }
+
+            foreach ($adext->get('admin.menu', (string) $navKey) as $item) {
+                $entries[] = [
+                    'type' => 'item',
+                    'item' => $item,
+                ];
+            }
+
+            $nav[] = [
+                'key'     => (string) $navKey,
+                'label'   => (string) ($navDef['label'] ?? $navKey),
+                'icon'    => (string) ($navDef['icon'] ?? 'ti-point'),
+                'entries' => $entries,
+            ];
+        }
+
         $this->app->render('admin/layouts/admin', [
             'content'    => $content,
             'pageTitle'  => $data['pageTitle'] ?? 'Dashboard',
             'siteName'   => $this->app->get('CMS.siteName') ?? 'Pubvana',
             'user'       => $user,
             'userGroups' => $userGroups,
-            'menuSlots'  => [
-                'content'    => $adext->get('admin.menu', 'content'),
-                'appearance' => $adext->get('admin.menu', 'appearance'),
-                'tools'      => $adext->get('admin.menu', 'tools'),
-                'settings'   => $adext->get('admin.menu', 'settings'),
-                'plugins'    => $adext->get('admin.menu', 'plugins'),
-            ],
+            'nav'        => $nav,
         ]);
     }
 

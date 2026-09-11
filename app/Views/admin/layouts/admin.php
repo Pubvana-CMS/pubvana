@@ -18,7 +18,7 @@
  * @var string $siteName   Site name from config
  * @var object|null $user  Authenticated user entity
  * @var string $userGroups Comma-separated group names
- * @var array $menuSlots   Plugin-registered menu items by slot
+ * @var array $nav   Top nav items (from $topNav) with their labels and links
  */
 ?>
 <!doctype html>
@@ -109,179 +109,57 @@
                             </a>
                         </li>
 
-                        <!-- Content -->
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"
-                               data-bs-auto-close="outside" role="button" aria-expanded="false">
-                                <span class="nav-link-icon"><i class="ti ti-file-text"></i></span>
-                                <span class="nav-link-title">Content</span>
-                            </a>
-                            <div class="dropdown-menu">
-                                <?php if (!empty($menuSlots['content'])): ?>
-                                    <?php foreach ($menuSlots['content'] as $item): ?>
-                                        <?php if (!empty($item['submenu'])): ?>
-                                            <div class="dropend">
-                                                <a class="dropdown-item dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside">
-                                                    <i class="ti <?= htmlspecialchars($item['icon'] ?? 'ti-point') ?> me-2"></i><?= htmlspecialchars($item['label']) ?>
-                                                </a>
-                                                <div class="dropdown-menu">
-                                                    <?php foreach ($item['submenu'] as $sub): ?>
-                                                        <a class="dropdown-item" href="<?= htmlspecialchars($sub['url']) ?>">
-                                                            <i class="ti <?= htmlspecialchars($sub['icon'] ?? 'ti-point') ?> me-2"></i><?= htmlspecialchars($sub['label']) ?>
-                                                        </a>
-                                                    <?php endforeach; ?>
+                        <?php foreach ($nav as $navItem): ?>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"
+                                   data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                    <span class="nav-link-icon"><i class="ti <?= htmlspecialchars((string) ($navItem['icon'] ?? 'ti-point')) ?>"></i></span>
+                                    <span class="nav-link-title"><?= htmlspecialchars((string) ($navItem['label'] ?? '')) ?></span>
+                                </a>
+                                <div class="dropdown-menu">
+                                    <?php if (empty($navItem['entries'])): ?>
+                                        <span class="dropdown-header">Nothing in this section yet</span>
+                                    <?php else: ?>
+                                        <?php foreach ($navItem['entries'] as $entry): ?>
+                                            <?php if (($entry['type'] ?? '') === 'label'): ?>
+                                                <div class="dropend">
+                                                    <a class="dropdown-item dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                                                        <i class="ti <?= htmlspecialchars((string) ($entry['icon'] ?? 'ti-point')) ?> me-2"></i><?= htmlspecialchars((string) ($entry['label'] ?? '')) ?>
+                                                    </a>
+                                                    <div class="dropdown-menu">
+                                                        <?php foreach ($entry['items'] ?? [] as $link): ?>
+                                                            <a class="dropdown-item" href="<?= htmlspecialchars((string) ($link['url'] ?? '#')) ?>">
+                                                                <i class="ti <?= htmlspecialchars((string) ($link['icon'] ?? 'ti-point')) ?> me-2"></i><?= htmlspecialchars((string) ($link['label'] ?? '')) ?>
+                                                            </a>
+                                                        <?php endforeach; ?>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        <?php else: ?>
-                                            <a class="dropdown-item" href="<?= htmlspecialchars($item['url']) ?>">
-                                                <i class="ti <?= htmlspecialchars($item['icon'] ?? 'ti-point') ?> me-2"></i><?= htmlspecialchars($item['label']) ?>
-                                            </a>
-                                        <?php endif; ?>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <span class="dropdown-header">No content modules installed</span>
-                                <?php endif; ?>
-                            </div>
-                        </li>
-
-                        <!-- Appearance -->
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"
-                               data-bs-auto-close="outside" role="button" aria-expanded="false">
-                                <span class="nav-link-icon"><i class="ti ti-palette"></i></span>
-                                <span class="nav-link-title">Appearance</span>
-                            </a>
-                            <div class="dropdown-menu">
-                                <?php if (!empty($menuSlots['appearance'])): ?>
-                                    <?php foreach ($menuSlots['appearance'] as $item): ?>
-                                        <?php if (!empty($item['submenu'])): ?>
-                                            <div class="dropend">
-                                                <a class="dropdown-item dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside">
-                                                    <i class="ti <?= htmlspecialchars($item['icon'] ?? 'ti-point') ?> me-2"></i><?= htmlspecialchars($item['label']) ?>
-                                                </a>
-                                                <div class="dropdown-menu">
-                                                    <?php foreach ($item['submenu'] as $sub): ?>
-                                                        <a class="dropdown-item" href="<?= htmlspecialchars($sub['url']) ?>">
-                                                            <i class="ti <?= htmlspecialchars($sub['icon'] ?? 'ti-point') ?> me-2"></i><?= htmlspecialchars($sub['label']) ?>
+                                            <?php else: ?>
+                                                <?php $item = $entry['item']; ?>
+                                                <?php if (!empty($item['submenu'])): ?>
+                                                    <div class="dropend">
+                                                        <a class="dropdown-item dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                                                            <i class="ti <?= htmlspecialchars((string) ($item['icon'] ?? 'ti-point')) ?> me-2"></i><?= htmlspecialchars((string) ($item['label'] ?? '')) ?>
                                                         </a>
-                                                    <?php endforeach; ?>
-                                                </div>
-                                            </div>
-                                        <?php else: ?>
-                                            <a class="dropdown-item" href="<?= htmlspecialchars($item['url']) ?>">
-                                                <i class="ti <?= htmlspecialchars($item['icon'] ?? 'ti-point') ?> me-2"></i><?= htmlspecialchars($item['label']) ?>
-                                            </a>
-                                        <?php endif; ?>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <span class="dropdown-header">No appearance modules installed</span>
-                                <?php endif; ?>
-                            </div>
-                        </li>
-
-                        <!-- Plugins -->
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"
-                               data-bs-auto-close="outside" role="button" aria-expanded="false">
-                                <span class="nav-link-icon"><i class="ti ti-plug"></i></span>
-                                <span class="nav-link-title">Plugins</span>
-                            </a>
-                            <div class="dropdown-menu">
-                                <?php if (!empty($menuSlots['plugins'])): ?>
-                                    <?php foreach ($menuSlots['plugins'] as $item): ?>
-                                        <?php if (!empty($item['submenu'])): ?>
-                                            <div class="dropend">
-                                                <a class="dropdown-item dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside">
-                                                    <i class="ti <?= htmlspecialchars($item['icon'] ?? 'ti-point') ?> me-2"></i><?= htmlspecialchars($item['label']) ?>
-                                                </a>
-                                                <div class="dropdown-menu">
-                                                    <?php foreach ($item['submenu'] as $sub): ?>
-                                                        <a class="dropdown-item" href="<?= htmlspecialchars($sub['url']) ?>">
-                                                            <i class="ti <?= htmlspecialchars($sub['icon'] ?? 'ti-point') ?> me-2"></i><?= htmlspecialchars($sub['label']) ?>
-                                                        </a>
-                                                    <?php endforeach; ?>
-                                                </div>
-                                            </div>
-                                        <?php else: ?>
-                                            <a class="dropdown-item" href="<?= htmlspecialchars($item['url']) ?>">
-                                                <i class="ti <?= htmlspecialchars($item['icon'] ?? 'ti-point') ?> me-2"></i><?= htmlspecialchars($item['label']) ?>
-                                            </a>
-                                        <?php endif; ?>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <span class="dropdown-header">No plugins installed</span>
-                                <?php endif; ?>
-                            </div>
-                        </li>
-
-                        <!-- Tools -->
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"
-                               data-bs-auto-close="outside" role="button" aria-expanded="false">
-                                <span class="nav-link-icon"><i class="ti ti-tool"></i></span>
-                                <span class="nav-link-title">Tools</span>
-                            </a>
-                            <div class="dropdown-menu">
-                                <?php if (!empty($menuSlots['tools'])): ?>
-                                    <?php foreach ($menuSlots['tools'] as $item): ?>
-                                        <?php if (!empty($item['submenu'])): ?>
-                                            <div class="dropend">
-                                                <a class="dropdown-item dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside">
-                                                    <i class="ti <?= htmlspecialchars($item['icon'] ?? 'ti-point') ?> me-2"></i><?= htmlspecialchars($item['label']) ?>
-                                                </a>
-                                                <div class="dropdown-menu">
-                                                    <?php foreach ($item['submenu'] as $sub): ?>
-                                                        <a class="dropdown-item" href="<?= htmlspecialchars($sub['url']) ?>">
-                                                            <i class="ti <?= htmlspecialchars($sub['icon'] ?? 'ti-point') ?> me-2"></i><?= htmlspecialchars($sub['label']) ?>
-                                                        </a>
-                                                    <?php endforeach; ?>
-                                                </div>
-                                            </div>
-                                        <?php else: ?>
-                                            <a class="dropdown-item" href="<?= htmlspecialchars($item['url']) ?>">
-                                                <i class="ti <?= htmlspecialchars($item['icon'] ?? 'ti-point') ?> me-2"></i><?= htmlspecialchars($item['label']) ?>
-                                            </a>
-                                        <?php endif; ?>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <span class="dropdown-header">No tool modules installed</span>
-                                <?php endif; ?>
-                            </div>
-                        </li>
-
-                        <!-- Settings -->
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"
-                               data-bs-auto-close="outside" role="button" aria-expanded="false">
-                                <span class="nav-link-icon"><i class="ti ti-settings"></i></span>
-                                <span class="nav-link-title">Settings</span>
-                            </a>
-                            <div class="dropdown-menu">
-                                <!-- Plugin items: appended after core -->
-                                <?php if (!empty($menuSlots['settings'])): ?>
-                                    <?php foreach ($menuSlots['settings'] as $item): ?>
-                                        <?php if (!empty($item['submenu'])): ?>
-                                            <div class="dropend">
-                                                <a class="dropdown-item dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside">
-                                                    <i class="ti <?= htmlspecialchars($item['icon'] ?? 'ti-point') ?> me-2"></i><?= htmlspecialchars($item['label']) ?>
-                                                </a>
-                                                <div class="dropdown-menu">
-                                                    <?php foreach ($item['submenu'] as $sub): ?>
-                                                        <a class="dropdown-item" href="<?= htmlspecialchars($sub['url']) ?>">
-                                                            <i class="ti <?= htmlspecialchars($sub['icon'] ?? 'ti-point') ?> me-2"></i><?= htmlspecialchars($sub['label']) ?>
-                                                        </a>
-                                                    <?php endforeach; ?>
-                                                </div>
-                                            </div>
-                                        <?php else: ?>
-                                            <a class="dropdown-item" href="<?= htmlspecialchars($item['url']) ?>">
-                                                <i class="ti <?= htmlspecialchars($item['icon'] ?? 'ti-point') ?> me-2"></i><?= htmlspecialchars($item['label']) ?>
-                                            </a>
-                                        <?php endif; ?>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </div>
-                        </li>
+                                                        <div class="dropdown-menu">
+                                                            <?php foreach ($item['submenu'] as $sub): ?>
+                                                                <a class="dropdown-item" href="<?= htmlspecialchars((string) ($sub['url'] ?? '#')) ?>">
+                                                                    <i class="ti <?= htmlspecialchars((string) ($sub['icon'] ?? 'ti-point')) ?> me-2"></i><?= htmlspecialchars((string) ($sub['label'] ?? '')) ?>
+                                                                </a>
+                                                            <?php endforeach; ?>
+                                                        </div>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <a class="dropdown-item" href="<?= htmlspecialchars((string) ($item['url'] ?? '#')) ?>">
+                                                        <i class="ti <?= htmlspecialchars((string) ($item['icon'] ?? 'ti-point')) ?> me-2"></i><?= htmlspecialchars((string) ($item['label'] ?? '')) ?>
+                                                    </a>
+                                                <?php endif; ?>
+                                            <?php endif; ?>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </div>
+                            </li>
+                        <?php endforeach; ?>
 
                     </ul>
                 </div>

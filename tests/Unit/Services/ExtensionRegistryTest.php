@@ -110,6 +110,47 @@ final class ExtensionRegistryTest extends TestCase
         self::assertFalse($registry->has('admin.menu', 'not-a-slot'));
     }
 
+    public function testDottedSlotRegistersAndRetrieves(): void
+    {
+        $registry = new ExtensionRegistry();
+
+        $registry->register('admin.menu', 'tools.links', 'pubvana.brokenlinks', [
+            'label'    => 'Broken Links',
+            'icon'     => 'ti-link-off',
+            'url'      => '/broken-links',
+            'priority' => 30,
+        ]);
+
+        $items = $registry->get('admin.menu', 'tools.links');
+        self::assertCount(1, $items);
+        self::assertSame('Broken Links', $items['pubvana.brokenlinks']['label']);
+        self::assertSame('/admin/broken-links', $items['pubvana.brokenlinks']['url']);
+    }
+
+    public function testDottedSlotWithUnknownParentIsRejected(): void
+    {
+        $registry = new ExtensionRegistry();
+        $registry->register('admin.menu', 'foo.bar', 'pubvana.x', ['label' => 'X', 'url' => '/x']);
+
+        self::assertFalse($registry->has('admin.menu', 'foo.bar'));
+    }
+
+    public function testDottedSlotWithEmptyLabelIsRejected(): void
+    {
+        $registry = new ExtensionRegistry();
+        $registry->register('admin.menu', 'tools.', 'pubvana.x', ['label' => 'X', 'url' => '/x']);
+
+        self::assertFalse($registry->has('admin.menu', 'tools.'));
+    }
+
+    public function testDottedSlotRejectedForNonAdminMenuTypes(): void
+    {
+        $registry = new ExtensionRegistry();
+        $registry->register('public.nav', 'main.x', 'pubvana.x', ['label' => 'X', 'url' => '/x']);
+
+        self::assertFalse($registry->has('public.nav', 'main.x'));
+    }
+
     public function testMissingRequiredKeyIsRejected(): void
     {
         $registry = new ExtensionRegistry();

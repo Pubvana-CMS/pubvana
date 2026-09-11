@@ -1,6 +1,6 @@
 <?php
 /**
- * Email settings page (Tools > Email) - standalone, not a tab.
+ * Email settings page (Settings > Email) - standalone, not a tab.
  *
  * @var string $pageTitle
  * @var array<int, array<string, mixed>> $fields Resolved field definitions

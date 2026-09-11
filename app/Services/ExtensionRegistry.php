@@ -59,6 +59,10 @@ class ExtensionRegistry
         | These are for the admin area. URLs and route paths auto-get /admin prefix.
         */
         'admin.menu' => [
+            // A slot is either a top-level Nav Item in $topNav
+            // (core-admin.php, e.g. 'tools' for standalone items) or a
+            // dotted 'parent.label' slot registering a Link under a Label
+            // declared in $topNav (e.g. 'tools.links'). Labels cannot nest.
             'slots'    => ['content', 'appearance', 'tools', 'settings', 'plugins'],
             'required' => ['label', 'url'],
             'optional' => ['icon', 'priority', 'submenu', 'route', 'middleware', 'core'],
@@ -72,7 +76,7 @@ class ExtensionRegistry
             // Settings pages. Each contribution becomes a tab on the
             // settings page (slot 'general', the tabbed page at
             // /admin/settings) or a standalone page owned by its
-            // controller (slot 'email', the Tools > Email page). Its
+            // controller (slot 'email', the Settings > Email page). Its
             // fields[] entries declare the settings it owns (key must be
             // namespaced dot notation). Declared keys are the ONLY keys
             // savable through the settings UI - undeclared keys
@@ -427,7 +431,19 @@ class ExtensionRegistry
 
         $schema = self::TYPES[$type];
 
-        if (!in_array($slot, $schema['slots'], true)) {
+        $slotOk = in_array($slot, $schema['slots'], true);
+
+        // admin.menu also accepts dotted 'parent.label' slots; the parent
+        // must be a known Nav Item and the label must be non-empty. Labels
+        // themselves are validated against $topNav when the menu is built.
+        if (!$slotOk && $type === 'admin.menu' && str_contains($slot, '.')) {
+            $parts = explode('.', $slot, 2);
+            if (in_array($parts[0], $schema['slots'], true) && $parts[1] !== '') {
+                $slotOk = true;
+            }
+        }
+
+        if (!$slotOk) {
             $allowed = implode(', ', $schema['slots']);
             error_log("ExtensionRegistry: unknown slot '{$slot}' for type '{$type}'. Allowed: {$allowed}");
             return;

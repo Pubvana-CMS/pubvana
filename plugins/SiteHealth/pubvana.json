@@ -6,7 +6,7 @@
     "semver": "0.1.0",
     "provides": {
         "admin.menu": {
-            "tools": {
+            "tools.reports": {
                 "site-health": {
                     "label": "Site Health",
                     "url": "/site-health",

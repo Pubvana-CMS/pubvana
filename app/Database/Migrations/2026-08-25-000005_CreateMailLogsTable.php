@@ -10,7 +10,7 @@ use Enlivenapp\Migrations\Services\Migration;
  * CreateMailLogsTable - Migration for the mail_logs table.
  *
  * One row per outbound message attempt, written by the Mailer service on
- * every send. Used by the admin Email page (Tools > Email) for the
+ * every send. Used by the admin Email page (Settings > Email) for the
  * read-only recent-sends list.
  *
  * Schema:

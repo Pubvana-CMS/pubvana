@@ -7,7 +7,7 @@ namespace Pubvana\Controllers\Admin;
 use flight\Engine;
 
 /**
- * EmailAdminController - SMTP settings (Tools > Email).
+ * EmailAdminController - SMTP settings (Settings > Email).
  *
  * Thin MVC controller: index() renders the form and recent-sends list,
  * save() hands the posted array to the Mailer service (which validates,

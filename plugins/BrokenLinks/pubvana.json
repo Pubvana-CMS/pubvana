@@ -6,7 +6,7 @@
     "semver": "0.1.0",
     "provides": {
         "admin.menu": {
-            "tools": {
+            "tools.links": {
                 "broken-links": {
                     "label": "Broken Links",
                     "url": "/broken-links",

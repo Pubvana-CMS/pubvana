@@ -39,15 +39,119 @@ $adext = $app->adext();
 
 /*
 |--------------------------------------------------------------------------
+| Top Nav Items - Admin Menu Declaration
+|--------------------------------------------------------------------------
+| The admin menu is built from this protected variable, which cannot be
+| changed at runtime. It is the single authority for what Nav Items exist
+| and in what order. Each Nav Item declares its label, icon, priority and
+| the Labels it hosts (subLabels).
+|
+| Labels are the one level of grouping under a Nav Item. They are the
+| anchors plugins register Links against with dotted slots, for example:
+|   $adext->register('admin.menu', 'settings.general', 'pubvana.x', [...] );
+|   $adext->register('admin.menu', 'tools.links', 'pubvana.x', [...] );
+|
+| Depth stops at Nav Item -> Label -> Link. Labels cannot be nested.
+| plugins add Links under existing Labels, or standalone items on 
+| the Nav Item slot itself; they cannot declare Nav Items or Labels. 
+| Only core changes this array.
+*/
+$topNav = [
+    'content' => [
+        'label'     => 'Content',
+        'icon'      => 'ti-file-text',
+        'priority'  => 1,
+        'core'      => true,
+        'subLabels' => [],
+    ],
+    'appearance' => [
+        'label'     => 'Appearance',
+        'icon'      => 'ti-palette',
+        'priority'  => 2,
+        'core'      => true,
+        'subLabels' => [],
+    ],
+    'plugins' => [
+        'label'     => 'Plugins',
+        'icon'      => 'ti-plug',
+        'priority'  => 3,
+        'core'      => true,
+        'subLabels' => [],
+    ],
+    'tools' => [
+        'label'     => 'Tools',
+        'icon'      => 'ti-tool',
+        'priority'  => 4,
+        'core'      => true,
+        'subLabels' => [
+            'links' => [
+                'label'    => 'Links',
+                'icon'     => 'ti-link',
+                'priority' => 1,
+                'core'     => true,
+            ],
+            'reports' => [
+                'label'    => 'Reports',
+                'icon'     => 'ti-report-analytics',
+                'priority' => 2,
+                'core'     => true,
+            ],
+            'maintenance' => [
+                'label'    => 'Maintenance',
+                'icon'     => 'ti-tools',
+                'priority' => 3,
+                'core'     => true,
+            ],
+        ],
+    ],
+    'settings' => [
+        'label'     => 'Settings',
+        'icon'      => 'ti-settings',
+        'priority'  => 5,
+        'core'      => true,
+        'subLabels' => [
+            'general' => [
+                'label'    => 'General',
+                'icon'     => 'ti-settings',
+                'priority' => 1,
+                'core'     => true,
+            ],
+            'access' => [
+                'label'    => 'Access',
+                'icon'     => 'ti-user-shield',
+                'priority' => 2,
+                'core'     => true,
+            ],
+            'captcha' => [
+                'label'    => 'Captcha',
+                'icon'     => 'ti-shield-check',
+                'priority' => 3,
+                'core'     => true,
+            ],
+            'email' => [
+                'label'    => 'Email',
+                'icon'     => 'ti-mail',
+                'priority' => 4,
+                'core'     => true,
+            ],
+        ],
+    ],
+];
+
+// Expose the declaration to the admin area for menu building.
+$app->set('admin.topNav', $topNav);
+
+/*
+|--------------------------------------------------------------------------
 | Admin Menu Items
 |--------------------------------------------------------------------------
-| Register core admin menu items. These are core items
-| and cannot be overridden by plugins. Plugins can ADD to the slots,
-| but cannot modify or remove these items.
+| Register core admin menu items under their Labels (dotted slots that
+| mirror $topNav). These are core items and cannot be overridden by
+| plugins. Plugins can ADD to the slots, but cannot modify or remove
+| these items.
 */
 
-// Batch registration - single call per slot
-$adext->register('admin.menu', 'settings', [
+$adext->register('admin.menu', 'settings.general', [
     'pubvana.settings' => [
         'label'    => 'General',
         'icon'     => 'ti-settings',
@@ -55,39 +159,55 @@ $adext->register('admin.menu', 'settings', [
         'priority' => 1,
         'core'     => true,
     ],
-    'pubvana.login_sec' => [
+]);
+
+$adext->register('admin.menu', 'settings.access', [
+    'pubvana.login' => [
         'label'    => 'Login',
         'icon'     => 'ti-login',
         'url'      => '/login-sec',
-        'priority' => 2,
-        'core'     => true,
-    ],
-    'pubvana.captcha' => [
-        'label'    => 'Captcha',
-        'icon'     => 'ti-shield-check',
-        'url'      => '/captcha',
-        'priority' => 3,
+        'priority' => 10,
         'core'     => true,
     ],
     'pubvana.users' => [
         'label'    => 'Users',
         'icon'     => 'ti-users',
         'url'      => '/users',
-        'priority' => 10,
+        'priority' => 20,
         'core'     => true,
     ],
     'pubvana.groups' => [
         'label'    => 'Groups',
         'icon'     => 'ti-users-group',
         'url'      => '/groups',
-        'priority' => 11,
+        'priority' => 30,
         'core'     => true,
     ],
     'pubvana.permissions' => [
         'label'    => 'Permissions',
         'icon'     => 'ti-lock',
         'url'      => '/permissions',
-        'priority' => 12,
+        'priority' => 40,
+        'core'     => true,
+    ],
+]);
+
+$adext->register('admin.menu', 'settings.captcha', [
+    'pubvana.captcha' => [
+        'label'    => 'Captcha',
+        'icon'     => 'ti-shield-check',
+        'url'      => '/captcha',
+        'priority' => 1,
+        'core'     => true,
+    ],
+]);
+
+$adext->register('admin.menu', 'settings.email', [
+    'pubvana.cms.mail' => [
+        'label'    => 'Email',
+        'icon'     => 'ti-mail',
+        'url'      => '/email',
+        'priority' => 1,
         'core'     => true,
     ],
 ]);
@@ -104,7 +224,7 @@ $adext->register('admin.menu', 'plugins', 'pubvana.plugins', [
     'label'    => 'Manage',
     'icon'     => 'ti-puzzle',
     'url'      => '/plugins',
-    'priority' => 10,
+    'priority' => 1,
     'core'     => true,
 ]);
 
@@ -120,7 +240,7 @@ $adext->register('admin.menu', 'appearance', 'pubvana.themes', [
     'label'    => 'Themes',
     'icon'     => 'ti-palette',
     'url'      => '/themes',
-    'priority' => 10,
+    'priority' => 2,
     'submenu'  => [
         'list' => [
             'label'    => 'All Themes',
@@ -139,22 +259,7 @@ $adext->register('admin.menu', 'appearance', 'pubvana.navigation', [
     'label'    => 'Navigation',
     'icon'     => 'ti-menu-2',
     'url'      => '/navigation',
-    'priority' => 20,
-]);
-
-/*
-|--------------------------------------------------------------------------
-| Tools Menu Item
-|--------------------------------------------------------------------------
-| Outbound mail lives in the Tools slot, alongside plugin tools items
-| (e.g. Redirects' URL Manager). Serves the standalone email page.
-*/
-$adext->register('admin.menu', 'tools', 'pubvana.cms.mail', [
-    'label'    => 'Email',
-    'icon'     => 'ti-mail',
-    'url'      => '/email',
-    'priority' => 30,
-    'core'     => true,
+    'priority' => 1,
 ]);
 
 /*
@@ -265,7 +370,7 @@ $adext->addRoutes('admin', [
     ['POST', '/captcha/save',  [CaptchaAdminController::class, 'save'],  [$authMiddleware]],
 ], 'pubvana.core', true);
 
-// Email (SMTP settings - Tools > Email)
+// Email (SMTP settings - Settings > Email)
 $adext->addRoutes('admin', [
     ['GET',  '/email',       [EmailAdminController::class, 'index'], [$authMiddleware, $forceResetMiddleware]],
     ['POST', '/email/save',  [EmailAdminController::class, 'save'],  [$authMiddleware]],
@@ -393,7 +498,7 @@ $adext->register('admin.settings', 'general', 'pubvana.cms.site', [
 |--------------------------------------------------------------------------
 | Email Settings Declarations
 |--------------------------------------------------------------------------
-| The standalone Tools > Email page. These Mail.* keys are the ONLY email
+| The standalone Settings > Email page. These Mail.* keys are the ONLY email
 | keys savable through the settings UI. Mail.username / Mail.password are
 | the exception to the no-secrets-in-store rule: the Mailer service keeps
 | the password encrypted at rest (AES, keyed by SESSION_ENCRYPTION_KEY).
@@ -478,7 +583,7 @@ $adext->register('admin.settings', 'email', 'pubvana.cms.mail', [
 |   Shield.remember_me        -> session.allow_remembering
 |
 | Email 2FA, email activation, and magic link need a working SMTP setup
-| (Tools > Email); the Login page says so next to those toggles.
+| (Settings > Email); the Login page says so next to those toggles.
 */
 $adext->register('admin.settings', 'login_sec', 'pubvana.cms.login_sec', [
     'label'       => 'Login',
@@ -497,7 +602,7 @@ $adext->register('admin.settings', 'login_sec', 'pubvana.cms.login_sec', [
             'label'       => 'Magic link login',
             'type'        => 'checkbox',
             'default'     => false,
-            'description' => 'People can sign in with a one-time link emailed to them instead of typing a password. Needs email delivery set up (Tools > Email).',
+            'description' => 'People can sign in with a one-time link emailed to them instead of typing a password. Needs email delivery set up (Settings > Email).',
         ],
         [
             'key'         => 'Shield.remember_me',
@@ -511,14 +616,14 @@ $adext->register('admin.settings', 'login_sec', 'pubvana.cms.login_sec', [
             'label'       => 'Email two-factor (2FA)',
             'type'        => 'checkbox',
             'default'     => false,
-            'description' => 'Sign-in becomes two steps: after the password, users enter a one-time code emailed to them. A stolen password alone cannot get into the account. Needs email delivery set up (Tools > Email).',
+            'description' => 'Sign-in becomes two steps: after the password, users enter a one-time code emailed to them. A stolen password alone cannot get into the account. Needs email delivery set up (Settings > Email).',
         ],
         [
             'key'         => 'Shield.email_activation',
             'label'       => 'Email activation on register',
             'type'        => 'checkbox',
             'default'     => false,
-            'description' => 'New accounts start turned off. New users get an email with an activation link and can sign in only after clicking it. Needs email delivery set up (Tools > Email).',
+            'description' => 'New accounts start turned off. New users get an email with an activation link and can sign in only after clicking it. Needs email delivery set up (Settings > Email).',
         ],
     ],
 ]);
