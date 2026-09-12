@@ -279,7 +279,7 @@ class CommentService
      */
     private function resolveTemplate(\Pubvana\Services\PluginView $view): string
     {
-        $file = 'pubvana/comments/public/comments';
+        $file = 'pubvana/comments/comments';
 
         $parts = explode('/', $file);
         if (count($parts) < 3) {
@@ -287,7 +287,6 @@ class CommentService
         }
 
         $packageName = $parts[0] . '/' . $parts[1];
-        $relativePath = implode('/', array_slice($parts, 2)) . '.tpl';
         $prefixedPath = $file . '.tpl';
 
         $appViewsPath = $this->app->get('flight.views.path') ?? PROJECT_ROOT . '/app/Views';
@@ -306,7 +305,7 @@ class CommentService
 
         $pluginViewPath = $view->getPluginPath($packageName);
         if ($pluginViewPath !== null) {
-            $pluginFile = $pluginViewPath . DIRECTORY_SEPARATOR . $relativePath;
+            $pluginFile = $pluginViewPath . DIRECTORY_SEPARATOR . $prefixedPath;
             if (is_file($pluginFile)) {
                 return $pluginFile;
             }

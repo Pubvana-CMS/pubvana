@@ -12,16 +12,6 @@
                 "label": "Layout",
                 "type": "group",
                 "fields": {
-                    "home_layout": {
-                        "type": "select",
-                        "label": "Homepage Layout",
-                        "default": "full-width",
-                        "choices": {
-                            "full-width": "Full Width",
-                            "sidebar-right": "Sidebar Right",
-                            "sidebar-left": "Sidebar Left"
-                        }
-                    },
                     "blog_layout": {
                         "type": "select",
                         "label": "Blog Layout",
@@ -29,6 +19,16 @@
                         "choices": {
                             "sidebar-right": "Sidebar Right",
                             "sidebar-left": "Sidebar Left"
+                        }
+                    },
+                    "page_sidebar": {
+                        "type": "select",
+                        "label": "Show Sidebar On",
+                        "default": "not_home",
+                        "choices": {
+                            "not_home": "All Pages Except Home",
+                            "home": "Home Only",
+                            "none": "Nowhere"
                         }
                     }
                 }
@@ -83,7 +83,7 @@
             {
                 "id": "sidebar",
                 "label": "Sidebar",
-                "description": "Right sidebar on archive and single post pages",
+                "description": "Sidebar blocks, shown on pages per the Show Sidebar On layout option",
                 "fallback": "after-content"
             },
             {

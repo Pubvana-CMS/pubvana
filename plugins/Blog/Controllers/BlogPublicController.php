@@ -38,7 +38,7 @@ class BlogPublicController extends PublicController
         $maps = $this->taxonomyMapsFor($result['items']);
         $posts = array_map(fn($post) => $this->formatPost($post, $maps['categories'], $maps['tags'], $maps['authors']), $result['items']);
 
-        $this->render('home', [
+        $this->render('pubvana/blog/home', [
             'posts'      => $posts,
             'pagination' => $this->buildPagination($result, $this->app->pluginLoader()->routePrefix('pubvana/blog')),
         ]);
@@ -62,7 +62,7 @@ class BlogPublicController extends PublicController
             ];
         }
 
-        $this->render('categories', [
+        $this->render('pubvana/blog/categories', [
             'categories' => $list,
         ]);
     }
@@ -84,7 +84,7 @@ class BlogPublicController extends PublicController
             ];
         }
 
-        $this->render('tags', [
+        $this->render('pubvana/blog/tags', [
             'tags' => $list,
         ]);
     }
@@ -131,7 +131,7 @@ class BlogPublicController extends PublicController
             ],
         ];
 
-        $this->render('post', $data);
+        $this->render('pubvana/blog/post', $data);
     }
 
     /**
@@ -166,7 +166,7 @@ class BlogPublicController extends PublicController
             }
         }
 
-        $this->render('archive', [
+        $this->render('pubvana/blog/archive', [
             'archive_title' => 'Category: ' . $category->name,
             'posts'         => $filtered,
             'pagination'    => null,
@@ -205,7 +205,7 @@ class BlogPublicController extends PublicController
             }
         }
 
-        $this->render('archive', [
+        $this->render('pubvana/blog/archive', [
             'archive_title' => 'Tag: ' . $tag->name,
             'posts'         => $filtered,
             'pagination'    => null,
@@ -227,7 +227,7 @@ class BlogPublicController extends PublicController
         $categories = $this->getPostCategories((int) $post->id);
         $tags = $this->getPostTags((int) $post->id);
 
-        $this->render('post', [
+        $this->render('pubvana/blog/post', [
             'title'          => $post->title . ' (Preview)',
             'content'        => $post->content,
             'excerpt'        => $post->excerpt,

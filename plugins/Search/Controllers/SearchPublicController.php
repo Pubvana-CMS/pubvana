@@ -43,7 +43,7 @@ class SearchPublicController extends PublicController
             $data['pagination'] = $this->buildPagination($result);
         }
 
-        $this->render('search', $data);
+        $this->render('pubvana/search/search', $data);
     }
 
     /**

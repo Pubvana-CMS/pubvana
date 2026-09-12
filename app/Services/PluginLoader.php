@@ -1271,7 +1271,7 @@ class PluginLoader
      *
      * @return string|null Semver string, or null when root pubvana.json is absent
      */
-    protected function coreSemver(): ?string
+    public function coreSemver(): ?string
     {
         $manifestFile = PROJECT_ROOT . DIRECTORY_SEPARATOR . 'pubvana.json';
         if (!is_file($manifestFile)) {

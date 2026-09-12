@@ -38,13 +38,18 @@ abstract class PublicController
     }
 
     /**
-     * Render a public view with full layout data.
+     * Render a public page.
      *
-     * Builds the global data structure, merges it with route-specific data,
-     * sets the page title, and renders through PluginView's template
-     * resolution chain (app override → theme → plugin default).
+     * Assembly is the controller's job, never the template's:
+     *   1. Resolve the content template (app override → theme → plugin).
+     *   2. Fetch it through Vision to a string (full data, escaping, tags).
+     *   3. Fetch the theme's layout.tpl with `content` set to that string
+     *      and echo the result.
      *
-     * @param string               $template  Template name (e.g. 'page', 'pubvana/blog/post')
+     * Page templates are content-only. layout.tpl is the page shell and
+     * owns the sidebar, nav, hero, and footer. No template extends it.
+     *
+     * @param string               $template  Content template name (e.g. 'pubvana/blog/post')
      * @param array<string, mixed> $data      Route-specific variables (title, content, etc.)
      */
     protected function render(string $template, array $data = []): void
@@ -58,6 +63,7 @@ abstract class PublicController
 
         $global = $this->buildGlobalData($data);
         $viewData = array_merge($global, $data);
+        $viewData['sidebar_kind'] = $this->sidebarKind($viewData);
 
         // Page-specific title overrides the default
         $siteName = $this->getSiteName();
@@ -96,19 +102,17 @@ abstract class PublicController
         // Build complete head HTML string from the header array
         $viewData['header'] = $this->buildHeadHtml($viewData['header']);
 
-        // Resolve the theme-owned template (app override → theme root →
+        // Resolve the theme-owned template (app override → theme →
         // plugin fallback) and render. The theme's Views/ is the basePath, so
-        // extends/includes/regions all resolve from the theme. The theme (and
-        // PublicController) decides layout; a plugin never controls it.
+        // includes/regions all resolve from the theme.
         $view = $this->app->view();
 
         // Sync the View basePath with the active theme from the database.
         // services.php keys themePath off the 'active_theme' config key, which
         // nothing sets, so it would stay 'default'. resolveTemplate() reads
         // the DB (getActiveThemeName) and picks the right top-level file, but
-        // {% extends %}, {% include %}, and region block overrides resolve
-        // against themePath: without this sync, a themed child template
-        // renders inside the default theme's layout.
+        // includes and region block overrides resolve against themePath:
+        // without this sync, includes resolve against the wrong theme.
         if ($view instanceof \Pubvana\Services\PluginView) {
             try {
                 $activeTheme = $this->app->themes()->getActive();
@@ -126,23 +130,55 @@ abstract class PublicController
             }
         }
 
-        $templateFile = $this->resolveTemplate($template, $view);
-
-        if ($view instanceof \Pubvana\Services\PluginView) {
-            $view->render($templateFile, $viewData);
+        if (!$view instanceof \Pubvana\Services\PluginView) {
+            // Non-plugin view service: legacy native render path.
+            $this->app->render($template, $viewData);
             return;
         }
 
-        $this->app->render($template, $viewData);
+        // 1. Content template to a string.
+        $templateFile = $this->resolveTemplate($template, $view);
+        $content = $view->fetch($templateFile, $viewData);
+
+        // 2. The layout assembles the page. content is already-rendered,
+        // already-escaped HTML, same trust level as a page body.
+        $layoutFile = $this->resolveLayout($view);
+        echo $view->fetch($layoutFile, array_merge($viewData, ['content' => $content]));
     }
 
     /**
-     * Resolve a public template through the three-tier chain:
-     *   1. app/Views/{plugin}/{template}.tpl  - site owner override
-     *   2. themes/{active}/Views/{template}.tpl - theme root (the layout owner)
-     *   3. plugins/{Plugin}/Views/{template}.tpl - plugin fallback
+     * Resolve the active theme's layout template. The layout lives at the
+     * theme root (themes/{active}/Views/layout.tpl) and is the page shell.
      *
-     * @param string $template Template name (e.g. 'home', 'post', 'categories')
+     * @param \Pubvana\Services\PluginView $view
+     * @return string Resolved absolute path
+     */
+    protected function resolveLayout(\Pubvana\Services\PluginView $view): string
+    {
+        $themeName = $this->getActiveThemeName();
+        $layout = PROJECT_ROOT . DIRECTORY_SEPARATOR . 'themes'
+            . DIRECTORY_SEPARATOR . $themeName . DIRECTORY_SEPARATOR . 'Views'
+            . DIRECTORY_SEPARATOR . 'layout.tpl';
+        if (is_file($layout)) {
+            return $layout;
+        }
+        // A theme without layout.tpl cannot assemble a page; fall back to
+        // the default theme's layout so the site still renders.
+        return PROJECT_ROOT . DIRECTORY_SEPARATOR . 'themes'
+            . DIRECTORY_SEPARATOR . 'default' . DIRECTORY_SEPARATOR . 'Views'
+            . DIRECTORY_SEPARATOR . 'layout.tpl';
+    }
+
+    /**
+     * Resolve a content template through the three-tier chain:
+     *   1. app/Views/{plugin}/{template}.tpl  - site owner override
+     *   2. themes/{active}/Views/{plugin}/{template}.tpl - theme override
+     *   3. plugins/{Plugin}/Views/{plugin}/{template}.tpl - plugin fallback
+     *
+     * Plugin views are REQUIRED to live under Views/{pluginId}/{template};
+     * theme and app overrides use the same prefixed path.
+     *
+     * @param string $template Template name (e.g. 'pubvana/blog/post')
      * @param object $view     The PluginView instance for plugin path lookup
      * @return string Resolved absolute path
      */
@@ -150,17 +186,15 @@ abstract class PublicController
     {
         $appViews = (string) ($this->app->get('flight.views.path') ?? PROJECT_ROOT . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Views');
         $themeName = $this->getActiveThemeName();
-        $routePrepend = $this->getRoutePrepend();
 
+        // Content templates are namespaced: pubvana/{plugin}/{template} for
+        // plugins, {template} for core (Pages, Profiles, PasswordReset).
         $candidates = [];
 
-        // 1. App override: app/Views/{routePrepend}/{template}.tpl
-        if ($routePrepend !== '') {
-            $candidates[] = $appViews . DIRECTORY_SEPARATOR . $routePrepend
-                . DIRECTORY_SEPARATOR . $template . '.tpl';
-        }
+        // 1. App override: app/Views/{template}.tpl (already prefixed)
+        $candidates[] = $appViews . DIRECTORY_SEPARATOR . $template . '.tpl';
 
-        // 2. Theme root: themes/{active}/Views/{template}.tpl
+        // 2. Theme override: themes/{active}/Views/{template}.tpl
         $themeCandidate = PROJECT_ROOT . DIRECTORY_SEPARATOR . 'themes'
             . DIRECTORY_SEPARATOR . $themeName . DIRECTORY_SEPARATOR . 'Views'
             . DIRECTORY_SEPARATOR . $template . '.tpl';
@@ -172,7 +206,8 @@ abstract class PublicController
             }
         }
 
-        // 3. Plugin fallback: plugin's Views/{template}.tpl
+        // 3. Plugin fallback: plugins/{Plugin}/Views/{template}.tpl where
+        // {template} is the prefixed relative path (pubvana/pvstore/store.tpl).
         if ($view instanceof \Pubvana\Services\PluginView) {
             $pluginPath = $view->getPluginPath($this->getPluginId());
             if ($pluginPath !== null) {
@@ -183,7 +218,7 @@ abstract class PublicController
             }
         }
 
-        // Fall back to the theme root candidate so the engine reports a
+        // Fall back to the theme candidate so the engine reports a
         // meaningful missing-template error against the theme.
         return $themeCandidate;
     }
@@ -220,6 +255,36 @@ abstract class PublicController
         }
 
         return ltrim($prefix, '/');
+    }
+
+    // -----------------------------------------------------------------
+    // Layout assembly
+    // -----------------------------------------------------------------
+
+    /**
+     * Which sidebar variant the layout should render, if any.
+     *
+     * The theme's `layout.page_sidebar` option decides which page kinds
+     * show a sidebar: 'not_home' (default), 'home', or 'none'. The side
+     * (left/right) comes from the theme's `layout.blog_layout` option.
+     * An empty string means no sidebar for this request.
+     *
+     * @param array<string, mixed> $viewData Merged global + route data
+     */
+    protected function sidebarKind(array $viewData): string
+    {
+        $active = $this->app->themes()->getActive();
+        $setting = $active !== null
+            ? (string) ($this->app->themes()->getThemeOption((int) $active->id, 'layout.page_sidebar') ?? 'not_home')
+            : 'not_home';
+        $isHomepage = (bool) ($viewData['is_homepage'] ?? false);
+        if ($setting === 'none' || ($setting === 'home') !== $isHomepage) {
+            return '';
+        }
+        $side = $active !== null
+            ? (string) ($this->app->themes()->getThemeOption((int) $active->id, 'layout.blog_layout') ?? 'sidebar-right')
+            : 'sidebar-right';
+        return $side === 'sidebar-left' ? 'sidebar-left' : 'sidebar-right';
     }
 
     // -----------------------------------------------------------------
@@ -320,6 +385,13 @@ abstract class PublicController
      */
     protected function buildBreadcrumbs(array $routeData = []): array
     {
+        // A controller that knows its route shape supplies the crumbs
+        // directly (e.g. Home / Store / {product}); the generic
+        // segment-labeling below is the fallback.
+        if (isset($routeData['breadcrumbs']) && is_array($routeData['breadcrumbs'])) {
+            return $routeData['breadcrumbs'];
+        }
+
         $parsedPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
         $uri = trim(is_string($parsedPath) ? $parsedPath : '', '/');
 

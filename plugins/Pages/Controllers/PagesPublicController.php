@@ -50,7 +50,7 @@ class PagesPublicController extends PublicController
             return;
         }
 
-        $this->render('page', [
+        $this->render('pubvana/pages/page', [
             'title'          => $page->title,
             'content'        => $page->content,
             'featured_image' => null,

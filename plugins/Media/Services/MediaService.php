@@ -410,7 +410,7 @@ class MediaService
     }
 
     /**
-     * @return string Rendered widget HTML
+     * @return string Rendered block HTML
     */
     public function picker(string $inputName, string $currentValue = ''): string
     {
@@ -424,7 +424,7 @@ class MediaService
     }
 
     /**
-     * @return string Rendered widget HTML
+     * @return string Rendered block HTML
     */
     public function avatarPicker(string $inputName, string $currentValue = ''): string
     {

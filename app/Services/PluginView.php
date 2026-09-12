@@ -297,14 +297,14 @@ class PluginView extends View
             }
         }
 
-        // Use active plugin context if no explicit prefix
+        // Use active plugin context if no explicit prefix. Plugin views are
+        // REQUIRED to live under Views/{pluginId}/{template}; the plugin
+        // tier resolves through the same prefixed chain as explicit calls.
         if ($this->currentPlugin !== null && isset($this->pluginPaths[$this->currentPlugin])) {
-            $pluginViewPath = $this->pluginPaths[$this->currentPlugin];
-            $prefixedFile = $this->currentPlugin . '/' . $file;
-            $resolved = $this->resolvePluginView($this->currentPlugin, $pluginViewPath, $file, $prefixedFile);
-            if (file_exists($resolved)) {
-                return $resolved;
-            }
+            $pluginId = $this->currentPlugin;
+            $pluginViewPath = $this->pluginPaths[$pluginId];
+            $prefixedFile = $pluginId . '/' . $file;
+            return $this->resolvePluginView($pluginId, $pluginViewPath, $file, $prefixedFile);
         }
 
         // Default: standard Flight path resolution

@@ -479,7 +479,7 @@ class RegionManager
      * Resolution:
      *   1. app/Views/pubvana/blog/public/blocks/recent-posts.tpl  (owner override)
      *   2. themes/{active}/Views/pubvana/blog/public/blocks/recent-posts.tpl  (theme override)
-     *   3. vendor/pubvana/blog/src/Views/public/blocks/recent-posts.tpl  (plugin default)
+     *   3. plugins/{plugin}/Views/pubvana/blog/public/blocks/recent-posts.tpl  (plugin default)
      *
      * @param string     $template Template path (without .tpl extension)
      * @param PluginView $view     PluginView for theme/plugin path lookups
@@ -498,7 +498,6 @@ class RegionManager
         }
 
         $packageName = $parts[0] . '/' . $parts[1];
-        $relativePath = implode('/', array_slice($parts, 2)) . '.tpl';
         $prefixedPath = $template . '.tpl';
 
         // 1. App-level override
@@ -517,10 +516,11 @@ class RegionManager
             }
         }
 
-        // 3. Plugin default
+        // 3. Plugin default (same prefixed path; plugin views are REQUIRED
+        // to live under Views/{pluginId}/{template})
         $pluginViewPath = $view->getPluginPath($packageName);
         if ($pluginViewPath !== null) {
-            $pluginFile = $pluginViewPath . DIRECTORY_SEPARATOR . $relativePath;
+            $pluginFile = $pluginViewPath . DIRECTORY_SEPARATOR . $prefixedPath;
             if (is_file($pluginFile)) {
                 return $pluginFile;
             }

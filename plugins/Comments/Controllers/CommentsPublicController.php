@@ -32,7 +32,7 @@ class CommentsPublicController extends PublicController
         $allow = (bool) ($this->app->request()->query->allow ?? true);
 
         $data = $service->dataFor($type, (int) $id, $allow);
-        $this->render('comments', $data);
+        $this->render('pubvana/comments/comments', $data);
     }
 
     /**

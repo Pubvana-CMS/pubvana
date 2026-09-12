@@ -43,13 +43,16 @@ class Plugin implements PluginInterface
         $authMiddleware = null;
 
         $adext->addRoutes('admin', [
-            ['GET',  $prefix,                  [UpdatesAdminController::class, 'index'],    [$authMiddleware]],
-            ['POST', $prefix . '/check',       [UpdatesAdminController::class, 'check'],    [$authMiddleware]],
-            ['POST', $prefix . '/apply',       [UpdatesAdminController::class, 'apply'],    [$authMiddleware]],
-            ['GET',  $prefix . '/status',      [UpdatesAdminController::class, 'status'],   [$authMiddleware]],
-            ['POST', $prefix . '/settings',    [UpdatesAdminController::class, 'settings'], [$authMiddleware]],
-            ['POST', $prefix . '/skip',        [UpdatesAdminController::class, 'skip'],     [$authMiddleware]],
-            ['POST', $prefix . '/unskip',      [UpdatesAdminController::class, 'unskip'],   [$authMiddleware]],
+            ['GET',  $prefix,                  [UpdatesAdminController::class, 'index'],      [$authMiddleware]],
+            ['POST', $prefix . '/check',       [UpdatesAdminController::class, 'check'],      [$authMiddleware]],
+            ['POST', $prefix . '/apply',       [UpdatesAdminController::class, 'apply'],      [$authMiddleware]],
+            ['GET',  $prefix . '/status',      [UpdatesAdminController::class, 'status'],     [$authMiddleware]],
+            ['POST', $prefix . '/settings',    [UpdatesAdminController::class, 'settings'],   [$authMiddleware]],
+            ['POST', $prefix . '/skip',        [UpdatesAdminController::class, 'skip'],       [$authMiddleware]],
+            ['POST', $prefix . '/unskip',      [UpdatesAdminController::class, 'unskip'],     [$authMiddleware]],
+            ['POST', $prefix . '/addon-update',  [UpdatesAdminController::class, 'addonUpdate'],    [$authMiddleware]],
+            ['POST', $prefix . '/addon-check',   [UpdatesAdminController::class, 'addonCheck'],     [$authMiddleware]],
+            ['POST', $prefix . '/addon-update-all', [UpdatesAdminController::class, 'addonUpdateAll'], [$authMiddleware]],
         ], 'pubvana.updates');
 
         $adext->register('admin.dashboard', 'cards', 'pubvana.updates', [

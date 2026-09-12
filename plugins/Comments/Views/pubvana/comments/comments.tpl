@@ -1,6 +1,3 @@
-{% extends 'layout' %}
-
-{% block content %}
 <div class="row">
     <div class="col-lg-8">
         {% if comments_enabled %}
@@ -48,4 +45,3 @@
         {% endif %}
     </div>
 </div>
-{% endblock %}

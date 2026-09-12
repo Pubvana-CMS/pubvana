@@ -1,4 +1,7 @@
-{# Master page shell. Every public page template extends this layout. #}
+{# Master page shell. layout.tpl is the whole page: head, navbar, hero, #}
+{# breadcrumbs, sidebar, content, footer. Page templates are content-only; #}
+{# PublicController renders them separately and passes the finished HTML #}
+{# in as `content`. Nothing extends this file. #}
 {# Theme assets load straight from /assets/theme/... (served by AssetService, never copied into public/). #}
 <!DOCTYPE html>
 <html lang="en">
@@ -10,8 +13,6 @@
     {! header !}
     <link rel="stylesheet" href="/assets/theme/default/css/bootstrap.min.css">
     <link rel="stylesheet" href="/assets/theme/default/css/pubvana.css">
-    {# Vision block: an inheritance slot. A child page template that declares {% block head_extra %} fills this; empty by default. #}
-    {% block head_extra %}{% endblock %}
 </head>
 <body>
 
@@ -35,11 +36,35 @@
     {# Include: one-shot flash messages (login notices, form feedback, etc.), before the page body. #}
     {% include 'partials/alerts' %}
 
-    {# Vision block: the page body. Every page template (home, post, page, ...) overrides this one slot. #}
-    {# Each page template renders the after-content region itself, so blocks land inside the #}
-    {# content column on split pages instead of full width below the whole layout. #}
+    {# Page body. The sidebar renders when the layout.page_sidebar theme option #}
+    {# covers this page kind (home / not_home) AND the sidebar region has #}
+    {# blocks in it. An empty aside collapses the row to one column. Sidebar #}
+    {# side (left/right) follows blog_layout. #}
     <main class="container my-4">
-        {% block content %}{% endblock %}
+        {% if sidebar_kind %}
+        <div class="row">
+            {% if sidebar_kind == 'sidebar-left' %}
+            <div class="col-lg-4">
+                {% region 'sidebar' %}
+            </div>
+            <div class="col-lg-8">
+                {# Raw output: the page content, assembled by PublicController. #}
+                {! content !}
+            </div>
+            {% else %}
+            <div class="col-lg-8">
+                {# Raw output: the page content, assembled by PublicController. #}
+                {! content !}
+            </div>
+            <div class="col-lg-4">
+                {% region 'sidebar' %}
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        {# Raw output: the page content, assembled by PublicController. #}
+        {! content !}
+        {% endif %}
     </main>
 
     {# Include: footer columns, footer region, and the copyright line. #}
@@ -48,7 +73,5 @@
     <script src="/assets/theme/default/js/bootstrap.bundle.min.js"></script>
     {# Raw output: plugin scripts, pre-assembled into one block by the controller (mirror of {! header !}). #}
     {! scripts_footer !}
-    {# Vision block: inheritance slot for child pages to append scripts before </body>. #}
-    {% block scripts_extra %}{% endblock %}
 </body>
 </html>

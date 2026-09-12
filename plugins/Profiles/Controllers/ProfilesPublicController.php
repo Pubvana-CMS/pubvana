@@ -32,7 +32,7 @@ class ProfilesPublicController extends PublicController
             $avatarUrl = '/' . ltrim($profile->avatar, '/');
         }
 
-        $this->render('profile', [
+        $this->render('pubvana/profiles/profile', [
             'title'      => ($profile->display_name ?? $user->username) . "'s Profile",
             'profile'    => $profile,
             'user'       => $user,
@@ -56,7 +56,7 @@ class ProfilesPublicController extends PublicController
 
         $profile = $this->app->profiles()->findOrCreate((int) $user->id);
 
-        $this->render('profile_edit', [
+        $this->render('pubvana/profiles/profile_edit', [
             'title'   => 'Edit Profile',
             'profile' => $profile,
             'user'    => $user,

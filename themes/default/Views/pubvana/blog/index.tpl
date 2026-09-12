@@ -1,8 +1,6 @@
 {# Minimal post list, kept as the simplest possible template. #}
 {# The richer homepage is home.tpl; this one shows the bare minimum a public template needs. #}
-{% extends "layout.tpl" %}
-
-{% block content %}
+{# Content-only; the layout owns the sidebar. #}
 {# Conditional + loop: one plain article per post, no cards or images. #}
 {% if posts %}
 {% for post in posts %}
@@ -18,6 +16,5 @@
 <p>No posts yet.</p>
 {% endif %}
 
-{# Region: content blocks placed below the post list. Full width here: this template has no sidebar. #}
+{# Region: content blocks placed below the post list. #}
 {% region 'after-content' %}
-{% endblock %}
