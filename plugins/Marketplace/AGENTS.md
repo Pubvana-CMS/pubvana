@@ -18,13 +18,16 @@ Guidance for AI agents contributing to this plugin, the buy-side companion for t
 ## Project guidelines
 
 1. **Two-plugin boundary is sacred.** Marketplace is a separate plugin from the Digital Store. Do not merge them, do not call into store models directly across the plugin boundary, and do not change store plugin files from here. The Marketplace talks to the store only over its HTTP API.
-2. **No user-facing key entry.** The Marketplace never prompts the buyer to type a license key. Ownership is verified back at the store with the account token. `license_key` is stored in `marketplace_installs` for diagnostics only.
-3. **Phone-home cadence is `verify_days`, not daily.** The 24h cron task calls `verifyIfDue()`, which enforces the cadence itself. Do not hit the store on every request or every cron tick. The connect screen must disclose periodic verification (~2 weeks).
-4. **Validate every zip before extraction.** Reject entries with `..`, absolute paths, drive letters, or NUL bytes; only accept download hosts under pubvanacms.com/pubvana.net. This is the same safety contract as the Updates plugin; do not weaken it.
-5. **No payment integration here.** Checkout happens on pubvanacms.com. The Marketplace only opens the store checkout URL and verifies afterward.
-6. **Single-site domain moves require email confirmation.** The transfer-request endpoint starts the flow; the store emails a confirm link. The Marketplace can prompt and request; it must not rebind on its own.
-7. **Controllers strip `_csrf_token` before POST data use; permission gate is flash + redirect, never `halt()`.** Standard v3 patterns.
-8. **HTTP always:** curl first, `file_get_contents` fallback, timeouts, non-empty user agent.
+2. **One identity per addon: the package.** An addon IS its manifest pubvana.json identity (plugins: `name`, themes: `slug`, e.g. `pubvana/blog`, `default`). It is the lookup key between Marketplace and the Updates plugin (`installFromPackage()`, `checkAddonUpdates()`, `trackedPackages()`), keyed in `marketplace_installs.package_id` and stamped from the freshly installed manifest at install/verify time. Never match addons by install folder or `slug` separately across plugins; those are store-payload and destination details, not identity.
+3. **The store catalog `slug` is the package.** Store contract: a catalog/purchase item's `slug` is the same string as the installed manifest `name`.
+4. **No user-facing key entry.** The Marketplace never prompts the buyer to type a license key. Ownership is verified back at the store with the account token. `license_key` is stored in `marketplace_installs` for diagnostics only.
+5. **Phone-home cadence is `verify_days`, not daily.** The 24h cron task calls `verifyIfDue()`, which enforces the cadence itself. Do not hit the store on every request or every cron tick. The connect screen must disclose periodic verification (~2 weeks).
+6. **Validate every zip before extraction.** Reject entries with `..`, absolute paths, drive letters, or NUL bytes; only accept download hosts under pubvanacms.com/pubvana.net. This is the same safety contract as the Updates plugin; do not weaken it.
+7. **One install path.** `installFromPackage()` is the only public store-install entry for cross-plugin use (Updates addon-update calls it). No client-supplied download URLs reach the install flow; URLs are always re-derived server-side from the license.
+8. **No payment integration here.** Checkout happens on pubvanacms.com. The Marketplace only opens the store checkout URL and verifies afterward.
+9. **Single-site domain moves require email confirmation.** The transfer-request endpoint starts the flow; the store emails a confirm link. The Marketplace can prompt and request; it must not rebind on its own.
+10. **Controllers strip `_csrf_token` before POST data use; permission gate is flash + redirect, never `halt()`.** Standard v3 patterns.
+11. **HTTP always:** curl first, `file_get_contents` fallback, timeouts, non-empty user agent.
 
 ## Core architecture
 
@@ -32,6 +35,7 @@ Guidance for AI agents contributing to this plugin, the buy-side companion for t
 
 - `GET {store}/api/store/categories` - categories
 - `GET {store}/api/store/items?currency=` - marketplace-listed items
+- `GET {store}/api/store/free?token=&slug=` - streams a free product's package (is_free or scope none); free items are free to use anywhere and update with no license
 - `POST {store}/api/store/cart/add` - push item into account-bound cart
 - `GET {store}/api/store/purchases?domain=` - owned products + license state for this domain
 - `POST {store}/api/store/license/validate` - returns a download URL for a valid license
@@ -42,11 +46,15 @@ Auth is a `Marketplace.account_token` setting sent as a `Bearer` header (and ech
 
 ### Install flow
 
-`install($storeProductId, $itemType)` loads the local install record, validates the license via the API for this domain, downloads the package (host-checked), inspects the zip, extracts under `writable/cache/marketplace`, moves the resolved root (single-wrapper-dir aware) into `plugins/{folder}/` or `themes/{folder}/`, then records the installed version.
+`install($storeProductId, $itemType)` loads the local install record by store product id, validates the license via the API for this domain, downloads the package (host-checked), inspects the zip, extracts under `writable/cache/marketplace`, moves the resolved root (single-wrapper-dir aware) into `plugins/{folder}/` or `themes/{folder}/`, then stamps the identity and version from the freshly installed manifest (`package_id`, `installed_version`).
+
+`installFromPackage($package)` is the cross-plugin entry: finds the record by `package_id` and runs `install()`. A package with no purchase record (or no license key) falls to the free path `installFreePackage()`, which requires the store catalog to list it free (is_free or scope none), downloads through the store free endpoint, then records the install via `trackFreeInstall()` so later checks see it as a store item. The Updates plugin's addon-update action calls `installFromPackage()` and nothing inside Marketplace internals.
+
+`checkAddonUpdates()` reads each installed addon's manifest identity live (manifest `name` + `semver`) and compares against catalog versions; results are keyed by package. `trackedPackages()` returns the package identities holding install records, so other surfaces (Updates) can label an addon Marketplace-sourced versus core-shipped. `unlicensedPackages()` returns catalog packages with no verified purchase record here, each flagged `free` (scope none: genuinely free items, disclosure-friendly) or not, for the Updates page's "Free" / "Not purchased" rows. Disclosure only, never enforcement. `freePackageVersions()` is the free counterpart to `checkAddonUpdates()`: latest store versions for free packages, so untracked free installs stay updatable for free. `refreshCatalog()` stamps the cached catalog stale so the next `items()` re-fetches; the Updates "Check all" button calls it.
 
 `reinstallAll()` iterates purchases and reinstalls every licensed, non-`file` item already installed locally, reporting ok/skipped/failed counts.
 
-`verifyIfDue()` / `purchases()` reconcile `marketplace_installs` from the store's answer for this domain, updating license validity, scope, expiry/renewal, and registered domain. `localInstallRecords()` serializes the table for the Purchases view.
+`verifyIfDue()` / `purchases()` reconcile `marketplace_installs` from the store's answer for this domain, updating license validity, scope, expiry/renewal, and registered domain; `package_id` is backfilled from the local manifest when missing. `localInstallRecords()` serializes the table for the Purchases view.
 
 ### Connect / account
 

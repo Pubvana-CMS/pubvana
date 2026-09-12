@@ -4,7 +4,7 @@ Guidance for AI agents contributing to this plugin, which ships inside the main 
 
 ## Overview
 
-Social Links is the port of the v2 `widgets/SocialLinks` feature. It stores site-wide social profile links in one table, manages them from an admin screen under Settings, and renders them anywhere via a public block with self-hosted Font Awesome 7 Free icons.
+Social Links is the port of the v2 SocialLinks feature. It stores site-wide social profile links in one table, manages them from an admin screen under Settings, and renders them anywhere via a public block with self-hosted Font Awesome 7 Free icons.
 
 - **Package:** `pubvana/social-links` (`pubvana.json:2`), semver `0.1.0`, category `tools`
 - **License:** MIT, matching the main project (repo `composer.json` declares `"license": "MIT"`)

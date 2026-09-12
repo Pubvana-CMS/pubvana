@@ -26,7 +26,11 @@ Guidance for AI agents contributing to this plugin, which ships inside the main 
 7. **Keep progress granular.** `UpdateProgress` writes a phase checklist plus a free-form detail line (download bytes via `CURLOPT_XFERINFOFUNCTION`, per-directory copy counts). The admin UI polls `update_progress.json`. Reason: v2's "starting..." then silence was the most complained-about UX gap.
 8. **The apply flow holds the update lock before preflight; preflight must not check locks itself.** `preFlight($version, false)` from the apply path; `locksCheck()` runs only for display on the index page. Reason: the flow would flag its own lock (real bug found in testing).
 9. **Check state is cached 24h in settings, never on dashboard renders with network.** `dashboardCards()` and the Site Health check read `lastCheck()` only. Reason: no network on every dashboard load; SiteHealth forbids network in checks.
-10. **Controllers strip `_csrf_token` before POST data use; permission gate is flash + redirect, never `halt()`.** Standard v3 patterns.
+10. **Addon updates belong to the Marketplace's install contract.** `UpdatesAdminController::addonUpdate()` passes the package identity (the addon's manifest `pubvana.json` `name`) to `$app->marketplace()->installFromPackage()` and reports the result; it owns no download, zip, or filesystem logic. Marketplace ingest is keyed by package (`checkAddonUpdates()`), never by folders. Reason: one install path, one identity, cross-plugin.
+11. **Addon origin is declared, never guessed.** The root `pubvana.json` `includes` block is the authority for what ships with the distribution (`UpdateService::readIncluded()`); `marketplace_installs` is the authority for store items (facade `trackedPackages()`); composer vendor discovery is the authority for dependency packages. Anything else is rendered `manual`: copied in outside every update channel, no update action is offered, no origin is invented for it.     Labels: `core`, `marketplace`, `composer`, `free`, `notpurchased`, `manual`.
+    - `notpurchased` covers the disclosure-only case: the package is sold at the store catalog but holds no purchase record here. It is not an accusation (the item may be a paid item owned elsewhere, or mid-transfer); no enforcement, no extra phone-home, no update button (there is no license to drive one); the action is a pointer to Tools > Marketplace and the admin's own next step (buy, verify purchases, or remove).
+    - `free` covers genuinely free store items (scope none) that are untracked here: same Update button as tracked items, they update for free through the store's free endpoint; never "not purchased" phrasing.
+12. **Controllers strip `_csrf_token` before POST data use; permission gate is flash + redirect, never `halt()`.** Standard v3 patterns.
 
 ## Repository layout
 
@@ -36,7 +40,7 @@ Updates/
 ├── Plugin.php                            Entry: maps 'updates' facade, admin routes, dashboard card, Site Health check
 ├── Config/Config.php                     Defaults (see table in README)
 ├── Controllers/
-│   └── UpdatesAdminController.php        index, check, apply (AJAX), status (poll), settings, skip, unskip
+│   └── UpdatesAdminController.php        index, check, apply (AJAX), status (poll), settings, skip, unskip, addon-update, addon-check, addon-update-all (batch delegates to Marketplace)
 ├── Services/
 │   ├── UpdateService.php                 Feed fetch, 24h check cache, safe-target capping, preflight, skip list
 │   ├── UpdateApplyService.php            8-phase apply: preflight, backup, download, validate, extract, copy, migrate, cleanup
@@ -48,7 +52,7 @@ Updates/
 ├── Database/
 │   └── Seeds/Seed.php                    Seeds updates.manage permission
 ├── Views/
-│   └── admin/index.php                   v2-style layout: Update Settings card (3 groups: auto-update toggle, check info, crontab lines), status banners, preflight table (Required/Optional), confirm modal, progress polling, Addons section (Themes/Plugins inventory tables + Blocks "Updates with" table), skip list
+│   └── admin/index.php                   v2-style layout: Update Settings card (3 groups: auto-update toggle, check info, crontab lines), status banners, preflight table (Required/Optional), confirm modal, progress polling, Addons section (Themes/Plugins inventory tables with per-row source labels, trust badges, row Update buttons, header Check All / Update All), skip list
 ├── README.md
 └── AGENTS.md                             This file
 ```

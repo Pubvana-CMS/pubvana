@@ -6,6 +6,7 @@
 
 # Plans yet to be implemented
 PLAN-multi-language.md
+/Checklist.md
 
 # Composer
 /vendor/
@@ -15,8 +16,11 @@ PLAN-multi-language.md
 
 # Pubvana-only plugins
 /plugins/Pvstore/*
+/tests/Unit/Plugins/Pvstore/*
 /plugins/Docs/*
+/tests/Unit/Plugins/Docs/*
 /plugins/Trust/*
+/tests/Unit/Plugins/Trust/*
 
 # messing with someone who thinks
 # base64 is awesome
@@ -48,6 +52,7 @@ PLAN-multi-language.md
 !/writable/backups/.gitkeep
 /writable/updates/*
 !/writable/updates/.gitkeep
+/writable/store/*
 
 # Public uploads (site media/content)
 /public/uploads/*

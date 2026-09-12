@@ -18,6 +18,7 @@ Options are managed in **Admin > Appearance > Themes > Options**. They are group
 |-------|--------|------|---------|---------|
 | Layout | Homepage Layout | select | `full-width` | Layout of the homepage when it is a static page: `full-width`, `sidebar-right`, `sidebar-left` |
 | Layout | Blog Layout | select | `sidebar-right` | Sidebar placement on all blog listings and single posts: `sidebar-right`, `sidebar-left` |
+| Layout | Show Sidebar On | select | `not_home` | Which pages show the sidebar region: `not_home`, `home`, `none` |
 | Breadcrumbs | Show Breadcrumbs | toggle | on | Show the auto-generated breadcrumb trail on subpages |
 | Hero | Show Hero | toggle | off | Show the hero section below the navbar |
 | Hero | Background Image | media | (none) | Background image for the hero section |
@@ -37,7 +38,7 @@ Regions are where site owners place content blocks. Managed in **Admin > Appeara
 
 | Region ID | Label | Where it renders |
 |-----------|-------|------------------|
-| `sidebar` | Sidebar | Right or left column next to blog content (placement follows Blog Layout) |
+| `sidebar` | Sidebar | Column next to the page content; shown per the Show Sidebar On layout option |
 | `footer-col-1` | Footer Column 1 | First column of the footer |
 | `footer-col-2` | Footer Column 2 | Second column of the footer |
 | `footer-col-3` | Footer Column 3 | Third column of the footer |
@@ -46,21 +47,22 @@ The theme also uses the platform regions (`navbar`, `header`, `before-content`, 
 
 ## Templates
 
-The theme includes a template for every public view. Templates are Vision `.tpl` files and never execute PHP.
+The theme includes a template for every public view. Templates are Vision `.tpl` files and never execute PHP. `layout.tpl` is the whole page; page templates are content-only and `PublicController` injects their output as `content`.
 
 | Template | Used for |
 |----------|----------|
-| `layout.tpl` | Master page shell (html, head, navbar, hero, breadcrumbs, content, footer) |
-| `home.tpl` | Blog-list homepage and `/blog` |
-| `page.tpl` | Static pages, including a page-based homepage |
-| `post.tpl` | Single blog post with comments |
-| `archive.tpl` | Blog category and tag archive listings |
-| `categories.tpl` | Category index |
-| `tags.tpl` | Tag index |
-| `search.tpl` | Search results |
-| `profile.tpl` | Public user profile |
-| `profile_edit.tpl` | Profile editing form |
-| `partials/` | Reusable fragments: navbar, footer, hero, breadcrumbs, pagination, post list, comments |
+| `layout.tpl` | Master page shell (html, head, navbar, hero, breadcrumbs, sidebar, content, footer). Nothing extends it. |
+| `pubvana/blog/home.tpl` | Blog-list homepage and `/blog` |
+| `pubvana/pages/page.tpl` | Static pages, including a page-based homepage |
+| `pubvana/blog/post.tpl` | Single blog post with comments |
+| `pubvana/blog/archive.tpl` | Blog category and tag archive listings |
+| `pubvana/blog/categories.tpl` | Category index |
+| `pubvana/blog/tags.tpl` | Tag index |
+| `pubvana/blog/index.tpl` | Minimal post list (reference example) |
+| `pubvana/search/search.tpl` | Search results |
+| `pubvana/profiles/profile.tpl` | Public user profile |
+| `pubvana/profiles/profile_edit.tpl` | Profile editing form |
+| `partials/` | Reusable fragments: navbar, footer, hero, breadcrumbs, pagination, post list |
 | `blocks/` | Block templates: HTML content, Recent Posts, Tag Cloud |
 | `enlivenapp/flight-shield/` | Auth screen overrides: Shield login/register/2FA/activation/magic-link pages, auth email bodies, and the forgot/reset password pages (`auth/`) |
 

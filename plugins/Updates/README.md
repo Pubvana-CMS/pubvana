@@ -55,11 +55,17 @@ like the v2 page:
   Optional failures (like no command-line access) warn but do not block.
 - **Skip this version** moves the offer to the next applicable release.
 
-**Addons**: the lower half of the page lists every installed theme, block, and
-plugin. Themes and plugins show their version with "No update source" until a
-marketplace source exists; the Check All / Update All buttons light up then.
-Blocks are version-locked to whatever defines them, so the Blocks card simply
-shows which plugin or core component updates each one.
+**Addons**: the lower half of the page lists every installed theme and plugin.
+Each row shows the installed version, a trust badge, the Marketplace-catalog
+latest version, and the update source: `Core` (declared in the root
+pubvana.json `includes` block, updates with a Pubvana release), `Marketplace`
+(store install record), `Composer` (vendor dependency), `Free` (free at the
+store, updates for free), `Not purchased` (paid item sold at the store, but
+no purchase record here: buy, verify purchases, or remove it), or `Manual`
+(copied in outside any update channel; nothing manages its updates). Check
+All forces a fresh catalog fetch from the store; Update All applies every
+available store update through the shared install path, reporting per-item
+outcomes.
 
 A pre-update backup lands in Tools > Backups tagged `pre-update`. If an
 update fails partway, restore that snapshot to get back to a working site.

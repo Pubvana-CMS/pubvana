@@ -1,6 +1,6 @@
 # Social Links
 
-Central management of your site's social profile links, rendered anywhere on the public site as a block with Font Awesome 7 Free icons. This is the v3 port of the v2 `SocialLinks` widget.
+Central management of your site's social profile links, rendered anywhere on the public site as a block with Font Awesome 7 Free icons. This is the v3 port of the v2 SocialLinks feature.
 
 ## Features
 

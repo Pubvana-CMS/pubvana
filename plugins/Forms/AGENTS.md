@@ -87,7 +87,7 @@ This plugin has no `composer.json` and no test suite, unlike library plugins in 
   - [ ] Create and publish a form; confirm it renders via shortcode, block, and `renderPublicForm()`, and that a draft form renders nothing
   - [ ] Submit valid data; confirm the submission stores IP/UA/referrer and the sanitized JSON payload, and the success message shows
   - [ ] Submit while the honeypot `website` field is filled; confirm no row is stored but the visitor sees success
-  - [ ] Turn on the "Public forms" switch under Settings > Captcha with a configured provider and confirm the widget renders in published forms and an unverified submit is rejected with the captcha error; turn the switch off and confirm submissions pass without a token
+  - [ ] Turn on the "Public forms" switch under Settings > Captcha with a configured provider and confirm the captcha block renders in published forms and an unverified submit is rejected with the captcha error; turn the switch off and confirm submissions pass without a token
   - [ ] Submit twice within `rate_limit_seconds`; confirm the second is rejected with the wait message
   - [ ] Add a `select`/`radio`/`checkbox` field with `options_json`; confirm a tampered option value is rejected server-side
   - [ ] Configure `notification_emails`; confirm the mailer fires and that a forced mail failure still stores the submission

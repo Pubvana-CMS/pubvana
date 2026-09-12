@@ -11,13 +11,15 @@ Package: `pubvana/marketplace`. It is a separate plugin from the Digital Store a
 3. **Purchase on the Pubvana website.** "Purchase on pubvanacms.com" opens the store checkout in a new tab with the cart already loaded. No payment happens on this site.
 4. **Purchases.** "Purchases" verifies which owned products license this domain and lists each one with its license state (valid, scope, expiry/renewal), plus whether it is installed and its version.
 5. **Install / reinstall.** Install a purchased plugin or theme directly to this site. Reinstall-all reinstalls every owned, licensed item at once.
-6. **Domain move.** A single-site license bound to another domain triggers the domain transfer flow: the store emails a confirmation link, and installing resumes after the transfer is confirmed.
+6. **Addon updates for the Updates plugin.** Tools > Updates lists installed plugins/themes with update availability coming from the Marketplace catalog. Its "Update" action passes the package identity to this plugin's `installFromPackage()`, which owns license validation, download, and extraction; the Updates plugin supplies nothing but the package name.
+7. **Domain move.** A single-site license bound to another domain triggers the domain transfer flow: the store emails a confirmation link, and installing resumes after the transfer is confirmed.
 
 ## Licensing model
 
 - Products carry `license_scope` of `single_site`, `multi_site`, or `none`.
 - Licenses are domain-bound at purchase and verified back at the store; the Marketplace never asks the buyer to type a key (though keys exist for admin and diagnostics).
 - The internal `marketplace_installs` table is bookkeeping only and is not surfaced as a key list to users.
+- **Identity:** an addon is its manifest `pubvana.json` `name` (`pubvana/blog`). The store catalog `slug` is the same string. `package_id` on the installs table is stamped from the freshly installed manifest at install and backfilled at verify; install folders are destination bookkeeping only and are never a lookup key.
 
 ## Configuration
 
