@@ -922,8 +922,7 @@ class UpdateService
                 isset($coreIncluded[$package]),
                 false,
                 isset($marketplaceUnlicensed[$package]),
-                is_array($marketplaceUnlicensed[$package] ?? null)
-                    && ($marketplaceUnlicensed[$package]['free'] ?? false)
+                isset($marketplaceUnlicensed[$package]) && $marketplaceUnlicensed[$package]['free']
             );
             $themes[$index]['update'] = $this->rowUpdate(
                 $isPackageTracked,
@@ -935,15 +934,14 @@ class UpdateService
 
         $plugins = $this->inventoryPlugins();
         foreach ($plugins as $index => $plugin) {
-            $package = $plugin['package'] ?? null;
-            $isPackageTracked = $package !== null && isset($marketplacePackages[$package]);
+            $package = $plugin['package'];
+            $isPackageTracked = isset($marketplacePackages[$package]);
             $plugins[$index]['source'] = $this->addonSource(
                 $isPackageTracked,
                 isset($coreIncluded[$package]),
-                (bool) ($plugin['vendor'] ?? false),
+                $plugin['vendor'],
                 isset($marketplaceUnlicensed[$package]),
-                is_array($marketplaceUnlicensed[$package] ?? null)
-                    && ($marketplaceUnlicensed[$package]['free'] ?? false)
+                isset($marketplaceUnlicensed[$package]) && $marketplaceUnlicensed[$package]['free']
             );
             $plugins[$index]['update'] = $this->rowUpdate(
                 $isPackageTracked,
@@ -964,6 +962,8 @@ class UpdateService
      * The update payload for one row: tracked packages carry whatever the
      * store license flow reports; untracked free packages update for free
      * whenever the store's free version is newer than what's on disk.
+     *
+     * @param array<string, mixed>|null $trackedUpdate Store license flow payload.
      *
      * @return array<string, mixed>|null
      */
@@ -1082,6 +1082,7 @@ class UpdateService
                 'package' => $package,
                 'folder'  => is_string($theme['folder'] ?? null) ? $theme['folder'] : null,
                 'version' => is_string($version) && $version !== '' ? $version : null,
+                'update'  => null,
             ];
         }
 
@@ -1136,7 +1137,7 @@ class UpdateService
      */
     private function inventoryPlugins(): array
     {
-        /** @var array<string, array{name: string, package: string, vendor: bool, version: ?string}> $rows */
+        /** @var array<string, array{name: string, package: string, vendor: bool, version: ?string, update: array<string, mixed>|null}> $rows */
         $rows = [];
         $names = $this->pluginDisplayNames();
 
@@ -1154,6 +1155,7 @@ class UpdateService
                 'package' => (string) $pluginId,
                 'vendor'  => false,
                 'version' => is_string($version) && $version !== '' ? $version : null,
+                'update'  => null,
             ];
         }
 
@@ -1175,6 +1177,7 @@ class UpdateService
                 'package' => (string) $packageId,
                 'vendor'  => true,
                 'version' => is_string($version) && $version !== '' ? $version : null,
+                'update'  => null,
             ];
         }
 

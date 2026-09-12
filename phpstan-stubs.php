@@ -103,9 +103,7 @@ namespace flight {
      *
      * Plugin service facades, registered by each plugin's Plugin.php.
      *
-     * @phpstan-method \Pubvana\Plugins\Trust\Services\TrustService trust()
      * @phpstan-method \Pubvana\Plugins\Pages\Services\PagesService pages()
-     * @phpstan-method \Pubvana\Plugins\Docs\Services\DocsService docs()
      * @phpstan-method \Pubvana\Plugins\Media\Services\MediaService media()
      * @phpstan-method \Pubvana\Plugins\Seo\Services\SeoService seo()
      * @phpstan-method \Pubvana\Plugins\Seo\Services\SchemaService seoSchema()
@@ -122,7 +120,6 @@ namespace flight {
      * @phpstan-method \Pubvana\Plugins\Redirects\Services\RedirectLinksService redirectLinks()
      * @phpstan-method \Pubvana\Plugins\Analytics\Services\AnalyticsService analytics()
      * @phpstan-method \Pubvana\Plugins\Backups\Services\BackupService backups()
-     * @phpstan-method \Pubvana\Plugins\Import\Services\ImportService import()
      * @phpstan-method \Pubvana\Plugins\SiteHealth\Services\HealthService health()
      * @phpstan-method \Pubvana\Plugins\SocialLinks\Services\SocialLinksService socialLinks()
  * @phpstan-method \Pubvana\Plugins\AiAssistant\Services\AiService ai()
@@ -132,7 +129,6 @@ namespace flight {
      * @phpstan-method \Pubvana\Plugins\BrokenLinks\Services\BrokenLinksService brokenLinks()
      * @phpstan-method \Pubvana\Plugins\Updates\Services\UpdateService updates()
      * @phpstan-method \Pubvana\Plugins\Marketplace\Services\MarketplaceService marketplace()
-     * @phpstan-method \Pubvana\Plugins\Pvstore\Services\PvstoreService pvstore()
      */
     class Engine
     {
@@ -287,18 +283,6 @@ namespace Pubvana\Plugins\Pages\Services {
     }
 }
 
-namespace Pubvana\Plugins\Trust\Services {
-    class TrustService
-    {
-    }
-}
-
-namespace Pubvana\Plugins\Docs\Services {
-    class DocsService
-    {
-    }
-}
-
 namespace Pubvana\Plugins\Media\Services {
     class MediaService
     {
@@ -442,18 +426,6 @@ namespace Enlivenapp\FlightShield\Models {
      * @phpstan-method self|null find($id = null)
      */
     class User
-    {
-    }
-}
-
-namespace Pubvana\Plugins\Import\Services {
-    class ImportService
-    {
-    }
-}
-
-namespace Pubvana\Plugins\Pvstore\Services {
-    class PvstoreService
     {
     }
 }

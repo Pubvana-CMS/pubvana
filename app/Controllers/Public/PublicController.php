@@ -207,7 +207,7 @@ abstract class PublicController
         }
 
         // 3. Plugin fallback: plugins/{Plugin}/Views/{template}.tpl where
-        // {template} is the prefixed relative path (pubvana/pvstore/store.tpl).
+        // {template} is the prefixed relative path (pubvana/blog/post.tpl).
         if ($view instanceof \Pubvana\Services\PluginView) {
             $pluginPath = $view->getPluginPath($this->getPluginId());
             if ($pluginPath !== null) {

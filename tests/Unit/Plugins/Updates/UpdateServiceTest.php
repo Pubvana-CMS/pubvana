@@ -416,12 +416,12 @@ final class UpdateServiceTest extends TestCase
         $addons = $service->addons();
 
         self::assertSame([
-            ['name' => 'Default', 'package' => null, 'folder' => 'default', 'version' => '1.0.0', 'source' => 'manual', 'update' => null],
+            ['name' => 'Default', 'package' => null, 'folder' => 'default', 'version' => '1.0.0', 'update' => null, 'source' => 'manual'],
         ], $addons['themes']);
         self::assertSame([
-            ['name' => 'enlivenapp/flight-sessions', 'package' => 'enlivenapp/flight-sessions', 'vendor' => true, 'version' => '0.1.0', 'source' => 'composer', 'update' => null],
-            ['name' => 'Blog', 'package' => 'pubvana/blog', 'vendor' => false, 'version' => '1.2.0', 'source' => 'manual', 'update' => null],
-            ['name' => 'Core Blocks', 'package' => 'pubvana/core-blocks', 'vendor' => false, 'version' => '1.0.0', 'source' => 'manual', 'update' => null],
+            ['name' => 'enlivenapp/flight-sessions', 'package' => 'enlivenapp/flight-sessions', 'vendor' => true, 'version' => '0.1.0', 'update' => null, 'source' => 'composer'],
+            ['name' => 'Blog', 'package' => 'pubvana/blog', 'vendor' => false, 'version' => '1.2.0', 'update' => null, 'source' => 'manual'],
+            ['name' => 'Core Blocks', 'package' => 'pubvana/core-blocks', 'vendor' => false, 'version' => '1.0.0', 'update' => null, 'source' => 'manual'],
         ], $addons['plugins']);
     }
 

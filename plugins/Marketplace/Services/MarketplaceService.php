@@ -397,7 +397,7 @@ class MarketplaceService
                     }
                 }
                 $version = $info['semver'] ?? null;
-                if (!is_string($package) || $package === '' || !is_string($version) || $version === '') {
+                if (!is_string($package) || !is_string($version) || $version === '') {
                     continue;
                 }
                 $folder = basename(dirname((string) $manifestFile));
@@ -449,7 +449,7 @@ class MarketplaceService
         }
         $version = $info['semver'] ?? null;
 
-        if (!is_string($package) || $package === '' || !is_string($version) || $version === '') {
+        if (!is_string($package) || !is_string($version) || $version === '') {
             return null;
         }
 
@@ -535,7 +535,7 @@ class MarketplaceService
      * the verify flow) resolves it. Free items are reported separately
      * (`free: true`) so downstream surfaces do not treat them as pirated.
      *
-     * @return array<string, array{item_type: string, free: bool}>
+     * @return array<string, array{free: bool}>
      */
     public function unlicensedPackages(): array
     {
@@ -609,7 +609,7 @@ class MarketplaceService
             return $this->installFreePackage($packageId);
         }
 
-        $result = $this->install((int) $record->store_product_id, (string) $record->item_type);
+        $result = $this->install((int) $record->store_product_id);
         if (!$result['ok']) {
             return ['ok' => false, 'reason' => $result['reason'], 'version' => null];
         }
@@ -663,6 +663,9 @@ class MarketplaceService
     /**
      * Record a free install so future checks see a Marketplace item: same
      * bookkeeping as a purchase, minus the license.
+     *
+     * @param array<string, mixed>                    $item      Store catalog item payload.
+     * @param array{package: string, version: string}|null $identity Manifest identity.
      */
     protected function trackFreeInstall(array $item, string $itemType, string $folder, ?array $identity): void
     {
@@ -916,7 +919,7 @@ class MarketplaceService
         }
         $version = (string) ($info['semver'] ?? '');
 
-        if ($package === null || $package === '' || $version === '') {
+        if ($package === null || $version === '') {
             $this->rmdir($extractPath);
             @unlink($zipPath);
             return $fail('The package manifest is missing its identity.');

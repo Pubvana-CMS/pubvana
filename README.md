@@ -92,13 +92,13 @@ pubvana/
 
 | Layer | Technology |
 |---|---|
-| [Framework](build_docs/Bootstrapping.md) | FlightPHP 3.0 |
-| [Authentication](build_docs/Shield.md) | enlivenapp/flight-shield |
-| [Database](build_docs/Architecture.md) | enlivenapp/flight-active-record |
-| [Admin UI](https://tabler.io) | Tabler (Bootstrap 5 + Alpine.js) |
-| [Public Templates](build_docs/Vision.md) | Vision (no PHP execution) |
-| [Content Editor](https://jodit.com) | Jodit |
-| [Mail](build_docs/Email.md) | PHPMailer |
+| Framework | FlightPHP 3.0 |
+| Authentication | enlivenapp/flight-shield |
+| Database | enlivenapp/flight-active-record |
+| Admin UI | [Tabler](https://tabler.io) (Bootstrap 5 + Alpine.js) |
+| Public Templates | Vision (no PHP execution) |
+| Content Editor | [Jodit](https://jodit.com) |
+| Mail | PHPMailer |
 
 ## Security
 
@@ -135,8 +135,8 @@ MIT. [LICENSE](LICENSE.md)
 
 ## Legacy
 
-- Orginally brought to github by [Kami](https://github.com/Kami) as [Open Blog](https://github.com/Kami/Open-Blog) around 2010 built on Codeigniter (2-ish).
+- Orginally brought to github by [Kami](https://github.com/Kami) as [Open Blog](https://github.com/Kami/Open-Blog) around 2010 built on Codeigniter v(2-ish).
 - Dec. 2016 Kami released [Open Blog](https://github.com/enlivenapp/Open-Blog) to [Enlivenapp](https://github.com/enlivenapp) along with domains.
 - Enlivenapp brought about [Open Blog 3](https://github.com/enlivenapp/Open-Blog-3) updated with Codeigniter3 and more functionality.
-- Mar 2018 some copyright issues caused the renaming of Open Blog to Pubvana and was release under Enlivenapp/pubvana through Codeigniter4 until the Aug of 2026.
-- Aug 2026 Pubvana was moved to it's own organisation(github) where [Pubvana v3](https://github.com/Pubvana-CMS/pubvana) left behind Codeigniter and began in ernest on a new framework called [FlightPHP](https://github.com/flightphp) with updated and modern coding style, security, and a larger feature set. This is a completely different codebase and is very much not backwards compatable to previous versions of Pubvana and Open Blog. 
+- Mar 2018 some copyright considerations caused the renaming of Open Blog to Pubvana and was release under Enlivenapp/pubvana built on Codeigniter4 until Aug of 2026.
+- Aug 2026 Pubvana was moved to it's own organisation(github) where [Pubvana v3](https://github.com/Pubvana-CMS/pubvana) replaced Codeigniter with [FlightPHP](https://github.com/flightphp) with updated and modern coding style, security, and a larger feature set. This is a completely different codebase and is not backwards compatable to previous versions of Pubvana and Open Blog. 

@@ -1,38 +1,8 @@
 # Local project instructions / working docs (not published)
 /AGENTS.md
-/PLAN.md
-/build_docs/*
-/RELEASE-AGENTS.md
-
-# Plans yet to be implemented
-PLAN-multi-language.md
-/Checklist.md
 
 # Composer
 /vendor/
-
-# Local working files
-/temp/*
-
-# Pubvana-only plugins
-/plugins/Pvstore/*
-/tests/Unit/Plugins/Pvstore/*
-/tests/Support/Sqlite.php
-/plugins/Docs/*
-/tests/Unit/Plugins/Docs/*
-/plugins/Trust/*
-/tests/Unit/Plugins/Trust/*
-
-# messing with someone who thinks
-# base64 is awesome
-/puzzle/*
-
-# Free but from PV Store
-/plugins/Import/*
-/plugins/ImportWp/*
-
-#Pubvana's official theme
-/themes/official/*
 
 # testing
 .phpunit.cache/
@@ -60,5 +30,4 @@ PLAN-multi-language.md
 
 # Node.js
 /node_modules/
-/package-lock.json
 node_modules

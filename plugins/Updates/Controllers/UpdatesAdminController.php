@@ -154,7 +154,7 @@ final class UpdatesAdminController extends AdminController
             'changelog_url'        => $this->changelogUrl(),
             'adminBase'            => $this->adminBase(),
             'trust'                => $trust,
-            'marketplaceConnected' => (bool) ($addons['marketplaceConnected'] ?? false),
+            'marketplaceConnected' => $addons['marketplaceConnected'],
             'marketplaceAdmin'     => $marketplaceAdmin,
         ]);
     }

@@ -24,7 +24,8 @@ class AddPackageIdToMarketplaceInstalls extends Migration
     public function down(): void
     {
         $this->table('marketplace_installs')
-            ->dropIndex('idx_marketplace_installs_package_id')
+            ->dropIndex('idx_marketplace_installs_package_id');
+        $this->table('marketplace_installs')
             ->dropColumns(['package_id']);
     }
 }
