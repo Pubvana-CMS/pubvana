@@ -17,6 +17,7 @@ PLAN-multi-language.md
 # Pubvana-only plugins
 /plugins/Pvstore/*
 /tests/Unit/Plugins/Pvstore/*
+/tests/Support/Sqlite.php
 /plugins/Docs/*
 /tests/Unit/Plugins/Docs/*
 /plugins/Trust/*

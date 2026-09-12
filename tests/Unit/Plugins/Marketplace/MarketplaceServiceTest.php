@@ -160,6 +160,16 @@ final class TestMarketplaceService extends MarketplaceService
     /** @var list<?string> */
     public array $getResponses = [];
 
+    public function coreSemverForTest(): string
+    {
+        return '3.0.0';
+    }
+
+    protected function sitePubvanaVersion(): string
+    {
+        return $this->coreSemverForTest();
+    }
+
     protected function httpPostJson(string $url, array $payload): ?string
     {
         $this->sent[] = ['url' => $url, 'payload' => $payload];
