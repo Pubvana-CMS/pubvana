@@ -35,6 +35,10 @@ class MarketplaceAdminController extends AdminController
     public function index(): void
     {
         $svc = $this->app->marketplace();
+        // Addons physically installed on this site, keyed by package id,
+        // so catalog cards can show what is already here regardless of how
+        // it got installed (Marketplace, core shipped, manual upload).
+        $installed = $svc->localPackageVersions();
         $this->render('pubvana/marketplace/admin/index', [
             'pageTitle'    => 'Marketplace',
             'connected'    => $svc->connected(),
@@ -42,6 +46,7 @@ class MarketplaceAdminController extends AdminController
             'prefillEmail' => $this->currentUserEmail(),
             'categories'   => $svc->connected() ? $svc->categories() : [],
             'items'        => $svc->connected() ? $svc->items() : [],
+            'installed'    => $installed,
             'adminBase'    => $this->adminBase(),
         ]);
     }
@@ -108,14 +113,14 @@ class MarketplaceAdminController extends AdminController
     {
         $productId = (int) ($this->app->request()->data->product_id ?? 0);
         $currency = (string) ($this->app->request()->data->currency ?? 'USD');
-        $result = $this->app->marketplace()->addToCart($productId, $currency);
+        $scope = (string) ($this->app->request()->data->scope ?? 'single_site');
+        $result = $this->app->marketplace()->addToCart($productId, $currency, $scope);
         $this->app->json($result);
     }
 
     public function install(): void
     {
         $productId = (int) ($this->app->request()->data->product_id ?? 0);
-        $itemType = (string) ($this->app->request()->data->item_type ?? 'plugin');
         $record = $this->app->marketplace()->installRecordForProduct($productId);
         if ($record !== null && $this->app->marketplace()->needsDomainMove($productId)) {
             $this->app->session()->flash('warning', 'Your license is bound to another domain. Confirm the transfer in your email, then install again.');
@@ -123,9 +128,22 @@ class MarketplaceAdminController extends AdminController
             $this->app->redirect($this->adminBase() . '/purchases');
             return;
         }
-        $result = $this->app->marketplace()->install($productId, $itemType);
+        $result = $this->app->marketplace()->install($productId);
         $this->app->session()->flash(!empty($result['ok']) ? 'success' : 'danger', $result['reason']);
         $this->app->redirect($this->adminBase() . '/purchases');
+    }
+
+    /**
+     * Download and install a free package directly, no cart, no checkout.
+     * The store's free endpoint serves the zip; the manifest inside drives
+     * the install.
+     */
+    public function installFree(): void
+    {
+        $package = (string) ($this->app->request()->data->package ?? '');
+        $result = $this->app->marketplace()->installFromPackage($package);
+        $this->app->session()->flash(!empty($result['ok']) ? 'success' : 'danger', $result['reason']);
+        $this->app->redirect($this->adminBase());
     }
 
     public function reinstallAll(): void

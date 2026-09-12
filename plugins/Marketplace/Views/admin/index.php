@@ -70,43 +70,130 @@
     </div>
 
     <?php if (!empty($items)): ?>
+        <?php
+        // Group items by category; uncategorized items fall into their own
+        // group at the end. Categories come from the store's categories
+        // endpoint, keyed by id.
+        $catsById = [];
+        foreach ($categories as $c) {
+            $catsById[(int) ($c['id'] ?? 0)] = (string) ($c['name'] ?? '');
+        }
+        $groups = [];
+        foreach ($items as $item) {
+            $catId = (int) ($item['category_id'] ?? 0);
+            $label = $catsById[$catId] ?? ($item['category'] ?? '');
+            $groups[$label !== '' ? $label : 'Other'][] = $item;
+        }
+        ksort($groups, SORT_NATURAL | SORT_FLAG_CASE);
+        ?>
+        <?php foreach ($groups as $groupLabel => $groupItems): ?>
+        <h2 class="h4 mt-4 mb-3"><?= htmlspecialchars($groupLabel) ?></h2>
         <div class="row g-3">
-            <?php foreach ($items as $item):
+            <?php foreach ($groupItems as $item):
                 $id = (int) ($item['id'] ?? 0);
+                $package = (string) ($item['package'] ?? '');
+                $isFree = !empty($item['is_free']);
+                // Addons physically on this site, from the local manifest
+                // scan: covers Marketplace installs, core-shipped, and
+                // manual uploads alike.
+                $installedInfo = $installed[$package] ?? null;
+                $installedHere = $installedInfo !== null;
+                $price = (float) ($item['price'] ?? 0);
+                $priceMulti = isset($item['price_multi']) && $item['price_multi'] !== null ? (float) $item['price_multi'] : null;
                 ?>
                 <div class="col-md-6 col-lg-4">
                     <div class="card h-100">
                         <div class="card-body">
                             <div class="d-flex align-items-center gap-2 mb-2">
-                                <span class="badge bg-secondary-lt"><?= htmlspecialchars((string) ($item['item_type'] ?? '')) ?></span>
-                                <?php if (!empty($item['is_free']) || ($item['license_scope'] ?? '') === 'none'): ?>
-                                    <span class="badge bg-success-lt">Free to use anywhere</span>
-                                <?php else: ?>
-                                    <span class="badge bg-warning-lt">
-                                        <?= htmlspecialchars(($item['license_scope'] ?? 'single_site') === 'multi_site' ? 'Multi-site license' : '1-site license') ?>
-                                    </span>
+                                <?php if (!empty($item['on_sale'])): ?>
+                                    <span class="badge bg-danger-lt">On sale</span>
+                                <?php endif; ?>
+                                <?php if ($isFree): ?>
+                                    <span class="badge bg-success-lt">Free</span>
+                                <?php endif; ?>
+                                <?php if ($installedHere): ?>
+                                    <span class="badge bg-info-lt">Installed v<?= htmlspecialchars((string) $installedInfo['version']) ?></span>
                                 <?php endif; ?>
                             </div>
                             <h3 class="card-title mb-1"><?= htmlspecialchars((string) ($item['name'] ?? '')) ?></h3>
-                            <p class="card-text text-secondary"><?= htmlspecialchars((string) ($item['summary'] ?? '')) ?></p>
-                            <?php if (empty($item['is_free']) && ($item['license_scope'] ?? '') !== 'none'): ?>
-                                <p class="text-secondary small">
-                                    <?= htmlspecialchars(($item['license_scope'] ?? 'single_site') === 'multi_site' ? 'Licensed to a set of registered domains.' : 'Licensed to one domain; moving it needs an email-confirmed transfer.') ?>
+                            <?php if (!empty($item['version'])): ?>
+                                <p class="text-secondary small mb-2">v<?= htmlspecialchars((string) $item['version']) ?></p>
+                            <?php endif; ?>
+                            <p class="card-text text-secondary"><?= htmlspecialchars((string) ($item['description'] ?? '')) ?></p>
+                            <?php if (!empty($item['min_pubvana'])): ?>
+                                <p class="text-secondary small mb-2">Requires Pubvana <?= htmlspecialchars((string) $item['min_pubvana']) ?>+</p>
+                            <?php endif; ?>
+                            <?php
+                            // Update available: installed here and the store
+                            // ships a newer version. installFromPackage()
+                            // routes free items through the free endpoint and
+                            // purchased items through license validation.
+                            $updateAvailable = $installedHere
+                                && (string) ($item['version'] ?? '') !== ''
+                                && version_compare((string) $item['version'], (string) $installedInfo['version'], '>');
+                            ?>
+                            <?php if ($updateAvailable): ?>
+                            <div class="d-flex align-items-center justify-content-between mt-3">
+                                <span class="badge bg-orange-lt">Update to v<?= htmlspecialchars((string) $item['version']) ?></span>
+                                <form method="POST" action="<?= $adminBase ?>/install-free" class="d-inline">
+                                    <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
+                                    <input type="hidden" name="package" value="<?= htmlspecialchars($package) ?>">
+                                    <button class="btn btn-primary">Update</button>
+                                </form>
+                            </div>
+                            <?php elseif (!$installedHere): ?>
+                            <div class="d-flex align-items-center justify-content-between mt-3 gap-2 flex-wrap">
+                                <?php if ($isFree): ?>
+                                    <strong>Free</strong>
+                                    <form method="POST" action="<?= $adminBase ?>/install-free" class="d-inline">
+                                        <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
+                                        <input type="hidden" name="package" value="<?= htmlspecialchars($package) ?>">
+                                        <button class="btn btn-primary">Download &amp; install</button>
+                                    </form>
+                                <?php elseif ($price <= 0 && $priceMulti !== null && $priceMulti > 0): ?>
+                                    <div class="btn-group">
+                                        <form method="POST" action="<?= $adminBase ?>/install-free" class="d-inline">
+                                            <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
+                                            <input type="hidden" name="package" value="<?= htmlspecialchars($package) ?>">
+                                            <button class="btn btn-success">Free download</button>
+                                        </form>
+                                        <button type="button" class="btn btn-primary"
+                                                data-cart-product="<?= $id ?>"
+                                                data-cart-scope="multi_site">Multi $<?= number_format($priceMulti, 2) ?></button>
+                                    </div>
+                                <?php elseif ($price > 0 && $priceMulti !== null && $priceMulti > 0): ?>
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-primary"
+                                                data-cart-product="<?= $id ?>"
+                                                data-cart-scope="single_site">1-site $<?= number_format($price, 2) ?></button>
+                                        <button type="button" class="btn btn-outline-primary"
+                                                data-cart-product="<?= $id ?>"
+                                                data-cart-scope="multi_site">Multi $<?= number_format($priceMulti, 2) ?></button>
+                                    </div>
+                                <?php elseif ($price > 0): ?>
+                                    <strong>$<?= number_format($price, 2) ?></strong>
+                                    <button type="button" class="btn btn-primary"
+                                            data-cart-product="<?= $id ?>"
+                                            data-cart-scope="single_site">Add to cart</button>
+                                <?php elseif ($priceMulti !== null && $priceMulti > 0): ?>
+                                    <strong>$<?= number_format($priceMulti, 2) ?></strong>
+                                    <button type="button" class="btn btn-primary"
+                                            data-cart-product="<?= $id ?>"
+                                            data-cart-scope="multi_site">Add to cart</button>
+                                <?php endif; ?>
+                            </div>
+                            <?php if (!$isFree && ($price > 0 || ($priceMulti ?? 0) > 0)): ?>
+                                <p class="text-secondary small mb-0 mt-2">
+                                    <?= ($priceMulti !== null && $price > 0) ? '1-site licenses bind to one domain; multi-site licenses cover a set of registered domains.' : (($priceMulti !== null && $priceMulti > 0) ? 'Licensed to a set of registered domains.' : 'Licensed to one domain; moving it needs an email-confirmed transfer.') ?>
                                 </p>
                             <?php endif; ?>
-                            <div class="d-flex align-items-center justify-content-between mt-3">
-                                <strong><?= htmlspecialchars((string) ($item['currency'] ?? 'USD')) ?> <?= number_format((float) ($item['price'] ?? 0), 2) ?></strong>
-                                <button type="button" class="btn btn-primary"
-                                        data-cart-product="<?= $id ?>"
-                                        data-cart-name="<?= htmlspecialchars((string) ($item['name'] ?? '')) ?>">
-                                    Add to cart
-                                </button>
-                            </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
             <?php endforeach; ?>
         </div>
+        <?php endforeach; ?>
 
         <div class="mt-4">
             <a href="<?= $adminBase ?>/cart-open" target="_blank" class="btn btn-lg btn-success w-100">
@@ -124,11 +211,12 @@
         document.querySelectorAll('[data-cart-product]').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 var id = btn.getAttribute('data-cart-product');
-                var name = btn.getAttribute('data-cart-name');
+                var scope = btn.getAttribute('data-cart-scope') || 'single_site';
                 btn.disabled = true;
                 btn.textContent = 'Adding…';
                 var fd = new FormData();
                 fd.append('product_id', id);
+                fd.append('scope', scope);
                 fd.append('currency', 'USD');
                 fd.append('_csrf_token', '<?= csrf_token() ?>');
                 fetch('<?= $adminBase ?>/cart-add', {
@@ -138,7 +226,7 @@
                 }).then(function (r) { return r.json(); }).then(function (res) {
                     if (res && res.ok) {
                         btn.textContent = 'Added to cart';
-                        btn.classList.remove('btn-primary');
+                        btn.classList.remove('btn-primary', 'btn-outline-primary');
                         btn.classList.add('btn-success');
                     } else {
                         btn.textContent = 'Try again';

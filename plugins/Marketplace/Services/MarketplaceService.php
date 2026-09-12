@@ -121,8 +121,20 @@ class MarketplaceService
     // Catalog
     // -----------------------------------------------------------------
 
+    private const SETTING_CATALOG_REFRESHED_AT = 'Marketplace.catalog_refreshed_at';
+
     /**
-     * Fetch categories with their products from the store, cached for 1 hour.
+     * The last moment the cached catalog was declared stale by a user
+     * action ("Check all" on the Updates screen). Cache entries generated
+     * before this moment are treated as expired even inside their TTL.
+     */
+    public function refreshCatalog(): void
+    {
+        $this->app->settings()->set(self::SETTING_CATALOG_REFRESHED_AT, date('c'));
+    }
+
+    /**
+     * Fetch categories with their products from the store, cached.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -131,11 +143,13 @@ class MarketplaceService
         if (!$this->withToken()) {
             return [];
         }
-        $data = $this->decode($this->httpGet($this->apiUrl('categories')));
-        if (!is_array($data) || empty($data['ok']) || !is_array($data['categories'])) {
-            return [];
-        }
-        return $data['categories'];
+        return $this->getCachedCatalog('categories', function () {
+            $data = $this->decode($this->httpGet($this->apiUrl('categories')));
+            if (!is_array($data) || empty($data['ok']) || !is_array($data['categories'])) {
+                return [];
+            }
+            return $data['categories'];
+        });
     }
 
     /**
@@ -148,12 +162,61 @@ class MarketplaceService
         if (!$this->withToken()) {
             return [];
         }
-        $url = $this->apiUrl('items') . '&currency=' . urlencode($currency);
-        $data = $this->decode($this->httpGet($url));
-        if (!is_array($data) || empty($data['ok']) || !is_array($data['items'])) {
-            return [];
+        return $this->getCachedCatalog('items_' . $currency, function () use ($currency) {
+            // pubvana_version filters out items whose latest release does
+            // not support this site's Pubvana version (store-side compat
+            // check, see StoreApiController::items).
+            $pubvanaVersion = $this->sitePubvanaVersion();
+            $url = $this->apiUrl('items') . '&currency=' . urlencode($currency)
+                . ($pubvanaVersion !== '' ? '&pubvana_version=' . urlencode($pubvanaVersion) : '');
+            $data = $this->decode($this->httpGet($url));
+            if (!is_array($data) || empty($data['ok']) || !is_array($data['items'])) {
+                return [];
+            }
+            return $data['items'];
+        });
+    }
+
+    /**
+     * Get cached catalog data or fetch and cache it.
+     *
+     * A cached entry is trusted only while its TTL runs AND it was written
+     * after the last explicit refresh; an older entry is refetched.
+     *
+     * @param string   $key      Cache key
+     * @param callable $callback Callback to fetch fresh data
+     * @return array<int, array<string, mixed>>
+     */
+    protected function getCachedCatalog(string $key, callable $callback): array
+    {
+        $cacheKey = 'Marketplace.catalog_cache.' . $key;
+        $ttl = (int) ($this->config['catalog_cache_ttl'] ?? 3600);
+        $now = time();
+        $refreshedAt = strtotime((string) ($this->app->settings()->get(self::SETTING_CATALOG_REFRESHED_AT) ?? ''));
+
+        $cached = $this->app->settings()->get($cacheKey);
+        if (is_array($cached) && isset($cached['data'], $cached['expires']) && $cached['expires'] > $now) {
+            $data = $cached['data'];
+            $stillValid = !is_int($refreshedAt)
+                || (isset($cached['generated_at']) && is_int($cached['generated_at']) && $cached['generated_at'] >= $refreshedAt);
+            if (is_array($data) && $data !== [] && $stillValid) {
+                return $data;
+            }
         }
-        return $data['items'];
+
+        $data = $callback();
+
+        // Never cache a miss: an unreachable store must not look like an
+        // (empty) catalog for the whole TTL.
+        if ($data !== []) {
+            $this->app->settings()->set($cacheKey, [
+                'data'         => $data,
+                'expires'      => $now + $ttl,
+                'generated_at' => $now,
+            ]);
+        }
+
+        return $data;
     }
 
     // -----------------------------------------------------------------
@@ -165,13 +228,14 @@ class MarketplaceService
      *
      * @return array{ok: bool, reason?: string}
      */
-    public function addToCart(int $productId, string $currency = 'USD'): array
+    public function addToCart(int $productId, string $currency = 'USD', string $scope = 'single_site'): array
     {
         if (!$this->withToken()) {
             return ['ok' => false, 'reason' => 'Not connected to a Pubvana account.'];
         }
         $body = $this->httpPostJson($this->apiUrl('cart/add'), [
             'product_id' => $productId,
+            'scope'      => $scope === 'multi_site' ? 'multi_site' : 'single_site',
             'currency'   => $currency,
         ]);
         $data = $this->decode($body);
@@ -234,9 +298,6 @@ class MarketplaceService
             $data = [
                 'product_name'     => (string) ($p['name'] ?? ''),
                 'slug'             => (string) ($p['slug'] ?? ''),
-                'item_type'        => in_array($p['item_type'] ?? '', ['plugin', 'theme', 'file'], true) ? (string) $p['item_type'] : 'plugin',
-                'folder'           => (string) ($p['folder'] ?? ''),
-                'installed_version'=> null,
                 'license_key'      => (string) ($p['license_key'] ?? ''),
                 'license_scope'    => in_array($p['scope'] ?? '', ['single_site', 'multi_site', 'none'], true) ? (string) $p['scope'] : 'single_site',
                 'license_valid'    => !empty($p['licensed']) ? 1 : 0,
@@ -248,6 +309,10 @@ class MarketplaceService
                 'updated_at'       => $now,
             ];
             if ($row === null) {
+                // New record: type/folder stay empty until the first
+                // install stamps them from the package manifest.
+                $data['item_type'] = 'plugin';
+                $data['folder'] = '';
                 $data['store_product_id'] = $pid;
                 $data['created_at'] = $now;
                 $model = new MarketplaceInstall($this->pdo);
@@ -258,6 +323,15 @@ class MarketplaceService
             } else {
                 foreach ($data as $k => $v) {
                     $row->$k = $v;
+                }
+                // item_type/folder are NOT synced from the store payload:
+                // they were stamped from the package manifest at install
+                // time and the manifest is the source of truth. Backfill
+                // the identity from the local manifest on the next verify
+                // for records installed before package_id existed.
+                $identity = $this->manifestIdentity((string) $row->item_type, (string) ($row->folder ?? ''));
+                if ($identity !== null && (string) ($row->package_id ?? '') === '') {
+                    $row->package_id = $identity['package'];
                 }
                 $row->save();
             }
@@ -276,6 +350,7 @@ class MarketplaceService
         foreach ($rows as $r) {
             $out[] = [
                 'store_product_id'  => (int) $r->store_product_id,
+                'package'           => (string) ($r->package_id ?? ''),
                 'product_name'      => (string) $r->product_name,
                 'item_type'         => (string) $r->item_type,
                 'folder'            => (string) ($r->folder ?? ''),
@@ -295,16 +370,378 @@ class MarketplaceService
         return (new MarketplaceInstall($this->pdo))->findByProductId($storeProductId);
     }
 
+    /**
+     * Every addon physically installed on this site, keyed by its manifest
+     * package identity ('pubvana/blog'), with the live version from that
+     * manifest. Covers addons installed outside the Marketplace (core
+     * shipped, manual upload), not just tracked installs.
+     *
+     * @return array<string, array{type: string, folder: string, version: string}>
+     */
+    public function localPackageVersions(): array
+    {
+        $out = [];
+        $roots = ['plugins' => 'plugin', 'themes' => 'theme'];
+        foreach ($roots as $dirName => $type) {
+            $base = PROJECT_ROOT . DIRECTORY_SEPARATOR . $dirName;
+            foreach ((glob($base . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR . 'pubvana.json') ?: []) as $manifestFile) {
+                $info = json_decode((string) file_get_contents((string) $manifestFile), true);
+                if (!is_array($info)) {
+                    continue;
+                }
+                $package = null;
+                foreach (['name', 'slug'] as $key) {
+                    if (isset($info[$key]) && is_string($info[$key]) && $info[$key] !== '') {
+                        $package = $info[$key];
+                        break;
+                    }
+                }
+                $version = $info['semver'] ?? null;
+                if (!is_string($package) || $package === '' || !is_string($version) || $version === '') {
+                    continue;
+                }
+                $folder = basename(dirname((string) $manifestFile));
+                $out[$package] = ['type' => $type, 'folder' => $folder, 'version' => $version];
+            }
+        }
+        return $out;
+    }
+
+    // -----------------------------------------------------------------
+    // Addon updates
+    // -----------------------------------------------------------------
+
+    /**
+     * The installed identity of an addon, read live from its manifest.
+     *
+     * Identity contract: an addon IS its pubvana.json `name`
+     * ('pubvana/blog'). Install destination folders are filesystem
+     * bookkeeping and are never a lookup key across plugins.
+     *
+     * @return array{package: string, version: string}|null
+     */
+    protected function manifestIdentity(string $itemType, string $folder): ?array
+    {
+        $folder = trim($folder);
+        if ($folder === '') {
+            return null;
+        }
+
+        $path = PROJECT_ROOT . \DIRECTORY_SEPARATOR
+            . ($itemType === 'theme' ? 'themes' : 'plugins') . \DIRECTORY_SEPARATOR
+            . $folder . \DIRECTORY_SEPARATOR . 'pubvana.json';
+        if (!is_file($path)) {
+            return null;
+        }
+
+        $info = json_decode((string) file_get_contents($path), true);
+        if (!is_array($info)) {
+            return null;
+        }
+
+        // Plugins carry `name`, themes carry `slug` (forward-compatible `name`).
+        $package = null;
+        foreach (['name', 'slug'] as $key) {
+            if (isset($info[$key]) && is_string($info[$key]) && $info[$key] !== '') {
+                $package = $info[$key];
+                break;
+            }
+        }
+        $version = $info['semver'] ?? null;
+
+        if (!is_string($package) || $package === '' || !is_string($version) || $version === '') {
+            return null;
+        }
+
+        return ['package' => $package, 'version' => $version];
+    }
+
+    /**
+     * Available updates for installed plugins/themes, keyed by package.
+     *
+     * Store contract: a catalog item whose `slug` matches the installed
+     * manifest `name` is the same addon. Version on disk is read live from
+     * the manifest, so this never trusts stored DB copies.
+     *
+     * @return array<string, array{item_type: string, latest_version: string, changelog: string|null}>
+     */
+    public function checkAddonUpdates(): array
+    {
+        if (!$this->withToken()) {
+            return [];
+        }
+
+        $catalog = $this->items();
+        if ($catalog === []) {
+            return [];
+        }
+
+        $catalogByPackage = [];
+        foreach ($catalog as $item) {
+            // The store's `package` field is the manifest package id
+            // ('pubvana/blog'); older store payloads keyed on `slug`.
+            $package = (string) ($item['package'] ?? $item['slug'] ?? $item['name'] ?? '');
+            if ($package !== '' && !isset($catalogByPackage[$package])) {
+                $catalogByPackage[$package] = $item;
+            }
+        }
+
+        $updates = [];
+        foreach ((new MarketplaceInstall($this->pdo))->allTracked() as $record) {
+            $itemType = (string) $record->item_type;
+            if (!in_array($itemType, ['plugin', 'theme'], true)) {
+                continue;
+            }
+
+            $identity = $this->manifestIdentity($itemType, (string) ($record->folder ?? ''));
+            if ($identity === null) {
+                continue;
+            }
+
+            $item = $catalogByPackage[$identity['package']] ?? null;
+            if ($item === null) {
+                continue;
+            }
+
+            $catalogVersion = (string) ($item['version'] ?? $item['semver'] ?? '');
+            if ($catalogVersion === '') {
+                continue;
+            }
+
+            if (version_compare($catalogVersion, $identity['version'], '>')) {
+                $updates[$identity['package']] = [
+                    'item_type'      => $itemType,
+                    'latest_version' => $catalogVersion,
+                    'changelog'      => isset($item['changelog']) && is_string($item['changelog']) ? $item['changelog'] : null,
+                ];
+            }
+        }
+
+        return $updates;
+    }
+
+    public function installRecordForPackage(string $packageId): ?MarketplaceInstall
+    {
+        return (new MarketplaceInstall($this->pdo))->findByPackageId($packageId);
+    }
+
+    /**
+     * Packages the store catalog sells that this site holds no verified
+     * purchase record for (sellable here, unlicensed here).
+     *
+     * This is a disclosure, not a verdict: the addon may be genuinely free
+     * (scope none), owned elsewhere, mid-transfer, or copied without a
+     * purchase. Only the store's license answer (the install record, from
+     * the verify flow) resolves it. Free items are reported separately
+     * (`free: true`) so downstream surfaces do not treat them as pirated.
+     *
+     * @return array<string, array{item_type: string, free: bool}>
+     */
+    public function unlicensedPackages(): array
+    {
+        if (!$this->withToken()) {
+            return [];
+        }
+
+        $catalog = $this->items();
+        if ($catalog === []) {
+            return [];
+        }
+
+        $tracked = $this->trackedPackages();
+
+        $unlicensed = [];
+        foreach ($catalog as $item) {
+            // Key by the package identity (manifest name), the same key the
+            // Updates plugin looks up. Fall back to slug for old payloads.
+            $package = (string) ($item['package'] ?? $item['slug'] ?? '');
+            if ($package === '' || isset($tracked[$package])) {
+                continue;
+            }
+            $unlicensed[$package] = [
+                'free' => !empty($item['is_free']) || !empty($item['free_tier']) || (($item['license_scope'] ?? '') === 'none'),
+            ];
+        }
+
+        return $unlicensed;
+    }
+
+    /**
+     * Package identities this site holds store install records for, keyed by
+     * package. An addon tracked here is Marketplace-sourced; everything else
+     * updates with a Pubvana release (core) or the vendor package.
+     *
+     * @return array<string, string>
+     */
+    public function trackedPackages(): array
+    {
+        $tracked = [];
+        foreach ((new MarketplaceInstall($this->pdo))->allTracked() as $record) {
+            $package = (string) ($record->package_id ?? '');
+            if ($package !== '' && in_array((string) $record->item_type, ['plugin', 'theme'], true)) {
+                $tracked[$package] = (string) $record->item_type;
+            }
+        }
+        return $tracked;
+    }
+
+    /**
+     * Install or reinstall an addon from the store by its package identity.
+     *
+     * Single store-install path: the download URL is re-derived server-side
+     * from the license, never accepted from a client. Shared by the
+     * Marketplace admin (Purchases) and the Updates addon-update surface.
+     *
+     * Free packages (is_free / scope none) need no license: they are free to
+     * use anywhere, so any connected site can install or update them for
+     * free through the store's free endpoint.
+     *
+     * @return array{ok: bool, reason: string, version: ?string}
+     */
+    public function installFromPackage(string $packageId): array
+    {
+        if (!preg_match('/^[a-zA-Z0-9][a-zA-Z0-9\/_\-\.]*$/', $packageId)) {
+            return ['ok' => false, 'reason' => 'Invalid package.', 'version' => null];
+        }
+
+        $record = $this->installRecordForPackage($packageId);
+        if ($record === null || (string) $record->license_key === '') {
+            return $this->installFreePackage($packageId);
+        }
+
+        $result = $this->install((int) $record->store_product_id, (string) $record->item_type);
+        if (!$result['ok']) {
+            return ['ok' => false, 'reason' => $result['reason'], 'version' => null];
+        }
+
+        $fresh = $this->installRecordForPackage($packageId);
+
+        return [
+            'ok'      => true,
+            'reason'  => $result['reason'],
+            'version' => $fresh !== null && $fresh->installed_version !== null ? (string) $fresh->installed_version : null,
+        ];
+    }
+
+    /**
+     * Install or update a free package: no purchase record, no license.
+     *
+     * @return array{ok: bool, reason: string, version: ?string}
+     */
+    protected function installFreePackage(string $package): array
+    {
+        $item = null;
+        foreach ($this->items() as $entry) {
+            // Match on the package id (manifest identity) or the store slug.
+            if ((string) ($entry['package'] ?? '') === $package
+                || (string) ($entry['slug'] ?? '') === $package) {
+                $item = $entry;
+                break;
+            }
+        }
+
+        $isFree = $item !== null
+            && (!empty($item['is_free']) || !empty($item['free_tier']) || (($item['license_scope'] ?? '') === 'none'));
+
+        if ($item === null || !$isFree) {
+            return ['ok' => false, 'reason' => 'This package is not a verified purchase. Verify purchases first.', 'version' => null];
+        }
+
+        // Type and folder come out of the package manifest inside
+        // installPackage(); the store payload no longer carries them.
+        $result = $this->installPackage($this->apiUrl('free') . '&slug=' . urlencode($package));
+        if (!$result['ok']) {
+            return ['ok' => false, 'reason' => $result['reason'], 'version' => null];
+        }
+
+        $identity = ['package' => $result['package'], 'version' => $result['version']];
+        $this->trackFreeInstall($item, $result['type'], $result['folder'], $identity);
+
+        return ['ok' => true, 'reason' => 'Installed.', 'version' => $result['version']];
+    }
+
+    /**
+     * Record a free install so future checks see a Marketplace item: same
+     * bookkeeping as a purchase, minus the license.
+     */
+    protected function trackFreeInstall(array $item, string $itemType, string $folder, ?array $identity): void
+    {
+        $productId = (int) ($item['id'] ?? 0);
+        if ($productId <= 0) {
+            return;
+        }
+
+        $model = new MarketplaceInstall($this->pdo);
+        $row = $model->findByProductId($productId);
+        $now = date('Y-m-d H:i:s');
+
+        if ($row === null) {
+            $fresh = new MarketplaceInstall($this->pdo);
+            $fresh->store_product_id = $productId;
+            $fresh->package_id       = $identity['package'] ?? null;
+            $fresh->product_name     = (string) ($item['name'] ?? '');
+            $fresh->slug             = (string) ($item['slug'] ?? '');
+            $fresh->item_type        = $itemType;
+            $fresh->folder           = $folder;
+            $fresh->installed_version = $identity['version'] ?? null;
+            $fresh->license_key      = '';
+            $fresh->license_scope    = 'none';
+            $fresh->license_valid    = 1;
+            $fresh->license_last_checked = $now;
+            $fresh->is_subscription = 0;
+            $fresh->registered_domain = $this->siteDomain();
+            $fresh->created_at = $now;
+            $fresh->updated_at = $now;
+            $fresh->insert();
+            return;
+        }
+
+        $row->installed_version = $identity['version'] ?? null;
+        $row->package_id = $identity['package'] ?? $row->package_id;
+        $row->updated_at = $now;
+        $row->save();
+    }
+
+    /**
+     * Latest store versions for free packages, keyed by package. Free items
+     * update without a license, so untracked installs of them are still
+     * updatable from the store.
+     *
+     * @return array<string, string>
+     */
+    public function freePackageVersions(): array
+    {
+        if (!$this->withToken()) {
+            return [];
+        }
+
+        $versions = [];
+        foreach ($this->items() as $item) {
+            // Free-downloadable: fully free, or any tier priced 0 (the zip
+            // is identical for every tier).
+            $isFree = !empty($item['is_free']) || !empty($item['free_tier']) || (($item['license_scope'] ?? '') === 'none');
+            // Key by the package identity, matching how Updates looks it up.
+            $package = (string) ($item['package'] ?? $item['slug'] ?? '');
+            $version = (string) ($item['version'] ?? '');
+            if ($isFree && $package !== '' && $version !== '') {
+                $versions[$package] = $version;
+            }
+        }
+
+        return $versions;
+    }
+
     // -----------------------------------------------------------------
     // Install
     // -----------------------------------------------------------------
 
     /**
      * Validate a purchase against the store for this domain and install it.
+     * The package type comes from the package manifest at install time.
      *
      * @return array{ok: bool, reason: string}
      */
-    public function install(int $storeProductId, string $itemType): array
+    public function install(int $storeProductId): array
     {
         if (!$this->withToken()) {
             return ['ok' => false, 'reason' => 'Not connected to a Pubvana account.'];
@@ -326,13 +763,18 @@ class MarketplaceService
             return ['ok' => false, 'reason' => is_array($data) ? (string) ($data['reason'] ?? 'Validation failed.') : 'Validation failed.'];
         }
 
-        $folder = (string) ($record->folder ?? '');
-        $installed = $this->installPackage((string) $data['download_url'], $itemType, $folder, storeProductId: $storeProductId);
-        if (!$installed) {
-            return ['ok' => false, 'reason' => 'The package could not be installed.'];
+        // Type and folder come out of the package manifest inside
+        // installPackage(); the stored record's folder is not consulted.
+        $result = $this->installPackage((string) $data['download_url']);
+        if (!$result['ok']) {
+            return ['ok' => false, 'reason' => $result['reason']];
         }
 
-        $record->installed_version = $this->installedVersion($itemType, $folder);
+        // Identity and version come from the freshly installed manifest.
+        $record->item_type = $result['type'];
+        $record->folder = $result['folder'];
+        $record->package_id = $result['package'];
+        $record->installed_version = $result['version'];
         $record->updated_at = date('Y-m-d H:i:s');
         $record->save();
 
@@ -351,8 +793,7 @@ class MarketplaceService
         $results = ['ok' => 0, 'skipped' => 0, 'failed' => []];
         foreach ($purchases as $p) {
             $pid = (int) ($p['product_id'] ?? 0);
-            $type = (string) ($p['item_type'] ?? 'plugin');
-            if ($pid <= 0 || $type === 'file' || empty($p['license_key'])) {
+            if ($pid <= 0 || empty($p['license_key'])) {
                 $results['skipped']++;
                 continue;
             }
@@ -361,11 +802,7 @@ class MarketplaceService
                 $results['skipped']++;
                 continue;
             }
-            $folder = (string) ($record->folder ?? '');
-            if (!$this->isInstalled($type, $folder)) {
-                continue;
-            }
-            $result = $this->install($pid, $type);
+            $result = $this->install($pid);
             if (!empty($result['ok'])) {
                 $results['ok']++;
             } else {
@@ -379,90 +816,140 @@ class MarketplaceService
      * Download and safely extract a store package zip into the install folder
      * (plugins/ or themes/), rejecting path-traversal entries.
      */
-    protected function installPackage(string $downloadUrl, string $type, string $folder, int $storeProductId = 0): bool
+    /**
+     * Download, verify, and install a package zip. The package's own
+     * manifest is the single source of truth: type (plugin/theme), install
+     * folder, package id, and version all come out of the extracted
+     * pubvana.json, never from stored metadata.
+     *
+     * @return array{ok: bool, reason: string, type: string, folder: string, package: string, version: string}
+     */
+    protected function installPackage(string $downloadUrl): array
     {
-        if (!in_array($type, ['plugin', 'theme'], true)) {
-            return false;
-        }
+        $fail = fn(string $reason): array => ['ok' => false, 'reason' => $reason, 'type' => '', 'folder' => '', 'package' => '', 'version' => ''];
+
         $host = strtolower((string) parse_url($downloadUrl, PHP_URL_HOST));
         if ($host === '' || ($host !== 'localhost' && !str_ends_with($host, '.pubvanacms.com') && !str_ends_with($host, '.pubvana.net') && !str_ends_with($host, '.test'))) {
-            return false;
-        }
-        if ($folder !== '' && !preg_match('/^[A-Za-z][A-Za-z0-9_-]*$/', $folder)) {
-            return false;
+            return $fail('Download host is not allowed.');
         }
 
-        $destRoot = PROJECT_ROOT . \DIRECTORY_SEPARATOR . ($type === 'theme' ? 'themes' : 'plugins');
-
-        $tmpDir = PROJECT_ROOT . \DIRECTORY_SEPARATOR . 'writable' . \DIRECTORY_SEPARATOR . 'cache' . \DIRECTORY_SEPARATOR . 'marketplace';
-        if (!is_dir($tmpDir) && !mkdir($tmpDir, 0755, true) && !is_dir($tmpDir)) {
-            return false;
+        // Stage the download in writable/tmp. Nothing here is ever read
+        // back; every file is deleted before installPackage() returns,
+        // success or failure. The directory is created on demand by the
+        // running process (web or CLI), so permissions follow whoever is
+        // actually serving the request.
+        $tmpDir = PROJECT_ROOT . \DIRECTORY_SEPARATOR . 'writable' . \DIRECTORY_SEPARATOR . 'tmp';
+        if (!is_dir($tmpDir) && !mkdir($tmpDir, 0777, true) && !is_dir($tmpDir)) {
+            return $fail('Could not create the install staging directory.');
         }
-        $zipPath = $tmpDir . \DIRECTORY_SEPARATOR . ($folder !== '' ? $folder : 'pkg') . '-' . bin2hex(random_bytes(4)) . '.zip';
+        $zipPath = $tmpDir . \DIRECTORY_SEPARATOR . 'pkg-' . bin2hex(random_bytes(4)) . '.zip';
 
         $zipData = $this->httpGet($downloadUrl);
         if ($zipData === null) {
-            return false;
+            return $fail('The package could not be downloaded.');
         }
         if (file_put_contents($zipPath, $zipData) === false) {
-            return false;
+            return $fail('The package could not be saved.');
         }
 
         $archive = new \ZipArchive();
         if ($archive->open($zipPath) !== true) {
             @unlink($zipPath);
-            return false;
+            return $fail('The package is not a valid zip.');
         }
 
         if (!$this->zipEntriesAreSafe($archive)) {
             $archive->close();
             @unlink($zipPath);
-            return false;
+            return $fail('The package contains unsafe entries.');
         }
 
         $extractPath = $tmpDir . \DIRECTORY_SEPARATOR . 'extract';
         if (!is_dir($extractPath) && !mkdir($extractPath, 0755, true) && !is_dir($extractPath)) {
             $archive->close();
             @unlink($zipPath);
-            return false;
+            return $fail('Could not extract the package.');
         }
 
         if (!$archive->extractTo($extractPath)) {
             $archive->close();
             @unlink($zipPath);
             $this->rmdir($extractPath);
-            return false;
+            return $fail('Could not extract the package.');
         }
         $archive->close();
 
         $source = $this->resolveZipRoot($extractPath);
-        $destDir = $destRoot . \DIRECTORY_SEPARATOR . $folder;
-        if ($folder === '') {
+
+        // The manifest drives everything: type, folder, package id, version.
+        $manifestPath = $source . \DIRECTORY_SEPARATOR . 'pubvana.json';
+        if (!is_file($manifestPath)) {
             $this->rmdir($extractPath);
             @unlink($zipPath);
-            return false;
+            return $fail('The package has no pubvana.json manifest.');
         }
+        $info = json_decode((string) file_get_contents($manifestPath), true);
+        if (!is_array($info)) {
+            $this->rmdir($extractPath);
+            @unlink($zipPath);
+            return $fail('The package manifest is invalid.');
+        }
+
+        $type = ($info['type'] ?? '') === 'theme' ? 'theme' : 'plugin';
+        $folder = trim((string) basename(rtrim((string) $source, \DIRECTORY_SEPARATOR)));
+        $package = null;
+        foreach (['name', 'slug'] as $key) {
+            if (isset($info[$key]) && is_string($info[$key]) && $info[$key] !== '') {
+                $package = $info[$key];
+                break;
+            }
+        }
+
+        // If the same package identity already exists locally under a
+        // different folder name (case variants, renamed dirs), replace THAT
+        // folder instead of creating a duplicate copy of the addon.
+        foreach ($this->localPackageVersions() as $localPackage => $local) {
+            if ($localPackage === $package && $local['type'] === $type && $local['folder'] !== $folder) {
+                $folder = $local['folder'];
+                break;
+            }
+        }
+        $version = (string) ($info['semver'] ?? '');
+
+        if ($package === null || $package === '' || $version === '') {
+            $this->rmdir($extractPath);
+            @unlink($zipPath);
+            return $fail('The package manifest is missing its identity.');
+        }
+        if (!preg_match('/^[A-Za-z][A-Za-z0-9_-]*$/', $folder)) {
+            $this->rmdir($extractPath);
+            @unlink($zipPath);
+            return $fail('Invalid package destination.');
+        }
+
+        $destRoot = PROJECT_ROOT . \DIRECTORY_SEPARATOR . ($type === 'theme' ? 'themes' : 'plugins');
+        $destDir = $destRoot . \DIRECTORY_SEPARATOR . $folder;
         if (is_dir($destDir) && !$this->rmdir($destDir)) {
             $this->rmdir($extractPath);
             @unlink($zipPath);
-            return false;
+            return $fail('Could not replace the existing package.');
         }
         if (!mkdir($destDir, 0755, true)) {
             $this->rmdir($extractPath);
             @unlink($zipPath);
-            return false;
+            return $fail('Could not create the package directory.');
         }
         if (!$this->copyTree($source, $destDir)) {
             $this->rmdir($destDir);
             $this->rmdir($extractPath);
             @unlink($zipPath);
-            return false;
+            return $fail('Could not copy the package into place.');
         }
 
         $this->rmdir($extractPath);
         @unlink($zipPath);
 
-        return true;
+        return ['ok' => true, 'reason' => 'Installed.', 'type' => $type, 'folder' => $folder, 'package' => $package, 'version' => $version];
     }
 
     protected function zipEntriesAreSafe(\ZipArchive $archive): bool
@@ -546,28 +1033,6 @@ class MarketplaceService
         }
         $root = PROJECT_ROOT . \DIRECTORY_SEPARATOR;
         return is_dir($root . ($itemType === 'theme' ? 'themes' : 'plugins') . \DIRECTORY_SEPARATOR . $folder);
-    }
-
-    protected function installedVersion(string $itemType, string $folder): ?string
-    {
-        $root = PROJECT_ROOT . \DIRECTORY_SEPARATOR;
-        $infoFile = $root . ($itemType === 'theme' ? 'themes' : 'plugins') . \DIRECTORY_SEPARATOR . $folder . \DIRECTORY_SEPARATOR . 'pubvana.json';
-        if (is_file($infoFile)) {
-            $info = json_decode((string) file_get_contents($infoFile), true);
-            $v = is_array($info) ? ($info['semver'] ?? null) : null;
-            if (is_string($v)) {
-                return $v;
-            }
-        }
-        $infoFile = $root . ($itemType === 'theme' ? 'themes' : 'plugins') . \DIRECTORY_SEPARATOR . $folder . \DIRECTORY_SEPARATOR . ($itemType === 'theme' ? 'theme_info' : 'plugin_info') . '.json';
-        if (is_file($infoFile)) {
-            $info = json_decode((string) file_get_contents($infoFile), true);
-            $v = is_array($info) ? ($info['version'] ?? null) : null;
-            if (is_string($v)) {
-                return $v;
-            }
-        }
-        return null;
     }
 
     // -----------------------------------------------------------------
@@ -754,6 +1219,15 @@ class MarketplaceService
         }
         $data = json_decode($body, true);
         return is_array($data) ? $data : null;
+    }
+
+    /**
+     * This site's Pubvana version, sent to the store so it can filter out
+     * incompatible releases. Overridden in tests.
+     */
+    protected function sitePubvanaVersion(): string
+    {
+        return (string) ($this->app->pluginLoader()->coreSemver() ?? '');
     }
 
     /**

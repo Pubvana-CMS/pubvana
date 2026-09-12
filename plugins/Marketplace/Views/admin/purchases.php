@@ -72,16 +72,13 @@
                                 </td>
                                 <td><?= htmlspecialchars((string) ($r['installed_version'] ?? '')) ?: '—' ?></td>
                                 <td class="text-end">
-                                    <?php if (in_array($r['item_type'] ?? '', ['plugin', 'theme'], true)): ?>
-                                        <form method="POST" action="<?= $adminBase ?>/install" class="d-inline">
-                                            <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
-                                            <input type="hidden" name="product_id" value="<?= (int) ($r['store_product_id'] ?? 0) ?>">
-                                            <input type="hidden" name="item_type" value="<?= htmlspecialchars((string) ($r['item_type'] ?? 'plugin')) ?>">
-                                            <button class="btn btn-sm btn-primary">
-                                                <?= !empty($r['installed']) ? 'Reinstall' : 'Install' ?>
-                                            </button>
-                                        </form>
-                                    <?php endif; ?>
+                                    <form method="POST" action="<?= $adminBase ?>/install" class="d-inline">
+                                        <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
+                                        <input type="hidden" name="product_id" value="<?= (int) ($r['store_product_id'] ?? 0) ?>">
+                                        <button class="btn btn-sm btn-primary">
+                                            <?= !empty($r['installed']) ? 'Reinstall' : 'Install' ?>
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

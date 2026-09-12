@@ -120,9 +120,10 @@ final class UpdatesAdminController extends AdminController
                 $this->app->pluginLoader()->discoverVendor()
             );
             foreach ($addons['plugins'] as $index => $row) {
+                $package = (string) ($row['package'] ?? '');
                 $addons['plugins'][$index] = $this->stampAddonTrust(
                     $row,
-                    $this->trustItemForPlugin($row['id'], $discovered[$row['id']] ?? []),
+                    $package !== '' ? $this->trustItemForPlugin($package, $discovered[$package] ?? []) : null,
                     $statusMap
                 );
             }
@@ -130,18 +131,31 @@ final class UpdatesAdminController extends AdminController
             // Rows without a stamped standing render as 'not checked'.
         }
 
+        // Marketplace surface state is owned by the addons inventory; the
+        // controller only forwards it to the view.
+        // Marketplace admin surface (Tools > Marketplace), for pointers on
+        // Unlicensed rows. null when the Marketplace plugin is absent.
+        $marketplaceAdmin = null;
+        try {
+            $marketplaceAdmin = '/admin' . rtrim((string) $this->app->pluginLoader()->routePrefix('pubvana/marketplace'), '/');
+        } catch (Throwable) {
+            $marketplaceAdmin = null;
+        }
+
         $this->render('pubvana/updates/admin/index', [
-            'pageTitle'     => 'Updates',
-            'state'         => $state,
-            'auto'          => $service->autoUpdateEnabled(),
-            'skipped'       => $service->skippedVersions(),
-            'preflight'     => $targetVersion !== '' ? $service->preFlight($targetVersion) : [],
-            'addons'        => $addons,
-            'progress'      => $progress,
-            'is_locked'     => $this->isLocked(),
-            'changelog_url' => $this->changelogUrl(),
-            'adminBase'     => $this->adminBase(),
-            'trust'         => $trust,
+            'pageTitle'            => 'Updates',
+            'state'                => $state,
+            'auto'                 => $service->autoUpdateEnabled(),
+            'skipped'              => $service->skippedVersions(),
+            'preflight'            => $targetVersion !== '' ? $service->preFlight($targetVersion) : [],
+            'addons'               => $addons,
+            'progress'             => $progress,
+            'is_locked'            => $this->isLocked(),
+            'changelog_url'        => $this->changelogUrl(),
+            'adminBase'            => $this->adminBase(),
+            'trust'                => $trust,
+            'marketplaceConnected' => (bool) ($addons['marketplaceConnected'] ?? false),
+            'marketplaceAdmin'     => $marketplaceAdmin,
         ]);
     }
 
@@ -392,6 +406,149 @@ final class UpdatesAdminController extends AdminController
             $this->service()->unskipVersion($version);
             $this->service()->check(true);
             $this->app->session()->flash('success', 'Version ' . $version . ' will be offered again.');
+        }
+
+        $this->app->redirect($this->adminBase());
+    }
+
+    /**
+     * Update a plugin or theme through the Marketplace (POST).
+     *
+     * The controller carries nothing but the package identity: the
+     * Marketplace service owns the install contract (license validation,
+     * download URL derivation, zip safety, extraction, record stamping).
+     *
+     * @package string the addon's manifest pubvana.json name ('pubvana/blog')
+     */
+    public function addonUpdate(): void
+    {
+        if (!$this->guard()) {
+            return;
+        }
+
+        $package = trim((string) ($this->app->request()->data->package ?? ''));
+
+        if ($package === '') {
+            $this->app->session()->flash('danger', 'No package given for the update.');
+            $this->app->redirect($this->adminBase());
+            return;
+        }
+
+        try {
+            $marketplace = $this->app->marketplace();
+            $result = $marketplace->installFromPackage($package);
+        } catch (Throwable $e) {
+            $this->app->session()->flash('danger', 'The Marketplace is not available: ' . $e->getMessage());
+            $this->app->redirect($this->adminBase());
+            return;
+        }
+
+        if (!empty($result['ok'])) {
+            $this->app->session()->flash('success', 'Package updated' . ($result['version'] !== null ? ' to version ' . $result['version'] : '') . '.');
+        } else {
+            $this->app->session()->flash('danger', $result['reason']);
+        }
+
+        $this->app->redirect($this->adminBase());
+    }
+
+    /**
+     * Force a fresh Marketplace catalog fetch (POST, "Check all").
+     *
+     * The controller only fans the request out to the Marketplace facade;
+     * catalog refresh rules live there.
+     */
+    public function addonCheck(): void
+    {
+        if (!$this->guard()) {
+            return;
+        }
+
+        try {
+            $this->app->marketplace()->refreshCatalog();
+            $this->app->session()->flash('success', 'Checked the Marketplace catalog for addon updates.');
+        } catch (Throwable $e) {
+            $this->app->session()->flash('danger', 'The Marketplace is not available: ' . $e->getMessage());
+        }
+
+        $this->app->redirect($this->adminBase());
+    }
+
+    /**
+     * Apply every addon update the Marketplace reports as available
+     * (POST, "Update all").
+     *
+     * Synchronous by design, matching Marketplace's own reinstall-all
+     * loop: each item runs the single shared install path
+     * installFromPackage(), so a failure is reported per item and never
+     * stops the batch.
+     */
+    public function addonUpdateAll(): void
+    {
+        if (!$this->guard()) {
+            return;
+        }
+
+        @set_time_limit(600);
+
+        try {
+            $marketplace = $this->app->marketplace();
+        } catch (Throwable $e) {
+            $this->app->session()->flash('danger', 'The Marketplace is not available: ' . $e->getMessage());
+            $this->app->redirect($this->adminBase());
+            return;
+        }
+
+        $marketplace->refreshCatalog();
+        $updates = $marketplace->checkAddonUpdates();
+
+        // Batch = exactly what rows offer the one-click Update button:
+        // every tracked package with a license-path update, plus free
+        // packages whose store version beats the one on disk.
+        $packages = [];
+        foreach ($updates as $package => $meta) {
+            $packages[] = $package;
+        }
+        foreach ($this->service()->addons() as $section) {
+            if (!is_array($section) || $section === []) {
+                continue;
+            }
+            foreach ($section as $row) {
+                $package = $row['package'] ?? null;
+                $update = $row['update'] ?? null;
+                if (is_string($package) && $package !== '' && is_array($update) && ($update['latest_version'] ?? '') !== ''
+                    && !in_array($package, $packages, true)) {
+                    $packages[] = $package;
+                }
+            }
+        }
+
+        if ($packages === []) {
+            $this->app->session()->flash('info', 'No addon updates are available.');
+            $this->app->redirect($this->adminBase());
+            return;
+        }
+
+        $ok = 0;
+        $failed = [];
+        foreach ($packages as $package) {
+            $result = $marketplace->installFromPackage($package);
+
+            if (!empty($result['ok'])) {
+                $ok++;
+            } else {
+                $failed[] = ['package' => $package, 'reason' => (string) $result['reason']];
+            }
+        }
+
+        if ($failed !== []) {
+            $message = 'Updated ' . $ok . ' of ' . count($packages) . ' packages. Failed: ';
+            foreach ($failed as $index => $f) {
+                $message .= ($index > 0 ? '; ' : '') . $f['package'] . ' (' . $f['reason'] . ')';
+            }
+            $this->app->session()->flash('warning', $message);
+        } else {
+            $this->app->session()->flash('success', 'Updated ' . $ok . ' package' . ($ok === 1 ? '' : 's') . '.');
         }
 
         $this->app->redirect($this->adminBase());

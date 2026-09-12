@@ -10,11 +10,12 @@
  * @var bool                 $auto           Auto-update setting
  * @var list<string>         $skipped        Skipped versions
  * @var list<array{name: string, ok: bool, detail: string, hard: bool}> $preflight
- * @var array{themes: list<array<string, mixed>>, blocks: list<array{name: string, updates_with: string}>, plugins: list<array<string, mixed>>} $addons
+ * @var array{themes: list<array<string, mixed>>, plugins: list<array<string, mixed>>, marketplaceConnected: bool} $addons
  * @var array<string, mixed>|null $progress  Live progress payload (null when none)
  * @var bool                 $is_locked      Whether an operation is running
  * @var string               $changelog_url  Human changelog link
  * @var string               $adminBase      Full admin URL base for this plugin
+ * @var bool                 $marketplaceConnected  Marketplace addon-update surface availability
  *
  * @package  Pubvana\Plugins\Updates
  * @copyright 2026 enlivenapp
@@ -89,7 +90,6 @@ $renderConstraints = static function () use ($constraints, $latest): void {
 ?>
 
 <div class="d-flex align-items-center justify-content-between mb-4">
-    <h2 class="h4 mb-0">Updates</h2>
     <form method="POST" action="<?= $adminBase ?>/check" class="d-inline">
         <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
         <button type="submit" class="btn btn-outline-secondary btn-sm" <?= $running ? 'disabled' : '' ?>>
@@ -256,7 +256,7 @@ $renderConstraints = static function () use ($constraints, $latest): void {
             <?= (!$allHardPass || $is_locked) ? 'disabled' : '' ?>>
         <i class="ti ti-rocket me-1"></i> Update to version <?= htmlspecialchars($target) ?>
     </button>
-    <span class="d-inline-flex align-items-center gap-1" title="Standing of this release in the Pubvana trust service cache">
+    <span class="d-inline-flex align-items-center gap-1" title="What the Pubvana trust service thinks of this version">
         <?= trust_badge($trust['status'] ?? 'none', $trust['warning'] ?? null) ?>
     </span>
 </div>
@@ -312,24 +312,40 @@ $renderConstraints = static function () use ($constraints, $latest): void {
 <?php endif; ?>
 
 <!-- Addons -->
+<?php
+$updateRows = array_merge(array_values($addons['themes']), array_values($addons['plugins']));
+$updatesAvailable = 0;
+foreach ($updateRows as $updateRow) {
+    if (is_array($updateRow['update'] ?? null) && ($updateRow['update']['latest_version'] ?? '') !== '') {
+        $updatesAvailable++;
+    }
+}
+?>
 <div class="d-flex align-items-center justify-content-between mb-4">
     <h2 class="h4 mb-0">Addons</h2>
     <div>
-        <button type="button" class="btn btn-outline-primary btn-sm me-1" disabled
-                title="Addon updates arrive when a marketplace source is installed.">
-            <i class="ti ti-refresh me-1"></i> Check All
-        </button>
-        <button type="button" class="btn btn-primary btn-sm" disabled
-                title="Addon updates arrive when a marketplace source is installed.">
-            <i class="ti ti-download me-1"></i> Update All
-        </button>
+        <form method="POST" action="<?= $adminBase ?>/addon-check" class="d-inline">
+            <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
+            <button type="submit" class="btn btn-outline-primary btn-sm me-1" <?= $marketplaceConnected ? '' : 'disabled' ?>
+                    title="<?= $marketplaceConnected ? 'Check the store for newer addon versions' : 'Connect your account under Tools first (Marketplace)' ?>">
+                <i class="ti ti-refresh me-1"></i> Check All
+            </button>
+        </form>
+        <form method="POST" action="<?= $adminBase ?>/addon-update-all" class="d-inline">
+            <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
+            <button type="submit" class="btn btn-primary btn-sm" <?= ($marketplaceConnected && $updatesAvailable > 0) ? '' : 'disabled' ?>
+                    title="<?= !$marketplaceConnected
+                        ? 'Connect your account under Tools first (Marketplace)'
+                        : ($updatesAvailable > 0 ? 'Update every addon that has a newer version' : 'No newer addon versions') ?>">
+                <i class="ti ti-download me-1"></i> Update All
+            </button>
+        </form>
     </div>
 </div>
 
 <?php
 $addonSections = [
     'Themes'  => $addons['themes'],
-    'Blocks'  => $addons['blocks'],
     'Plugins' => $addons['plugins'],
 ];
 foreach ($addonSections as $addonLabel => $addonRows): ?>
@@ -337,37 +353,19 @@ foreach ($addonSections as $addonLabel => $addonRows): ?>
     <div class="card-header py-3">
         <h6 class="m-0 fw-bold"><?= htmlspecialchars($addonLabel) ?></h6>
     </div>
-    <div class="table-responsive">
+    <div class="table-responsive px-3">
         <?php if ($addonRows === []): ?>
-            <p class="text-muted text-center py-3 mb-0">No <?= htmlspecialchars(strtolower($addonLabel)) ?> installed.</p>
-        <?php elseif ($addonLabel === 'Blocks'): ?>
-        <table class="table table-sm table-vcenter mb-0">
-            <thead>
-                <tr>
-                    <th class="ps-3">Block</th>
-                    <th class="text-center">Updates with</th>
-                </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($addonRows as $addonRow): ?>
-                <tr>
-                    <td class="ps-3"><?= htmlspecialchars($addonRow['name']) ?></td>
-                    <td class="text-center"><?= htmlspecialchars($addonRow['updates_with']) ?></td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
+            <p class="text-muted text-center py-3">No <?= htmlspecialchars(strtolower($addonLabel)) ?> installed.</p>
         <?php else: ?>
         <table class="table table-sm table-vcenter mb-0">
             <thead>
                 <tr>
-                    <th class="ps-3">Name</th>
-                    <th>Version</th>
-                    <th>Trust</th>
-                    <th>Latest</th>
-                    <th>Auto-Update</th>
-                    <th>Status</th>
-                    <th class="text-end pe-3">Actions</th>
+                    <th class="ps-3" title="The name given by whoever made the addon">Name</th>
+                    <th title="The version currently installed on your site">Version</th>
+                    <th title="The newest version. When nothing newer exists, this matches your installed version">Latest</th>
+                    <th title="What the Pubvana trust service thinks of this addon">Trust</th>
+                    <th title="Where this addon came from and where updates come from">Source</th>
+                    <th class="text-end pe-3" title="Get the newer version now, or how this addon gets updates">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -376,26 +374,67 @@ foreach ($addonSections as $addonLabel => $addonRows): ?>
                 $recheckKind = $addonLabel === 'Themes' ? 'theme' : 'plugin';
                 $recheckHandle = $recheckKind === 'theme'
                     ? (string) ($addonRow['folder'] ?? '')
-                    : (string) ($addonRow['id'] ?? '');
+                    : (string) ($addonRow['package'] ?? '');
+                $update = $addonRow['update'] ?? null;
+                $hasUpdate = is_array($update) && ($update['latest_version'] ?? '') !== '';
                 ?>
                 <tr>
                     <td class="ps-3"><?= htmlspecialchars($addonRow['name']) ?></td>
                     <td><?= $addonRow['version'] !== null ? htmlspecialchars($addonRow['version']) : '-' ?></td>
+                    <td><?=$hasUpdate ? htmlspecialchars((string) $update['latest_version']) : htmlspecialchars($addonRow['version'] ?? '-') ?></td>
                     <td class="text-nowrap">
                         <span data-trust-cell><?= trust_badge($addonRow['trust_status'] ?? 'none', $addonRow['trust_warning'] ?? null) ?></span>
                         <?php if ($recheckHandle !== ''): ?>
                         <button type="button" class="btn btn-icon btn-sm text-secondary"
                                 data-trust-recheck="<?= $recheckKind ?>"
                                 data-handle="<?= htmlspecialchars($recheckHandle) ?>"
-                                title="Recheck with the Pubvana trust service">
+                                title="Check this addon's safety again">
                             <i class="ti ti-refresh"></i>
                         </button>
                         <?php endif; ?>
                     </td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td><span class="text-muted small">No update source</span></td>
-                    <td class="text-end pe-3"></td>
+                    <td>
+                        <?php $viewSource = $addonRow['source'] ?? 'manual'; ?>
+                        <?php if ($viewSource === 'marketplace'): ?>
+                            <span class="badge bg-secondary-lt" title="Bought from the Marketplace; updates come from the store">Marketplace</span>
+                        <?php elseif ($viewSource === 'core'): ?>
+                            <span class="badge bg-info-lt" title="Included with Pubvana">Core</span>
+                        <?php elseif ($viewSource === 'composer'): ?>
+                            <span class="badge bg-azure-lt" title="Included with Pubvana (vendor package)">Composer</span>
+                        <?php elseif ($viewSource === 'free'): ?>
+                            <span class="badge bg-green-lt" title="This item is free at the Marketplace">Free</span>
+                        <?php elseif ($viewSource === 'notpurchased'): ?>
+                            <span class="badge bg-orange-lt" title="This item is sold at the Marketplace, but your site has no purchase record for it">Not purchased</span>
+                        <?php else: ?>
+                            <span class="badge bg-yellow-lt" title="Not from the Marketplace or included with Pubvana; use no automatic updates">Manual</span>
+                        <?php endif; ?>
+                    </td>
+                    <td class="text-end pe-3">
+                        <?php if ($hasUpdate && ($addonRow['package'] ?? null) !== null): ?>
+                            <form method="POST" action="<?= $adminBase ?>/addon-update" class="d-inline">
+                                <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
+                                <input type="hidden" name="package" value="<?= htmlspecialchars((string) $addonRow['package']) ?>">
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    <i class="ti ti-download me-1"></i> Update
+                                </button>
+                            </form>
+                        <?php elseif (($addonRow['source'] ?? 'manual') === 'notpurchased'): ?>
+                            <span class="text-muted small me-2">Sold in the Marketplace</span>
+                            <?php if ($marketplaceAdmin !== null): ?>
+                                <a href="<?= htmlspecialchars($marketplaceAdmin) ?>" class="btn btn-sm btn-outline-primary">
+                                    View in Marketplace
+                                </a>
+                            <?php endif; ?>
+                        <?php else: ?>
+                            <?php $viewSource = $addonRow['source'] ?? 'manual'; ?>
+                            <span class="text-muted small">
+                                <?php if ($viewSource === 'marketplace' || $viewSource === 'free'): ?>Up to date
+                                <?php elseif ($viewSource === 'core' || $viewSource === 'composer'): ?>Updates when Pubvana updates
+                                <?php else: ?>No update source
+                                <?php endif; ?>
+                            </span>
+                        <?php endif; ?>
+                    </td>
                 </tr>
             <?php endforeach; ?>
             </tbody>

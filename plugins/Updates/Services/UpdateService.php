@@ -873,26 +873,181 @@ class UpdateService
     // ------------------------------------------------------------------
 
     /**
-     * Inventory of installed themes, blocks, and plugins for the Updates
-     * page. Read-only, no network: update sources do not exist yet (the
-     * Marketplace will register them), so themes/plugins carry name, id,
-     * and version ("No update source" on the page) and blocks carry who
-     * updates them. Themes carry the folder and plugins the package id so
-     * the admin screen can stamp each row with its trust standing.
+     * Inventory of installed themes and plugins for the Updates page.
+     * Checks the Marketplace for available updates to plugins/themes
+     * purchased through the store.
      *
-     * @return array{themes: list<array{name: string, folder: ?string, version: ?string}>, blocks: list<array{name: string, updates_with: string}>, plugins: list<array{name: string, id: string, version: ?string}>}
+     * Update rows share the Marketplace's identity: the addon's manifest
+     * pubvana.json `name` ('pubvana/blog').
+     *
+     * @return array{themes: list<array<string, mixed>>, plugins: list<array<string, mixed>>, marketplaceConnected: bool}
      */
     public function addons(): array
     {
+        $marketplaceUpdates = [];
+        $marketplacePackages = [];
+        $marketplaceUnlicensed = [];
+        $marketplaceFree = [];
+        $marketplaceConnected = false;
+        try {
+            $marketplace = $this->app->marketplace();
+            $marketplaceConnected = $marketplace->connected();
+            if ($marketplaceConnected) {
+                $marketplaceUpdates = $marketplace->checkAddonUpdates();
+                $marketplacePackages = $marketplace->trackedPackages();
+                $marketplaceUnlicensed = $marketplace->unlicensedPackages();
+                $marketplaceFree = $marketplace->freePackageVersions();
+            }
+        } catch (Throwable) {
+            // Marketplace plugin is not installed or not connected: rows
+            // render without a source, nothing trusts the exception to
+            // survive past this service boundary.
+            $marketplaceUpdates = [];
+            $marketplacePackages = [];
+            $marketplaceUnlicensed = [];
+            $marketplaceFree = [];
+        }
+
+        // Core origin is declared, not inferred: packages listed in the
+        // root pubvana.json `includes` block ship with the distribution and
+        // update with a Pubvana release.
+        $coreIncluded = self::readIncluded($this->manifestPath());
+
+        $themes = $this->inventoryThemes();
+        foreach ($themes as $index => $theme) {
+            $package = $theme['package'] ?? null;
+            $isPackageTracked = is_string($package) && isset($marketplacePackages[$package]);
+            $themes[$index]['source'] = $this->addonSource(
+                $isPackageTracked,
+                isset($coreIncluded[$package]),
+                false,
+                isset($marketplaceUnlicensed[$package]),
+                is_array($marketplaceUnlicensed[$package] ?? null)
+                    && ($marketplaceUnlicensed[$package]['free'] ?? false)
+            );
+            $themes[$index]['update'] = $this->rowUpdate(
+                $isPackageTracked,
+                $isPackageTracked ? ($marketplaceUpdates[$package] ?? null) : null,
+                $marketplaceFree[$package] ?? null,
+                $theme['version'] ?? null
+            );
+        }
+
+        $plugins = $this->inventoryPlugins();
+        foreach ($plugins as $index => $plugin) {
+            $package = $plugin['package'] ?? null;
+            $isPackageTracked = $package !== null && isset($marketplacePackages[$package]);
+            $plugins[$index]['source'] = $this->addonSource(
+                $isPackageTracked,
+                isset($coreIncluded[$package]),
+                (bool) ($plugin['vendor'] ?? false),
+                isset($marketplaceUnlicensed[$package]),
+                is_array($marketplaceUnlicensed[$package] ?? null)
+                    && ($marketplaceUnlicensed[$package]['free'] ?? false)
+            );
+            $plugins[$index]['update'] = $this->rowUpdate(
+                $isPackageTracked,
+                $isPackageTracked ? ($marketplaceUpdates[$package] ?? null) : null,
+                $marketplaceFree[$package] ?? null,
+                $plugin['version'] ?? null
+            );
+        }
+
         return [
-            'themes'  => $this->inventoryThemes(),
-            'blocks'  => $this->inventoryBlocks(),
-            'plugins' => $this->inventoryPlugins(),
+            'themes'                => $themes,
+            'plugins'               => $plugins,
+            'marketplaceConnected'  => $marketplaceConnected,
         ];
     }
 
     /**
-     * @return list<array{name: string, folder: ?string, version: ?string}>
+     * The update payload for one row: tracked packages carry whatever the
+     * store license flow reports; untracked free packages update for free
+     * whenever the store's free version is newer than what's on disk.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function rowUpdate(bool $tracked, ?array $trackedUpdate, ?string $freeVersion, ?string $installedVersion): ?array
+    {
+        if ($tracked && $trackedUpdate !== null) {
+            return $trackedUpdate;
+        }
+
+        if (!$tracked && is_string($freeVersion) && $freeVersion !== '' && is_string($installedVersion) && $installedVersion !== '') {
+            if (version_compare($freeVersion, $installedVersion, '>')) {
+                return ['latest_version' => $freeVersion];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Update source for one addon row, in contract truth order:
+     * 1. Marketplace install record (a verified purchase).
+     * 2. Root manifest `includes` block (core, updates with a Pubvana release).
+     * 3. Composer vendor package (arrives in the release zip dependency tree).
+     * 4. Sold at the Marketplace but no purchase record here: free items
+     *    ("free") and paid items ("not purchased").
+     * 5. Otherwise manual: copied into plugins/ or themes/ outside every
+     *    update channel, which is exactly the state the admin should see
+     *    flagged, not one guessed into a real origin.
+     *
+     * @return 'core'|'marketplace'|'composer'|'free'|'notpurchased'|'manual'
+     */
+    private function addonSource(bool $marketplaceTracked, bool $coreIncluded, bool $vendorPackage, bool $unlicensed, bool $free): string
+    {
+        if ($marketplaceTracked) {
+            return 'marketplace';
+        }
+        if ($coreIncluded) {
+            return 'core';
+        }
+        if ($vendorPackage) {
+            return 'composer';
+        }
+        if ($unlicensed) {
+            return $free ? 'free' : 'notpurchased';
+        }
+        return 'manual';
+    }
+
+    /**
+     * Packages the core distribution includes, from the root pubvana.json
+     * `includes` block (plugin manifest names, theme slugs).
+     *
+     * @return array<string, bool>
+     */
+    public static function readIncluded(string $manifestPath): array
+    {
+        if (!is_file($manifestPath)) {
+            return [];
+        }
+
+        $raw  = file_get_contents($manifestPath);
+        $data = is_string($raw) ? json_decode($raw, true) : null;
+        $includes = is_array($data) ? ($data['includes'] ?? null) : null;
+        if (!is_array($includes)) {
+            return [];
+        }
+
+        $packages = [];
+        foreach ($includes as $list) {
+            if (!is_array($list)) {
+                continue;
+            }
+            foreach ($list as $package) {
+                if (is_string($package) && $package !== '') {
+                    $packages[$package] = true;
+                }
+            }
+        }
+
+        return $packages;
+    }
+
+    /**
+     * @return list<array{name: string, package: ?string, folder: ?string, version: ?string, update: array<string, mixed>|null}>
      */
     private function inventoryThemes(): array
     {
@@ -911,67 +1066,23 @@ class UpdateService
 
             $version = $theme['semver'] ?? $theme['version'] ?? null;
 
-            $rows[] = [
-                'name'    => $name,
-                'folder'  => is_string($theme['folder'] ?? null) ? $theme['folder'] : null,
-                'version' => is_string($version) && $version !== '' ? $version : null,
-            ];
-        }
-
-        return $rows;
-    }
-
-    /**
-     * Blocks are not versioned installs: they are version-locked to the
-     * plugin or core that registers them, so each row carries who updates
-     * it instead of a version. Owners come from the known plugin ids
-     * (contributor keys are prefixed with them); pubvana-namespaced keys
-     * with no matching plugin fall back to the key's second segment.
-     *
-     * @return list<array{name: string, updates_with: string}>
-     */
-    private function inventoryBlocks(): array
-    {
-        try {
-            $blocks = $this->app->adext()->get('block', 'available');
-        } catch (Throwable) {
-            return [];
-        }
-
-        $pluginNames = $this->pluginDisplayNames();
-
-        $rows = [];
-        foreach ($blocks as $key => $block) {
-            $label = $block['label'] ?? null;
-
-            if (!is_string($label) || $label === '') {
-                $label = $key;
-            }
-
-            if ($label === '') {
-                continue;
-            }
-
-            $updatesWith = null;
-            foreach ($pluginNames as $pluginId => $pluginName) {
-                if ($pluginId !== '' && str_starts_with($key, $pluginId . '.')) {
-                    $updatesWith = $pluginName;
+            // Identity shared with the Marketplace: theme manifests carry
+            // `slug` today, `name` keeps forward compatibility. folder stays
+            // for the trust layer's theme handle only.
+            $package = null;
+            foreach (['name', 'slug'] as $key) {
+                if (isset($theme[$key]) && is_string($theme[$key]) && $theme[$key] !== '') {
+                    $package = $theme[$key];
                     break;
                 }
             }
 
-            if ($updatesWith === null) {
-                $segments = explode('.', $key);
-                if ($segments[0] === 'pubvana' || str_starts_with($segments[0], 'pubvana/')) {
-                    $updatesWith = isset($segments[1]) && $segments[1] !== ''
-                        ? ucfirst(str_replace(['-', '_'], ' ', $segments[1]))
-                        : 'Pubvana core';
-                } else {
-                    $updatesWith = $key;
-                }
-            }
-
-            $rows[] = ['name' => $label, 'updates_with' => $updatesWith];
+            $rows[] = [
+                'name'    => $name,
+                'package' => $package,
+                'folder'  => is_string($theme['folder'] ?? null) ? $theme['folder'] : null,
+                'version' => is_string($version) && $version !== '' ? $version : null,
+            ];
         }
 
         return $rows;
@@ -1021,11 +1132,11 @@ class UpdateService
     }
 
     /**
-     * @return list<array{name: string, id: string, version: ?string}>
+     * @return list<array{name: string, package: string, vendor: bool, version: ?string, update: array<string, mixed>|null}>
      */
     private function inventoryPlugins(): array
     {
-        /** @var array<string, array{name: string, id: string, version: ?string}> $rows */
+        /** @var array<string, array{name: string, package: string, vendor: bool, version: ?string}> $rows */
         $rows = [];
         $names = $this->pluginDisplayNames();
 
@@ -1040,7 +1151,8 @@ class UpdateService
 
             $rows[$pluginId] = [
                 'name'    => $names[$pluginId] ?? $pluginId,
-                'id'      => (string) $pluginId,
+                'package' => (string) $pluginId,
+                'vendor'  => false,
                 'version' => is_string($version) && $version !== '' ? $version : null,
             ];
         }
@@ -1060,7 +1172,8 @@ class UpdateService
 
             $rows[$packageId] = [
                 'name'    => $names[$packageId] ?? $packageId,
-                'id'      => (string) $packageId,
+                'package' => (string) $packageId,
+                'vendor'  => true,
                 'version' => is_string($version) && $version !== '' ? $version : null,
             ];
         }

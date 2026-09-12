@@ -34,6 +34,7 @@ class MarketplaceInstall extends \Pubvana\Models\AbstractModel
 
     public int $id;
     public int $store_product_id = 0;
+    public ?string $package_id = null;
     public ?string $product_name = null;
     public ?string $slug = null;
     public string $item_type = 'plugin';
@@ -54,6 +55,17 @@ class MarketplaceInstall extends \Pubvana\Models\AbstractModel
     {
         $this->reset();
         $this->eq('store_product_id', $storeProductId)->find();
+        return $this->isHydrated() ? $this : null;
+    }
+
+    /**
+     * The install record whose package_id matches. package_id is the addon
+     * identity: the manifest pubvana.json name ('pubvana/blog').
+     */
+    public function findByPackageId(string $packageId): ?self
+    {
+        $this->reset();
+        $this->eq('package_id', $packageId)->find();
         return $this->isHydrated() ? $this : null;
     }
 
