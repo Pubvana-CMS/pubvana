@@ -30,7 +30,6 @@ use Pubvana\Controllers\Admin\CaptchaAdminController;
 use Pubvana\Controllers\Admin\PluginsController;
 
 use Enlivenapp\FlightShield\Middlewares\ForcePasswordResetMiddleware;
-use Enlivenapp\FlightShield\Middlewares\GroupMiddleware;
 
 /** @var \flight\Engine $app */
 $app = $app ?? Flight::app();
@@ -268,27 +267,19 @@ $adext->register('admin.menu', 'appearance', 'pubvana.navigation', [
 |--------------------------------------------------------------------------
 | Register core admin CRUD routes via adext.
 | The /admin prefix is auto-applied by adext for admin.* types.
-| Auth middleware is applied per-route.
+|
+| Access control: every admin-scope route is gated automatically by
+| ExtensionRegistry::registerRoutes() on the admin.access permission
+| (superadmin bypasses via User::can()). No per-route auth middleware is
+| needed here. Pass an extra PermissionMiddleware only for finer-grained
+| per-action gates matching Shield's seeded perms, e.g.:
+|   ['GET', '/users', [UsersController::class, 'index'],
+|       [new PermissionMiddleware($app, 'users.list')]],
 |
 | isCore=true means these routes cannot be overridden by plugins.
 | If a plugin tries to register the same route, it will be rejected
 | and a warning will be logged.
 */
-
-/*
-|--------------------------------------------------------------------------
-| Auth Middleware
-|--------------------------------------------------------------------------
-| Blanket group gate on every core admin route: the user must be logged in
-| and belong to the admin or superadmin group.
-|
-| For per-route permission gates matching Shield's seeded perms:
-|   ['GET', '/users', [UsersController::class, 'index'],
-|       [new SessionAuthMiddleware($app), new PermissionMiddleware($app, 'users.list')]],
-|
-| adext skips non-object middleware entries, so null placeholders are safe.
-*/
-$authMiddleware = new GroupMiddleware($app, 'admin', 'superadmin');
 
 /*
 |--------------------------------------------------------------------------
@@ -305,91 +296,91 @@ $forceResetMiddleware = new ForcePasswordResetMiddleware($app);
 
 // Users
 $adext->addRoutes('admin', [
-    ['GET',    '/users',              [UsersController::class, 'index'],   [$authMiddleware]],
-    ['GET',    '/users/create',       [UsersController::class, 'create'],  [$authMiddleware]],
-    ['POST',   '/users/store',        [UsersController::class, 'store'],   [$authMiddleware]],
-    ['POST',   '/users/invite',       [UsersController::class, 'invite'],  [$authMiddleware]],
-    ['GET',    '/users/@id/edit',     [UsersController::class, 'edit'],    [$authMiddleware]],
-    ['POST',   '/users/@id/update',   [UsersController::class, 'update'],  [$authMiddleware]],
-    ['POST',   '/users/@id/delete',   [UsersController::class, 'delete'],  [$authMiddleware]],
-    ['POST',   '/users/@id/toggle',   [UsersController::class, 'toggle'],  [$authMiddleware]],
-    ['POST',   '/users/@id/ban',      [UsersController::class, 'ban'],     [$authMiddleware]],
-    ['POST',   '/users/@id/unban',    [UsersController::class, 'unban'],   [$authMiddleware]],
-    ['POST',   '/users/@id/force-reset', [UsersController::class, 'forceReset'], [$authMiddleware, $forceResetMiddleware]],
+    ['GET',    '/users',              [UsersController::class, 'index'],   []],
+    ['GET',    '/users/create',       [UsersController::class, 'create'],  []],
+    ['POST',   '/users/store',        [UsersController::class, 'store'],   []],
+    ['POST',   '/users/invite',       [UsersController::class, 'invite'],  []],
+    ['GET',    '/users/@id/edit',     [UsersController::class, 'edit'],    []],
+    ['POST',   '/users/@id/update',   [UsersController::class, 'update'],  []],
+    ['POST',   '/users/@id/delete',   [UsersController::class, 'delete'],  []],
+    ['POST',   '/users/@id/toggle',   [UsersController::class, 'toggle'],  []],
+    ['POST',   '/users/@id/ban',      [UsersController::class, 'ban'],     []],
+    ['POST',   '/users/@id/unban',    [UsersController::class, 'unban'],   []],
+    ['POST',   '/users/@id/force-reset', [UsersController::class, 'forceReset'], [$forceResetMiddleware]],
 ], 'pubvana.core', true);
 
 // Groups
 $adext->addRoutes('admin', [
-    ['GET',    '/groups',             [GroupsController::class, 'index'],   [$authMiddleware]],
-    ['GET',    '/groups/create',      [GroupsController::class, 'create'],  [$authMiddleware]],
-    ['POST',   '/groups/store',       [GroupsController::class, 'store'],   [$authMiddleware]],
-    ['GET',    '/groups/@id/edit',    [GroupsController::class, 'edit'],    [$authMiddleware]],
-    ['POST',   '/groups/@id/update',  [GroupsController::class, 'update'],  [$authMiddleware]],
-    ['POST',   '/groups/@id/delete',  [GroupsController::class, 'delete'],  [$authMiddleware]],
+    ['GET',    '/groups',             [GroupsController::class, 'index'],   []],
+    ['GET',    '/groups/create',      [GroupsController::class, 'create'],  []],
+    ['POST',   '/groups/store',       [GroupsController::class, 'store'],   []],
+    ['GET',    '/groups/@id/edit',    [GroupsController::class, 'edit'],    []],
+    ['POST',   '/groups/@id/update',  [GroupsController::class, 'update'],  []],
+    ['POST',   '/groups/@id/delete',  [GroupsController::class, 'delete'],  []],
 ], 'pubvana.core', true);
 
 // Permissions
 $adext->addRoutes('admin', [
-    ['GET',    '/permissions',              [PermissionsController::class, 'index'],   [$authMiddleware]],
-    ['GET',    '/permissions/create',       [PermissionsController::class, 'create'],  [$authMiddleware]],
-    ['POST',   '/permissions/store',        [PermissionsController::class, 'store'],   [$authMiddleware]],
-    ['POST',   '/permissions/@id/delete',   [PermissionsController::class, 'delete'],  [$authMiddleware]],
+    ['GET',    '/permissions',              [PermissionsController::class, 'index'],   []],
+    ['GET',    '/permissions/create',       [PermissionsController::class, 'create'],  []],
+    ['POST',   '/permissions/store',        [PermissionsController::class, 'store'],   []],
+    ['POST',   '/permissions/@id/delete',   [PermissionsController::class, 'delete'],  []],
 ], 'pubvana.core', true);
 
 // Themes & Regions
 $adext->addRoutes('admin', [
-    ['GET',    '/themes',                      [ThemesController::class, 'index'],            [$authMiddleware]],
-    ['POST',   '/themes/@id/activate',         [ThemesController::class, 'activate'],         [$authMiddleware]],
-    ['POST',   '/themes/@id/recheck',          [ThemesController::class, 'recheck'],          [$authMiddleware]],
-    ['POST',   '/themes/recheck',              [ThemesController::class, 'recheckByFolder'],  [$authMiddleware]],
-    ['GET',    '/themes/@id/options',          [ThemesController::class, 'options'],          [$authMiddleware]],
-    ['POST',   '/themes/@id/options',          [ThemesController::class, 'saveOptions'],      [$authMiddleware]],
-    ['GET',    '/themes/regions',              [ThemesController::class, 'regions'],          [$authMiddleware]],
-    ['POST',   '/themes/regions/place',        [ThemesController::class, 'placeBlock'],       [$authMiddleware]],
-    ['POST',   '/themes/regions/remove',       [ThemesController::class, 'removePlacement'],  [$authMiddleware]],
-    ['POST',   '/themes/regions/reorder',      [ThemesController::class, 'reorderPlacements'],[$authMiddleware]],
-    ['POST',   '/themes/regions/move',         [ThemesController::class, 'movePlacement'],    [$authMiddleware]],
-    ['POST',   '/themes/regions/values',       [ThemesController::class, 'saveBlockValues'],  [$authMiddleware]],
+    ['GET',    '/themes',                      [ThemesController::class, 'index'],            []],
+    ['POST',   '/themes/@id/activate',         [ThemesController::class, 'activate'],         []],
+    ['POST',   '/themes/@id/recheck',          [ThemesController::class, 'recheck'],          []],
+    ['POST',   '/themes/recheck',              [ThemesController::class, 'recheckByFolder'],  []],
+    ['GET',    '/themes/@id/options',          [ThemesController::class, 'options'],          []],
+    ['POST',   '/themes/@id/options',          [ThemesController::class, 'saveOptions'],      []],
+    ['GET',    '/themes/regions',              [ThemesController::class, 'regions'],          []],
+    ['POST',   '/themes/regions/place',        [ThemesController::class, 'placeBlock'],       []],
+    ['POST',   '/themes/regions/remove',       [ThemesController::class, 'removePlacement'],  []],
+    ['POST',   '/themes/regions/reorder',      [ThemesController::class, 'reorderPlacements'],[]],
+    ['POST',   '/themes/regions/move',         [ThemesController::class, 'movePlacement'],    []],
+    ['POST',   '/themes/regions/values',       [ThemesController::class, 'saveBlockValues'],  []],
 ], 'pubvana.core', true);
 
 // Settings (General page - tabbed)
 $adext->addRoutes('admin', [
-    ['GET',  '/settings',       [SettingsController::class, 'general'], [$authMiddleware, $forceResetMiddleware]],
-    ['POST', '/settings/save',  [SettingsController::class, 'save'],    [$authMiddleware]],
+    ['GET',  '/settings',       [SettingsController::class, 'general'], [$forceResetMiddleware]],
+    ['POST', '/settings/save',  [SettingsController::class, 'save'],    []],
 ], 'pubvana.core', true);
 
 // Login (Shield sign-in features - Settings > Login)
 $adext->addRoutes('admin', [
-    ['GET',  '/login-sec',       [LoginSecController::class, 'index'], [$authMiddleware, $forceResetMiddleware]],
-    ['POST', '/login-sec/save',  [LoginSecController::class, 'save'],  [$authMiddleware]],
+    ['GET',  '/login-sec',       [LoginSecController::class, 'index'], [$forceResetMiddleware]],
+    ['POST', '/login-sec/save',  [LoginSecController::class, 'save'],  []],
 ], 'pubvana.core', true);
 
 // Captcha (site-wide human verification - Settings > Captcha)
 $adext->addRoutes('admin', [
-    ['GET',  '/captcha',       [CaptchaAdminController::class, 'index'], [$authMiddleware, $forceResetMiddleware]],
-    ['POST', '/captcha/save',  [CaptchaAdminController::class, 'save'],  [$authMiddleware]],
+    ['GET',  '/captcha',       [CaptchaAdminController::class, 'index'], [$forceResetMiddleware]],
+    ['POST', '/captcha/save',  [CaptchaAdminController::class, 'save'],  []],
 ], 'pubvana.core', true);
 
 // Email (SMTP settings - Settings > Email)
 $adext->addRoutes('admin', [
-    ['GET',  '/email',       [EmailAdminController::class, 'index'], [$authMiddleware, $forceResetMiddleware]],
-    ['POST', '/email/save',  [EmailAdminController::class, 'save'],  [$authMiddleware]],
-    ['POST', '/email/test',  [EmailAdminController::class, 'test'],  [$authMiddleware]],
+    ['GET',  '/email',       [EmailAdminController::class, 'index'], [$forceResetMiddleware]],
+    ['POST', '/email/save',  [EmailAdminController::class, 'save'],  []],
+    ['POST', '/email/test',  [EmailAdminController::class, 'test'],  []],
 ], 'pubvana.core', true);
 
 // Plugins (enable/disable + priority, trust status, forced recheck)
 $adext->addRoutes('admin', [
-    ['GET',  '/plugins',           [PluginsController::class, 'index'],  [$authMiddleware, $forceResetMiddleware]],
-    ['POST', '/plugins/save',      [PluginsController::class, 'save'],   [ $authMiddleware]],
-    ['POST', '/plugins/recheck',   [PluginsController::class, 'recheck'], [$authMiddleware]],
+    ['GET',  '/plugins',           [PluginsController::class, 'index'],  [$forceResetMiddleware]],
+    ['POST', '/plugins/save',      [PluginsController::class, 'save'],   []],
+    ['POST', '/plugins/recheck',   [PluginsController::class, 'recheck'], []],
 ], 'pubvana.core', true);
 
 // Navigation
 $adext->addRoutes('admin', [
-    ['GET',  '/navigation',              [NavigationController::class, 'index'],   [$authMiddleware]],
-    ['POST', '/navigation/store',        [NavigationController::class, 'store'],   [$authMiddleware]],
-    ['POST', '/navigation/@id/delete',   [NavigationController::class, 'delete'],  [$authMiddleware]],
-    ['POST', '/navigation/reorder',      [NavigationController::class, 'reorder'], [$authMiddleware, $forceResetMiddleware]],
+    ['GET',  '/navigation',              [NavigationController::class, 'index'],   []],
+    ['POST', '/navigation/store',        [NavigationController::class, 'store'],   []],
+    ['POST', '/navigation/@id/delete',   [NavigationController::class, 'delete'],  []],
+    ['POST', '/navigation/reorder',      [NavigationController::class, 'reorder'], [$forceResetMiddleware]],
 ], 'pubvana.core', true);
 
 /*

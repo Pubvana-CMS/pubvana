@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pubvana\Services;
 
+use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 use flight\Engine;
 
 /**
@@ -601,6 +602,10 @@ class ExtensionRegistry
      * Each route in $routes is an array: [method, path, handler, middleware?]
      * middleware is optional and defaults to [].
      *
+     * Admin-scope routes are gated automatically on the admin.access
+     * permission (see registerRoutes). Use the middleware slot only for
+     * extra per-route gates such as PermissionMiddleware.
+     *
      * Conflict resolution:
      *   - Core routes (isCore=true) always win over plugin routes
      *   - First registered route wins on conflict
@@ -703,12 +708,22 @@ class ExtensionRegistry
             $fullPath = $route['method'] . ' ' . $path;
             $flightRoute = $router->map($fullPath, $route['handler']);
 
+            // Admin-scope routes are gated on the admin.access permission
+            // automatically, so plugin authors don't have to pass an auth
+            // middleware. A route's own middleware runs after the gate.
             // Non-object entries (null placeholders, class strings) are skipped
-            // on purpose; only middleware instances are applied here.
-            foreach ($route['middleware'] as $mw) {
-                if (is_object($mw)) {
-                    $flightRoute->addMiddleware($mw);
-                }
+            // on purpose; only middleware instances are applied.
+            $routeMiddleware = array_values(array_filter(
+                $route['middleware'],
+                static fn (mixed $mw): bool => is_object($mw)
+            ));
+
+            if ($route['scope'] === 'admin') {
+                array_unshift($routeMiddleware, new PermissionMiddleware($app, 'admin.access'));
+            }
+
+            foreach ($routeMiddleware as $mw) {
+                $flightRoute->addMiddleware($mw);
             }
         }
     }

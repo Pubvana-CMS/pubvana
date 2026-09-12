@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pubvana\Tests\Unit\Services;
 
+use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 use flight\net\Request;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Pubvana\Services\ExtensionRegistry;
@@ -339,6 +340,63 @@ final class ExtensionRegistryTest extends TestCase
         self::assertNotFalse($matched);
         self::assertContains($middleware, $matched->middleware);
         self::assertNotContains($nonObject, $matched->middleware);
+    }
+
+    public function testRegisterRoutesGatesAdminScopeByDefault(): void
+    {
+        $registry = new ExtensionRegistry();
+        $registry->addRoute('GET', '/widgets', [\stdClass::class, 'widgets'], [], 'admin', 'pubvana.widgets');
+
+        $app = $this->app();
+        $registry->registerRoutes($app);
+
+        $matched = $app->router()->route($this->makeRequest('/admin/widgets', 'GET'));
+        self::assertNotFalse($matched);
+
+        $gates = array_values(array_filter(
+            $matched->middleware,
+            static fn ($mw): bool => $mw instanceof PermissionMiddleware
+        ));
+
+        self::assertCount(1, $gates);
+        self::assertInstanceOf(PermissionMiddleware::class, $gates[0]);
+        self::assertSame(['admin.access'], $this->property($gates[0], 'permissions'));
+    }
+
+    public function testRegisterRoutesLeavesPublicScopeUngated(): void
+    {
+        $registry = new ExtensionRegistry();
+        $registry->addRoute('GET', '/feed', [\stdClass::class, 'feed'], [], 'public', 'pubvana.feed');
+
+        $app = $this->app();
+        $registry->registerRoutes($app);
+
+        $matched = $app->router()->route($this->makeRequest('/feed', 'GET'));
+        self::assertNotFalse($matched);
+
+        $gates = array_values(array_filter(
+            $matched->middleware,
+            static fn ($mw): bool => $mw instanceof PermissionMiddleware
+        ));
+
+        self::assertCount(0, $gates);
+    }
+
+    public function testRegisterRoutesRunsAdminAccessGateBeforePluginMiddleware(): void
+    {
+        $permission = new class {
+        };
+        $registry = new ExtensionRegistry();
+        $registry->addRoute('GET', '/log', [\stdClass::class, 'log'], [$permission], 'admin', 'pubvana.log');
+
+        $app = $this->app();
+        $registry->registerRoutes($app);
+
+        $matched = $app->router()->route($this->makeRequest('/admin/log', 'GET'));
+        self::assertNotFalse($matched);
+
+        self::assertInstanceOf(PermissionMiddleware::class, $matched->middleware[0]);
+        self::assertSame($permission, $matched->middleware[1]);
     }
 
     /**
