@@ -1,4 +1,4 @@
-{# Content block template: custom HTML (the admin's "HTML" block). #}
+{# Content block template override: HTML (pubvana/core-blocks/blocks/html). #}
 {# Content block templates render through RegionManager, not the page inheritance chain. #}
 {# The data comes from the block's placement options entered in the admin. #}
 <div class="card mb-3">

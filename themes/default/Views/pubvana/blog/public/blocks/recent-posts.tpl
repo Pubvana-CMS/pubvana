@@ -1,19 +1,20 @@
-{# Content block template: Recent Posts, the theme override for pubvana/blog/public/blocks/recent-posts. #}
+{# Content block template override: Recent Posts (pubvana/blog/public/blocks/recent-posts). #}
 {# Content block templates render through RegionManager, not the page inheritance chain. #}
 {# The posts variable comes from the Blog plugin's block provider. #}
-<div class="card mb-3">
+<div class="card mb-4">
+    {# Conditional: the block title comes from the placement options in the admin. #}
+    {% if title %}
     <div class="card-header">
-        {# Static heading: this block has no title option. #}
-        <h3 class="card-title h5 mb-0">Recent Posts</h3>
+        <h3 class="card-title h5 mb-0">{{ title }}</h3>
     </div>
+    {% endif %}
     <div class="list-group list-group-flush">
         {# Conditional + loop: one link per recent post. #}
         {% if posts %}
         {% for post in posts %}
-        <a href="/blog/{{ post.slug }}" class="list-group-item list-group-item-action">
-            {# Escaped output: post title and publish date. #}
+        <a href="{{ post.url }}" class="list-group-item list-group-item-action">
             <div class="fw-bold">{{ post.title }}</div>
-            <small class="text-secondary">{{ post.created_at }}</small>
+            <small class="text-secondary">{{ post.published_at | date('F j, Y') }}</small>
         </a>
         {% endfor %}
         {% else %}

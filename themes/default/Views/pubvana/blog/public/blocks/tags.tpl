@@ -1,17 +1,19 @@
-{# Content block template: Tag Cloud, the theme override for pubvana/blog/public/blocks/tags. #}
+{# Content block template override: Tags (pubvana/blog/public/blocks/tags). #}
 {# Content block templates render through RegionManager, not the page inheritance chain. #}
 {# The tags variable comes from the Blog plugin's block provider. #}
-<div class="card mb-3">
+<div class="card mb-4">
+    {# Conditional: the block title comes from the placement options in the admin. #}
+    {% if title %}
     <div class="card-header">
-        {# Static heading: this block has no title option. #}
-        <h3 class="card-title h5 mb-0">Tags</h3>
+        <h3 class="card-title h5 mb-0">{{ title }}</h3>
     </div>
+    {% endif %}
     <div class="card-body">
         {# Conditional + loop: one badge per tag. #}
         {% if tags %}
         <div class="d-flex flex-wrap gap-2">
             {% for tag in tags %}
-            <a href="/blog/tag/{{ tag.slug }}" class="badge bg-blue-lt text-blue">{{ tag.name }}</a>
+            <a href="{{ tag.url }}" class="badge bg-secondary text-decoration-none">{{ tag.name }}</a>
             {% endfor %}
         </div>
         {% else %}
