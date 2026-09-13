@@ -125,6 +125,35 @@ final class UrlServiceTest extends TestCase
         }
     }
 
+    public function testSiteOriginPrefersTheConfiguredSetting(): void
+    {
+        $service = $this->service('https://example.com/');
+
+        self::assertSame('https://example.com', $service->siteOrigin());
+        self::assertSame('https://example.com', $this->service('https://example.com')->siteOrigin());
+    }
+
+    public function testSiteOriginFallsBackToSeededDefaultAndIgnoresHostHeader(): void
+    {
+        $_SERVER['HTTP_HOST'] = 'evil.example';
+        try {
+            $service = $this->service('');
+
+            self::assertSame('http://localhost', $service->siteOrigin(), 'the Host header must never contribute to emitted URLs');
+        } finally {
+            unset($_SERVER['HTTP_HOST']);
+        }
+    }
+
+    public function testAbsoluteUrlJoinsPathOnTheOrigin(): void
+    {
+        $service = $this->service('https://example.com');
+
+        self::assertSame('https://example.com/blog/post', $service->absoluteUrl('/blog/post'));
+        self::assertSame('https://example.com/blog/post', $service->absoluteUrl('blog/post'));
+        self::assertSame('https://example.com/', $service->absoluteUrl(''));
+    }
+
     private function service(string $siteUrl): UrlService
     {
         $app = $this->app([

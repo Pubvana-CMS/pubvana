@@ -77,6 +77,43 @@ class UrlService
     }
 
     /**
+     * The site's absolute origin for emitted URLs.
+     *
+     * Every URL the application renders for the outside world (canonical
+     * tags, og:url, JSON-LD ids, sitemaps, robots.txt, emailed links)
+     * must build on this value. It resolves the DB-backed CMS.siteUrl
+     * setting the admin UI writes and never consults the request: the
+     * Host header is attacker-controlled, so it can never contribute.
+     * When the setting is unconfigured the seeded default
+     * (http://localhost) is returned, which is constant and not
+     * attacker-influenced.
+     */
+    public function siteOrigin(): string
+    {
+        try {
+            $siteUrl = trim((string) ($this->app->settings()->get('CMS.siteUrl', '') ?? ''));
+        } catch (\Throwable) {
+            $siteUrl = '';
+        }
+
+        if ($siteUrl !== '') {
+            return rtrim($siteUrl, '/');
+        }
+
+        return 'http://localhost';
+    }
+
+    /**
+     * Turn a root-relative path into an absolute URL on the site origin.
+     *
+     * @param string $path Root-relative path (leading slash optional)
+     */
+    public function absoluteUrl(string $path): string
+    {
+        return $this->siteOrigin() . '/' . ltrim(trim($path), '/');
+    }
+
+    /**
      * Reduce an absolute http(s) URL to its path and query when its host and
      * port match the site's own, null otherwise. The host is compared with
      * parse_url(), never string prefixing, so lookalike hosts
@@ -122,6 +159,11 @@ class UrlService
      * else an absolute flight.base_url, else the request host. Returns null
      * only when nothing is derivable; with no reference host, absolute URLs
      * must be refused.
+     *
+     * This is the validation-side reference for sameSite(), not the
+     * emission-side origin. The base_url/request tiers stay because a
+     * redirect comparison needs some reference host; URLs the application
+     * emits must build on siteOrigin() instead.
      */
     private function siteHost(): ?string
     {

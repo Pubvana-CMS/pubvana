@@ -76,6 +76,7 @@ final class SchemaServiceXssTest extends TestCase
             'adext'    => $this->singleton(fn(): ExtensionRegistry => new ExtensionRegistry()),
         ]);
         \Flight::setEngine($app);
+        $app->map('url', $this->singleton(fn(): \Pubvana\Services\UrlService => new \Pubvana\Services\UrlService($app)));
 
         $app->settings()->set('CMS.siteName', 'Test Site');
         $app->settings()->set('CMS.siteUrl', 'https://example.com');

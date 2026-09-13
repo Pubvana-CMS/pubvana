@@ -117,15 +117,8 @@ class Plugin implements PluginInterface
                     return $app->view()->fetch('pubvana/seo/admin/create-notice');
                 }
 
-                $settings = $app->settings();
-                $siteUrl = $settings->get('CMS.siteUrl');
-                if (empty($siteUrl)) {
-                    $request = $app->request();
-                    $scheme = $request->secure ? 'https' : 'http';
-                    $host = $request->host ?? ($_SERVER['HTTP_HOST'] ?? 'localhost');
-                    $siteUrl = $scheme . '://' . $host;
-                }
-                $siteUrl = rtrim($siteUrl, '/');
+                // Configured site origin; the Host header is never trusted (AUDIT M4).
+                $siteUrl = $app->url()->siteOrigin();
 
                 $routePrefix = $contentType === 'post'
                     ? $app->pluginLoader()->routePrefix('pubvana/blog')

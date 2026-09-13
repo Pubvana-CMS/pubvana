@@ -153,17 +153,12 @@ class RobotsTxtService
         return strtolower(str_replace(['-', ' '], '_', $bot));
     }
 
+    /**
+     * Absolute site base URL from the configured CMS.siteUrl setting via
+     * UrlService::siteOrigin(); never the request Host header (AUDIT M4).
+     */
     protected function getSiteUrl(): string
     {
-        $settings = $this->app->settings();
-        $siteUrl = $settings->get('CMS.siteUrl');
-        if (!empty($siteUrl)) {
-            return rtrim($siteUrl, '/');
-        }
-
-        $request = $this->app->request();
-        $scheme = $request->secure ? 'https' : 'http';
-        $host = $request->host ?? ($_SERVER['HTTP_HOST'] ?? 'localhost');
-        return $scheme . '://' . $host;
+        return $this->app->url()->siteOrigin();
     }
 }

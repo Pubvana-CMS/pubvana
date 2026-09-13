@@ -517,18 +517,20 @@ class SeoService
 
     /**
      * Get the current request URL (full, with scheme and host).
+     *
+     * The origin comes from the configured CMS.siteUrl setting via
+     * UrlService::siteOrigin(); the request contributes its path only.
+     * The Host header is never trusted (see AUDIT M4).
      */
     protected function getCurrentUrl(): string
     {
         $request = $this->app->request();
-        $scheme = $request->secure ? 'https' : 'http';
-        $host = $request->host ?? ($_SERVER['HTTP_HOST'] ?? 'localhost');
         $uri = $request->url ?? ($_SERVER['REQUEST_URI'] ?? '/');
 
         // Strip query string for canonical
         $uri = strtok($uri, '?');
 
-        return $scheme . '://' . $host . $uri;
+        return $this->app->url()->siteOrigin() . $uri;
     }
 
     /**
@@ -605,17 +607,12 @@ class SeoService
 
     /**
      * Absolute site base URL, preferring the configured site URL.
+     *
+     * Delegates to UrlService::siteOrigin(): the DB-backed CMS.siteUrl
+     * setting, never the request Host header (see AUDIT M4).
      */
     protected function getSiteUrl(): string
     {
-        $siteUrl = $this->app->settings()->get('CMS.siteUrl');
-        if (!empty($siteUrl)) {
-            return rtrim($siteUrl, '/');
-        }
-
-        $request = $this->app->request();
-        $scheme = $request->secure ? 'https' : 'http';
-        $host = $request->host ?? ($_SERVER['HTTP_HOST'] ?? 'localhost');
-        return $scheme . '://' . $host;
+        return $this->app->url()->siteOrigin();
     }
 }
