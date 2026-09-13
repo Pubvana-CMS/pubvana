@@ -8,6 +8,7 @@ use Pubvana\Plugins\SiteHealth\Services\CheckResult;
 use Pubvana\Plugins\Updates\Controllers\UpdatesAdminController;
 use Pubvana\Plugins\Updates\Services\UpdateService;
 use Pubvana\Services\PluginInterface;
+use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 use flight\Engine;
 use flight\net\Router;
 
@@ -40,7 +41,7 @@ class Plugin implements PluginInterface
         });
 
         $adext = $app->adext();
-        $authMiddleware = null;
+        $authMiddleware = new PermissionMiddleware($app, 'updates.manage');
 
         $adext->addRoutes('admin', [
             ['GET',  $prefix,                  [UpdatesAdminController::class, 'index'],      [$authMiddleware]],
