@@ -12,11 +12,52 @@ use flight\Engine;
  */
 class BrokenLinksService
 {
+    /**
+     * IPv4 ranges never safe to probe outbound (loopback, private, link-local
+     * incl. cloud metadata, CGNAT, documentation, multicast, reserved).
+     *
+     * @var list<array{0: string, 1: int}>
+     */
+    private const BLOCKED_V4 = [
+        ['0.0.0.0', 8],
+        ['10.0.0.0', 8],
+        ['100.64.0.0', 10],
+        ['127.0.0.0', 8],
+        ['169.254.0.0', 16],
+        ['172.16.0.0', 12],
+        ['192.0.0.0', 24],
+        ['192.0.2.0', 24],
+        ['192.168.0.0', 16],
+        ['198.18.0.0', 15],
+        ['198.51.100.0', 24],
+        ['203.0.113.0', 24],
+        ['224.0.0.0', 4],
+        ['240.0.0.0', 4],
+        ['255.255.255.255', 32],
+    ];
+
+    /**
+     * IPv6 ranges never safe to probe outbound (unspecified, loopback, NAT64,
+     * unique-local, link-local, deprecated site-local, multicast, docs).
+     *
+     * @var list<array{0: string, 1: int}>
+     */
+    private const BLOCKED_V6 = [
+        ['::', 128],
+        ['::1', 128],
+        ['64:ff9b::', 96],
+        ['fc00::', 7],
+        ['fe80::', 10],
+        ['fec0::', 10],
+        ['ff00::', 8],
+        ['2001:db8::', 32],
+    ];
+
     private \PDO $pdo;
     /** @var Engine<object> */
     private Engine $app;
     /** @var array<string, mixed> */
-    private array $config;
+    protected array $config;
 
     /**
      * @param Engine<object>      $app
@@ -412,7 +453,11 @@ class BrokenLinksService
     /**
      * Perform an HTTP request and return the status code.
      *
-     * @throws \RuntimeException on connection failure
+     * Redirects are followed by hand (never CURLOPT_FOLLOWLOCATION) and every
+     * hop goes through performRequest(), so each target is vetted before a
+     * connection is attempted.
+     *
+     * @throws \RuntimeException on connection failure, unsafe target, or too many redirects
      */
     private function doHttpRequest(string $method, string $url, int $timeout, int $maxRedirects, string $userAgent): int
     {
@@ -420,30 +465,416 @@ class BrokenLinksService
             throw new \RuntimeException('A non-empty URL, method, and user agent are required.');
         }
 
+        $current = $url;
+        for ($hops = 0; $hops <= $maxRedirects; $hops++) {
+            $result = $this->performRequest($method, $current, $timeout, $userAgent);
+            $isRedirect = in_array($result['status'], [301, 302, 303, 307, 308], true);
+
+            if (!$isRedirect) {
+                return $result['status'];
+            }
+            if ($hops >= $maxRedirects) {
+                throw new \RuntimeException('Too many redirects.');
+            }
+            if ($result['location'] === null || $result['location'] === '') {
+                throw new \RuntimeException('Redirect response without a Location header.');
+            }
+
+            $next = $this->resolveHttpUrl($current, $result['location']);
+            if ($next === null) {
+                throw new \RuntimeException('Redirect Location could not be resolved.');
+            }
+            $current = $next;
+        }
+
+        return 0;
+    }
+
+    /**
+     * Perform a single safety-vetted HTTP request and return status plus Location.
+     *
+     * Every target must be http/https. When verification is on (default), the
+     * resolved addresses are vetted as public before the request: they are
+     * pinned via CURLOPT_RESOLVE when PHP DNS functions can resolve the host,
+     * otherwise a connect-time callback (libcurl 7.80+) vetoes unsafe peers,
+     * and if neither mechanism exists the request is refused outright.
+     *
+     * @return array{status: int, location: ?string}
+     *
+     * @throws \RuntimeException on connection failure or unsafe target
+     */
+    protected function performRequest(string $method, string $url, int $timeout, string $userAgent): array
+    {
+        if ($method === '' || $userAgent === '') {
+            throw new \RuntimeException('A non-empty method and user agent are required.');
+        }
+        if (!$this->isHttpUrl($url)) {
+            throw new \RuntimeException('Only http and https URLs can be checked.');
+        }
+
+        $verify = (bool) ($this->config['verify_targets'] ?? true);
+        $pinned = [];
+        $prereq = false;
+
+        if ($verify) {
+            $resolve = $this->resolveSafeHost($url);
+
+            if ($resolve !== null) {
+                $pinned = $resolve;
+            } elseif ($this->supportsPrereqVetting()) {
+                $prereq = true;
+            } else {
+                throw new \RuntimeException(
+                    'Cannot verify the target address: the host does not resolve, or it points '
+                    . 'at a non-public address, and this build cannot vet the peer at connect time '
+                    . '(needs PHP DNS functions, or libcurl 7.80+ built with the connect-time option).'
+                );
+            }
+        }
+
+        return $this->singleRequest($method, $url, $timeout, $userAgent, $pinned, $prereq);
+    }
+
+    /**
+     * Raw single-hop HTTP exchange. No redirect following, body streamed and
+     * capped, and optionally an IP pin and/or a connect-time veto.
+     *
+     * @param list<string> $pinned resolve overrides (vetted addresses), empty for none
+     * @param bool         $prereq whether to install a connect-time IP veto
+     *
+     * @return array{status: int, location: ?string}
+     *
+     * @throws \RuntimeException on connection failure
+     */
+    protected function singleRequest(string $method, string $url, int $timeout, string $userAgent, array $pinned, bool $prereq): array
+    {
+        if ($url === '' || $method === '' || $userAgent === '') {
+            throw new \RuntimeException('A non-empty URL, method, and user agent are required.');
+        }
+
         $ch = curl_init();
+        if ($ch === false) {
+            throw new \RuntimeException('curl could not be initialized.');
+        }
+
+        $maxBytes = max(1024, (int) ($this->config['max_bytes'] ?? 1048576));
+        $received = 0;
+        $locationHeader = '';
+
         curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
         curl_setopt($ch, CURLOPT_NOBODY, $method === 'HEAD');
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($ch, CURLOPT_MAXREDIRS, $maxRedirects);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
+        curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
         curl_setopt($ch, CURLOPT_USERAGENT, $userAgent);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+        curl_setopt(
+            $ch,
+            CURLOPT_WRITEFUNCTION,
+            function (mixed $handle, string $data) use (&$received, $maxBytes): int {
+                $received += strlen($data);
+                return $received > $maxBytes ? 0 : strlen($data);
+            }
+        );
+        curl_setopt(
+            $ch,
+            CURLOPT_HEADERFUNCTION,
+            function (mixed $handle, string $raw) use (&$locationHeader): int {
+                $line = trim($raw);
+                if (stripos($line, 'Location:') === 0) {
+                    $locationHeader = trim(substr($line, strlen('Location:')));
+                }
+                return strlen($raw);
+            }
+        );
+
+        if ($pinned !== []) {
+            $this->pinResolvedAddresses($ch, $url, $pinned);
+        }
+
+        if ($prereq && defined('CURLOPT_PREREQFUNCTION') && defined('CURLE_ABORTED_BY_CALLBACK')) {
+            curl_setopt(
+                $ch,
+                (int) CURLOPT_PREREQFUNCTION,
+                function (mixed $handle, string $ip4, string $ip6, string $ipAddress): int {
+                    $ip = $ip4 !== '' ? $ip4 : $ip6;
+                    if ($ip === '') {
+                        $ip = $ipAddress;
+                    }
+                    return ($ip !== '' && !$this->isPublicIp($ip)) ? CURLE_ABORTED_BY_CALLBACK : CURLE_OK;
+                }
+            );
+        }
 
         $response = curl_exec($ch);
+        $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        $redirected = curl_getinfo($ch, CURLINFO_REDIRECT_URL);
+        $redirectUrl = is_string($redirected) && $redirected !== '' ? $redirected : null;
+        $location = $locationHeader !== '' ? $locationHeader : $redirectUrl;
 
         if ($response === false) {
+            $errno = curl_errno($ch);
             $error = curl_error($ch);
             curl_close($ch);
+            if ($status > 0 && $errno === CURLE_WRITE_ERROR) {
+                return ['status' => $status, 'location' => $location];
+            }
             throw new \RuntimeException($error !== '' ? $error : 'curl request failed');
         }
 
-        $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
-        return $status;
+        return ['status' => $status, 'location' => $location];
+    }
+
+    /**
+     * Whether a URL uses the http or https scheme.
+     */
+    protected function isHttpUrl(string $url): bool
+    {
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+        return in_array($scheme, ['http', 'https'], true);
+    }
+
+    /**
+     * Whether a resolved IP is a safe, routable public address.
+     *
+     * Blocks loopback, private, link-local (incl. cloud metadata), CGNAT,
+     * documentation, multicast, reserved, and unspecified ranges over IPv4 and
+     * IPv6, including IPv4-mapped IPv6 addresses.
+     */
+    protected function isPublicIp(string $ip): bool
+    {
+        if (filter_var($ip, FILTER_VALIDATE_IP) === false) {
+            return false;
+        }
+
+        $embedded = $this->unpackV4Mapped($ip);
+        if ($embedded !== null) {
+            return $this->isPublicIp($embedded);
+        }
+
+        $v4 = filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false;
+        $blocked = $v4 ? self::BLOCKED_V4 : self::BLOCKED_V6;
+
+        foreach ($blocked as [$network, $prefix]) {
+            if ($this->ipInRange($ip, $network, $prefix)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Whether an address sits inside a CIDR block.
+     */
+    protected function ipInRange(string $ip, string $network, int $prefix): bool
+    {
+        $bin = @inet_pton($ip);
+        $net = @inet_pton($network);
+        if ($bin === false || $net === false) {
+            return false;
+        }
+        $length = strlen($net);
+        if (strlen((string) $bin) !== $length) {
+            return false;
+        }
+
+        $whole = intdiv($prefix, 8);
+        $bits = $prefix % 8;
+
+        for ($i = 0; $i < $whole; $i++) {
+            if ($bin[$i] !== $net[$i]) {
+                return false;
+            }
+        }
+        if ($bits > 0 && $whole < $length) {
+            $mask = (0xFF << (8 - $bits)) & 0xFF;
+            return (ord($bin[$whole]) & $mask) === (ord($net[$whole]) & $mask);
+        }
+
+        return true;
+    }
+
+    /**
+     * Decode an IPv4-mapped IPv6 literal (::ffff:a.b.c.d) to its IPv4 form,
+     * or null when the address is not v4-mapped.
+     */
+    protected function unpackV4Mapped(string $ip): ?string
+    {
+        $bin = @inet_pton($ip);
+        if (!is_string($bin) || strlen((string) $bin) !== 16) {
+            return null;
+        }
+        for ($i = 0; $i < 10; $i++) {
+            if ($bin[$i] !== "\x00") {
+                return null;
+            }
+        }
+        if ($bin[10] !== "\xff" || $bin[11] !== "\xff") {
+            return null;
+        }
+
+        $octets = @unpack('C4', substr((string) $bin, 12));
+        if ($octets === false) {
+            return null;
+        }
+
+        return $octets[1] . '.' . $octets[2] . '.' . $octets[3] . '.' . $octets[4];
+    }
+
+    /**
+     * Fetch the A and AAAA addresses for a hostname.
+     *
+     * IP literals pass through unchanged. Hosts PHP cannot resolve (or a host
+     * PHP has no DNS functions for) return no addresses, which the caller
+     * treats as "cannot pre-verify", falling back to connect-time vetting.
+     * Kept separate so tests can substitute a deterministic resolver.
+     *
+     * @return list<string>
+     */
+    protected function resolveHostIps(string $host): array
+    {
+        $host = trim($host);
+        if ($host === '') {
+            return [];
+        }
+        if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
+            return [$host];
+        }
+
+        $ips = [];
+
+        if (function_exists('gethostbynamel')) {
+            $v4 = @gethostbynamel($host);
+            if ($v4 !== false) {
+                foreach ($v4 as $ip) {
+                    if ($ip !== '') {
+                        $ips[] = $ip;
+                    }
+                }
+            }
+        }
+
+        if (function_exists('dns_get_record')) {
+            $records = @dns_get_record($host, DNS_AAAA);
+            if ($records !== false) {
+                foreach ($records as $record) {
+                    $ipv6 = $record['ipv6'];
+                    if ($ipv6 !== '') {
+                        $ips[] = $ipv6;
+                    }
+                }
+            }
+        }
+
+        return array_values(array_unique($ips));
+    }
+
+    /**
+     * Resolve a URL's host and confirm every address is SSRF-safe.
+     *
+     * @return list<string>|null The public addresses to connect to, or null
+     *     when the URL cannot be verified or resolves to an unsafe address
+     */
+    protected function resolveSafeHost(string $url): ?array
+    {
+        if (!$this->isHttpUrl($url)) {
+            return null;
+        }
+        $host = (string) parse_url($url, PHP_URL_HOST);
+        if ($host === '') {
+            return null;
+        }
+
+        $ips = $this->resolveHostIps($host);
+        if ($ips === []) {
+            return null;
+        }
+
+        foreach ($ips as $ip) {
+            if (!$this->isPublicIp($ip)) {
+                return null;
+            }
+        }
+
+        return $ips;
+    }
+
+    /**
+     * Pin a URL's hostname to pre-vetted addresses so curl cannot re-resolve
+     * (DNS-rebinding guard).
+     *
+     * @param list<string> $ips
+     */
+    protected function pinResolvedAddresses(\CurlHandle $ch, string $url, array $ips): void
+    {
+        $host = (string) parse_url($url, PHP_URL_HOST);
+        if ($host === '') {
+            return;
+        }
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+        $port = parse_url($url, PHP_URL_PORT);
+        $port = is_int($port) ? $port : ($scheme === 'https' ? 443 : 80);
+
+        $entries = [];
+        foreach ($ips as $ip) {
+            $address = str_contains($ip, ':') ? '[' . $ip . ']' : $ip;
+            $entries[] = $host . ':' . $port . ':' . $address;
+        }
+
+        if ($entries !== []) {
+            curl_setopt($ch, CURLOPT_RESOLVE, $entries);
+        }
+    }
+
+    /**
+     * Whether connect-time IP vetting (CURLOPT_PREREQFUNCTION) is available.
+     *
+     * The option needs libcurl 7.80.0+, so runtime version detection is used:
+     * the PHP constant is a compile-time artifact and can lie on old libcurls.
+     */
+    protected function supportsPrereqVetting(): bool
+    {
+        if (!defined('CURLOPT_PREREQFUNCTION') || !defined('CURLE_ABORTED_BY_CALLBACK')) {
+            return false;
+        }
+        $info = curl_version();
+        if ($info === false) {
+            return false;
+        }
+        $version = (string) $info['version'];
+        return version_compare($version, '7.80.0', '>=');
+    }
+
+    /**
+     * Resolve a Location header against the URL that produced it.
+     */
+    protected function resolveHttpUrl(string $base, string $location): ?string
+    {
+        if (preg_match('#^https?://#i', $location) === 1) {
+            return $location;
+        }
+        if (str_starts_with($location, '//')) {
+            $scheme = (string) parse_url($base, PHP_URL_SCHEME);
+            return $scheme !== '' ? $scheme . ':' . $location : null;
+        }
+        $scheme = (string) parse_url($base, PHP_URL_SCHEME);
+        $host = (string) parse_url($base, PHP_URL_HOST);
+        if ($scheme === '' || $host === '') {
+            return null;
+        }
+        $port = is_int($p = parse_url($base, PHP_URL_PORT)) ? ':' . $p : '';
+        if (str_starts_with($location, '/')) {
+            return $scheme . '://' . $host . $port . $location;
+        }
+        $path = (string) parse_url($base, PHP_URL_PATH);
+        $pos = strrpos($path, '/');
+        $dir = $pos === false ? '/' : substr($path, 0, $pos + 1);
+        return $scheme . '://' . $host . $port . '/' . ltrim($dir . $location, '/');
     }
 
     private function now(): string

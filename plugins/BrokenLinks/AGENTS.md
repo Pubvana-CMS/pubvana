@@ -11,7 +11,7 @@ Broken Links scans outbound links in published posts and pages, checks each via 
 - **PHP floor:** not declared in the plugin; the main project requires PHP `^8.2` (repo `composer.json`)
 - **Namespace:** `Pubvana\Plugins\BrokenLinks` (`Plugin.php:5`), with `Controllers`, `Services`, `Models`, `Database\Migrations`, and `commands` sub-namespaces
 - **Runtime dependencies (declared at the app level, not in the plugin):** `flightphp/active-record` (model base), `enlivenapp/migrations` (migration base), `enlivenapp/flight-shield` (auth), `enlivenapp/flight-sessions` (flash messages); core engine services `$app->db()`, `adext()`, `settings()`, `session()`, `redirect()`; curl extension for HTTP checks
-- **Config:** `Config/Config.php`: `routePrepend` (`broken-links`), `timeout` (`10`), `max_redirects` (`5`), `user_agent` (`Pubvana-LinkChecker/1.0`)
+- **Config:** `Config/Config.php`: `routePrepend` (`broken-links`), `timeout` (`10`), `max_redirects` (`5`), `user_agent` (`Pubvana-LinkChecker/1.0`), `verify_targets` (`true`), `max_bytes` (`1048576`)
 - **Docs:** `README.md`
 
 ## Project guidelines
@@ -25,15 +25,16 @@ Broken Links scans outbound links in published posts and pages, checks each via 
 7. **Use DOMDocument for HTML link extraction.** Parse `<a href>` tags with `LIBXML_NOERROR | LIBXML_NOWARNING` to suppress warnings on fragment HTML (`Services/BrokenLinksService.php:291-298`). Reason: handles real-world HTML from Jodit editors better than regex alone.
 8. **Filter to external URLs only.** Same-host, mailto, tel, javascript, data, and fragment-only links are excluded (`Services/BrokenLinksService.php:310-318`). Reason: only outbound links need HTTP checking.
 9. **HTTP checks use curl directly, not a framework HTTP client.** HEAD first, GET fallback on 405, configurable timeout and redirect limit (`Services/BrokenLinksService.php:262-287`). Reason: avoids adding a framework dependency; curl is universally available on shared hosts.
-10. **Fresh model instances via private `model()` helper.** Every query that needs a new model instance calls `$this->model()` (`Services/BrokenLinksService.php:360-363`). Reason: shared instances hold query state across calls.
-11. **DateTimeImmutable for every timestamp write.** All `now()` calls use `new \DateTimeImmutable()` (`Services/BrokenLinksService.php:355-358`). Reason: immutable timestamps prevent accidental mutation.
-12. **Controllers strip `_csrf_token` before forwarding POST data.** Standard v3 pattern. Reason: prevents CSRF token from being stored or processed as data.
+10. **SSRF vetting on every hop.** `checkUrl()` only ever probes http/https targets whose resolved addresses are public (loopback, private, link-local incl. cloud metadata, CGNAT, multicast, reserved, and unspecified ranges are blocked over IPv4 and IPv6). Redirects are followed by hand with every hop re-vetted (no `CURLOPT_FOLLOWLOCATION`); vetted addresses are pinned via `CURLOPT_RESOLVE` so curl cannot re-resolve. Response bodies are capped at `max_bytes`. Reason: outbound checks must never reach internal hosts, and a DNS-rebinding attack must not swap the target between vetting and connect. `verify_targets => false` is the escape hatch for hosts with no PHP DNS functions and a curl built without the connect-time option; it weakens protection.
+11. **Fresh model instances via private `model()` helper.** Every query that needs a new model instance calls `$this->model()` (`Services/BrokenLinksService.php:360-363`). Reason: shared instances hold query state across calls.
+12. **DateTimeImmutable for every timestamp write.** All `now()` calls use `new \DateTimeImmutable()` (`Services/BrokenLinksService.php:355-358`). Reason: immutable timestamps prevent accidental mutation.
+13. **Controllers strip `_csrf_token` before forwarding POST data.** Standard v3 pattern. Reason: prevents CSRF token from being stored or processed as data.
 
 ## Repository layout
 
 ```
 plugins/BrokenLinks/
-├── Config/Config.php                                      routePrepend, timeout, max_redirects, user_agent
+├── Config/Config.php                                      routePrepend, timeout, max_redirects, user_agent, verify_targets, max_bytes
 ├── Controllers/
 │   └── BrokenLinksAdminController.php                     Admin UI: list, scan, recheck, dismiss
 ├── Database/
@@ -71,7 +72,7 @@ plugins/BrokenLinks/
 
 ## Development and testing
 
-This plugin has no `composer.json` and no test suite, unlike library plugins in the Pubvana repo. It is exercised through the full app.
+This plugin has no `composer.json`. It is exercised through the full app and has a unit suite in `tests/Unit/Plugins/BrokenLinks/`.
 
 - Lint/static analysis (app-wide, from the repo root):
   - `composer phpstan` (level 8)
@@ -101,6 +102,7 @@ No coverage is configured for this plugin.
 6. **Controllers strip `_csrf_token` before forwarding POST data.**
 7. **Dismissed rows are never modified by the scan service.** The upsert returns early on dismissed entries.
 8. **Content sources are registered via adext, not hardcoded.** The service iterates `$app->adext()->get('brokenlinks', 'source')`.
+9. **SSRF vetting stays on.** Keep every outbound hop vetted (public addresses only, pinned resolves, manual redirect re-validation, `max_bytes` cap). The `verify_targets` escape hatch must never become the default.
 
 ## PR / contribution checklist
 
@@ -109,6 +111,8 @@ No coverage is configured for this plugin.
 - [ ] Dismissal is permanent; upsert skips dismissed rows
 - [ ] Content sources registered via adext, not hardcoded queries
 - [ ] Sequential URL checking preserved
+- [ ] SSRF vetting intact: no `CURLOPT_FOLLOWLOCATION`, hops pinned, size cap present
+- [ ] New/changed behavior covered by `tests/Unit/Plugins/BrokenLinks/`
 - [ ] Fresh model instances via `model()` helper
 - [ ] DateTimeImmutable for all timestamps
-- [ ] README updated only if user-facing behavior changed
+- [ ] README updated if user-facing behavior or config changed
