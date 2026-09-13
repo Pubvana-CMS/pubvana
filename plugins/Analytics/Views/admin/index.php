@@ -157,8 +157,8 @@ $referrers  = $report['referrers'] ?? [];
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script>
 window._analyticsEndpoint = '<?= $adminBase ?>/data';
-window._analyticsRange = <?= json_encode($range) ?>;
-window._analyticsReport = <?= json_encode($report) ?>;
+window._analyticsRange = <?= json_encode($range, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_HEX_APOS) ?>;
+window._analyticsReport = <?= json_encode($report, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_HEX_APOS) ?>;
 
 var chart = null;
 
