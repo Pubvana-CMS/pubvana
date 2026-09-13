@@ -215,6 +215,29 @@ class Post extends \Pubvana\Models\AbstractModel
     }
 
     /**
+     * Published, non-deleted posts whose title, content, or excerpt match a
+     * LIKE pattern. Raw prepared statement because the pre-filter needs an
+     * explicit ESCAPE clause so caller-supplied % and _ stay literal; the
+     * fluent like() operator cannot carry one.
+     *
+     * @return array<int, static>
+     */
+    public function searchByPattern(string $pattern): array
+    {
+        $post = new self($this->getDatabaseConnection());
+        /** @var array<int, static> $posts */
+        $posts = $post->query(
+            "SELECT * FROM posts
+             WHERE (title LIKE :q ESCAPE '\\' OR content LIKE :q ESCAPE '\\' OR excerpt LIKE :q ESCAPE '\\')
+               AND status = :status
+               AND deleted_at IS NULL",
+            [':q' => $pattern, ':status' => 'published']
+        );
+
+        return $posts;
+    }
+
+    /**
      * @param array<string, mixed> $data
      */
     public function createRecord(array $data): self

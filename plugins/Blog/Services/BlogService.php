@@ -670,15 +670,7 @@ class BlogService
     */
     public function searchProvider(string $term, string $urlPrefix): array
     {
-        $posts = (new Post($this->postModel->getDatabaseConnection()))
-            ->startWrap()
-                ->like('title', '%' . $term . '%')
-                ->like('content', '%' . $term . '%', 'or')
-                ->like('excerpt', '%' . $term . '%', 'or')
-            ->endWrap('OR')
-            ->eq('status', 'published')
-            ->isNull('deleted_at')
-            ->findAll();
+        $posts = $this->postModel->searchByPattern('%' . $this->escapeLikePattern($term) . '%');
 
         $results = [];
         $words = array_filter(preg_split('/\s+/', $term) ?: []);
@@ -872,5 +864,15 @@ class BlogService
         }
         $config = \HTMLPurifier_Config::create(Flight::get('html_purifier') ?? []);
         return (new \HTMLPurifier($config))->purify($html);
+    }
+
+    /**
+     * Neutralize % and _ so a user-supplied search term matches them
+     * literally in a SQL LIKE pattern. Post::searchByPattern() carries the
+     * matching ESCAPE clause.
+     */
+    private function escapeLikePattern(string $term): string
+    {
+        return strtr($term, ['\\' => '\\\\', '%' => '\%', '_' => '\_']);
     }
 }
