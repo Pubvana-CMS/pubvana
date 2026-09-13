@@ -59,13 +59,13 @@ class ProfilesAdminController extends AdminController
         }
 
         $post = $this->app->request()->data->getData();
-        $returnUrl = $post['return_url'] ?? $this->adminBase();
+        $postedReturn = isset($post['return_url']) ? (string) $post['return_url'] : null;
         unset($post['_csrf_token'], $post['return_url']);
 
         $this->app->profiles()->updateProfile((int) $userId, $post);
 
         $this->app->session()->flash('success', 'Profile updated.');
-        $this->app->redirect($returnUrl);
+        $this->app->redirect($this->app->url()->sameSite($postedReturn, $this->adminBase()));
     }
 
     private function adminBase(): string

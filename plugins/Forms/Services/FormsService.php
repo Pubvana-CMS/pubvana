@@ -542,22 +542,7 @@ class FormsService
 
     public function normalizeReturnUrl(?string $returnUrl, ?string $referrer = null): string
     {
-        $candidate = $returnUrl ?: $referrer ?: '/';
-
-        if (preg_match('#^https?://#i', $candidate)) {
-            $base = (string) ($this->app->get('flight.base_url') ?? '');
-            if ($base !== '' && str_starts_with($candidate, rtrim($base, '/'))) {
-                $candidate = substr($candidate, strlen(rtrim($base, '/')));
-            } else {
-                return '/';
-            }
-        }
-
-        if (!str_starts_with($candidate, '/')) {
-            $candidate = '/' . ltrim($candidate, '/');
-        }
-
-        return $candidate;
+        return $this->app->url()->sameSite($returnUrl, $referrer);
     }
 
     /**

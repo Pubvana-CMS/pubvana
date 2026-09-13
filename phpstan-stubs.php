@@ -97,6 +97,7 @@ namespace flight {
      * @phpstan-method \Pubvana\Services\AssetService asset()
      * @phpstan-method \Pubvana\Services\CaptchaService captcha()
      * @phpstan-method \Pubvana\Services\TrustClientService trustClient()
+     * @phpstan-method \Pubvana\Services\UrlService url()
      * @phpstan-method \Pubvana\Services\PluginLoader pluginLoader()
      * @phpstan-method \Enlivenapp\FlightSessions\SessionManager session()
      * @phpstan-method \Enlivenapp\FlightShield\Auth auth()
@@ -237,6 +238,10 @@ namespace Pubvana\Services {
     }
 
     class TrustClientService
+    {
+    }
+
+    class UrlService
     {
     }
 

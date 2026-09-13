@@ -40,7 +40,7 @@ class CommentsPublicController extends PublicController
      */
     public function store(string $type, string $id): void
     {
-        $referrer = $this->app->request()->referrer ?: '/';
+        $referrer = $this->app->url()->sameSite($this->app->request()->referrer ?: '/');
         $service = $this->app->comments();
 
         if (!$service->isEnabled()) {

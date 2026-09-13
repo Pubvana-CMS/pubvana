@@ -415,6 +415,25 @@ $app->map('asset', function () use ($app) {
 
 /*
 |--------------------------------------------------------------------------
+| Url Service
+|--------------------------------------------------------------------------
+| Normalizes candidate redirect targets (form _return_url fields, comment
+| Referer bounces, posted return_url values) to same-site root-relative
+| paths. Visitor-supplied redirect values MUST go through
+| $app->url()->sameSite() before any redirect() call.
+|
+| Access anywhere with: $app->url()->sameSite($url, $referrer)
+*/
+$app->map('url', function () use ($app) {
+    static $instance = null;
+    if ($instance === null) {
+        $instance = new \Pubvana\Services\UrlService($app);
+    }
+    return $instance;
+});
+
+/*
+|--------------------------------------------------------------------------
 | Default Timezone (applied after core-admin loads)
 |--------------------------------------------------------------------------
 | MOVED to bootstrap.php, after core-admin.php. The settings service's
