@@ -347,8 +347,16 @@ class UsersController extends AdminController
     {
         $user = $this->app->auth()->users()->find((int) $id, $this->viewerIsSuperadmin());
 
-        if ($user !== null) {
-            $this->app->auth()->users()->setActive($user, !$user->active);
+        if ($user === null) {
+            $this->app->redirect('/admin/users');
+            return;
+        }
+
+        $result = $this->userAdmin()->setActive($user, !$user->active);
+        if (!$result->isOK()) {
+            $this->app->session()->flash('error', $result->reason() ?: 'User status could not be changed.');
+            $this->app->redirect('/admin/users/' . $id . '/edit');
+            return;
         }
 
         $this->app->session()->flash('success', 'User status toggled.');

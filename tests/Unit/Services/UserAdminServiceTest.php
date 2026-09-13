@@ -284,6 +284,82 @@ final class UserAdminServiceTest extends TestCase
     }
 
     // -----------------------------------------------------------------
+    // setActive
+    // -----------------------------------------------------------------
+
+    public function testSetActiveCannotDeactivateSelf(): void
+    {
+        $self = $this->seedUser('self');
+        $this->auth->actor = $self;
+
+        $result = $this->service->setActive($self, false);
+
+        self::assertFalse($result->isOK());
+        self::assertStringContainsString('own account', (string) $result->reason());
+        self::assertSame(1, (int) $this->freshUser((int) $self->id)?->active);
+    }
+
+    public function testSetActiveCannotDeactivateLastSuperadmin(): void
+    {
+        $last = $this->seedUser('last-super', ['superadmin']);
+        $this->auth->actor = $this->seedUser('admin', ['admin']);
+
+        $result = $this->service->setActive($last, false);
+
+        self::assertFalse($result->isOK());
+        self::assertStringContainsString('last superadmin', (string) $result->reason());
+        self::assertSame(1, (int) $this->freshUser((int) $last->id)?->active);
+    }
+
+    public function testSetActiveCanDeactivateWhenAnotherSuperadminRemains(): void
+    {
+        $this->seedUser('keeper', ['superadmin']);
+        $target = $this->seedUser('stepping-down', ['superadmin']);
+        $this->auth->actor = $this->seedUser('owner', ['superadmin']);
+
+        $result = $this->service->setActive($target, false);
+
+        self::assertTrue($result->isOK());
+        self::assertSame(0, (int) $this->freshUser((int) $target->id)?->active);
+    }
+
+    public function testSetActiveCanDeactivateRegularUser(): void
+    {
+        $this->auth->actor = $this->seedUser('admin', ['admin']);
+        $target = $this->seedUser('victim');
+
+        $result = $this->service->setActive($target, false);
+
+        self::assertTrue($result->isOK());
+        self::assertSame(0, (int) $this->freshUser((int) $target->id)?->active);
+    }
+
+    public function testSetActiveReactivationAlwaysAllowed(): void
+    {
+        $user = $this->seedUser('reactivate');
+        $this->auth->actor = $this->seedUser('admin', ['admin']);
+        (new UserManagement($this->pdo))->setActive($user, false);
+        self::assertSame(0, (int) $this->freshUser((int) $user->id)?->active);
+
+        $result = $this->service->setActive($user, true);
+
+        self::assertTrue($result->isOK());
+        self::assertSame(1, (int) $this->freshUser((int) $user->id)?->active);
+    }
+
+    public function testSetActiveReactivatingLastSuperadminIsAllowed(): void
+    {
+        $last = $this->seedUser('last-super', ['superadmin']);
+        $this->auth->actor = $this->seedUser('admin', ['admin']);
+        (new UserManagement($this->pdo))->setActive($last, false);
+
+        $result = $this->service->setActive($last, true);
+
+        self::assertTrue($result->isOK());
+        self::assertSame(1, (int) $this->freshUser((int) $last->id)?->active);
+    }
+
+    // -----------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------
 

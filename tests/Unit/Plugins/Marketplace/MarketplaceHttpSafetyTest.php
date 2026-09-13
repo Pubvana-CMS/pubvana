@@ -202,6 +202,91 @@ final class MarketplaceHttpSafetyTest extends TestCase
     {
         $this->property($this->service, 'app')->set('environment', 'development');
     }
+
+    // -----------------------------------------------------------------
+    // Response-size caps (L2)
+    // -----------------------------------------------------------------
+
+    public function testByteCapDefaultsAndFloors(): void
+    {
+        // Default: the named config key is absent, so the hard default holds.
+        self::assertSame(1048576, $this->invoke($this->service, 'byteCap', [null, 'max_bytes', 1048576]));
+
+        // Zip downloads get their own default.
+        self::assertSame(26214400, $this->invoke($this->service, 'byteCap', [null, 'max_zip_bytes', 26214400]));
+
+        // An explicit value wins; a misconfigured tiny value is floored at 1KB.
+        self::assertSame(5000000, $this->invoke($this->service, 'byteCap', [5000000, 'max_bytes', 1048576]));
+        self::assertSame(1024, $this->invoke($this->service, 'byteCap', [10, 'max_bytes', 1048576]));
+    }
+
+    public function testByteCapReadsConfigKey(): void
+    {
+        $service = new HttpSafetyService(
+            Sqlite::recreate(),
+            $this->app(['settings' => fn (): HttpSafetySettingsStub => $this->settings]),
+            ['store_url' => 'http://plugindev', 'max_bytes' => 5000, 'max_zip_bytes' => 99],
+        );
+
+        self::assertSame(5000, $this->invoke($service, 'byteCap', [null, 'max_bytes', 1048576]));
+        // max(1024, 99): the floor wins over a nonsense config value.
+        self::assertSame(1024, $this->invoke($service, 'byteCap', [null, 'max_zip_bytes', 26214400]));
+    }
+
+    public function testBothHttpTransportsCarryTheSizeCap(): void
+    {
+        $src = (string) file_get_contents(
+            dirname(__DIR__, 4) . '/plugins/Marketplace/Services/MarketplaceService.php'
+        );
+
+        // The capped write callback is on both the GET and POST curl paths.
+        self::assertSame(2, substr_count($src, 'CURLOPT_WRITEFUNCTION'));
+
+        // The stream fallback is capped through the shared fread-loop helper
+        // (two call sites plus the definition).
+        self::assertSame(3, substr_count($src, 'streamBodyWithCap('));
+
+        // The zip download call site overrides the default cap.
+        self::assertStringContainsString("'max_zip_bytes'", $src);
+    }
+
+    public function testStreamBodyCapAbandonsOversizedBody(): void
+    {
+        $path = $this->tempFile(str_repeat('a', 4096));
+        $context = stream_context_create(['http' => ['ignore_errors' => true]]);
+
+        $response = $this->invoke($this->service, 'streamBodyWithCap', [$path, $context, 1024]);
+
+        self::assertNull($response['body']);
+    }
+
+    public function testStreamBodyCapKeepsBodyWithinLimit(): void
+    {
+        $path = $this->tempFile(str_repeat('b', 1000));
+        $context = stream_context_create(['http' => ['ignore_errors' => true]]);
+
+        $response = $this->invoke($this->service, 'streamBodyWithCap', [$path, $context, 1024]);
+
+        self::assertSame(str_repeat('b', 1000), $response['body']);
+    }
+
+    public function testStreamBodyCapMissingSource(): void
+    {
+        $context = stream_context_create(['http' => ['ignore_errors' => true]]);
+
+        $response = $this->invoke($this->service, 'streamBodyWithCap', ['/nonexistent/nope', $context, 1024]);
+
+        self::assertNull($response['body']);
+    }
+
+    private function tempFile(string $contents): string
+    {
+        $path = tempnam(sys_get_temp_dir(), 'mktcap');
+        self::assertNotFalse($path);
+        self::assertNotFalse(file_put_contents($path, $contents));
+
+        return $path;
+    }
 }
 
 /**
@@ -235,7 +320,7 @@ final class HttpSafetyService extends MarketplaceService
     /** @var list<array{body: ?string, status: int, location: ?string}> */
     public array $fetchResponses = [];
 
-    protected function httpFetchOnce(string $url, array $headers, int $timeout): ?array
+    protected function httpFetchOnce(string $url, array $headers, int $timeout, ?int $maxBytes = null): ?array
     {
         $this->fetched[] = ['url' => $url, 'headers' => $headers];
         return array_shift($this->fetchResponses);

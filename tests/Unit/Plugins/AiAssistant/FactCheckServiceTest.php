@@ -490,6 +490,48 @@ final class FactCheckServiceTest extends TestCase
     }
 
     // -----------------------------------------------------------------
+    // Remote prompt size cap (AUDIT L2)
+    // -----------------------------------------------------------------
+
+    public function testRemotePromptWithinCapIsUsed(): void
+    {
+        $path = $this->promptFile(2048);
+
+        $prompt = $this->service([
+            'factcheck_prompt_url' => $path,
+            'max_bytes'            => 4096,
+        ])->currentPrompt();
+
+        self::assertSame('remote', $prompt['source']);
+        self::assertSame('9.9.9', $prompt['version']);
+    }
+
+    public function testRemotePromptAtExactCapIsUsed(): void
+    {
+        $path = $this->promptFile(2048);
+
+        $prompt = $this->service([
+            'factcheck_prompt_url' => $path,
+            'max_bytes'            => 2048,
+        ])->currentPrompt();
+
+        self::assertSame('remote', $prompt['source']);
+    }
+
+    public function testRemotePromptOverCapFallsBackToBundled(): void
+    {
+        $path = $this->promptFile(2049);
+
+        $prompt = $this->service([
+            'factcheck_prompt_url' => $path,
+            'max_bytes'            => 2048,
+        ])->currentPrompt();
+
+        self::assertSame('bundled', $prompt['source']);
+        self::assertSame('1.0.0', $prompt['version']);
+    }
+
+    // -----------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------
 
@@ -556,6 +598,31 @@ final class FactCheckServiceTest extends TestCase
     private function settingsStore(): object
     {
         return $this->settings;
+    }
+
+    /**
+     * A temp file holding a valid hosted-prompt JSON document padded to an
+     * exact byte size, so the cap boundary can be exercised without a
+     * network (fopen reads local paths with the http context ignored).
+     */
+    private function promptFile(int $size): string
+    {
+        $make = fn (int $textLength): string => (string) json_encode([
+            'version' => '9.9.9',
+            'title'   => 'Cap test',
+            'summary' => 's',
+            'text'    => str_repeat('x', $textLength),
+        ]);
+
+        $payload = $make(0);
+        $payload = $make($size - strlen($payload));
+
+        $path = tempnam(sys_get_temp_dir(), 'aicap');
+        self::assertNotFalse($path);
+        self::assertNotFalse(file_put_contents($path, $payload));
+        self::assertSame($size, filesize($path));
+
+        return $path;
     }
 
     private function setSetting(string $key, mixed $value): void

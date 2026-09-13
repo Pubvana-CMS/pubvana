@@ -47,7 +47,14 @@ class RedirectsAdminController extends AdminController
         $post = $this->app->request()->data->getData();
         unset($post['_csrf_token']);
 
-        $redirect = $this->app->redirects()->create($post);
+        try {
+            $redirect = $this->app->redirects()->create($post);
+        } catch (\InvalidArgumentException $e) {
+            $this->app->session()->flash('error', $e->getMessage());
+            $this->app->redirect($this->adminBase() . '/create');
+            return;
+        }
+
         if (!empty($post['incoming_404_id'])) {
             $this->app->redirectLinks()->markResolved((int) $post['incoming_404_id'], (int) $redirect->id);
         }
@@ -84,7 +91,15 @@ class RedirectsAdminController extends AdminController
         $post = $this->app->request()->data->getData();
         unset($post['_csrf_token']);
 
-        if ($this->app->redirects()->update((int) $id, $post) === null) {
+        try {
+            $updated = $this->app->redirects()->update((int) $id, $post);
+        } catch (\InvalidArgumentException $e) {
+            $this->app->session()->flash('error', $e->getMessage());
+            $this->app->redirect($this->adminBase() . '/' . $id . '/edit');
+            return;
+        }
+
+        if ($updated === null) {
             $this->app->session()->flash('error', 'Redirect not found.');
             $this->app->redirect($this->adminBase());
             return;

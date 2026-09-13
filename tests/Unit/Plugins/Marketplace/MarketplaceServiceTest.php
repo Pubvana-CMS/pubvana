@@ -217,13 +217,13 @@ final class TestMarketplaceService extends MarketplaceService
         return $this->coreSemverForTest();
     }
 
-    protected function httpPostJson(string $url, array $payload): ?string
+    protected function httpPostJson(string $url, array $payload, ?int $maxBytes = null): ?string
     {
         $this->sent[] = ['url' => $url, 'payload' => $payload];
         return array_shift($this->responses);
     }
 
-    protected function httpGet(string $url): ?string
+    protected function httpGet(string $url, ?int $maxBytes = null): ?string
     {
         return array_shift($this->getResponses);
     }

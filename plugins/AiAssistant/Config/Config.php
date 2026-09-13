@@ -11,4 +11,6 @@ return [
     // moves to /page/ when the main website is ported to v3.
     'factcheck_page_url'     => 'https://pubvanacms.com/pages/fact-checking',
     'factcheck_http_timeout' => 5,
+    // Cap on the fetched prompt document size (bytes).
+    'max_bytes'              => 1048576,
 ];

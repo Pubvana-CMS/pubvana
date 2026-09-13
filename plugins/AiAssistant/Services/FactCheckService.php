@@ -104,13 +104,36 @@ class FactCheckService
         }
 
         $timeout = max(1, (int) ($this->config['factcheck_http_timeout'] ?? 5));
+        $cap = max(1024, (int) ($this->config['max_bytes'] ?? 1048576));
         $context = stream_context_create([
             'http' => ['timeout' => $timeout, 'follow_location' => 1],
             'https' => ['timeout' => $timeout, 'follow_location' => 1],
         ]);
 
-        $raw = @file_get_contents($url, false, $context);
-        if ($raw === false || trim($raw) === '') {
+        // file_get_contents() buffers the whole body with no size limit, so
+        // the response is drained with fread and abandoned once it exceeds
+        // the cap (an oversized document falls back to the bundled copy).
+        $stream = @fopen($url, 'rb', false, $context);
+        if ($stream === false) {
+            return null;
+        }
+        $raw = '';
+        $received = 0;
+        while (!feof($stream)) {
+            $chunk = fread($stream, 8192);
+            if ($chunk === false || $chunk === '') {
+                break;
+            }
+            $received += strlen($chunk);
+            if ($received > $cap) {
+                $raw = '';
+                break;
+            }
+            $raw .= $chunk;
+        }
+        fclose($stream);
+
+        if ($raw === '' || trim($raw) === '') {
             return null;
         }
 

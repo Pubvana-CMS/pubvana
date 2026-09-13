@@ -125,6 +125,12 @@ class MarketplaceService
 
     private const MAX_REDIRECTS = 3;
 
+    /** Default response-size cap for API/JSON fetches (bytes). */
+    private const MAX_BODY_BYTES = 1048576;
+
+    /** Default response-size cap for package zip downloads (bytes). */
+    private const MAX_ZIP_BYTES = 26214400;
+
     /**
      * The last moment the cached catalog was declared stale by a user
      * action ("Check all" on the Updates screen). Cache entries generated
@@ -848,7 +854,7 @@ class MarketplaceService
         }
         $zipPath = $tmpDir . \DIRECTORY_SEPARATOR . 'pkg-' . bin2hex(random_bytes(4)) . '.zip';
 
-        $zipData = $this->httpGet($downloadUrl);
+        $zipData = $this->httpGet($downloadUrl, $this->byteCap(null, 'max_zip_bytes', self::MAX_ZIP_BYTES));
         if ($zipData === null) {
             return $fail('The package could not be downloaded.');
         }
@@ -1161,8 +1167,9 @@ class MarketplaceService
 
     /**
      * @param array<string, mixed> $payload
+     * @param int|null  $maxBytes Response-size cap; null uses the max_bytes config key.
      */
-    protected function httpPostJson(string $url, array $payload): ?string
+    protected function httpPostJson(string $url, array $payload, ?int $maxBytes = null): ?string
     {
         $data = json_encode($payload) ?: '{}';
         $headers = ['Content-Type: application/json', 'Accept: application/json'];
@@ -1174,10 +1181,13 @@ class MarketplaceService
             return null;
         }
         $timeout = (int) ($this->config['api_timeout'] ?? 10);
+        $cap = $this->byteCap($maxBytes, 'max_bytes', self::MAX_BODY_BYTES);
 
         if (function_exists('curl_init')) {
             $handle = curl_init($url);
             if ($handle !== false) {
+                $received = 0;
+                $body = '';
                 curl_setopt_array($handle, [
                     CURLOPT_RETURNTRANSFER => true,
                     CURLOPT_POST           => true,
@@ -1186,10 +1196,21 @@ class MarketplaceService
                     CURLOPT_CONNECTTIMEOUT => $timeout,
                     CURLOPT_TIMEOUT        => $timeout,
                     CURLOPT_USERAGENT      => $this->userAgent(),
+                    CURLOPT_WRITEFUNCTION  => function (mixed $handle, string $chunk) use (&$received, &$body, $cap): int {
+                        $received += strlen($chunk);
+                        if ($received > $cap) {
+                            return 0; // Abort: the body exceeds the cap.
+                        }
+                        $body .= $chunk;
+                        return strlen($chunk);
+                    },
                 ]);
-                $body = curl_exec($handle);
+                $exec = curl_exec($handle);
                 curl_close($handle);
-                return is_string($body) && $body !== '' ? $body : null;
+                // With a write callback, success returns true (the body is
+                // accumulated above); anything else is a network error or
+                // the cap abort (CURLE_WRITE_ERROR).
+                return $exec === true && $body !== '' ? $body : null;
             }
         }
 
@@ -1205,21 +1226,21 @@ class MarketplaceService
                 'max_redirects'   => 0,
             ],
         ]);
-        $body = @file_get_contents($url, false, $context);
-        return is_string($body) && $body !== '' ? $body : null;
+        return $this->streamBodyWithCap($url, $context, $cap)['body'];
     }
 
-    protected function httpGet(string $url): ?string
+    protected function httpGet(string $url, ?int $maxBytes = null): ?string
     {
         $timeout = (int) ($this->config['api_timeout'] ?? 10);
         $headers = $this->connected() ? ['Authorization: Bearer ' . (string) $this->app->settings()->get('Marketplace.account_token')] : [];
+        $cap = $this->byteCap($maxBytes, 'max_bytes', self::MAX_BODY_BYTES);
 
         $current = $url;
         for ($hops = 0; $hops <= self::MAX_REDIRECTS; $hops++) {
             if (!$this->isAllowedStoreUrl($current)) {
                 return null;
             }
-            $response = $this->httpFetchOnce($current, $headers, $timeout);
+            $response = $this->httpFetchOnce($current, $headers, $timeout, $cap);
             if ($response === null) {
                 return null;
             }
@@ -1248,14 +1269,19 @@ class MarketplaceService
      * after re-validating each hop against the store host policy.
      *
      * @param list<string> $headers
+     * @param int|null  $maxBytes Response-size cap; null uses the max_bytes config key.
      *
      * @return array{body: ?string, status: int, location: ?string}|null
      */
-    protected function httpFetchOnce(string $url, array $headers, int $timeout): ?array
+    protected function httpFetchOnce(string $url, array $headers, int $timeout, ?int $maxBytes = null): ?array
     {
+        $cap = $this->byteCap($maxBytes, 'max_bytes', self::MAX_BODY_BYTES);
+
         if (function_exists('curl_init')) {
             $handle = curl_init($url);
             if ($handle !== false) {
+                $received = 0;
+                $body = '';
                 curl_setopt_array($handle, [
                     CURLOPT_RETURNTRANSFER => true,
                     CURLOPT_FOLLOWLOCATION => false,
@@ -1263,23 +1289,30 @@ class MarketplaceService
                     CURLOPT_TIMEOUT        => $timeout,
                     CURLOPT_USERAGENT      => $this->userAgent(),
                     CURLOPT_HTTPHEADER     => $headers,
+                    CURLOPT_WRITEFUNCTION  => function (mixed $handle, string $chunk) use (&$received, &$body, $cap): int {
+                        $received += strlen($chunk);
+                        if ($received > $cap) {
+                            return 0; // Abort: the body exceeds the cap.
+                        }
+                        $body .= $chunk;
+                        return strlen($chunk);
+                    },
                 ]);
-                $body = curl_exec($handle);
-                if (!is_string($body)) {
+                $exec = curl_exec($handle);
+                if ($exec !== true) {
                     curl_close($handle);
                     return null;
                 }
                 curl_close($handle);
                 $redirect = curl_getinfo($handle, CURLINFO_REDIRECT_URL);
                 return [
-                    'body'     => $body,
+                    'body'     => $body !== '' ? $body : null,
                     'status'   => curl_getinfo($handle, CURLINFO_RESPONSE_CODE),
                     'location' => is_string($redirect) && $redirect !== '' ? $redirect : null,
                 ];
             }
         }
 
-        $http_response_header = [];
         $context = stream_context_create([
             'http' => [
                 'timeout'         => $timeout,
@@ -1290,7 +1323,44 @@ class MarketplaceService
                 'ignore_errors'   => true,
             ],
         ]);
-        $body = @file_get_contents($url, false, $context);
+
+        return $this->streamBodyWithCap($url, $context, $cap);
+    }
+
+    /**
+     * Read a response body over the stream transport with a byte cap.
+     * file_get_contents() cannot cap, so the body is drained with fread and
+     * the transfer is abandoned (null body) once the cap is exceeded.
+     * Header parsing mirrors httpFetchOnce()'s stream tail.
+     *
+     * @param resource $context
+     *
+     * @return array{body: ?string, status: int, location: ?string}
+     */
+    private function streamBodyWithCap(string $url, $context, int $cap): array
+    {
+        $http_response_header = [];
+        $stream = @fopen($url, 'rb', false, $context);
+        if ($stream === false) {
+            return ['body' => null, 'status' => 0, 'location' => null];
+        }
+
+        $body = '';
+        $received = 0;
+        $overCap = false;
+        while (!feof($stream)) {
+            $chunk = fread($stream, 8192);
+            if ($chunk === false || $chunk === '') {
+                break;
+            }
+            $received += strlen($chunk);
+            if ($received > $cap) {
+                $overCap = true;
+                break;
+            }
+            $body .= $chunk;
+        }
+        fclose($stream);
 
         $status = 0;
         $location = null;
@@ -1306,10 +1376,22 @@ class MarketplaceService
         }
 
         return [
-            'body'     => is_string($body) && $body !== '' ? $body : null,
+            'body'     => (!$overCap && $body !== '') ? $body : null,
             'status'   => $status,
-            'location' => is_string($location) && $location !== '' ? $location : null,
+            'location' => $location,
         ];
+    }
+
+    /**
+     * The response-size cap in bytes: an explicit value wins, else the
+     * named config key, else the hard default. Floored at 1KB so a
+     * misconfigured value cannot choke small responses.
+     */
+    private function byteCap(?int $maxBytes, string $configKey, int $default): int
+    {
+        $value = $maxBytes ?? (int) ($this->config[$configKey] ?? $default);
+
+        return max(1024, $value);
     }
 
     /**

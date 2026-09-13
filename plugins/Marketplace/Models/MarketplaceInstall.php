@@ -79,18 +79,6 @@ class MarketplaceInstall extends \Pubvana\Models\AbstractModel
     /**
      * @return array<int, self>
      */
-    public function allLicensed(): array
-    {
-        $this->reset();
-        $this->isNull('license_key', 'OR')->eq('license_key', '');
-        $this->reset();
-        $this->notEq('license_key', null);
-        return $this->findAll();
-    }
-
-    /**
-     * @return array<int, self>
-     */
     public function allTracked(): array
     {
         $this->reset();

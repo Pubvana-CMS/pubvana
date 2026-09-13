@@ -135,6 +135,29 @@ class UserAdminService
     }
 
     /**
+     * Flip a user's active flag. Refuses deactivating your own account
+     * (you would lock yourself out mid-session) and deactivating the last
+     * superadmin (nobody could recover the panel). Reactivating is always
+     * allowed.
+     */
+    public function setActive(User $user, bool $active): Result
+    {
+        $actor = $this->app->auth()->user();
+
+        if (!$active && $actor !== null && (string) $actor->id === (string) $user->id) {
+            return $this->deny('You cannot deactivate your own account.');
+        }
+
+        if (!$active && $user->inGroup('superadmin') && $this->superadminCount() <= 1) {
+            return $this->deny('The last superadmin cannot be deactivated.');
+        }
+
+        $this->app->auth()->users()->setActive($user, $active);
+
+        return (new Result())->setSuccess(true);
+    }
+
+    /**
      * Whether the current user is a superadmin.
      */
     protected function isSuperadminActor(): bool

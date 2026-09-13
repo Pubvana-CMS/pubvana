@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Pubvana\Plugins\Redirects\Services;
 
 use Pubvana\Plugins\Redirects\Models\Redirect;
+use Pubvana\Services\UrlService;
 use flight\Engine;
 
 /**
@@ -12,6 +13,8 @@ use flight\Engine;
  */
 class RedirectsService
 {
+    private const UNSAFE_TARGET_MESSAGE = 'Target URL must be a relative path or a full http:// or https:// URL.';
+
     private \PDO $pdo;
     /** @var Engine<object> */
     private Engine $app;
@@ -76,6 +79,8 @@ class RedirectsService
      */
     public function create(array $data): Redirect
     {
+        $this->assertSafeTarget((string) ($data['target_url'] ?? ''));
+
         $now = $this->now();
         $redirect = $this->model();
         $payload = $this->preparePayload($data);
@@ -107,6 +112,8 @@ class RedirectsService
         if ($redirect === null) {
             return null;
         }
+
+        $this->assertSafeTarget((string) ($data['target_url'] ?? ''));
 
         $payload = $this->preparePayload($data);
         $redirect->source_path = $payload['source_path'];
@@ -236,6 +243,41 @@ class RedirectsService
             'enabled'     => !empty($data['enabled']) ? 1 : 0,
             'notes'       => $this->normalizeNotes($data['notes'] ?? null),
         ];
+    }
+
+    /**
+     * Refuse a hostile target before anything is written.
+     *
+     * Relative paths are fine. A scheme-bearing target must be http/https
+     * (UrlService::isSafeExternalUrl, the same allowlist profile website
+     * fields use): the value ends up in a Location header, so javascript:,
+     * data:, ftp: and friends are refused. Scheme-relative "//host"
+     * targets would navigate visitors off-site, and backslashes or control
+     * characters are malformed header material.
+     *
+     * @throws \InvalidArgumentException When the target cannot be trusted.
+     */
+    private function assertSafeTarget(string $target): void
+    {
+        $target = trim($target);
+        if ($target === '') {
+            return; // normalizeTargetUrl() stores '/'.
+        }
+
+        if (preg_match('#^[a-z][a-z0-9+.-]*://#i', $target) === 1) {
+            if (!UrlService::isSafeExternalUrl($target)) {
+                throw new \InvalidArgumentException(self::UNSAFE_TARGET_MESSAGE);
+            }
+            return;
+        }
+
+        if (
+            str_starts_with($target, '//')
+            || str_contains($target, '\\')
+            || preg_match('/[\x00-\x1f\x7f]/', $target) === 1
+        ) {
+            throw new \InvalidArgumentException(self::UNSAFE_TARGET_MESSAGE);
+        }
     }
 
     private function normalizeSourcePath(string $path): string

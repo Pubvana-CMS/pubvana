@@ -62,6 +62,13 @@ class BlogAdminController extends AdminController
         $post = $this->app->request()->data->getData();
         unset($post['_csrf_token']);
 
+        $status = $post['status'] ?? 'draft';
+        if (!in_array($status, ['draft', 'published', 'scheduled'], true)) {
+            $this->app->session()->flash('error', 'Invalid status.');
+            $this->app->redirect($this->adminBase() . '/create');
+            return;
+        }
+
         $slug = $this->app->slugify($post['slug'] ?? '' ?: $post['title'] ?? '');
 
         if ($this->app->blog()->postSlugExists($slug)) {
@@ -71,7 +78,6 @@ class BlogAdminController extends AdminController
         $user = $this->app->auth()->user();
 
         $publishedAt = null;
-        $status = $post['status'] ?? 'draft';
         if ($status === 'published') {
             $publishedAt = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
         } elseif ($status === 'scheduled' && !empty($post['published_at'])) {
@@ -131,8 +137,14 @@ class BlogAdminController extends AdminController
         $post = $this->app->request()->data->getData();
         unset($post['_csrf_token']);
 
-        $user = $this->app->auth()->user();
         $status = $post['status'] ?? 'draft';
+        if (!in_array($status, ['draft', 'published', 'scheduled'], true)) {
+            $this->app->session()->flash('error', 'Invalid status.');
+            $this->app->redirect($this->adminBase() . '/' . $id . '/edit');
+            return;
+        }
+
+        $user = $this->app->auth()->user();
 
         $existing = $this->app->blog()->findPost((int) $id);
         $publishedAt = null;
