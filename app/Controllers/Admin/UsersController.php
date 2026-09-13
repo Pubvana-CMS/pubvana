@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pubvana\Controllers\Admin;
 
+use Enlivenapp\FlightShield\Models\AuthGroup;
 use Enlivenapp\FlightShield\Models\User;
 use Enlivenapp\FlightShield\Models\UserIdentity;
 use flight\Engine;
@@ -67,11 +68,9 @@ class UsersController extends AdminController
      */
     public function create(): void
     {
-        $groups = $this->app->auth()->groups()->all();
-
         $this->render('admin/users/create', [
             'pageTitle' => 'New User',
-            'groups'    => $groups,
+            'groups'    => $this->visibleGroups(),
         ]);
     }
 
@@ -80,7 +79,8 @@ class UsersController extends AdminController
      *
      * Creates the user through flight-shield (password validation,
      * duplicate-email guard, hashing, group assignment) and redirects
-     * to the user listing.
+     * to the user listing. Superadmin assignment is gated by
+     * UserAdminService.
      *
      * @return void
      */
@@ -89,11 +89,13 @@ class UsersController extends AdminController
         $post = $this->app->request()->data->getData();
         unset($post['_csrf_token']);
 
-        $result = $this->app->auth()->users()->create(
+        $group = isset($post['group']) && $post['group'] !== '' ? (string) $post['group'] : null;
+
+        $result = $this->userAdmin()->createUser(
             (string) ($post['username'] ?? ''),
             (string) ($post['email'] ?? ''),
             (string) ($post['password'] ?? ''),
-            isset($post['group']) && $post['group'] !== '' ? (string) $post['group'] : null
+            $group
         );
 
         if (!$result->isOK()) {
@@ -212,7 +214,7 @@ class UsersController extends AdminController
             return;
         }
 
-        $groups = $this->app->auth()->groups()->all();
+        $groups = $this->visibleGroups();
 
         $this->render('admin/users/edit', [
             'pageTitle'       => 'Edit User',
@@ -225,6 +227,27 @@ class UsersController extends AdminController
             'banMessage'      => $user->getBanMessage(),
             'requiresReset'   => $user->requiresPasswordReset(),
         ]);
+    }
+
+    /**
+     * Groups the current viewer may assign. Superadmins see every group;
+     * everyone else never sees the superadmin group, which they cannot
+     * assign anyway.
+     *
+     * @return list<AuthGroup>
+     */
+    protected function visibleGroups(): array
+    {
+        $groups = $this->app->auth()->groups()->all();
+
+        if ($this->viewerIsSuperadmin()) {
+            return array_values($groups);
+        }
+
+        return array_values(array_filter(
+            $groups,
+            static fn (AuthGroup $group): bool => $group->alias !== 'superadmin'
+        ));
     }
 
     /**
@@ -249,6 +272,18 @@ class UsersController extends AdminController
             return;
         }
 
+        // Group changes first: an unauthorized superadmin grant stops the
+        // whole update (profile untouched) instead of slipping through.
+        $rawGroups = $post['groups'] ?? [];
+        $groups = is_array($rawGroups) ? array_values(array_filter($rawGroups, 'is_scalar')) : [];
+
+        $sync = $this->userAdmin()->syncGroups($user, $groups);
+        if (!$sync->isOK()) {
+            $this->app->session()->flash('error', $sync->reason() ?: 'Group update denied.');
+            $this->app->redirect('/admin/users/' . $id . '/edit');
+            return;
+        }
+
         $data = [];
         if (isset($post['username'])) {
             $data['username'] = $post['username'];
@@ -265,10 +300,6 @@ class UsersController extends AdminController
         // to match this admin UI's no-flash-message convention.
         $this->app->auth()->users()->updateProfile($user, $data);
 
-        // Sync groups regardless of profile outcome so checkbox state persists
-        $groups = $post['groups'] ?? [];
-        $user->syncGroups(is_array($groups) ? array_values($groups) : []);
-
         $this->app->session()->flash('success', 'User updated.');
         $this->app->redirect('/admin/users/' . $id . '/edit');
     }
@@ -277,7 +308,8 @@ class UsersController extends AdminController
      * Soft-delete a user.
      *
      * Sets the deleted_at timestamp. The user record is preserved
-     * but excluded from all future queries.
+     * but excluded from all future queries. Self-deletion and removal
+     * of the last superadmin are refused (see UserAdminService).
      *
      * @param string $id User ID
      * @return void
@@ -286,8 +318,16 @@ class UsersController extends AdminController
     {
         $user = $this->app->auth()->users()->find((int) $id, $this->viewerIsSuperadmin());
 
-        if ($user !== null) {
-            $this->app->auth()->users()->delete($user);
+        if ($user === null) {
+            $this->app->redirect('/admin/users');
+            return;
+        }
+
+        $result = $this->userAdmin()->deleteUser($user);
+        if (!$result->isOK()) {
+            $this->app->session()->flash('error', $result->reason() ?: 'User could not be deleted.');
+            $this->app->redirect('/admin/users');
+            return;
         }
 
         $this->app->session()->flash('success', 'User deleted.');
