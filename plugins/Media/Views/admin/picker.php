@@ -70,6 +70,12 @@ $previewSrc = $hasImage ? '/' . ltrim($currentValue, '/') : '';
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
     const adminBase = '<?= $adminBase ?>';
 
+    function esc(value) {
+        return String(value).replace(/[&<>"']/g, function(ch) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+        });
+    }
+
     uploadZone.addEventListener('click', (e) => {
         if (e.target.closest('input')) return;
         uploadInput.click();
@@ -123,12 +129,12 @@ $previewSrc = $hasImage ? '/' . ltrim($currentValue, '/') : '';
                     const col = document.createElement('div');
                     col.className = 'col';
                     col.innerHTML = `<div class="card card-sm media-picker-item"
-                                          data-path="${item.path}"
-                                          data-medium-path="${item.medium_path || item.path}"
-                                          data-thumb-path="${item.thumb_path || item.path}">
-                        <img src="${item.thumb_url}" class="card-img-top" loading="lazy"
+                                          data-path="${esc(item.path)}"
+                                          data-medium-path="${esc(item.medium_path || item.path)}"
+                                          data-thumb-path="${esc(item.thumb_path || item.path)}">
+                        <img src="${esc(item.thumb_url)}" class="card-img-top" loading="lazy"
                              style="max-height:90px; width:100%; object-fit:contain;"
-                             alt="${item.filename || ''}">
+                             alt="${esc(item.filename || '')}">
                         <div class="card-body p-2">
                             <div class="btn-group btn-group-sm w-100" role="group">
                                 <button type="button" class="btn btn-outline-secondary media-size-choice" data-size="small">S</button>
@@ -170,7 +176,7 @@ $previewSrc = $hasImage ? '/' . ltrim($currentValue, '/') : '';
             : (size === 'large' ? item.dataset.path : (item.dataset.mediumPath || item.dataset.path));
         hiddenInput.value = path;
 
-        preview.innerHTML = `<img src="/${path}" alt="Selected image"
+        preview.innerHTML = `<img src="/${esc(path)}" alt="Selected image"
             class="rounded" style="max-width:120px; max-height:120px; object-fit:cover;">`;
 
         if (!picker.querySelector('.media-picker-clear')) {

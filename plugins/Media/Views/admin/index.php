@@ -202,28 +202,34 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    function esc(value) {
+        return String(value).replace(/[&<>"']/g, function (ch) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+        });
+    }
+
     function showDetail(media) {
         var body = document.getElementById('media-detail-body');
         var preview = '';
 
         if (media.type === 'image' && media.path) {
-            preview = '<img src="/' + media.path + '" class="img-fluid rounded mb-3" alt="">';
+            preview = '<img src="/' + esc(media.path) + '" class="img-fluid rounded mb-3" alt="">';
         } else if (media.type === 'video' && media.poster_path) {
-            preview = '<img src="/' + media.poster_path + '" class="img-fluid rounded mb-3" alt="">';
+            preview = '<img src="/' + esc(media.poster_path) + '" class="img-fluid rounded mb-3" alt="">';
         } else if (media.type === 'video') {
             preview = '<div class="bg-dark rounded d-flex align-items-center justify-content-center mb-3" style="height:200px;">'
                 + '<i class="ti ti-video text-white" style="font-size:3rem;"></i></div>';
         } else if (media.type === 'embed') {
             preview = '<div class="bg-azure-lt rounded d-flex align-items-center justify-content-center mb-3" style="height:200px;">'
-                + '<i class="ti ti-brand-' + (media.embed_provider || 'youtube') + '" style="font-size:3rem;"></i></div>';
+                + '<i class="ti ti-brand-' + esc(media.embed_provider || 'youtube') + '" style="font-size:3rem;"></i></div>';
         }
 
         body.innerHTML = preview
             + '<div class="mb-3"><label class="form-label">Alt Text</label>'
-            + '<input type="text" class="form-control" id="detail-alt" value="' + (media.alt_text || '') + '"></div>'
+            + '<input type="text" class="form-control" id="detail-alt" value="' + esc(media.alt_text || '') + '"></div>'
             + '<div class="mb-3"><label class="form-label">Title</label>'
-            + '<input type="text" class="form-control" id="detail-title" value="' + (media.title || '') + '"></div>'
-            + '<div class="mb-3"><small class="text-secondary">' + media.filename + '</small></div>'
+            + '<input type="text" class="form-control" id="detail-title" value="' + esc(media.title || '') + '"></div>'
+            + '<div class="mb-3"><small class="text-secondary">' + esc(media.filename) + '</small></div>'
             + (media.type === 'image'
                 ? '<div class="mb-3"><a href="' + adminBase + '/' + media.id + '/editor" class="btn btn-outline-primary w-100"><i class="ti ti-photo-edit"></i> Edit Image</a></div>'
                 : '')

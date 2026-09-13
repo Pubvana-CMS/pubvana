@@ -35,6 +35,11 @@ document.addEventListener('DOMContentLoaded', function() {
 (function() {
     var csrfToken    = document.querySelector('meta[name="csrf-token"]')?.content || '';
     var adminBase    = '<?= $adminBase ?>';
+    function esc(value) {
+        return String(value).replace(/[&<>"']/g, function(ch) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+        });
+    }
     var offcanvasEl  = document.getElementById('<?= $joditId ?>-offcanvas');
     var grid         = document.getElementById('<?= $joditId ?>-grid');
     var loadMoreWrap = document.getElementById('<?= $joditId ?>-load-more');
@@ -125,14 +130,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     var thumb = '';
 
                     if (item.type === 'image' && item.thumb_url) {
-                        thumb = '<img src="' + item.thumb_url + '" class="card-img-top" loading="lazy"'
+                        thumb = '<img src="' + esc(item.thumb_url) + '" class="card-img-top" loading="lazy"'
                               + ' style="height:90px; object-fit:cover;"'
-                              + ' alt="' + (item.filename || '') + '">';
+                              + ' alt="' + esc(item.filename || '') + '">';
                     } else if (item.type === 'video') {
                         if (item.poster_url) {
-                            thumb = '<img src="' + item.poster_url + '" class="card-img-top" loading="lazy"'
+                            thumb = '<img src="' + esc(item.poster_url) + '" class="card-img-top" loading="lazy"'
                                   + ' style="height:90px; object-fit:cover;"'
-                                  + ' alt="' + (item.filename || '') + '">';
+                                  + ' alt="' + esc(item.filename || '') + '">';
                         } else {
                             thumb = '<div class="card-img-top bg-dark d-flex align-items-center justify-content-center" style="height:90px;">'
                                   + '<i class="ti ti-video text-white" style="font-size:1.5rem;"></i></div>';
@@ -145,13 +150,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     col.className = 'col';
                     if (item.type === 'image') {
                         col.innerHTML = '<div class="card card-sm jodit-media-item"'
-                            + ' data-type="' + item.type + '"'
-                            + ' data-url="' + (item.medium_url || item.url || '') + '"'
-                            + ' data-medium-url="' + (item.medium_url || item.url || '') + '"'
-                            + ' data-thumb-url="' + (item.thumb_url || item.url || '') + '"'
-                            + ' data-original="' + (item.url || '') + '"'
-                            + ' data-poster="' + (item.poster_url || '') + '"'
-                            + ' data-alt="' + (item.alt_text || '') + '">'
+                            + ' data-type="' + esc(item.type) + '"'
+                            + ' data-url="' + esc(item.medium_url || item.url || '') + '"'
+                            + ' data-medium-url="' + esc(item.medium_url || item.url || '') + '"'
+                            + ' data-thumb-url="' + esc(item.thumb_url || item.url || '') + '"'
+                            + ' data-original="' + esc(item.url || '') + '"'
+                            + ' data-poster="' + esc(item.poster_url || '') + '"'
+                            + ' data-alt="' + esc(item.alt_text || '') + '">'
                             + thumb
                             + '<div class="card-body p-2">'
                             + '<div class="btn-group btn-group-sm w-100" role="group">'
@@ -233,10 +238,10 @@ document.addEventListener('DOMContentLoaded', function() {
         var poster   = item.dataset.poster;
 
         if (type === 'image') {
-            editor.s.insertHTML('<img src="' + url + '" alt="' + alt + '">');
+            editor.s.insertHTML('<img src="' + esc(url) + '" alt="' + esc(alt) + '">');
         } else if (type === 'video') {
-            var html = '<video controls src="' + original + '"';
-            if (poster) html += ' poster="' + poster + '"';
+            var html = '<video controls src="' + esc(original) + '"';
+            if (poster) html += ' poster="' + esc(poster) + '"';
             html += '></video>';
             editor.s.insertHTML(html);
         }
