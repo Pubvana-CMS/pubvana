@@ -19,11 +19,11 @@ Guidance for AI agents contributing to this plugin, which ships inside the main 
 ## Project guidelines
 
 1. **Never weaken the key security model.** Only an HMAC-SHA256 hash of a token is stored (`AiService.php:827`), keyed by a domain key derived from `SESSION_ENCRYPTION_KEY` (`AiService.php:835`). The plaintext token is revealed exactly once at creation (`AiAdminController.php:60`). Never log, store, or cache a plaintext token.
-2. **Grants are deny-all.** A key with no grants can authenticate but nothing else. Every grant decision flows through `helpCatalog()` as the single source of truth (`AiService.php:321`) and `requireGrant()` as the hard gate (`AiApiController.php:821`). Do not add an ungated endpoint or a "grant everything" escape hatch.
+2. **Grants are deny-all.** A key with no grants can authenticate but nothing else. Every grant decision flows through `helpCatalog()` as the single source of truth (`AiService.php:330`) and `requireGrant()` as the hard gate (`AiApiController.php:1007`). Do not add an ungated endpoint or a "grant everything" escape hatch.
 3. **Fact checking is site-level, and the toggle is the grant.** Fact-check endpoints open to every authenticated key when the admin has accepted the current prompt's terms and switched the service on (`FactCheckService::gateStatus()`), and refuse everything otherwise. They appear in no per-key grant form and in no `helpCatalog()` row. The prompt endpoint (`GET /api/ai/fact-check/prompt`) is the one exception: any authenticated key may read the terms even while the service is off. Submissions must attest to the current prompt version (`409` otherwise), and post/page submissions additionally require the matching `posts.read`/`pages.read` grant.
 4. **Every request goes through the audit log.** `AiService::log()` records ok/denied/error outcomes including unauthenticated attempts (`AiService.php:239`). New endpoints must log with the same shape. Logging is tolerant by design: a missing table must not break the request (`AiService.php:256`).
-5. **Keep the response envelope.** All public API responses are `{status, data, errors}` via `ok()` and `fail()` (`AiApiController.php:844`, `AiApiController.php:853`). Do not return a different shape from a new endpoint.
-6. **Reuse peer plugin services instead of writing SQL.** Content operations go through `$this->svc('blog')`, `svc('pages')`, `svc('comments')`, `svc('redirects')`, `svc('navigation')`. When a peer plugin is unavailable the request fails with 503 (`AiApiController.php:834`). Direct DB work belongs only in this plugin's own models (`AiKey`, `AiKeyGrant`, `AiLog`, `AiFactCheck`).
+5. **Keep the response envelope.** All public API responses are `{status, data, errors}` via `ok()` and `fail()` (`AiApiController.php:1058`), (`AiApiController.php:1067`). Do not return a different shape from a new endpoint.
+6. **Reuse peer plugin services instead of writing SQL.** Content operations go through `$this->svc('blog')`, `svc('pages')`, `svc('comments')`, `svc('redirects')`, `svc('navigation')`. When a peer plugin is unavailable the request fails with 503 (`AiApiController.php:1045`). Direct DB work belongs only in this plugin's own models (`AiKey`, `AiKeyGrant`, `AiLog`, `AiFactCheck`).
 7. **Path-order matters in route registration.** Static taxonomy routes (`/api/ai/posts/tags`, `/api/ai/posts/categories`) must stay registered before the parameterized `/api/ai/posts/@slug` route (`Plugin.php:68`). Flight matches in order; moving the static routes below the parameterized ones breaks them.
 
 ## Repository layout
@@ -74,7 +74,7 @@ The CSRF middleware skips `/api/ai/*` (noted at `Plugin.php:23`), because these 
 
 `AiService::authenticate()` (`AiService.php:190`) hashes the bearer token, looks it up by hash, rejects disabled and blocked keys, and resets failure state on success. Disabled-key probing counts toward a block: after `max_failed_attempts` failures the key is blocked for `block_minutes` (`AiService.php:850`). Every successful call stamps `last_used_at`.
 
-Each endpoint calls `requireKey()` (`AiApiController.php:793`) for auth and `requireGrant()` (`AiApiController.php:821`) for the specific permission. A held permission is checked against the per-request cached grant set built from `AiKeyGrant::permissionsFor()` (`AiService.php:222`).
+Each endpoint calls `requireKey()` (`AiApiController.php:979`) for auth and `requireGrant()` (`AiApiController.php:1007`) for the specific permission. A held permission is checked against the per-request cached grant set built from `AiKeyGrant::permissionsFor()` (`AiService.php:228`).
 
 ### Content flows
 
@@ -86,7 +86,7 @@ Content operations delegate to peer plugins:
 - Redirects: `svc('redirects')` create/update/delete
 - Navigation: `svc('navigation')` create/delete, plus a direct `NavigationItem` model update because NavigationService has no update method (`AiService.php:611`)
 
-Markdown is converted to sanitized HTML at ingest via `MarkdownService::toHtml()` and back to Markdown for reads via `toMarkdown()` (`AiApiController.php:912`, `AiService.php:588`). AI-created posts and pages are attributed to the configured default author (stored as the `Ai.default_author_id` setting, `AiService.php:297`). An optional nested `seo` block is persisted through the SEO plugin when present (`AiApiController.php:937`).
+Markdown is converted to sanitized HTML at ingest via `MarkdownService::toHtml()` and back to Markdown for reads via `toMarkdown()` (`AiApiController.php:1100`, `AiService.php:612`). AI-created posts and pages are attributed to the configured default author (stored as the `Ai.default_author_id` setting, `AiService.php:297`). An optional nested `seo` block is persisted through the SEO plugin when present (`AiApiController.php:1122`).
 
 ### Fact checking
 
@@ -126,10 +126,10 @@ Steps that go beyond the repo-wide style, derived from the existing code:
 1. `declare(strict_types=1);` first line in every class file.
 2. Class name, file name, and namespace must align: `Pubvana\Plugins\AiAssistant\Services\AiService` lives in `Services/AiService.php`.
 3. Endpoints keep the sequence: authenticate, require grant, validate input, act, log, respond through `ok()`/`fail()`. On validation failure, log a specific `error` detail before `fail()`.
-4. Every new permission must be added to `helpCatalog()` (`AiService.php:321`) with its route group, label, summary, and endpoints. The catalog drives `/api/ai/help`, the admin help page, and grant-form rendering, so it is the point of truth for grants.
+4. Every new permission must be added to `helpCatalog()` (`AiService.php:330`) with its route group, label, summary, and endpoints. The catalog drives `/api/ai/help`, the admin help page, and grant-form rendering, so it is the point of truth for grants.
 5. All API reads return display-safe arrays; HTML content is served as Markdown and never raw. Serializers (`serializePost`, `serializePage`, `serializeComment`, `serializeRedirect`, `serializeNavigationItem`) must stay in `AiService`.
-6. Keep pagination bounded: `per_page` is clamped to `[1, 100]` and `page` to `>= 1` for every list endpoint (`AiApiController.php:106`). Do not introduce an unbounded list.
-7. Grant-check before acting: posting a `published` status requires the `publish` grant, not the bare create/update grant. Do not publish or schedule under the write grant alone.
+6. Keep pagination bounded: `per_page` is clamped to `[1, 100]` and `page` to `>= 1` for every list endpoint (`AiApiController.php:108`). Do not introduce an unbounded list.
+7. Grant-check before acting: posting a `published` status requires the `publish` grant, not the bare create/update grant. Do not publish or schedule under the write grant alone. State changes gate both ways: demoting a live item (`published`/`scheduled` -> `draft`) takes the grant for the state being torn down (`requireDemoteGrant()` in `AiApiController.php`), and omitting `status` on an update leaves the current state untouched.
 8. Use the tolerant `svc()` wrapper for peer services and the tolerant `seoBlock()`/`saveSeo()` for optional SEO, so missing peer plugins degrade to a 503 or a no-op instead of a hard crash.
 9. Do not hard-code the `/ai` URL prefix; use `$this->path()` and `routePrefix('pubvana/ai')` the way the existing code does.
 
@@ -146,7 +146,7 @@ Steps that go beyond the repo-wide style, derived from the existing code:
 
 | Goal | Where to look |
 |------|---------------|
-| Add a permission (and its endpoint) | `helpCatalog()` at `AiService.php:321`, then the API methods in `AiApiController.php`, then a route in `Plugin.php:71` |
+| Add a permission (and its endpoint) | `helpCatalog()` at `AiService.php:330`, then the API methods in `AiApiController.php`, then a route in `Plugin.php:71` |
 | Change the fact-checking gate, prompt fetch, report rules, or staleness | `FactCheckService.php` |
 | Change the fact-check prompt text or version | `Config/fact-check-prompt.json` (bundled copy) and the hosted source at `factcheck_prompt_url` |
 | Change the public fact-check block | provider data in `FactCheckService::blockData()`, template `Views/public/blocks/fact-check-summary.tpl`, registration in `Plugin.php:144` |
@@ -175,5 +175,5 @@ Steps that go beyond the repo-wide style, derived from the existing code:
 - A replacement for the admin content editors. This plugin exposes a machine-facing API for an external assistant; admin UI is thin and stays thin.
 - Chat or prompt UI, model integrations, or client-side SDKs. The plugin only exposes the REST API and its admin management screens; fact checking is no exception, the checking brain stays external.
 - Replacing the peer plugins' write services (Blog, Pages, Comments, Redirects, Navigation). It calls them and serializes their results.
-- `brokenLinks` and `analytics` are stubs and return 501 until a real implementation lands (`AiApiController.php:718`).
+- `brokenLinks` and `analytics` are stubs and return 501 until a real implementation lands (`AiApiController.php:810`).
 - The hosted fact-check prompt itself (`pubvanacms.com/fact-checking/prompt.json`) is served outside this repo; the bundled JSON is only a fallback.

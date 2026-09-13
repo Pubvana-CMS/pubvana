@@ -34,15 +34,15 @@ Grants are deny-all and per key. A request that needs an ungranted permission fa
 | `posts.create` | `POST /api/ai/posts` creates a draft post |
 | `posts.update` | `POST /api/ai/posts/{id}/update` |
 | `posts.delete` | `POST /api/ai/posts/{id}/delete` |
-| `posts.publish` | status `published` on create/update |
-| `posts.schedule` | status `scheduled` + `publish_on` on create/update |
+| `posts.publish` | status `published` on create/update, and removing it (published -> draft) on update |
+| `posts.schedule` | status `scheduled` + `publish_on` on create/update, and cancelling it (scheduled -> draft) on update |
 | `posts.tags.read` | `GET /api/ai/posts/tags` |
 | `posts.categories.read` | `GET /api/ai/posts/categories` |
 | `pages.read` | `GET /api/ai/pages` lists pages; `GET /api/ai/pages/{slug}` fetches one with full content |
 | `pages.create` | `POST /api/ai/pages` creates a draft page |
 | `pages.update` | `POST /api/ai/pages/{id}/update` |
 | `pages.delete` | `POST /api/ai/pages/{id}/delete` |
-| `pages.publish` | status `published` on create/update |
+| `pages.publish` | status `published` on create/update, and removing it (published -> draft) on update |
 | `comments.read` | `GET /api/ai/comments?status=pending\|approved\|rejected&page=1&per_page=25` (status optional) |
 | `comments.approve` | `POST /api/ai/comments/{id}/approve` |
 | `comments.reject` | `POST /api/ai/comments/{id}/reject` |
@@ -119,11 +119,11 @@ curl -X POST /api/ai/posts \
 
 Response `data` contains the serialized post plus `id` and a public `url`. The serialized post includes a `seo` block (or `seo: null` when no SEO meta exists).
 
-Updating (`POST /api/ai/posts/{id}/update`) is a partial update; only present fields change. Re-applying `published` keeps the original `published_at` if the post was already published; asking for `published` or `scheduled` on an existing post also requires the corresponding grant.
+Updating (`POST /api/ai/posts/{id}/update`) is a partial update; only present fields change. Omitting `status` leaves the post in its current state: a bare content edit does not touch the publish state, and re-applying the current status is not a state change (no publish-family grant needed). Grant-gated transitions: asking for `published` or `scheduled` needs the corresponding grant, and demoting a published or scheduled post to `draft` takes the grant that governs the state being torn down (`posts.publish` for published, `posts.schedule` for scheduled).
 
 ## Creating a page
 
-`POST /api/ai/pages` uses the same content rule (`content_md` or `content`) plus optional `allow_comments`. Slugs are generated from the title. `status` is `draft` or `published`. Pages also accept the same optional `seo` object.
+`POST /api/ai/pages` uses the same content rule (`content_md` or `content`) plus optional `allow_comments`. Slugs are generated from the title. `status` is `draft` or `published`. Pages also accept the same optional `seo` object. On update, demoting a published page to `draft` takes `pages.publish`.
 
 ## Fact checking
 

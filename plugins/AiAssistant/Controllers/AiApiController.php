@@ -233,7 +233,6 @@ class AiApiController extends ApiBaseController
             $this->fail(404, 'Post not found.');
         }
 
-        $status = (string) ($payload['status'] ?? (string) $existing->status);
         [$status, $publishedAt] = $this->resolvePostStatus($key, $payload, $existing);
 
         $title = array_key_exists('title', $payload) ? (string) $payload['title'] : (string) $existing->title;
@@ -418,13 +417,7 @@ class AiApiController extends ApiBaseController
             $this->fail(422, 'Provide content_md (markdown) or content (HTML).');
         }
 
-        $status = (string) ($payload['status'] ?? 'draft');
-        if ($status === 'published') {
-            $this->requireGrant($key, 'pages.publish');
-        } elseif ($status !== 'draft') {
-            $this->log($key, 'error', 'page', null, "Invalid status '{$status}'.");
-            $this->fail(422, 'status must be one of: draft, published.');
-        }
+        $status = $this->resolvePageStatus($key, $payload, null);
 
         try {
             $page = $this->svc('pages')->createPage([
@@ -463,13 +456,7 @@ class AiApiController extends ApiBaseController
             $this->fail(404, 'Page not found.');
         }
 
-        $status = (string) ($payload['status'] ?? (string) $existing->status);
-        if ($status === 'published' && (string) $existing->status !== 'published') {
-            $this->requireGrant($key, 'pages.publish');
-        } elseif (!in_array($status, ['draft', 'published'], true)) {
-            $this->log($key, 'error', 'page', (int) $id, "Invalid status '{$status}'.");
-            $this->fail(422, 'status must be one of: draft, published.');
-        }
+        $status = $this->resolvePageStatus($key, $payload, $existing);
 
         $content = $this->resolveContent($payload);
         $update = [];
@@ -841,24 +828,39 @@ class AiApiController extends ApiBaseController
     /**
      * Resolve a post's target status and published_at with grant checks.
      *
-    /**
+     * Transitions are gated both ways: promoting to published/scheduled
+     * requires the matching grant, and demoting out of a live state
+     * (published or scheduled) down to draft takes the grant that governs
+     * the existing state. Only touching a draft needs no publish grant.
+     *
      * @param array<string, mixed> $payload Posted payload
      * @param \Pubvana\Plugins\Blog\Models\Post|null $existing Post being updated, or null when creating
      * @return array{0: string, 1: ?string} [status, published_at]
      */
     protected function resolvePostStatus(AiKey $key, array $payload, $existing): array
     {
-        $status = (string) ($payload['status'] ?? 'draft');
+        // Omitting status means "leave the state alone": the target starts
+        // at the existing status, so a bare content edit on a live post
+        // keeps its published/scheduled state instead of silently falling
+        // back to draft. Grants fire on real state changes only; re-applying
+        // the current status is not a transition.
+        $explicit = array_key_exists('status', $payload);
+        $status = (string) ($payload['status'] ?? ($existing !== null ? (string) $existing->status : 'draft'));
+        $transition = $explicit && ($existing === null || (string) $existing->status !== $status);
         $publishedAt = null;
 
         if ($status === 'published') {
-            $this->requireGrant($key, 'posts.publish');
+            if ($transition) {
+                $this->requireGrant($key, 'posts.publish');
+            }
             $publishedAt = $this->now();
             if ($existing !== null && (string) $existing->status === 'published' && $existing->published_at !== null) {
                 $publishedAt = (string) $existing->published_at;
             }
         } elseif ($status === 'scheduled') {
-            $this->requireGrant($key, 'posts.schedule');
+            if ($transition) {
+                $this->requireGrant($key, 'posts.schedule');
+            }
             $publishOn = (string) ($payload['publish_on'] ?? ($existing !== null ? (string) ($existing->published_at ?? '') : ''));
             if ($publishOn === '' || !$this->isDatetime($publishOn)) {
                 $this->log($key, 'error', 'post', $existing !== null ? (int) $existing->id : null, 'Invalid publish_on.');
@@ -866,12 +868,51 @@ class AiApiController extends ApiBaseController
             }
             $ts = strtotime($publishOn);
             $publishedAt = $ts !== false ? date('Y-m-d H:i:s', $ts) : null;
-        } elseif ($status !== 'draft') {
+        } elseif ($status === 'draft') {
+            if ($explicit && $existing !== null && in_array((string) $existing->status, ['published', 'scheduled'], true)) {
+                $this->requireDemoteGrant($key, 'posts', (string) $existing->status, (int) $existing->id);
+            }
+        } else {
             $this->log($key, 'error', 'post', $existing !== null ? (int) $existing->id : null, "Invalid status '{$status}'.");
             $this->fail(422, 'status must be one of: draft, published, scheduled.');
         }
 
         return [$status, $publishedAt];
+    }
+
+    /**
+     * Resolve a page's target status with grant checks (pages cannot be
+     * scheduled; their statuses are draft and published only).
+     *
+     * Transitions are gated: promoting to published takes pages.publish,
+     * and demoting a published page to draft takes the same grant through
+     * requireDemoteGrant(). Re-applying the current status is not a
+     * transition and takes no grant.
+     *
+     * @param array<string, mixed> $payload Posted payload
+     * @param \Pubvana\Plugins\Pages\Models\Page|null $existing Page being updated, or null when creating
+     * @return string The resolved status
+     */
+    protected function resolvePageStatus(AiKey $key, array $payload, $existing): string
+    {
+        $explicit = array_key_exists('status', $payload);
+        $status = (string) ($payload['status'] ?? ($existing !== null ? (string) $existing->status : 'draft'));
+        $transition = $explicit && ($existing === null || (string) $existing->status !== $status);
+
+        if ($status === 'published') {
+            if ($transition) {
+                $this->requireGrant($key, 'pages.publish');
+            }
+        } elseif ($status === 'draft') {
+            if ($explicit && $existing !== null && (string) $existing->status !== 'draft') {
+                $this->requireDemoteGrant($key, 'pages', (string) $existing->status, (int) $existing->id);
+            }
+        } else {
+            $this->log($key, 'error', 'page', $existing !== null ? (int) $existing->id : null, "Invalid status '{$status}'.");
+            $this->fail(422, 'status must be one of: draft, published.');
+        }
+
+        return $status;
     }
 
     protected function moderateComment(int $id, string $action): void
@@ -981,6 +1022,28 @@ class AiApiController extends ApiBaseController
         if (!$this->app->ai()->hasGrant($key, $permission)) {
             $this->app->ai()->log($this->method(), $this->path(), 'denied', $key, null, null, "Missing grant: {$permission}");
             $this->fail(403, "This API key does not have the '{$permission}' grant.");
+        }
+    }
+
+    /**
+     * Require the grant that governs a content item's current live state.
+     *
+     * Demotion (published/scheduled -> draft) removes a post or page from
+     * the public site, so it counts as a publish-state change: the caller
+     * must hold the grant for the state being torn down. A draft target
+     * with no existing item (create) or an existing draft needs nothing.
+     *
+     * @param string $grantPrefix Grant alias prefix ('posts' or 'pages')
+     */
+    protected function requireDemoteGrant(AiKey $key, string $grantPrefix, string $existingStatus, ?int $entityId): void
+    {
+        $grant = match ($existingStatus) {
+            'published' => $grantPrefix . '.publish',
+            'scheduled' => $grantPrefix . '.schedule',
+            default => null,
+        };
+        if ($grant !== null) {
+            $this->requireGrant($key, $grant);
         }
     }
 
