@@ -123,6 +123,8 @@ class MarketplaceService
 
     private const SETTING_CATALOG_REFRESHED_AT = 'Marketplace.catalog_refreshed_at';
 
+    private const MAX_REDIRECTS = 3;
+
     /**
      * The last moment the cached catalog was declared stale by a user
      * action ("Check all" on the Updates screen). Cache entries generated
@@ -167,7 +169,7 @@ class MarketplaceService
             // not support this site's Pubvana version (store-side compat
             // check, see StoreApiController::items).
             $pubvanaVersion = $this->sitePubvanaVersion();
-            $url = $this->apiUrl('items') . '&currency=' . urlencode($currency)
+            $url = $this->apiUrl('items') . '?currency=' . urlencode($currency)
                 . ($pubvanaVersion !== '' ? '&pubvana_version=' . urlencode($pubvanaVersion) : '');
             $data = $this->decode($this->httpGet($url));
             if (!is_array($data) || empty($data['ok']) || !is_array($data['items'])) {
@@ -269,7 +271,7 @@ class MarketplaceService
             return [];
         }
         $domain = $this->siteDomain();
-        $url = $this->apiUrl('purchases') . '&domain=' . urlencode($domain);
+        $url = $this->apiUrl('purchases') . '?domain=' . urlencode($domain);
         $data = $this->decode($this->httpGet($url));
         if (!is_array($data) || empty($data['ok']) || !is_array($data['purchases'])) {
             return [];
@@ -649,7 +651,7 @@ class MarketplaceService
 
         // Type and folder come out of the package manifest inside
         // installPackage(); the store payload no longer carries them.
-        $result = $this->installPackage($this->apiUrl('free') . '&slug=' . urlencode($package));
+        $result = $this->installPackage($this->apiUrl('free') . '?slug=' . urlencode($package));
         if (!$result['ok']) {
             return ['ok' => false, 'reason' => $result['reason'], 'version' => null];
         }
@@ -831,8 +833,7 @@ class MarketplaceService
     {
         $fail = fn(string $reason): array => ['ok' => false, 'reason' => $reason, 'type' => '', 'folder' => '', 'package' => '', 'version' => ''];
 
-        $host = strtolower((string) parse_url($downloadUrl, PHP_URL_HOST));
-        if ($host === '' || ($host !== 'localhost' && !str_ends_with($host, '.pubvanacms.com') && !str_ends_with($host, '.pubvana.net') && !str_ends_with($host, '.test'))) {
+        if (!$this->isAllowedStoreUrl($downloadUrl)) {
             return $fail('Download host is not allowed.');
         }
 
@@ -1155,7 +1156,7 @@ class MarketplaceService
     protected function apiUrl(string $path): string
     {
         $base = rtrim((string) ($this->config['store_url'] ?? ''), '/');
-        return $base . '/api/store/' . $path . ($this->connected() ? '?token=' . urlencode((string) $this->app->settings()->get('Marketplace.account_token')) : '');
+        return $base . '/api/store/' . $path;
     }
 
     /**
@@ -1169,14 +1170,13 @@ class MarketplaceService
             $headers[] = 'Authorization: Bearer ' . (string) $this->app->settings()->get('Marketplace.account_token');
         }
 
-        $urlBase = parse_url($url, PHP_URL_SCHEME) . '://' . (parse_url($url, PHP_URL_HOST) ?? '');
-        $path = (string) (parse_url($url, PHP_URL_PATH) ?? '/');
-        $query = (string) (parse_url($url, PHP_URL_QUERY) ?? '');
-        $finalUrl = $urlBase . rtrim($path, '/') . ($query !== '' ? '?' . $query : '');
+        if (!$this->isAllowedStoreUrl($url)) {
+            return null;
+        }
         $timeout = (int) ($this->config['api_timeout'] ?? 10);
 
         if (function_exists('curl_init')) {
-            $handle = curl_init($finalUrl);
+            $handle = curl_init($url);
             if ($handle !== false) {
                 curl_setopt_array($handle, [
                     CURLOPT_RETURNTRANSFER => true,
@@ -1201,9 +1201,11 @@ class MarketplaceService
                 'timeout'       => $timeout,
                 'ignore_errors' => false,
                 'user_agent'    => $this->userAgent(),
+                'follow_location' => 0,
+                'max_redirects'   => 0,
             ],
         ]);
-        $body = @file_get_contents($finalUrl, false, $context);
+        $body = @file_get_contents($url, false, $context);
         return is_string($body) && $body !== '' ? $body : null;
     }
 
@@ -1212,39 +1214,166 @@ class MarketplaceService
         $timeout = (int) ($this->config['api_timeout'] ?? 10);
         $headers = $this->connected() ? ['Authorization: Bearer ' . (string) $this->app->settings()->get('Marketplace.account_token')] : [];
 
+        $current = $url;
+        for ($hops = 0; $hops <= self::MAX_REDIRECTS; $hops++) {
+            if (!$this->isAllowedStoreUrl($current)) {
+                return null;
+            }
+            $response = $this->httpFetchOnce($current, $headers, $timeout);
+            if ($response === null) {
+                return null;
+            }
+            $status = $response['status'];
+            if (in_array($status, [301, 302, 303, 307, 308], true) && $hops < self::MAX_REDIRECTS) {
+                $location = $response['location'] ?? null;
+                if (!is_string($location) || $location === '') {
+                    return null;
+                }
+                $next = $this->resolveHttpUrl($current, $location);
+                if ($next === null || !$this->isAllowedStoreUrl($next)) {
+                    return null;
+                }
+                $current = $next;
+                continue;
+            }
+            $body = $response['body'];
+            return is_string($body) && $body !== '' ? $body : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * A single no-redirect HTTP GET. Redirects are followed by httpGet()
+     * after re-validating each hop against the store host policy.
+     *
+     * @param list<string> $headers
+     *
+     * @return array{body: ?string, status: int, location: ?string}|null
+     */
+    protected function httpFetchOnce(string $url, array $headers, int $timeout): ?array
+    {
         if (function_exists('curl_init')) {
             $handle = curl_init($url);
             if ($handle !== false) {
-                $curlHeaders = [];
-                foreach ($headers as $h) {
-                    $curlHeaders[] = $h;
-                }
                 curl_setopt_array($handle, [
                     CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_FOLLOWLOCATION => true,
-                    CURLOPT_MAXREDIRS      => 3,
+                    CURLOPT_FOLLOWLOCATION => false,
                     CURLOPT_CONNECTTIMEOUT => $timeout,
                     CURLOPT_TIMEOUT        => $timeout,
                     CURLOPT_USERAGENT      => $this->userAgent(),
-                    CURLOPT_HTTPHEADER     => $curlHeaders,
+                    CURLOPT_HTTPHEADER     => $headers,
                 ]);
                 $body = curl_exec($handle);
+                if (!is_string($body)) {
+                    curl_close($handle);
+                    return null;
+                }
                 curl_close($handle);
-                return is_string($body) && $body !== '' ? $body : null;
+                $redirect = curl_getinfo($handle, CURLINFO_REDIRECT_URL);
+                return [
+                    'body'     => $body,
+                    'status'   => curl_getinfo($handle, CURLINFO_RESPONSE_CODE),
+                    'location' => is_string($redirect) && $redirect !== '' ? $redirect : null,
+                ];
             }
         }
 
+        $http_response_header = [];
         $context = stream_context_create([
             'http' => [
                 'timeout'         => $timeout,
-                'follow_location' => 1,
-                'max_redirects'   => 3,
+                'follow_location' => 0,
+                'max_redirects'   => 0,
                 'user_agent'      => $this->userAgent(),
                 'header'          => implode("\r\n", $headers),
+                'ignore_errors'   => true,
             ],
         ]);
         $body = @file_get_contents($url, false, $context);
-        return is_string($body) && $body !== '' ? $body : null;
+
+        $status = 0;
+        $location = null;
+        $statusLine = (string) ($http_response_header[0] ?? '');
+        if (preg_match('#\s(\d{3})\b#', $statusLine, $m) === 1) {
+            $status = (int) $m[1];
+        }
+        foreach ($http_response_header as $line) {
+            if (stripos($line, 'Location:') === 0) {
+                $location = trim(substr($line, strlen('Location:')));
+                break;
+            }
+        }
+
+        return [
+            'body'     => is_string($body) && $body !== '' ? $body : null,
+            'status'   => $status,
+            'location' => is_string($location) && $location !== '' ? $location : null,
+        ];
+    }
+
+    /**
+     * Resolve a Location value against the URL that produced it.
+     */
+    protected function resolveHttpUrl(string $base, string $location): ?string
+    {
+        if (preg_match('#^https?://#i', $location) === 1) {
+            return $location;
+        }
+        if (str_starts_with($location, '//')) {
+            $scheme = (string) parse_url($base, PHP_URL_SCHEME);
+            return $scheme !== '' ? $scheme . ':' . $location : null;
+        }
+        $scheme = (string) parse_url($base, PHP_URL_SCHEME);
+        $host = (string) parse_url($base, PHP_URL_HOST);
+        if ($scheme === '' || $host === '') {
+            return null;
+        }
+        $port = is_int($p = parse_url($base, PHP_URL_PORT)) ? ':' . $p : '';
+        if (str_starts_with($location, '/')) {
+            return $scheme . '://' . $host . $port . $location;
+        }
+        $path = (string) parse_url($base, PHP_URL_PATH);
+        $pos = strrpos($path, '/');
+        $dir = $pos === false ? '/' : substr($path, 0, $pos + 1);
+        return $scheme . '://' . $host . $port . '/' . ltrim($dir . $location, '/');
+    }
+
+    /**
+     * Whether an outbound store URL is safe to call: http/https plus a host
+     * on the store allow-list.
+     */
+    protected function isAllowedStoreUrl(string $url): bool
+    {
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+        if (!in_array($scheme, ['http', 'https'], true)) {
+            return false;
+        }
+        return $this->isAllowedStoreHost((string) parse_url($url, PHP_URL_HOST));
+    }
+
+    /**
+     * Store host allow-list: pubvanacms.com (apex or any subdomain), plus the
+     * loopback/dev hosts localhost and plugindev which are development-only.
+     */
+    protected function isAllowedStoreHost(string $host): bool
+    {
+        $host = strtolower(trim($host));
+        if ($host === '') {
+            return false;
+        }
+        if ($host === 'pubvanacms.com' || str_ends_with($host, '.pubvanacms.com')) {
+            return true;
+        }
+        if (in_array($host, ['localhost', 'plugindev'], true)) {
+            return $this->environment() === 'development';
+        }
+        return false;
+    }
+
+    protected function environment(): string
+    {
+        return (string) ($this->app->get('environment') ?? 'production');
     }
 
     /**

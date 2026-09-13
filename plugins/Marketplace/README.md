@@ -44,8 +44,8 @@ Registers a `24h` cron task that calls `verifyIfDue()`. The task itself enforces
 
 ## Technical notes
 
-- All HTTP calls use curl with a `file_get_contents` fallback, a timeouts, and a non-empty user agent (`Pubvana-Marketplace/3.0`).
-- Package downloads only accept hosts under pubvanacms.com/pubvana.net; folder names are validated; zip entries are inspected for path traversal before extraction (same safety contract as the Updates plugin).
+- All HTTP calls use curl with a `file_get_contents` fallback, a timeout, and a non-empty user agent (`Pubvana-Marketplace/3.0`). The account token is sent only as an `Authorization: Bearer` header, and every request (including each redirect hop) is re-validated as http/https against the store host allow-list.
+- Package downloads only accept hosts on the store allow-list (`pubvanacms.com` apex or any subdomain, plus `localhost`/`plugindev` in development only); folder names are validated; zip entries are inspected for path traversal before extraction (same safety contract as the Updates plugin).
 - The account token lives in the settings store under `Marketplace.*` keys.
 
 ## Development

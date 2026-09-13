@@ -1,0 +1,248 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Pubvana\Tests\Unit\Plugins\Marketplace;
+
+use PHPUnit\Framework\Attributes\CoversClass;
+use Pubvana\Plugins\Marketplace\Services\MarketplaceService;
+use Pubvana\Tests\Support\Sqlite;
+use Pubvana\Tests\Support\TestCase;
+
+/**
+ * H2: marketplace download allow-list bypass.
+ *
+ * The outbound HTTP layer must only reach http/https store hosts, re-validate
+ * every redirect hop by hand (no CURLOPT_FOLLOWLOCATION / stream follow), keep
+ * loopback/dev hosts out of production, and carry the account token only in an
+ * Authorization: Bearer header, never in the query string.
+ */
+#[CoversClass(MarketplaceService::class)]
+final class MarketplaceHttpSafetyTest extends TestCase
+{
+    private HttpSafetySettingsStub $settings;
+    private HttpSafetyService $service;
+
+    protected function setUp(): void
+    {
+        $this->settings = new HttpSafetySettingsStub();
+        $app = $this->app([
+            'settings' => fn (): HttpSafetySettingsStub => $this->settings,
+        ]);
+        $this->service = new HttpSafetyService(
+            Sqlite::recreate(),
+            $app,
+            ['store_url' => 'http://plugindev', 'api_timeout' => 3],
+        );
+    }
+
+    public function testLoopbackHostsRejectedInProduction(): void
+    {
+        // environment is unset, so environment() defaults to production.
+        self::assertFalse($this->invoke($this->service, 'isAllowedStoreUrl', ['http://localhost/api/store/items']));
+        self::assertFalse($this->invoke($this->service, 'isAllowedStoreUrl', ['http://plugindev/api/store/items']));
+    }
+
+    public function testLoopbackHostsAllowedOnlyInDevelopment(): void
+    {
+        $this->useDevelopment();
+        self::assertTrue($this->invoke($this->service, 'isAllowedStoreUrl', ['http://localhost/api/store/items']));
+        self::assertTrue($this->invoke($this->service, 'isAllowedStoreUrl', ['http://plugindev/api/store/items']));
+    }
+
+    public function testOnlyHttpAndHttpsSchemesAllowed(): void
+    {
+        $this->useDevelopment();
+        self::assertTrue($this->invoke($this->service, 'isAllowedStoreUrl', ['https://pubvanacms.com/api/store/items']));
+        self::assertFalse($this->invoke($this->service, 'isAllowedStoreUrl', ['ftp://pubvanacms.com/x']));
+        self::assertFalse($this->invoke($this->service, 'isAllowedStoreUrl', ['file:///etc/passwd']));
+    }
+
+    public function testStoreHostAllowList(): void
+    {
+        self::assertTrue($this->invoke($this->service, 'isAllowedStoreUrl', ['https://pubvanacms.com/api/store/items']));
+        self::assertTrue($this->invoke($this->service, 'isAllowedStoreUrl', ['https://store.pubvanacms.com/api/store/items']));
+        self::assertFalse($this->invoke($this->service, 'isAllowedStoreUrl', ['https://evil.com/api/store/items']));
+        self::assertFalse($this->invoke($this->service, 'isAllowedStoreUrl', ['https://pubvanacms.com.evil.com/api/store/items']));
+    }
+
+    public function testRedirectToDisallowedHostStopsWithoutFetchingIt(): void
+    {
+        $this->useDevelopment();
+        $this->service->fetchResponses = [
+            ['body' => '', 'status' => 302, 'location' => 'http://evil.com/payload'],
+            ['body' => 'stolen', 'status' => 200, 'location' => null],
+        ];
+
+        $result = $this->invoke($this->service, 'httpGet', ['http://plugindev/api/store/items']);
+
+        self::assertNull($result);
+        self::assertCount(1, $this->service->fetched);
+        self::assertSame('http://plugindev/api/store/items', $this->service->fetched[0]['url']);
+    }
+
+    public function testRedirectToLoopbackRejectedInProduction(): void
+    {
+        $this->service->fetchResponses = [
+            ['body' => '', 'status' => 302, 'location' => 'http://localhost/private'],
+        ];
+
+        $result = $this->invoke($this->service, 'httpGet', ['http://pubvanacms.com/api/store/items']);
+
+        self::assertNull($result);
+        self::assertCount(1, $this->service->fetched);
+    }
+
+    public function testRelativeRedirectWithinStoreIsFollowed(): void
+    {
+        $this->useDevelopment();
+        $this->service->fetchResponses = [
+            ['body' => '', 'status' => 302, 'location' => '/api/store/items'],
+            ['body' => '{"ok":true}', 'status' => 200, 'location' => null],
+        ];
+
+        $result = $this->invoke($this->service, 'httpGet', ['http://plugindev/api/store/categories']);
+
+        self::assertSame('{"ok":true}', $result);
+        self::assertSame('http://plugindev/api/store/items', $this->service->fetched[1]['url']);
+    }
+
+    public function testSchemeRelativeRedirectResolvedAgainstBaseScheme(): void
+    {
+        $this->useDevelopment();
+        $this->service->fetchResponses = [
+            ['body' => '', 'status' => 302, 'location' => '//plugindev/api/store/items'],
+            ['body' => '{"ok":true}', 'status' => 200, 'location' => null],
+        ];
+
+        $result = $this->invoke($this->service, 'httpGet', ['http://plugindev/api/store/categories']);
+
+        self::assertSame('http://plugindev/api/store/items', $this->service->fetched[1]['url']);
+        self::assertSame('{"ok":true}', $result);
+    }
+
+    public function testSchemeRelativeRedirectToEvilHostRejected(): void
+    {
+        $this->useDevelopment();
+        $this->service->fetchResponses = [
+            ['body' => '', 'status' => 302, 'location' => '//evil.com/api/store/items'],
+        ];
+
+        $result = $this->invoke($this->service, 'httpGet', ['http://plugindev/api/store/items']);
+
+        self::assertNull($result);
+        self::assertCount(1, $this->service->fetched);
+    }
+
+    public function testRedirectChainIsCapped(): void
+    {
+        $this->useDevelopment();
+        $this->service->fetchResponses = array_fill(0, 10, ['body' => '', 'status' => 302, 'location' => '/loop']);
+
+        $this->invoke($this->service, 'httpGet', ['http://plugindev/api/store/items']);
+
+        // MAX_REDIRECTS = 3 follows plus the terminal hop.
+        self::assertLessThanOrEqual(4, count($this->service->fetched));
+    }
+
+    public function testBearerHeaderSentOnlyWhenConnected(): void
+    {
+        $this->useDevelopment();
+
+        $this->service->fetchResponses = [['body' => '{}', 'status' => 200, 'location' => null]];
+        $this->invoke($this->service, 'httpGet', ['http://plugindev/api/store/items']);
+        self::assertSame([], $this->service->fetched[0]['headers']);
+
+        $this->settings->data['Marketplace.account_token'] = 'abc:xyz';
+        $this->service->fetchResponses = [['body' => '{}', 'status' => 200, 'location' => null]];
+        $this->invoke($this->service, 'httpGet', ['http://plugindev/api/store/items']);
+        self::assertSame(['Authorization: Bearer abc:xyz'], $this->service->fetched[1]['headers']);
+    }
+
+    public function testAccountTokenNeverAppearsInQueryString(): void
+    {
+        $this->useDevelopment();
+        $this->settings->data['Marketplace.account_token'] = 'abc:xyz';
+
+        $this->service->fetchResponses = [['body' => '{}', 'status' => 200, 'location' => null]];
+        $this->invoke($this->service, 'httpGet', ['http://plugindev/api/store/items']);
+
+        self::assertDoesNotMatchRegularExpression('/[?&]token=/', $this->service->fetched[0]['url']);
+    }
+
+    public function testApiUrlBuildsNoTokenQuery(): void
+    {
+        $this->settings->data['Marketplace.account_token'] = 'abc:xyz';
+
+        self::assertSame('http://plugindev/api/store/items', $this->invoke($this->service, 'apiUrl', ['items']));
+    }
+
+    public function testSourceNeverEchoesTokenOrAutoFollowsRedirects(): void
+    {
+        $src = (string) file_get_contents(
+            dirname(__DIR__, 4) . '/plugins/Marketplace/Services/MarketplaceService.php'
+        );
+
+        self::assertStringNotContainsString('?token=', $src);
+        self::assertStringNotContainsString('&token=', $src);
+        self::assertStringNotContainsString('CURLOPT_FOLLOWLOCATION => true', $src);
+
+        // One stream context for GET and one for POST; PHP defaults to
+        // auto-following, so both must disable it explicitly.
+        self::assertSame(2, substr_count($src, "'follow_location' => 0"));
+
+        // Callers fixed their query separator when the token query was dropped.
+        self::assertSame(1, substr_count($src, "'?currency='"));
+        self::assertSame(1, substr_count($src, "'?domain='"));
+        self::assertSame(1, substr_count($src, "'?slug='"));
+        self::assertSame(0, substr_count($src, "'&currency='"));
+    }
+
+    private function useDevelopment(): void
+    {
+        $this->property($this->service, 'app')->set('environment', 'development');
+    }
+}
+
+/**
+ * Lightweight settings stand-in backed by an in-memory array.
+ */
+final class HttpSafetySettingsStub
+{
+    /** @var array<string, mixed> */
+    public array $data = [];
+
+    public function get(string $key, mixed $default = ''): mixed
+    {
+        return $this->data[$key] ?? $default;
+    }
+
+    public function set(string $key, mixed $value): void
+    {
+        $this->data[$key] = $value;
+    }
+}
+
+/**
+ * MarketplaceService with only the single-request fetch stubbed; httpGet() runs
+ * its real redirect loop so per-hop validation is exercised without the network.
+ */
+final class HttpSafetyService extends MarketplaceService
+{
+    /** @var list<array{url: string, headers: list<string>}> */
+    public array $fetched = [];
+
+    /** @var list<array{body: ?string, status: int, location: ?string}> */
+    public array $fetchResponses = [];
+
+    protected function httpFetchOnce(string $url, array $headers, int $timeout): ?array
+    {
+        $this->fetched[] = ['url' => $url, 'headers' => $headers];
+        return array_shift($this->fetchResponses);
+    }
+
+    protected function sitePubvanaVersion(): string
+    {
+        return '3.0.0';
+    }
+}

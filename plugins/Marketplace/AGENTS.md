@@ -22,7 +22,7 @@ Guidance for AI agents contributing to this plugin, the buy-side companion for t
 3. **The store catalog `slug` is the package.** Store contract: a catalog/purchase item's `slug` is the same string as the installed manifest `name`.
 4. **No user-facing key entry.** The Marketplace never prompts the buyer to type a license key. Ownership is verified back at the store with the account token. `license_key` is stored in `marketplace_installs` for diagnostics only.
 5. **Phone-home cadence is `verify_days`, not daily.** The 24h cron task calls `verifyIfDue()`, which enforces the cadence itself. Do not hit the store on every request or every cron tick. The connect screen must disclose periodic verification (~2 weeks).
-6. **Validate every zip before extraction.** Reject entries with `..`, absolute paths, drive letters, or NUL bytes; only accept download hosts under pubvanacms.com/pubvana.net. This is the same safety contract as the Updates plugin; do not weaken it.
+6. **Validate every zip before extraction.** Reject entries with `..`, absolute paths, drive letters, or NUL bytes; only accept http/https download hosts on the store allow-list (`pubvanacms.com` apex or any subdomain, plus `localhost`/`plugindev` in development only). This is the same safety contract as the Updates plugin; do not weaken it.
 7. **One install path.** `installFromPackage()` is the only public store-install entry for cross-plugin use (Updates addon-update calls it). No client-supplied download URLs reach the install flow; URLs are always re-derived server-side from the license.
 8. **No payment integration here.** Checkout happens on pubvanacms.com. The Marketplace only opens the store checkout URL and verifies afterward.
 9. **Single-site domain moves require email confirmation.** The transfer-request endpoint starts the flow; the store emails a confirm link. The Marketplace can prompt and request; it must not rebind on its own.
@@ -35,14 +35,14 @@ Guidance for AI agents contributing to this plugin, the buy-side companion for t
 
 - `GET {store}/api/store/categories` - categories
 - `GET {store}/api/store/items?currency=` - marketplace-listed items
-- `GET {store}/api/store/free?token=&slug=` - streams a free product's package (is_free or scope none); free items are free to use anywhere and update with no license
+- `GET {store}/api/store/free?slug=` - streams a free product's package (is_free or scope none); free items are free to use anywhere and update with no license
 - `POST {store}/api/store/cart/add` - push item into account-bound cart
 - `GET {store}/api/store/purchases?domain=` - owned products + license state for this domain
 - `POST {store}/api/store/license/validate` - returns a download URL for a valid license
 - `POST {store}/api/store/license/transfer-request` - begin a domain move
 - `POST {store}/api/store/auth/token` - exchange email for account token
 
-Auth is a `Marketplace.account_token` setting sent as a `Bearer` header (and echoed in the query for GETs).
+Auth is a `Marketplace.account_token` setting sent as an `Authorization: Bearer` header. It is never sent in the query string, and every outbound request and redirect hop is validated against the store host allow-list (http/https only, loopback/dev hosts in development only).
 
 ### Install flow
 
