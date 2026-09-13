@@ -95,12 +95,12 @@ class NavigationItem extends AbstractModel
      */
     public function nextSortOrder(string $group): int
     {
-        $model = new self($this->getDatabaseConnection());
-        $result = $model->select('MAX(sort_order) as max_sort')
-                        ->eq('nav_group', $group)
-                        ->find();
+        $items = $this->getByGroup($group);
+        if (empty($items)) {
+            return 0;
+        }
 
-        return ((int) ($result->max_sort ?? 0)) + 1;
+        return end($items)->sort_order + 1;
     }
 
     /**

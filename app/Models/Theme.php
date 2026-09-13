@@ -104,18 +104,20 @@ class Theme extends AbstractModel
     {
         $pdo = $this->getDatabaseConnection();
 
+        $theme = new self($pdo);
+        $theme->eq('id', $id)->find();
+        if (!$theme->isHydrated()) {
+            return;
+        }
+
         $others = (new self($pdo))->notEqual('id', $id)->findAll();
         foreach ($others as $other) {
             $other->is_active = 0;
             $other->save();
         }
 
-        $theme = new self($pdo);
-        $theme->eq('id', $id)->find();
-        if ($theme->isHydrated()) {
-            $theme->is_active = 1;
-            $theme->save();
-        }
+        $theme->is_active = 1;
+        $theme->save();
     }
 
     /**
