@@ -8,9 +8,12 @@ use DateTimeImmutable;
 use Enlivenapp\FlightShield\Models\RememberToken;
 use Enlivenapp\FlightShield\Models\User;
 use Enlivenapp\FlightShield\Models\UserIdentity;
+use flight\Engine;
 use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
+use Pubvana\Services\ExtensionRegistry;
 use Pubvana\Services\PasswordResetService;
+use Pubvana\Services\SettingsService;
 use Pubvana\Tests\Support\Sqlite;
 use Pubvana\Tests\Support\TestCase;
 
@@ -46,6 +49,9 @@ final class PasswordResetServiceTest extends TestCase
     ];
 
     private PDO $pdo;
+
+    /** @var Engine<object> The engine built by makeService(), for tests that tune settings. */
+    private ?Engine $testApp = null;
 
     /** @var array<int, array{to: string, subject: string, body: string}> */
     public array $sentEmails = [];
@@ -240,6 +246,51 @@ final class PasswordResetServiceTest extends TestCase
     }
 
     // -----------------------------------------------------------------
+    // Reset link base URL (Host-header poisoning)
+    // -----------------------------------------------------------------
+
+    public function testResetEmailUsesDbBackedSiteUrlSetting(): void
+    {
+        $user = $this->seedUser('ada', 'ada@example.com');
+        $service = $this->makeService();
+
+        // A stale app-level value (configured SITE_URL env var) sits under
+        // the DB-backed row, the way the admin UI writes CMS.siteUrl. The
+        // DB row must win: that is the value the operator actually set.
+        $this->testApp->set('CMS.siteUrl', 'https://env.example');
+        $this->testApp->settings()->set('CMS.siteUrl', 'https://admin.example');
+
+        $service->issueResetToken('ada@example.com');
+
+        self::assertCount(1, $this->sentEmails);
+        self::assertStringContainsString(
+            'https://admin.example/auth/reset-password?token=',
+            $this->sentEmails[0]['body']
+        );
+        self::assertStringNotContainsString('env.example', $this->sentEmails[0]['body']);
+    }
+
+    public function testResetEmailNeverUsesAttackerControlledHost(): void
+    {
+        $user = $this->seedUser('ada', 'ada@example.com');
+        $service = $this->makeService();
+
+        // No configured site URL: only the fallback path remains. The
+        // request stand-in answers a hostile Host header; it must not shape
+        // the emailed link.
+        $this->testApp->set('CMS.siteUrl', null);
+
+        $service->issueResetToken('ada@example.com');
+
+        self::assertCount(1, $this->sentEmails);
+        self::assertStringContainsString(
+            'http://localhost/auth/reset-password?token=',
+            $this->sentEmails[0]['body']
+        );
+        self::assertStringNotContainsString('evil.example', $this->sentEmails[0]['body']);
+    }
+
+    // -----------------------------------------------------------------
     // Rate limiter feeding
     // -----------------------------------------------------------------
 
@@ -277,6 +328,22 @@ final class PasswordResetServiceTest extends TestCase
 
         $app = $this->app([
             'db' => fn(): PDO => $this->pdo,
+            // Real settings store over the in-memory DB: a DB-backed
+            // CMS.siteUrl row must resolve exactly like the admin UI writes it.
+            'settings' => $this->singleton(fn(): SettingsService => new SettingsService(\Flight::app())),
+            // SettingsService::declaredFields() reads the extension registry.
+            'adext' => $this->singleton(fn(): ExtensionRegistry => new ExtensionRegistry()),
+            // Request stand-in answering a hostile Host header, so a
+            // regression to Host-based URL building fails loudly.
+            'request' => fn(): object => new class {
+                public bool $secure = false;
+                public string $base = '';
+
+                public function getHeader(string $name): string
+                {
+                    return $name === 'Host' ? 'evil.example' : '';
+                }
+            },
             // View stand-in: records fetched template names and echoes the
             // reset link into the body, the way Vision renders the template.
             'view' => fn(): object => new class($test) {
@@ -310,7 +377,28 @@ final class PasswordResetServiceTest extends TestCase
         $app->set('enlivenapp.flight-shield', self::SHIELD_CONFIG);
         $app->set('CMS.siteUrl', 'http://localhost');
 
+        $this->testApp = $app;
+
         return new PasswordResetService($app);
+    }
+
+    /**
+     * Wrap a lazy provider in a per-engine singleton guard: Flight
+     * resolves mapped services through repeated calls, so a bare
+     * closure would hand back a fresh instance every time.
+     *
+     * @param callable $provider Zero-argument factory
+     * @return callable Singleton-guarded factory
+     */
+    private function singleton(callable $provider): callable
+    {
+        return function () use ($provider) {
+            static $instance = null;
+            if ($instance === null) {
+                $instance = $provider();
+            }
+            return $instance;
+        };
     }
 
     private function seedUser(string $username, string $email, bool $forceReset = false): User

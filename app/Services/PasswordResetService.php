@@ -270,26 +270,23 @@ class PasswordResetService
     }
 
     /**
-     * Resolve the absolute site base URL for the reset link.
+     * Resolve the absolute site base URL for the reset email link.
      *
-     * Prefers the CMS.siteUrl setting; falls back to deriving a scheme from
-     * the HTTPS policy and the request host.
+     * Uses the configured CMS.siteUrl setting, the DB-backed value the
+     * admin UI writes. It never derives anything from the request Host
+     * header, which is attacker-controlled and could otherwise poison the
+     * emailed link. When the setting is unconfigured it falls back to the
+     * seeded default.
      */
     protected function baseUrl(): string
     {
-        $siteUrl = trim((string) ($this->app->get('CMS.siteUrl') ?? ''));
+        $siteUrl = trim((string) ($this->app->settings()->get('CMS.siteUrl', '') ?? ''));
 
         if ($siteUrl !== '') {
             return rtrim($siteUrl, '/');
         }
 
-        $request = $this->app->request();
-        $https = $this->app->get('flight.force_https') === true || (bool) ($request->secure ?? false);
-        $scheme = $https ? 'https' : 'http';
-        $host = $request->getHeader('Host') ?: ($_SERVER['HTTP_HOST'] ?? 'localhost');
-        $path = rtrim((string) ($request->base ?? ''), '/');
-
-        return $scheme . '://' . $host . $path;
+        return 'http://localhost';
     }
 
     /**
