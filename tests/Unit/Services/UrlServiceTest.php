@@ -154,6 +154,56 @@ final class UrlServiceTest extends TestCase
         self::assertSame('https://example.com/', $service->absoluteUrl(''));
     }
 
+    public function testEmptyOrNullIsASafeExternalUrl(): void
+    {
+        // Fields are optional; emptiness is the caller's call, not a scheme error.
+        self::assertTrue(UrlService::isSafeExternalUrl(null));
+        self::assertTrue(UrlService::isSafeExternalUrl(''));
+        self::assertTrue(UrlService::isSafeExternalUrl('   '));
+    }
+
+    public function testHttpAndHttpsSchemesAreSafe(): void
+    {
+        self::assertTrue(UrlService::isSafeExternalUrl('https://example.com/page'));
+        self::assertTrue(UrlService::isSafeExternalUrl('http://example.com/page'));
+        self::assertTrue(UrlService::isSafeExternalUrl('HTTPS://EXAMPLE.COM/PAGE'));
+        self::assertTrue(UrlService::isSafeExternalUrl('https://example.com:8080/x?a=1#b'));
+    }
+
+    public function testNonHttpSchemesAreRefused(): void
+    {
+        self::assertFalse(UrlService::isSafeExternalUrl('javascript:alert(1)'));
+        self::assertFalse(UrlService::isSafeExternalUrl('data:text/html;base64,PHNjcmlwdD4='));
+        self::assertFalse(UrlService::isSafeExternalUrl('vbscript:msgbox(1)'));
+        self::assertFalse(UrlService::isSafeExternalUrl('file:///etc/passwd'));
+        self::assertFalse(UrlService::isSafeExternalUrl('ftp://example.com/file'));
+        self::assertFalse(UrlService::isSafeExternalUrl('javascript://example.com/%0aalert(1)'));
+    }
+
+    public function testSchemelessValuesAreRefused(): void
+    {
+        self::assertFalse(UrlService::isSafeExternalUrl('example.com'));
+        self::assertFalse(UrlService::isSafeExternalUrl('www.example.com'));
+        self::assertFalse(UrlService::isSafeExternalUrl('//evil.com'));
+        self::assertFalse(UrlService::isSafeExternalUrl('/page'));
+    }
+
+    public function testControlCharactersAndBackslashesAreRefused(): void
+    {
+        self::assertFalse(UrlService::isSafeExternalUrl("java\tscript://evil.com"));
+        self::assertFalse(UrlService::isSafeExternalUrl("https://exa\x00mple.com/"));
+        self::assertFalse(UrlService::isSafeExternalUrl("https://example.com/a\nb"));
+        self::assertFalse(UrlService::isSafeExternalUrl('/\evil.com'));
+        self::assertFalse(UrlService::isSafeExternalUrl("https://evil.com/\\normal"));
+    }
+
+    public function testEdgeWhitespaceIsTrimmedNotRejected(): void
+    {
+        // Trim strips edge whitespace (including null bytes) before the
+        // checks, so padded values store clean instead of being refused.
+        self::assertTrue(UrlService::isSafeExternalUrl(" https://example.com/page\t"));
+    }
+
     private function service(string $siteUrl): UrlService
     {
         $app = $this->app([

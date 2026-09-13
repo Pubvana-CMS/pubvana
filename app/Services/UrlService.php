@@ -114,6 +114,34 @@ class UrlService
     }
 
     /**
+     * Scheme allowlist for user-supplied external URLs stored on entities
+     * (profile website and similar fields) that the application later
+     * renders inside href attributes or emits into structured data.
+     *
+     * A value with no scheme ("example.com") is rejected: assuming a scheme
+     * would silently accept half-entered input, and the caller is expected
+     * to ask the user for a full http:// or https:// URL. Anything not
+     * http/https (javascript:, data:, //host, etc.) is rejected because the
+     * value ends up in a navigable attribute context.
+     *
+     * Pure static so models (which have no Engine reference) can use it too.
+     */
+    public static function isSafeExternalUrl(?string $url): bool
+    {
+        $candidate = trim((string) ($url ?? ''));
+        if ($candidate === '') {
+            return true; // Optional field; emptiness is the caller's call.
+        }
+
+        if (str_contains($candidate, '\\') || preg_match('/[\x00-\x1f\x7f]/', $candidate)) {
+            return false;
+        }
+
+        $scheme = (string) (parse_url($candidate, PHP_URL_SCHEME) ?? '');
+        return preg_match('#^https?$#i', $scheme) === 1;
+    }
+
+    /**
      * Reduce an absolute http(s) URL to its path and query when its host and
      * port match the site's own, null otherwise. The host is compared with
      * parse_url(), never string prefixing, so lookalike hosts

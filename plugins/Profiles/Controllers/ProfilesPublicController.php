@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Pubvana\Plugins\Profiles\Controllers;
 
 use Pubvana\Controllers\Public\PublicController;
+use Pubvana\Services\UrlService;
 use Enlivenapp\FlightShield\Models\User;
 
 class ProfilesPublicController extends PublicController
@@ -32,12 +33,20 @@ class ProfilesPublicController extends PublicController
             $avatarUrl = '/' . ltrim($profile->avatar, '/');
         }
 
+        // Render guard: only a full http(s) URL becomes a navigable href.
+        // Legacy rows stored before scheme validation may still hold
+        // javascript: or other junk; those render as no link at all.
+        $safeWebsite = UrlService::isSafeExternalUrl($profile->website ?? null)
+            ? ($profile->website ?? null)
+            : null;
+
         $this->render('pubvana/profiles/profile', [
-            'title'      => ($profile->display_name ?? $user->username) . "'s Profile",
-            'profile'    => $profile,
-            'user'       => $user,
-            'isOwner'    => $isOwner,
-            'avatar_url' => $avatarUrl,
+            'title'        => ($profile->display_name ?? $user->username) . "'s Profile",
+            'profile'      => $profile,
+            'user'         => $user,
+            'isOwner'      => $isOwner,
+            'avatar_url'   => $avatarUrl,
+            'safe_website' => $safeWebsite,
         ]);
     }
 
@@ -79,7 +88,11 @@ class ProfilesPublicController extends PublicController
         $post = $this->app->request()->data->getData();
         unset($post['_csrf_token']);
 
-        $this->app->profiles()->updateProfile((int) $user->id, $post);
+        if ($this->app->profiles()->updateProfile((int) $user->id, $post) === null) {
+            $this->app->session()->flash('danger', 'Website must be a full http:// or https:// URL.');
+            $this->app->redirect('/' . $this->getRoutePrepend() . '/' . $username . '/edit');
+            return;
+        }
 
         $this->app->redirect('/' . $this->getRoutePrepend() . '/' . $username);
     }

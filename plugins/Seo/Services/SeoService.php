@@ -573,6 +573,13 @@ class SeoService
         if ($profile) {
             foreach (['website', 'twitter', 'facebook', 'linkedin'] as $field) {
                 if (!empty($profile->$field)) {
+                    // website is a full URL and must pass the scheme
+                    // allowlist before it lands in structured data; the
+                    // social fields are handles that get the fixed
+                    // https:// prefix from SchemaService.
+                    if ($field === 'website' && !\Pubvana\Services\UrlService::isSafeExternalUrl($profile->$field)) {
+                        continue;
+                    }
                     $sameAs[] = (string) $profile->$field;
                 }
             }

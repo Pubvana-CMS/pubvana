@@ -29,8 +29,9 @@
         <ul class="pv-profile-links">
             {# One conditional per network: each renders only when the field is filled. #}
             {# rel="nofollow noopener" keeps these user-entered links from passing ranking or window access. #}
-            {% if profile.website %}
-            <li><a href="{{ profile.website }}" rel="nofollow noopener">{{ profile.website }}</a></li>
+            {# safe_website is controller-side: only full http(s) URLs become a navigable href. #}
+            {% if safe_website %}
+            <li><a href="{{ safe_website }}" rel="nofollow noopener">{{ safe_website }}</a></li>
             {% endif %}
             {% if profile.twitter %}
             <li><a href="https://twitter.com/{{ profile.twitter }}" rel="nofollow noopener">@{{ profile.twitter }}</a></li>

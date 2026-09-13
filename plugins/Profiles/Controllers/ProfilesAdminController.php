@@ -62,7 +62,11 @@ class ProfilesAdminController extends AdminController
         $postedReturn = isset($post['return_url']) ? (string) $post['return_url'] : null;
         unset($post['_csrf_token'], $post['return_url']);
 
-        $this->app->profiles()->updateProfile((int) $userId, $post);
+        if ($this->app->profiles()->updateProfile((int) $userId, $post) === null) {
+            $this->app->session()->flash('error', 'Website must be a full http:// or https:// URL.');
+            $this->app->redirect($this->app->url()->sameSite($postedReturn, $this->adminBase()));
+            return;
+        }
 
         $this->app->session()->flash('success', 'Profile updated.');
         $this->app->redirect($this->app->url()->sameSite($postedReturn, $this->adminBase()));

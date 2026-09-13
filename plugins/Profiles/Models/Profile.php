@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Pubvana\Plugins\Profiles\Models;
 
+use Pubvana\Services\UrlService;
+
  /**
  * @property int         $id
  * @property int         $user_id       Unique FK to auth users
@@ -67,27 +69,63 @@ class Profile extends \Pubvana\Models\AbstractModel
     }
 
     /**
+     * Persist a profile update. Returns null when the write was rejected
+     * (invalid field value, e.g. a website without an http/https scheme);
+     * nothing is saved in that case. Returns the updated profile otherwise.
+     *
      * @param array<string, mixed> $data
      */
-    public function updateProfile(int $userId, array $data): self
+    public function updateProfile(int $userId, array $data): ?self
     {
         $profile = $this->findOrCreate($userId);
-        $profile->updateFromArray($data);
+        if (!$profile->updateFromArray($data)) {
+            return null;
+        }
         return $profile;
     }
 
     /**
+     * Whitelisted field write. Returns false and saves nothing when a value
+     * fails validation; the controller surfaces the reason to the user.
+     *
+     * website is a navigable href on the public profile page, so only full
+     * http:// or https:// URLs pass (a bare domain is rejected, no scheme
+     * is assumed). twitter/facebook/linkedin are handles rendered behind a
+     * fixed https:// prefix; tags and whitespace are stripped on write.
+     *
      * @param array<string, mixed> $data
      */
-    public function updateFromArray(array $data): void
+    public function updateFromArray(array $data): bool
     {
         $allowed = ['display_name', 'bio', 'avatar', 'website', 'twitter', 'facebook', 'linkedin', 'job_title', 'works_for'];
         foreach ($allowed as $field) {
-            if (array_key_exists($field, $data)) {
-                $this->$field = trim($data[$field]) ?: null;
+            if (!array_key_exists($field, $data)) {
+                continue;
             }
+
+            if ($field === 'website' && !UrlService::isSafeExternalUrl(trim((string) $data[$field]))) {
+                return false;
+            }
+
+            if ($field === 'twitter' || $field === 'facebook' || $field === 'linkedin') {
+                $this->$field = $this->sanitizeHandle((string) $data[$field]);
+                continue;
+            }
+
+            $this->$field = trim((string) $data[$field]) ?: null;
         }
         $this->updated_at = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
         $this->save();
+
+        return true;
+    }
+
+    /**
+     * A social handle is plain text: no tags, no whitespace.
+     */
+    private function sanitizeHandle(string $value): ?string
+    {
+        $value = trim(preg_replace('/\s+/u', '', strip_tags($value)) ?? '');
+        return $value !== '' ? $value : null;
     }
 }
