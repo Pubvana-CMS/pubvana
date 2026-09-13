@@ -60,14 +60,21 @@ class HealthService
 
         $results = [];
         foreach ($this->getChecks() as $check) {
-            $results[] = $check->run()->toArray();
+            $results[] = $this->runCheck($check);
         }
 
         // Collect external checks registered via adext (type 'health')
         $external = $this->app->adext()->get('health', 'checks');
         foreach ($external as $contribution) {
             if (isset($contribution['callable']) && is_callable($contribution['callable'])) {
-                $result = call_user_func($contribution['callable']);
+                try {
+                    $result = call_user_func($contribution['callable']);
+                } catch (\Throwable $e) {
+                    // One crashing contribution must not take the whole
+                    // battery down; the remaining checks still report.
+                    error_log('SiteHealth external check failed: ' . $e->getMessage());
+                    continue;
+                }
                 if ($result instanceof CheckResult) {
                     $results[] = $result->toArray();
                 } elseif (is_array($result) && isset($result['id'])) {
@@ -153,6 +160,30 @@ class HealthService
     {
         if (file_exists($this->cachePath)) {
             @unlink($this->cachePath);
+        }
+    }
+
+    /**
+     * Run one built-in check. A crashing check becomes a critical result
+     * (details in the error log) instead of killing the whole battery.
+     *
+     * @return array<string, string>
+     */
+    private function runCheck(CheckInterface $check): array
+    {
+        try {
+            return $check->run()->toArray();
+        } catch (\Throwable $e) {
+            error_log('SiteHealth check ' . $check::class . ' failed: ' . $e->getMessage());
+            $shortName = basename(str_replace('\\', '/', $check::class));
+            return (new CheckResult(
+                id: 'check-error',
+                name: $shortName,
+                category: CheckResult::CAT_ENVIRONMENT,
+                status: CheckResult::CRITICAL,
+                message: 'This check crashed and produced no result. See the error log for details.',
+                remediation: 'Review writable/logs for the exception details, then re-run the check.',
+            ))->toArray();
         }
     }
 

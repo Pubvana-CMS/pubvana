@@ -60,6 +60,7 @@ Then dump it in your template:
 
 - Hosts are opt-in, not on by default. New hosts accept nothing until an admin adds them to `Comments.enabledHosts` on `/admin/comments/settings`.
 - `Comments.allow_guest_comments` (default `0`) controls whether visitors who are not logged in can post. Guests can always view comments.
+- `Comments.rate_limit_seconds` (default `30`, `0` disables) is the minimum spacing between two comments from the same IP. Enforced by the shared `RateLimiter` (flock-guarded counters in `writable/cache/ratelimit`) at the top of `CommentService::create()`.
 - The post endpoint is `POST /comments/{type}/{id}`. Submissions for a host that is not enabled are rejected with a silent redirect to the referring page.
 
 ## Moderation

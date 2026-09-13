@@ -461,6 +461,10 @@ foreach ($addonSections as $addonLabel => $addonRows): ?>
                 <p class="small text-muted mb-0">
                     Your <code>.env</code> and <code>app/config/shield.php</code> are never overwritten.
                 </p>
+                <p class="small text-warning mb-0 mt-2" id="confirm-update-warning" style="display:none">
+                    <i class="ti ti-alert-triangle me-1"></i>
+                    This update path contains breaking changes. Applying can require follow-up work; confirm again to proceed.
+                </p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -596,10 +600,12 @@ foreach ($addonSections as $addonLabel => $addonRows): ?>
 
     // ------------------------------------------------------------------
     // Apply: button opens the confirmation modal; confirm starts the run.
-    // Gate order is trust first, then breaking changes are already
-    // confirmed by the page (confirm_breaking). The trust answer arrives
-    // as needsConfirm (show the modal, resubmit with force_trust) or
-    // blocked (show the reason, no proceed).
+    // Gate order is trust first, then breaking changes. The first apply
+    // request carries no confirm_breaking: when the server refuses with
+    // confirm_breaking, the modal shows the breaking warning and the next
+    // confirm sends it. The trust answer arrives as needsConfirm (show the
+    // modal, resubmit with force_trust) or blocked (show the reason, no
+    // proceed).
     // ------------------------------------------------------------------
     var applyBtn        = document.getElementById('apply-btn');
     var modal           = document.getElementById('confirm-update-modal');
@@ -637,14 +643,17 @@ foreach ($addonSections as $addonLabel => $addonRows): ?>
     var blockedModal    = document.getElementById('trust-blocked-modal');
     var blockedBackdrop = document.getElementById('trust-blocked-backdrop');
 
-    function startApply(forceTrust) {
+    var breakingConfirmed    = false;
+    var forceTrustRequested  = false;
+
+    function startApply() {
         if (applyStarted) { return; }
         applyStarted = true;
 
         var body = new FormData();
         body.append('_csrf_token', '<?= csrf_token() ?>');
-        body.append('confirm_breaking', '1');
-        if (forceTrust) { body.append('force_trust', '1'); }
+        if (breakingConfirmed) { body.append('confirm_breaking', '1'); }
+        if (forceTrustRequested) { body.append('force_trust', '1'); }
 
         fetch('<?= $adminBase ?>/apply', {
             method: 'POST',
@@ -660,6 +669,15 @@ foreach ($addonSections as $addonLabel => $addonRows): ?>
                     return;
                 }
                 applyStarted = false;
+                if (data.status === 'confirm_breaking') {
+                    // Server refused the unconfirmed path: show the warning
+                    // in the confirm modal and let the next confirm send it.
+                    breakingConfirmed = true;
+                    var warn = document.getElementById('confirm-update-warning');
+                    if (warn) { warn.style.display = 'block'; }
+                    openModal();
+                    return;
+                }
                 if (data.needsConfirm) {
                     document.getElementById('trust-confirm-version').textContent = (data.core && data.core.version) ? 'v' + data.core.version : '';
                     showModal(trustModal, trustBackdrop);
@@ -695,13 +713,14 @@ foreach ($addonSections as $addonLabel => $addonRows): ?>
     if (confirmBtn) {
         confirmBtn.addEventListener('click', function () {
             closeModal();
-            startApply(false);
+            startApply();
         });
     }
     if (trustAnywayBtn) {
         trustAnywayBtn.addEventListener('click', function () {
             hideModal(trustModal, trustBackdrop);
-            startApply(true);
+            forceTrustRequested = true;
+            startApply();
         });
     }
     if (modal) {

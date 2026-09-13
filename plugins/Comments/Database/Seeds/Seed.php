@@ -9,6 +9,7 @@ return [
                 ['key' => 'Comments.allow_guest_comments', 'value' => '0',     'type' => 'boolean', 'autoload' => 1],
                 ['key' => 'Comments.default_status',       'value' => 'pending', 'type' => 'string', 'autoload' => 1],
                 ['key' => 'Comments.max_nesting_depth',    'value' => '3',     'type' => 'integer', 'autoload' => 1],
+                ['key' => 'Comments.rate_limit_seconds',   'value' => '30',    'type' => 'integer', 'autoload' => 1],
                 ['key' => 'Comments.enabledHosts',         'value' => '[]',    'type' => 'string',  'autoload' => 1],
             ],
         ],

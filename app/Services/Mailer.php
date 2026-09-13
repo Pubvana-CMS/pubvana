@@ -325,46 +325,13 @@ class Mailer
     // -----------------------------------------------------------------
 
     /**
-     * Site encryption key: derived from SESSION_ENCRYPTION_KEY so mail
-     * secrets share the deployment-level key and never require another
-     * piece of infrastructure.
-     */
-    protected function encryptionKey(): string
-    {
-        $plugins = $this->app->get('plugins');
-        $key = is_array($plugins)
-            ? ($plugins['enlivenapp/flight-sessions']['encryption_key'] ?? null)
-            : null;
-        if (!is_string($key) || $key === '') {
-            $key = $_ENV['SESSION_ENCRYPTION_KEY'] ?? (getenv('SESSION_ENCRYPTION_KEY') ?: null);
-        }
-        if (!is_string($key) || $key === '') {
-            throw new \RuntimeException('Mailer: SESSION_ENCRYPTION_KEY is not available for password encryption.');
-        }
-        return $key;
-    }
-
-    /**
-     * 256-bit cipher key for mail secrets.
-     */
-    protected function cipherKey(): string
-    {
-        return hash_hmac('sha256', 'pubvana.mail.v1', $this->encryptionKey(), true);
-    }
-
-    /**
-     * Encrypt a plaintext value for storage.
-     *
-     * Layout: base64( IV || ciphertext ).
+     * Encryption moved to SecretCipher (v2 layout: Encrypt-then-MAC).
+     * These wrappers keep the internal call sites unchanged and the v1
+     * legacy rows decrypting; a re-save upgrades a row to the MAC layout.
      */
     protected function encrypt(string $plain): string
     {
-        $iv = openssl_random_pseudo_bytes(16);
-        $cipher = openssl_encrypt($plain, 'aes-256-cbc', $this->cipherKey(), OPENSSL_RAW_DATA, $iv);
-        if ($cipher === false) {
-            throw new \RuntimeException('Mailer: encryption failed.');
-        }
-        return base64_encode($iv . $cipher);
+        return $this->cipher()->encrypt($plain);
     }
 
     /**
@@ -372,17 +339,16 @@ class Mailer
      */
     protected function decrypt(string $payload): ?string
     {
-        $raw = base64_decode($payload, true);
-        if ($raw === false || strlen($raw) < 16) {
-            return null;
+        return $this->cipher()->decrypt($payload);
+    }
+
+    private SecretCipher|null $secretCipher = null;
+
+    private function cipher(): SecretCipher
+    {
+        if ($this->secretCipher === null) {
+            $this->secretCipher = new SecretCipher($this->app);
         }
-        $iv = substr($raw, 0, 16);
-        $cipher = substr($raw, 16);
-        $plain = openssl_decrypt($cipher, 'aes-256-cbc', $this->cipherKey(), OPENSSL_RAW_DATA, $iv);
-        if ($plain === false) {
-            error_log('Mailer: stored Mail.password could not be decrypted - treating as unset.');
-            return null;
-        }
-        return $plain;
+        return $this->secretCipher;
     }
 }

@@ -65,7 +65,7 @@ $app->route('GET /assets/@type/@name/@path:.+', function (string $type, string $
 |--------------------------------------------------------------------------
 | The /admin route renders the dashboard. Plugin routes live under
 | /admin/* and are loaded by the PluginLoader (e.g. /admin/blog,
-| /admin/pages, /admin/media).
+| /admin/page, /admin/media).
 */
 $app->route('GET /admin', function () use ($app) {
     (new \Pubvana\Controllers\Admin\AdminController($app))->index();

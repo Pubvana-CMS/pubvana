@@ -79,11 +79,27 @@ class CaptchaService
     }
 
     /**
-     * The provider's secret key.
+     * The provider's secret key. Stored encrypted; legacy plaintext rows
+     * fall back to the raw value so they keep working until re-saved.
      */
     public function secretKey(): string
     {
-        return (string) $this->app->settings()->get('Captcha.secret_key', '');
+        $stored = (string) $this->app->settings()->get('Captcha.secret_key', '');
+        if ($stored === '') {
+            return '';
+        }
+        $plain = $this->cipher()->decrypt($stored);
+        return $plain ?? $stored;
+    }
+
+    private SecretCipher|null $cipher = null;
+
+    private function cipher(): SecretCipher
+    {
+        if ($this->cipher === null) {
+            $this->cipher = new SecretCipher($this->app);
+        }
+        return $this->cipher;
     }
 
     /**

@@ -9,6 +9,7 @@ use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Pubvana\Services\CaptchaService;
 use Pubvana\Services\ExtensionRegistry;
+use Pubvana\Services\RateLimiter;
 use Pubvana\Services\SettingsService;
 use Pubvana\Plugins\Comments\Services\CommentService;
 use Pubvana\Tests\Support\Sqlite;
@@ -27,23 +28,34 @@ use Pubvana\Tests\Support\TestCase;
 final class CommentServiceCaptchaTest extends TestCase
 {
     private PDO $pdo;
+    private string $cacheDir;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->pdo = Sqlite::recreate();
+        $this->cacheDir = sys_get_temp_dir() . '/pv-comments-captcha-' . uniqid('', true);
+    }
+
+    protected function tearDown(): void
+    {
+        foreach (glob($this->cacheDir . '/*') ?: [] as $file) {
+            @unlink($file);
+        }
+        @rmdir($this->cacheDir);
+        parent::tearDown();
     }
 
     public function testCreateStoresCommentWhenCaptchaNotEnforced(): void
     {
         $app = $this->buildApp();
-        $service = new CommentService($this->pdo, $app);
+        $service = $this->commentService($app);
 
         $comment = $service->create([
             'commentable_type' => 'blog',
             'commentable_id'   => 1,
             'body'             => 'Hello world',
-            'ip_address'       => '127.0.0.1',
+            'ip_address'       => '10.0.1.1',
             'guest_name'       => 'Ada',
         ]);
 
@@ -57,7 +69,7 @@ final class CommentServiceCaptchaTest extends TestCase
         $app->settings()->set('Captcha.provider', 'hcaptcha');
         $app->settings()->set('Captcha.site_key', 'site-1');
         $app->settings()->set('Captcha.protected', json_encode(['comments']));
-        $service = new CommentService($this->pdo, $app);
+        $service = $this->commentService($app);
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Captcha verification failed.');
@@ -66,7 +78,7 @@ final class CommentServiceCaptchaTest extends TestCase
             'commentable_type' => 'blog',
             'commentable_id'   => 1,
             'body'             => 'Hello world',
-            'ip_address'       => '127.0.0.1',
+            'ip_address'       => '10.0.1.2',
             'captcha_token'    => 'tok',
         ]);
         self::assertSame(0, $this->commentCount(), 'nothing may be stored on a failed check');
@@ -80,7 +92,7 @@ final class CommentServiceCaptchaTest extends TestCase
         $app->settings()->set('Captcha.secret_key', 'secret-1');
         $app->settings()->set('Captcha.protected', json_encode(['comments']));
         $app->map('captcha', fn(): CaptchaService => $this->alwaysAcceptingCaptcha($app));
-        $service = new CommentService($this->pdo, $app);
+        $service = $this->commentService($app);
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Captcha verification failed.');
@@ -89,7 +101,7 @@ final class CommentServiceCaptchaTest extends TestCase
             'commentable_type' => 'blog',
             'commentable_id'   => 1,
             'body'             => 'Hello world',
-            'ip_address'       => '127.0.0.1',
+            'ip_address'       => '10.0.1.3',
         ]);
     }
 
@@ -101,13 +113,13 @@ final class CommentServiceCaptchaTest extends TestCase
         $app->settings()->set('Captcha.secret_key', 'secret-1');
         $app->settings()->set('Captcha.protected', json_encode(['comments']));
         $app->map('captcha', fn(): CaptchaService => $this->alwaysAcceptingCaptcha($app));
-        $service = new CommentService($this->pdo, $app);
+        $service = $this->commentService($app);
 
         $comment = $service->create([
             'commentable_type' => 'blog',
             'commentable_id'   => 1,
             'body'             => 'Hello world',
-            'ip_address'       => '127.0.0.1',
+            'ip_address'       => '10.0.1.4',
             'guest_name'       => 'Ada',
             'captcha_token'    => 'tok',
         ]);
@@ -120,6 +132,18 @@ final class CommentServiceCaptchaTest extends TestCase
     // -----------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------
+
+    /**
+     * CommentService with a temp-dir rate limiter so the per-IP spam gate
+     * never leaks state between tests through the shared cache directory.
+     */
+    private function commentService(Engine $app): CommentService
+    {
+        $service = new CommentService($this->pdo, $app);
+        $service->setRateLimiter(new RateLimiter($this->cacheDir));
+
+        return $service;
+    }
 
     /**
      * Fresh engine wired with the real settings store, extension registry,

@@ -64,8 +64,7 @@ class BackupService
      */
     public function createBackup(string $trigger, string $triggeredBy, ?callable $onProgress = null): string
     {
-        $timestamp  = date('Y-m-d_His');
-        $zipFile    = $this->backupDir . $timestamp . '-full.zip';
+        $zipFile    = $this->freshZipPath();
         $totalSteps = count($this->backupDirs) + 3; // dirs + db dump + packaging + cleanup
         $step       = 0;
 
@@ -133,6 +132,28 @@ class BackupService
             'triggered_by' => $triggeredBy,
             'php_version'  => PHP_VERSION,
         ];
+    }
+
+    /**
+     * Path for a new backup zip that does not collide with an existing file.
+     *
+     * The timestamp format is fixed by the enforced filename regex
+     * (deleteBackup()/getBackupPath()). Two backups in the same second
+     * would otherwise silently overwrite each other (CREATE|OVERWRITE),
+     * so a colliding name shifts one second until free.
+     */
+    private function freshZipPath(): string
+    {
+        $ts = time();
+        do {
+            $path = $this->backupDir . date('Y-m-d_His', $ts) . '-full.zip';
+            if (!is_file($path)) {
+                return $path;
+            }
+            $ts++;
+        } while ($ts < time() + 3600);
+
+        throw new \RuntimeException('Unable to find a free backup filename in the backup directory.');
     }
 
     // ------------------------------------------------------------------
@@ -534,6 +555,12 @@ class BackupService
         foreach ($iterator as $file) {
             $relative = $zipPrefix . str_replace($dirPath, '', $file->getPathname());
             $relative = str_replace('\\', '/', $relative);
+
+            // Links are never archived: is_dir()/is_file() would follow the
+            // link, and the restore copy walk would then traverse the target.
+            if ($file->isLink()) {
+                continue;
+            }
 
             if ($file->isDir()) {
                 $zip->addEmptyDir($relative);

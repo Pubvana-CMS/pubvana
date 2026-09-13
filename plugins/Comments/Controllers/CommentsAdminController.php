@@ -129,6 +129,7 @@ class CommentsAdminController extends AdminController
             'guestComments'     => (bool) $service->setting('allow_guest_comments', false),
             'defaultStatus'     => (string) $service->setting('default_status', 'pending'),
             'maxNestingDepth'   => (int) $service->setting('max_nesting_depth', 3),
+            'rateLimitSeconds'  => $service->rateLimitSeconds(),
             'hosts'             => $service->enabledHosts(true),
             'hostCounts'        => $service->countsByHost(),
             'adminBase'         => $this->adminBase(),
@@ -153,6 +154,7 @@ class CommentsAdminController extends AdminController
         $this->app->settings()->set('Comments.default_status', $defaultStatus);
 
         $this->app->settings()->set('Comments.max_nesting_depth', (string) max(1, (int) ($data['max_nesting_depth'] ?? 3)));
+        $this->app->settings()->set('Comments.rate_limit_seconds', (string) max(0, (int) ($data['rate_limit_seconds'] ?? 30)));
 
         $hostData = is_array($data['host'] ?? null) ? $data['host'] : [];
 

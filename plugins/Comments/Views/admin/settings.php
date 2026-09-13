@@ -50,6 +50,12 @@
                     <input type="number" class="form-control" id="max_nesting_depth" name="max_nesting_depth"
                            min="1" value="<?= (int) $maxNestingDepth ?>">
                 </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="rate_limit_seconds">Rate limit (seconds)</label>
+                    <input type="number" class="form-control" id="rate_limit_seconds" name="rate_limit_seconds"
+                           min="0" value="<?= (int) $rateLimitSeconds ?>">
+                    <div class="text-secondary small">Minimum seconds between two comments from the same IP. 0 disables.</div>
+                </div>
             </div>
             <div class="text-secondary small mt-3">
                 Captcha for the comment form is configured site-wide under

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Pubvana\Plugins\Comments\Services;
 
 use Pubvana\Plugins\Comments\Models\Comment;
+use Pubvana\Services\RateLimiter;
 use flight\Engine;
 
 /**
@@ -41,6 +42,9 @@ class CommentService
      */
     private ?array $hostTypeMapCache = null;
 
+    /** Shared per-IP spam limiter, built lazily (tests may inject one). */
+    private ?RateLimiter $rateLimiter = null;
+
     /**
      * @param Engine<object> $app
      */
@@ -48,6 +52,25 @@ class CommentService
     {
         $this->model = new Comment($pdo);
         $this->app   = $app;
+    }
+
+    /**
+     * Shared per-IP limiter, constructed lazily so tests can inject one.
+     */
+    private function rateLimiter(): RateLimiter
+    {
+        if ($this->rateLimiter === null) {
+            $this->rateLimiter = new RateLimiter();
+        }
+        return $this->rateLimiter;
+    }
+
+    /**
+     * Replace the limiter (tests point it at a temp cache directory).
+     */
+    public function setRateLimiter(RateLimiter $limiter): void
+    {
+        $this->rateLimiter = $limiter;
     }
 
     // -----------------------------------------------------------------
@@ -93,6 +116,14 @@ class CommentService
     public function maxNestingDepth(): int
     {
         return max(1, (int) $this->setting('max_nesting_depth', 3));
+    }
+
+    /**
+     * Minimum seconds between two comments from the same IP (0 disables).
+     */
+    public function rateLimitSeconds(): int
+    {
+        return max(0, (int) $this->setting('rate_limit_seconds', 30));
     }
 
     // -----------------------------------------------------------------
@@ -153,6 +184,18 @@ class CommentService
      */
     public function create(array $data): Comment
     {
+        // Per-IP spam gate before any validation work: one comment per
+        // window from the same address (REMOTE_ADDR supplied by the
+        // controller; proxy headers are never consulted).
+        $ip = (string) ($data['ip_address'] ?? '');
+        $window = $this->rateLimitSeconds();
+        $rateKey = 'comments:' . $ip;
+        $limiter = $this->rateLimiter();
+
+        if ($window > 0 && $ip !== '' && !$limiter->check($rateKey, 1, $window)) {
+            throw new \InvalidArgumentException('Please wait a moment before commenting again.');
+        }
+
         // Validate nesting depth
         if (!empty($data['parent_id'])) {
             $parentId = (int) $data['parent_id'];
@@ -186,6 +229,10 @@ class CommentService
         // Set default status from settings
         if (empty($data['status'])) {
             $data['status'] = $this->defaultStatus();
+        }
+
+        if ($window > 0 && $ip !== '') {
+            $limiter->hit($rateKey, $window);
         }
 
         return $this->model->createRecord($data);

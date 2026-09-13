@@ -17,6 +17,13 @@ class ProgressReporter
     protected string $lockFile;
     protected string $progressFile;
 
+    /**
+     * Open file descriptor holding the flock, null when unlocked.
+     *
+     * @var resource|null
+     */
+    protected $lockHandle = null;
+
     public function __construct(string $operation, string $storageDir)
     {
         $this->operation    = $operation;
@@ -32,26 +39,27 @@ class ProgressReporter
 
     /**
      * Acquire an exclusive lock. Returns false if another operation is running.
+     *
+     * The flock is the authority: a crashed holder's OS lock is released
+     * automatically, so the next acquire always succeeds (a stale
+     * operation.lock payload on disk is simply overwritten). No
+     * check-then-write race exists because the lock is taken on the open
+     * file descriptor, not on file existence.
      */
     public function acquireLock(): bool
     {
-        if (is_file($this->lockFile)) {
-            $raw = file_get_contents($this->lockFile);
-            $lock = is_string($raw) ? json_decode($raw, true) : null;
+        if ($this->lockHandle !== null) {
+            return false; // this reporter already holds the lock
+        }
 
-            // Stale lock (> 30 minutes)
-            if (is_array($lock) && isset($lock['started_at'])) {
-                $age = time() - strtotime($lock['started_at']);
-                if ($age > 1800) {
-                    @unlink($this->lockFile);
-                } else {
-                    return false;
-                }
-            }
+        $handle = @fopen($this->lockFile, 'c+');
+        if ($handle === false) {
+            return false;
+        }
 
-            if (is_file($this->lockFile)) {
-                return false;
-            }
+        if (!flock($handle, LOCK_EX | LOCK_NB)) {
+            fclose($handle);
+            return false;
         }
 
         $data = [
@@ -60,7 +68,12 @@ class ProgressReporter
             'pid'        => getmypid() ?: null,
         ];
 
-        file_put_contents($this->lockFile, json_encode($data));
+        ftruncate($handle, 0);
+        rewind($handle);
+        fwrite($handle, (string) json_encode($data));
+        fflush($handle);
+
+        $this->lockHandle = $handle;
         return true;
     }
 
@@ -69,6 +82,11 @@ class ProgressReporter
      */
     public function releaseLock(): void
     {
+        if ($this->lockHandle !== null) {
+            flock($this->lockHandle, LOCK_UN);
+            fclose($this->lockHandle);
+            $this->lockHandle = null;
+        }
         @unlink($this->lockFile);
     }
 
@@ -147,11 +165,35 @@ class ProgressReporter
     }
 
     /**
-     * Check if a lock is currently held.
+     * Check if a lock is currently held by a live process.
+     *
+     * Existence alone would report a crashed run forever; a leftover file
+     * whose flock is free (dead holder) counts as unlocked.
      */
     public static function isLocked(string $storageDir): bool
     {
-        return is_file(rtrim($storageDir, '/') . '/operation.lock');
+        $file = rtrim($storageDir, '/') . '/operation.lock';
+        if (!is_file($file)) {
+            return false;
+        }
+
+        $handle = @fopen($file, 'r+');
+        if ($handle === false) {
+            return true;
+        }
+        $held = !flock($handle, LOCK_EX | LOCK_NB);
+        flock($handle, LOCK_UN);
+        fclose($handle);
+        return $held;
+    }
+
+    public function __destruct()
+    {
+        if ($this->lockHandle !== null) {
+            flock($this->lockHandle, LOCK_UN);
+            fclose($this->lockHandle);
+            $this->lockHandle = null;
+        }
     }
 
     private function getStartedAt(): string

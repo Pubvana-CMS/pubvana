@@ -140,9 +140,17 @@ class BackupsAdminController extends AdminController
         $response->header('Content-Type', 'application/zip');
         $response->header('Content-Disposition', 'attachment; filename="' . basename($path) . '"');
         $response->header('Content-Length', (string) filesize($path));
-        $content = file_get_contents($path);
-        if ($content !== false) {
-            $response->write($content);
+
+        // Stream in chunks: a multi-gigabyte zip must never sit in memory.
+        $handle = fopen($path, 'rb');
+        if ($handle !== false) {
+            try {
+                while (($chunk = fread($handle, 65536)) !== false && $chunk !== '') {
+                    $response->write($chunk);
+                }
+            } finally {
+                fclose($handle);
+            }
         }
         $response->send();
     }

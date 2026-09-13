@@ -73,7 +73,9 @@ Extraction (`RestoreService.php:101`) tries `ZipArchive`, then `exec unzip`, the
 
 ### Progress and locking
 
-`ProgressReporter` (`ProgressReporter.php`) writes `{backup|rollback}_progress.json` into the backup directory and owns `operation.lock`. A lock older than 30 minutes is treated as stale and removed (`ProgressReporter.php:41`). The admin controller and both commands must call `acquireLock()` before any operation and `releaseLock()` in a `finally`.
+`ProgressReporter` (`ProgressReporter.php`) writes `{backup|rollback}_progress.json` into the backup directory and owns `operation.lock`. The lock is an advisory `flock` held on the open file descriptor (`LOCK_EX | LOCK_NB` in `acquireLock()`); a second `acquireLock()` is refused while it is held, and a crashed holder's OS lock is released automatically, so a leftover lock file from a dead process never blocks the next run (`isLocked()` probes the flock, not just file existence). The admin controller and both commands must call `acquireLock()` before any operation and `releaseLock()` in a `finally`.
+
+Backup zip names come from `freshZipPath()` (`BackupService.php`): the timestamp format is fixed by the enforced filename regex, and a colliding name shifts one second until free, so two backups in the same second never overwrite each other.
 
 The admin screen posts to `/admin/backups/create` or `/admin/backups/restore/{filename}` and polls `/admin/backups/status`. When `exec` is available the controller backgrounds the runway command and returns `started` immediately; otherwise it runs synchronously with a 300 second time limit. Keep both branches behaving identically.
 

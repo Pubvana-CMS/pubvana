@@ -63,8 +63,14 @@ class MediaService
 
         $filename = $hex . '.' . $ext;
 
-        move_uploaded_file($file['tmp_name'], $absDir . '/originals/' . $filename);
-        copy($absDir . '/originals/' . $filename, $absDir . '/' . $filename);
+        $originalPath = $absDir . '/originals/' . $filename;
+        if (!move_uploaded_file($file['tmp_name'], $originalPath)) {
+            throw new \RuntimeException('Failed to store the uploaded image.');
+        }
+        if (!copy($originalPath, $absDir . '/' . $filename)) {
+            @unlink($originalPath);
+            throw new \RuntimeException('Failed to stage the uploaded image.');
+        }
 
         $this->generateDerivatives($absDir, $filename);
 
@@ -94,7 +100,9 @@ class MediaService
 
         $videoName = $hex . '.' . $ext;
         $videoRel  = $relDir . '/' . $videoName;
-        move_uploaded_file($file['tmp_name'], $absDir . '/' . $videoName);
+        if (!move_uploaded_file($file['tmp_name'], $absDir . '/' . $videoName)) {
+            throw new \RuntimeException('Failed to store the uploaded video.');
+        }
 
         $posterPath = null;
         $posterName = $hex . '_poster.jpg';

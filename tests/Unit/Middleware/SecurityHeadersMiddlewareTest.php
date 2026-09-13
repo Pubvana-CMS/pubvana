@@ -85,4 +85,17 @@ final class SecurityHeadersMiddlewareTest extends TestCase
         self::assertStringContainsString("img-src 'self' data: blob:", $csp);
         self::assertStringContainsString("connect-src 'self'", $csp);
     }
+
+    public function testCspExcludesUnpkgAndAddsHardening(): void
+    {
+        $middleware = new SecurityHeadersMiddleware();
+        $middleware->before();
+
+        $csp = $this->property($middleware, 'headers')['Content-Security-Policy'];
+
+        // No app code references unpkg.com; it must not be an allowed source.
+        self::assertStringNotContainsString('unpkg.com', $csp);
+        self::assertStringContainsString("object-src 'none'", $csp);
+        self::assertStringContainsString("base-uri 'self'", $csp);
+    }
 }

@@ -53,7 +53,10 @@ use flight\Engine;
  */
 class TrustClientService
 {
-    public const TRUST_API_URL = 'http://localhost/api/trust/v1/check';
+    public const TRUST_API_URL = 'https://pubvanacms.com/api/trust/v1/check';
+
+    /** Development endpoint: the home-site Trust plugin on a local vhost. */
+    public const DEV_TRUST_API_URL = 'http://localhost/api/trust/v1/check';
 
     /** Hours a successful full batch keeps the client from asking again. */
     public const CACHE_TTL_HOURS = 24;
@@ -585,6 +588,21 @@ class TrustClientService
     // -----------------------------------------------------------------
 
     /**
+     * The endpoint the check API actually goes to: an explicit override
+     * (tests) wins, development talks to the local home-site build, and
+     * everything else goes to the production trust service.
+     */
+    private function effectiveApiUrl(): string
+    {
+        if ($this->apiUrl !== null) {
+            return $this->apiUrl;
+        }
+        return $this->app->get('environment') === 'development'
+            ? self::DEV_TRUST_API_URL
+            : self::TRUST_API_URL;
+    }
+
+    /**
      * The Pubvana core version, from the root pubvana.json manifest.
      */
     public function getPubvanaVersion(): string
@@ -678,7 +696,7 @@ class TrustClientService
             ], $items),
         ];
 
-        $body = $this->httpPostJson($this->apiUrl ?? self::TRUST_API_URL, $payload);
+        $body = $this->httpPostJson($this->effectiveApiUrl(), $payload);
         $data = $this->decode($body);
 
         if (!is_array($data) || !is_array($data['results'] ?? null)) {

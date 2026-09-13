@@ -162,12 +162,16 @@ class RestoreService
     }
 
     /**
-     * Validate that no zip entries contain path traversal.
+     * Validate that zip entry paths are safe and carry no symlink entries.
+     *
+     * ZipArchive is required: it is what creates the backups in the first
+     * place, and the unzip/PharData fallbacks must never run without a
+     * validated entry list.
      */
     private function validateZipContents(string $zipPath): bool
     {
         if (!class_exists(\ZipArchive::class)) {
-            return true;
+            return false;
         }
 
         $zip = new \ZipArchive();
@@ -175,15 +179,73 @@ class RestoreService
             return false;
         }
 
+        $names = [];
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $name = $zip->getNameIndex($i);
-            if (is_string($name) && str_contains($name, '..')) {
-                $zip->close();
+            if (is_string($name)) {
+                $names[] = $name;
+            }
+        }
+
+        $safe = self::zipEntriesAreSafe($names)
+            && self::zipEntriesAreFreeOfSymlinks($zip);
+        $zip->close();
+
+        return $safe;
+    }
+
+    /**
+     * True when every zip entry path is safe to extract.
+     *
+     * Rejects traversal (".."), absolute paths, drive letters, and NUL
+     * bytes; backslash separators are normalized first so "\..\evil"
+     * cannot sneak through.
+     *
+     * @param list<string> $names
+     */
+    public static function zipEntriesAreSafe(array $names): bool
+    {
+        foreach ($names as $name) {
+            if ($name === '' || str_contains($name, "\0")) {
+                return false;
+            }
+
+            $normalized = str_replace('\\', '/', $name);
+
+            if (str_starts_with($normalized, '/') || preg_match('#^[a-zA-Z]:#', $normalized) === 1) {
+                return false;
+            }
+
+            $segments = explode('/', $normalized);
+            if (in_array('..', $segments, true)) {
                 return false;
             }
         }
 
-        $zip->close();
+        return true;
+    }
+
+    /**
+     * True when no zip entry carries the Unix symlink mode bit (0120000).
+     *
+     * Extraction restores symlinks; a crafted backup could otherwise plant
+     * a link that the restore copy/cleanup recursion would follow out of
+     * the site tree. Entries without Unix external attributes pass: they
+     * carry no mode and therefore no symlink bit.
+     */
+    public static function zipEntriesAreFreeOfSymlinks(\ZipArchive $zip): bool
+    {
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $opsys = 0;
+            $attr  = 0;
+            if ($zip->getExternalAttributesIndex($i, $opsys, $attr)
+                && $opsys === \ZipArchive::OPSYS_UNIX
+                && (($attr >> 16) & 0170000) === 0120000
+            ) {
+                return false;
+            }
+        }
+
         return true;
     }
 
@@ -219,6 +281,17 @@ class RestoreService
             $srcPath  = $src . $item;
             $destPath = $dest . $item;
 
+            // Naive copy: replicate a link, never traverse it. is_dir()
+            // would follow the link and copy the target tree from outside
+            // the extract dir into the live site.
+            if (is_link($srcPath)) {
+                $target = @readlink($srcPath);
+                if (is_string($target)) {
+                    @symlink($target, $destPath);
+                }
+                continue;
+            }
+
             if (is_dir($srcPath)) {
                 $this->copyDirectory($srcPath . '/', $destPath . '/');
             } else {
@@ -236,12 +309,19 @@ class RestoreService
 
     private function removeDirectory(string $dir): void
     {
+        // A top-level link is unlinked, not entered: is_dir() would follow
+        // it and let a crafted link turn cleanup into a delete outside the
+        // extract tree.
+        if (is_link($dir)) {
+            @unlink($dir);
+            return;
+        }
         if (!is_dir($dir)) {
             return;
         }
         foreach (array_diff(scandir($dir), ['.', '..']) as $item) {
             $path = $dir . $item;
-            is_dir($path) ? $this->removeDirectory($path . '/') : @unlink($path);
+            is_link($path) ? @unlink($path) : (is_dir($path) ? $this->removeDirectory($path . '/') : @unlink($path));
         }
         @rmdir($dir);
     }

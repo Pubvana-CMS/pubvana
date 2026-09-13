@@ -375,19 +375,15 @@ class ActivityLogService
     /**
      * Get client IP from request.
      *
-     * @param \flight\net\Request $request
+     * Only the connection address is used. Proxy headers such as
+     * X-Forwarded-For and X-Real-IP are client-controlled, so trusting them
+     * would let any visitor forge the IP written to the audit log.
+     *
+     * @param \flight\net\Request $request The request (unused, kept for the
+     *                                     internal call shape)
      */
     private function getClientIp($request): string
     {
-        $forwarded = $request->getHeader('X-Forwarded-For');
-        if ($forwarded !== '') {
-            $ips = explode(',', $forwarded);
-            return trim($ips[0]);
-        }
-        $realIp = $request->getHeader('X-Real-IP');
-        if ($realIp !== '') {
-            return $realIp;
-        }
         return $_SERVER['REMOTE_ADDR'] ?? 'unknown';
     }
 

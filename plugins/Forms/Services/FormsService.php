@@ -7,6 +7,7 @@ namespace Pubvana\Plugins\Forms\Services;
 use Pubvana\Plugins\Forms\Models\Form;
 use Pubvana\Plugins\Forms\Models\FormField;
 use Pubvana\Plugins\Forms\Models\FormSubmission;
+use Pubvana\Services\RateLimiter;
 use flight\Engine;
 
 class FormsService
@@ -16,6 +17,7 @@ class FormsService
     private Form $forms;
     private FormField $fields;
     private FormSubmission $submissions;
+    private ?RateLimiter $rateLimiter = null;
 
     /** @var array<string, mixed> */
     private array $config;
@@ -443,7 +445,15 @@ class FormsService
         }
         unset($values['website']);
 
-        if ($this->isRateLimited((int) $form->id)) {
+        // Shared per-IP limiter: one successful submission per window per
+        // form and address. Replaces the old per-session gate, which a
+        // fresh cookie jar or session reset defeated entirely. The client
+        // IP comes from the controller (REMOTE_ADDR only).
+        $ip = (string) ($requestMeta['ip_address'] ?? '');
+        $rateKey = 'forms:form_' . (int) $form->id . ':' . $ip;
+        $rateWindow = (int) ($this->config['rate_limit_seconds'] ?? 10);
+
+        if (!$this->rateLimiter()->check($rateKey, 1, $rateWindow)) {
             return [
                 'ok'     => false,
                 'errors' => ['Please wait a moment before submitting again.'],
@@ -530,7 +540,9 @@ class FormsService
             'payload_json' => json_encode($clean, JSON_UNESCAPED_SLASHES),
         ]);
 
-        $this->markRateLimited((int) $form->id);
+        if ($rateWindow > 0 && $ip !== '') {
+            $this->rateLimiter()->hit($rateKey, $rateWindow);
+        }
         $this->dispatchNotifications($form, $clean);
 
         return [
@@ -664,23 +676,23 @@ class FormsService
         return $uri !== '' ? $uri : '/';
     }
 
-    private function isRateLimited(int $formId): bool
+    /**
+     * Shared per-IP limiter, constructed lazily so tests can inject one.
+     */
+    private function rateLimiter(): RateLimiter
     {
-        $this->startSession();
-        $seconds = (int) ($this->config['rate_limit_seconds'] ?? 10);
-        if ($seconds <= 0) {
-            return false;
+        if ($this->rateLimiter === null) {
+            $this->rateLimiter = new RateLimiter();
         }
-
-        $key = 'form_' . $formId;
-        $last = $_SESSION['pubvana_forms_rate'][$key] ?? null;
-        return is_int($last) && (time() - $last) < $seconds;
+        return $this->rateLimiter;
     }
 
-    private function markRateLimited(int $formId): void
+    /**
+     * Replace the limiter (tests point it at a temp cache directory).
+     */
+    public function setRateLimiter(RateLimiter $limiter): void
     {
-        $this->startSession();
-        $_SESSION['pubvana_forms_rate']['form_' . $formId] = time();
+        $this->rateLimiter = $limiter;
     }
 
     /**

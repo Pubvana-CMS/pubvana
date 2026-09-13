@@ -19,11 +19,15 @@ final class FakeHttpTrustClient extends TrustClientService
     /** @var list<array<string, mixed>> */
     public array $requests = [];
 
+    /** @var list<string> */
+    public array $urls = [];
+
     /** @var list<?string> */
     public array $bodies = [];
 
     protected function httpPostJson(string $url, array $payload): ?string
     {
+        $this->urls[] = $url;
         $this->requests[] = $payload;
         $body = array_shift($this->bodies);
         return $body;
@@ -587,6 +591,105 @@ final class TrustClientServiceTest extends TestCase
         self::assertSame('orphan', $payload['items'][1]['slug'] ?? null);
         self::assertSame('jane', $payload['items'][1]['author'] ?? null);
         self::assertSame('local', $payload['items'][1]['origin'] ?? null);
+    }
+
+    // -----------------------------------------------------------------
+    // Endpoint selection (M13)
+    // -----------------------------------------------------------------
+
+    public function testProductionEndpointIsTheHomeSite(): void
+    {
+        self::assertSame('https://pubvanacms.com/api/trust/v1/check', TrustClientService::TRUST_API_URL);
+        self::assertSame('http://localhost/api/trust/v1/check', TrustClientService::DEV_TRUST_API_URL);
+    }
+
+    public function testProductionAppHitsTheHomeSiteEndpoint(): void
+    {
+        $app = $this->app([
+            'environment' => 'production',
+            'settings'    => fn (): ArraySettings => $this->settings,
+        ]);
+        $service = new FakeHttpTrustClient($this->pdo, $app, $this->maliciousFile);
+
+        self::assertSame(TrustClientService::TRUST_API_URL, $this->invoke($service, 'effectiveApiUrl'));
+    }
+
+    public function testUnsetEnvironmentFallsBackToProduction(): void
+    {
+        $app = $this->app([
+            'settings' => fn (): ArraySettings => $this->settings,
+        ]);
+        $service = new FakeHttpTrustClient($this->pdo, $app, $this->maliciousFile);
+
+        self::assertSame(TrustClientService::TRUST_API_URL, $this->invoke($service, 'effectiveApiUrl'));
+    }
+
+    public function testDevelopmentAppHitsTheLocalEndpoint(): void
+    {
+        $app = $this->app([
+            'environment' => 'development',
+            'settings'    => fn (): ArraySettings => $this->settings,
+        ]);
+        $service = new FakeHttpTrustClient($this->pdo, $app, $this->maliciousFile);
+
+        self::assertSame(TrustClientService::DEV_TRUST_API_URL, $this->invoke($service, 'effectiveApiUrl'));
+    }
+
+    public function testExplicitOverrideBeatsBothEndpoints(): void
+    {
+        $app = $this->app([
+            'environment' => 'development',
+            'settings'    => fn (): ArraySettings => $this->settings,
+        ]);
+        $service = new FakeHttpTrustClient($this->pdo, $app, $this->maliciousFile, 'https://override.example/check');
+
+        self::assertSame('https://override.example/check', $this->invoke($service, 'effectiveApiUrl'));
+    }
+
+    public function testBatchPostsToTheSelectedEndpoint(): void
+    {
+        $app = $this->app([
+            'environment'  => 'development',
+            'settings'     => fn (): ArraySettings => $this->settings,
+            'pluginLoader' => fn () => new class {
+                /** @return array<string, mixed> */
+                public function discoverLocal(): array
+                {
+                    return [
+                        'pubvana/blog' => [
+                            'source'   => 'local',
+                            'folder'   => 'Blog',
+                            'manifest' => ['name' => 'pubvana/blog', 'semver' => '1.0.0'],
+                            'name'     => 'Blog',
+                        ],
+                    ];
+                }
+
+                /** @return array<string, mixed> */
+                public function discoverVendor(): array
+                {
+                    return [];
+                }
+            },
+            'themes' => fn () => new class {
+                /** @return list<array<string, mixed>> */
+                public function discover(): array
+                {
+                    return [];
+                }
+            },
+        ]);
+        $service = new FakeHttpTrustClient($this->pdo, $app, $this->maliciousFile);
+        $this->settings->store[TrustClientService::LAST_CHECK_KEY] = date('c', time() - 86400 * 2);
+        $service->bodies[] = (string) json_encode([
+            'results' => [
+                ['type' => 'plugin', 'slug' => 'blog', 'version' => '1.0.0', 'status' => 'unknown', 'warning' => null],
+            ],
+        ]);
+
+        $service->checkIfDue();
+
+        self::assertSame([TrustClientService::DEV_TRUST_API_URL], $service->urls);
     }
 
     // -----------------------------------------------------------------

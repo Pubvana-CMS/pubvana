@@ -87,6 +87,12 @@ class PagesAdminController extends AdminController
         $post = $this->app->request()->data->getData();
         unset($post['_csrf_token']);
 
+        if (trim($post['title'] ?? '') === '') {
+            $this->app->session()->flash('error', 'Title is required.');
+            $this->app->redirect($this->adminBase() . '/' . $id . '/edit');
+            return;
+        }
+
         $userId = $this->app->auth()->user()->id ?? 0;
 
         if ($this->app->pages()->updatePage((int) $id, $post, $userId) === null) {

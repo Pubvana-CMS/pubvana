@@ -20,9 +20,13 @@ namespace Pubvana\Middleware;
  *   - 'self': only load resources from our own domain
  *   - cdn.jsdelivr.net: Tabler UI, Alpine.js, HTMX, Jodit
  *   - fonts.googleapis.com / fonts.gstatic.com: Google Fonts
- *   - 'unsafe-inline': required for Tabler's inline styles and Alpine.js
- *   - 'unsafe-eval': required for Alpine.js (can be removed in production
- *     if you switch to CSP-safe Alpine builds)
+ *   - 'unsafe-inline': required for Tabler's inline styles, the admin's
+ *     inline scripts, and Alpine.js
+ *   - 'unsafe-eval': required for the standard Alpine.js build (expressions
+ *     compile with new Function); switch to the CSP-safe Alpine build to
+ *     drop it
+ *   - object-src 'none' and base-uri 'self': standard hardening, nothing
+ *     in the app loads plugins, applets, or a different base URI
  *
  * @package Pubvana\Middleware
  */
@@ -57,11 +61,13 @@ class SecurityHeadersMiddleware
         // Build Content-Security-Policy from allowed sources
         $cspParts = [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
             "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
             "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
             "img-src 'self' data: blob:",
             "connect-src 'self' https://cdn.jsdelivr.net",
+            "object-src 'none'",
+            "base-uri 'self'",
             "frame-ancestors 'self'",
         ];
 

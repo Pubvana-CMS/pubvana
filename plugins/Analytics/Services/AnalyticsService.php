@@ -34,6 +34,9 @@ class AnalyticsService
 
     private ?bool $trackingEnabled = null;
 
+    /** Cached result of the server-version probe for the row-alias upsert. */
+    private ?bool $rowAliasSupport = null;
+
     private const BOT_KEYWORDS = [
         'bot', 'crawler', 'spider', 'slurp', 'curl', 'wget', 'python',
         'libwww', 'httpclient', 'headless', 'phantomjs', 'puppeteer',
@@ -274,28 +277,13 @@ class AnalyticsService
     public function rollup(): int
     {
         $cutoff = $this->cutoff($this->hotDays());
+        $rowAlias = $this->supportsInsertSelectRowAlias();
 
-        $views = $this->pdo->prepare(
-            'INSERT INTO analytics_views_daily (day, page_group, page_path, view_count)
-             SELECT DATE(viewed_at), page_group, page_path, COUNT(*)
-             FROM analytics_page_views
-             WHERE viewed_at < :cutoff
-             GROUP BY DATE(viewed_at), page_group, page_path
-             ON DUPLICATE KEY UPDATE view_count = analytics_views_daily.view_count + VALUES(view_count)'
-        );
+        $views = $this->pdo->prepare($this->viewsRollupSql($rowAlias));
         $views->bindValue(':cutoff', $cutoff);
         $views->execute();
 
-        $referrers = $this->pdo->prepare(
-            'INSERT INTO analytics_referrers_daily (day, referrer_domain, view_count)
-             SELECT DATE(viewed_at), referrer_domain, COUNT(*)
-             FROM analytics_page_views
-             WHERE viewed_at < :cutoff
-               AND referrer_domain IS NOT NULL
-               AND referrer_domain <> \'\'
-             GROUP BY DATE(viewed_at), referrer_domain
-             ON DUPLICATE KEY UPDATE view_count = analytics_referrers_daily.view_count + VALUES(view_count)'
-        );
+        $referrers = $this->pdo->prepare($this->referrersRollupSql($rowAlias));
         $referrers->bindValue(':cutoff', $cutoff);
         $referrers->execute();
 
@@ -312,6 +300,72 @@ class AnalyticsService
         } while ($count > 0);
 
         return $removed;
+    }
+
+    /**
+     * The views-rollup statement. MySQL 8.0.19+ takes the row-alias form
+     * (VALUES() in ON DUPLICATE KEY UPDATE is deprecated there); MySQL below
+     * that and MariaDB still need the VALUES() form.
+     */
+    private function viewsRollupSql(bool $rowAlias): string
+    {
+        if ($rowAlias) {
+            return 'INSERT INTO analytics_views_daily (day, page_group, page_path, view_count)'
+                . ' SELECT DATE(viewed_at), page_group, page_path, COUNT(*)'
+                . ' FROM analytics_page_views'
+                . ' WHERE viewed_at < :cutoff'
+                . ' GROUP BY DATE(viewed_at), page_group, page_path'
+                . ' AS new_row'
+                . ' ON DUPLICATE KEY UPDATE view_count = analytics_views_daily.view_count + new_row.view_count';
+        }
+        return 'INSERT INTO analytics_views_daily (day, page_group, page_path, view_count)'
+            . ' SELECT DATE(viewed_at), page_group, page_path, COUNT(*)'
+            . ' FROM analytics_page_views'
+            . ' WHERE viewed_at < :cutoff'
+            . ' GROUP BY DATE(viewed_at), page_group, page_path'
+            . ' ON DUPLICATE KEY UPDATE view_count = analytics_views_daily.view_count + VALUES(view_count)';
+    }
+
+    /**
+     * The referrers-rollup statement, same version split as viewsRollupSql().
+     */
+    private function referrersRollupSql(bool $rowAlias): string
+    {
+        if ($rowAlias) {
+            return 'INSERT INTO analytics_referrers_daily (day, referrer_domain, view_count)'
+                . ' SELECT DATE(viewed_at), referrer_domain, COUNT(*)'
+                . ' FROM analytics_page_views'
+                . ' WHERE viewed_at < :cutoff'
+                . " AND referrer_domain IS NOT NULL"
+                . " AND referrer_domain <> ''"
+                . ' GROUP BY DATE(viewed_at), referrer_domain'
+                . ' AS new_row'
+                . ' ON DUPLICATE KEY UPDATE view_count = analytics_referrers_daily.view_count + new_row.view_count';
+        }
+        return 'INSERT INTO analytics_referrers_daily (day, referrer_domain, view_count)'
+            . ' SELECT DATE(viewed_at), referrer_domain, COUNT(*)'
+            . ' FROM analytics_page_views'
+            . ' WHERE viewed_at < :cutoff'
+            . " AND referrer_domain IS NOT NULL"
+            . " AND referrer_domain <> ''"
+            . ' GROUP BY DATE(viewed_at), referrer_domain'
+            . ' ON DUPLICATE KEY UPDATE view_count = analytics_referrers_daily.view_count + VALUES(view_count)';
+    }
+
+    /**
+     * Whether the server accepts the INSERT ... SELECT row-alias form that
+     * replaces the deprecated VALUES() upsert (MySQL 8.0.19+; MariaDB does
+     * not support it). Cached after the first server version probe.
+     */
+    private function supportsInsertSelectRowAlias(): bool
+    {
+        if ($this->rowAliasSupport === null) {
+            $version = (string) $this->pdo->getAttribute(\PDO::ATTR_SERVER_VERSION);
+            $isMariaDb = stripos($version, 'mariadb') !== false;
+            $clean = (string) preg_replace('/[^0-9.].*/', '', $version);
+            $this->rowAliasSupport = !$isMariaDb && version_compare($clean, '8.0.19', '>=');
+        }
+        return $this->rowAliasSupport;
     }
 
     /**

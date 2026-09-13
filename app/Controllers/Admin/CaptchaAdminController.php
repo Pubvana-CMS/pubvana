@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Pubvana\Controllers\Admin;
 
 use flight\Engine;
+use Pubvana\Services\SecretCipher;
 
 /**
  * CaptchaAdminController - Site-wide captcha settings (Settings > Captcha).
@@ -28,6 +29,16 @@ class CaptchaAdminController extends AdminController
     public function __construct(Engine $app)
     {
         parent::__construct($app, 'pubvana');
+    }
+
+    private SecretCipher|null $cipher = null;
+
+    private function cipher(): SecretCipher
+    {
+        if ($this->cipher === null) {
+            $this->cipher = new SecretCipher($this->app);
+        }
+        return $this->cipher;
     }
 
     /**
@@ -95,7 +106,16 @@ class CaptchaAdminController extends AdminController
 
         $secretKey = trim((string) ($post['Captcha.secret_key'] ?? ''));
         if ($secretKey !== '') {
-            $settings->set('Captcha.secret_key', $secretKey);
+            // Stored encrypted (same cipher as the Mail password), never
+            // plaintext: a DB read must not hand out the provider secret.
+            try {
+                $settings->set('Captcha.secret_key', $this->cipher()->encrypt($secretKey));
+            } catch (\Throwable $e) {
+                error_log('Captcha save: secret encryption failed - ' . $e->getMessage());
+                $this->app->session()->flash(self::FLASH_KEY, 'The secret key could not be encrypted and was not saved.');
+                $this->app->redirect('/admin/captcha');
+                return;
+            }
         }
 
         $areas = is_array($data['areas'] ?? null) ? $data['areas'] : [];

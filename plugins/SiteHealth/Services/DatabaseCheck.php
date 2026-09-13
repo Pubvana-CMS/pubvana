@@ -23,12 +23,15 @@ class DatabaseCheck implements CheckInterface
             $version = $this->pdo->getAttribute(\PDO::ATTR_SERVER_VERSION);
             $driver = $this->pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
         } catch (\Throwable $e) {
+            // The exception message can carry DSN/host details; log it and
+            // show the admin a constant, credential-free message instead.
+            error_log('SiteHealth database check failed: ' . $e->getMessage());
             return new CheckResult(
                 id: 'database',
                 name: 'Database Connectivity',
                 category: CheckResult::CAT_ENVIRONMENT,
                 status: CheckResult::CRITICAL,
-                message: 'Cannot connect to database: ' . $e->getMessage(),
+                message: 'Cannot connect to the database.',
                 remediation: 'Check database credentials in your config file. Ensure the database server is running.',
             );
         }
