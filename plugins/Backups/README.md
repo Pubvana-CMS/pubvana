@@ -9,6 +9,7 @@ Full-site backup and restore for Pubvana. Zips your files, dumps the database, a
 - Retention keeps the newest backups up to your configured limit. The oldest files fall off automatically.
 - Config files are never overwritten during a restore, so bookkeeping and connection settings stay safe.
 - Database dumps use mysqldump when it is available, and fall back to a pure-PHP export when it is not.
+- Dumps are plain statements only: triggers, routines, and events are excluded so the pure-PHP restore fallback can always parse the dump. Hand-created triggers/routines in the database are not carried by backups.
 - Database credentials pass to mysqldump/mysql through the `MYSQL_PWD` environment variable, never on the command line.
 - Long runs report progress to a JSON file, so the admin screen can poll without blocking.
 - You can start a backup or restore in the background from admin, or run it from the command line.

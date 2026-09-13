@@ -59,7 +59,7 @@ The `BackupService` is the singleton most code talks to. `RestoreService` and `P
 
 `BackupService::createBackup()` (`BackupService.php:58`) produces `{timestamp}-full.zip`. Steps: zip each `backup_dirs` folder, add `database.sql` from `dumpDatabase()`, add `backup-meta.json` (date, trigger, triggered_by, php_version), close the zip, then run retention cleanup.
 
-`dumpDatabase()` (`BackupService.php:212`) tries `mysqldump` first and falls back to `dumpViaPHP()`, a row-by-row pure-PHP export that writes `DROP TABLE` + `CREATE TABLE` + `INSERT`s wrapped in `SET FOREIGN_KEY_CHECKS`. The admin controller and CLI command both route through this same path.
+`dumpDatabase()` (`BackupService.php:212`) tries `mysqldump` first and falls back to `dumpViaPHP()`, a row-by-row pure-PHP export that writes `DROP TABLE` + `CREATE TABLE` + `INSERT`s wrapped in `SET FOREIGN_KEY_CHECKS`. The admin controller and CLI command both route through this same path. The mysqldump call passes `--skip-triggers --skip-routines --skip-events`: those dump as `DELIMITER` blocks the pure-PHP restore splitter cannot parse, so every dump stays plain statements.
 
 The CLI clients (`mysqldump`/`mysql`) run through `proc_open` with the full child environment under our control (`runProc()`, `BackupService.php:480`). The DB password is never placed in argv (which `ps` exposes); it travels only in the `MYSQL_PWD` child environment (`mysqlEnv()`, `BackupService.php:515`) and is unset when no password is configured.
 

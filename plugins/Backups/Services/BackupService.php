@@ -271,6 +271,11 @@ class BackupService
             '-h', $c['host'],
             '-P', (string) $c['port'],
             '-u', $c['user'],
+            // Triggers/events (routines) dump with DELIMITER blocks that the
+            // pure-PHP restore fallback cannot parse; keep every dump plain.
+            '--skip-triggers',
+            '--skip-routines',
+            '--skip-events',
             $c['dbname'],
         ];
 
@@ -350,14 +355,120 @@ class BackupService
 
     private function restoreViaPHP(string $sqlData): void
     {
-        $statements = preg_split('/;\s*\n/', $sqlData) ?: [];
-        foreach ($statements as $stmt) {
-            $stmt = trim($stmt);
-            if ($stmt === '' || str_starts_with($stmt, '--')) {
-                continue;
-            }
+        foreach ($this->splitSqlStatements($sqlData) as $stmt) {
             $this->pdo->exec($stmt);
         }
+    }
+
+    /**
+     * Split a SQL dump into individual statements without corrupting
+     * string literals.
+     *
+     * The previous split on `;\s*\n` broke any stored value containing
+     * that sequence (a page body, a comment, a form field), truncating
+     * the INSERT or throwing mid-restore. This walks the dump tracking
+     * MySQL lexical state instead: single/double-quoted strings, backtick
+     * identifiers, line comments (`--` needing trailing whitespace per
+     * the MySQL grammar, and `#`) and block comments (`/* ... *\/`). A
+     * semicolon inside any of these never splits. Conditional comments
+     * (`/*!40101 SET ... *\/`) count as code because MySQL executes them,
+     * so those statements survive intact. Each emitted statement starts
+     * at its first executable character, so leading dump-header comments
+     * are stripped, and comment-only fragments yield nothing.
+     *
+     * @return list<string> Statements, trimmed, without trailing semicolons
+     */
+    private function splitSqlStatements(string $sql): array
+    {
+        $statements = [];
+        $len        = strlen($sql);
+        $state      = 'code'; // code | single | double | backtick | line | block
+        $stmtStart  = null;   // offset of the statement's first executable char
+
+        for ($i = 0; $i < $len; $i++) {
+            $ch   = $sql[$i];
+            $next = $i + 1 < $len ? $sql[$i + 1] : '';
+
+            if ($state === 'code') {
+                if ($ch === "'" || $ch === '"' || $ch === '`') {
+                    $stmtStart = $stmtStart ?? $i;
+                    $state     = $ch === "'" ? 'single' : ($ch === '"' ? 'double' : 'backtick');
+                    continue;
+                }
+                if ($ch === '-' && $next === '-') {
+                    $after = $i + 2 < $len ? $sql[$i + 2] : ' ';
+                    if ($after === ' ' || $after === "\t" || $after === "\n" || $after === "\r") {
+                        $state = 'line';
+                        $i++;
+                        continue;
+                    }
+                }
+                if ($ch === '#') {
+                    $state = 'line';
+                    continue;
+                }
+                if ($ch === '/' && $next === '*') {
+                    // `/*!...*/` is executed by MySQL, so it is code.
+                    if (($sql[$i + 2] ?? '') === '!') {
+                        $stmtStart = $stmtStart ?? $i;
+                    }
+                    $state = 'block';
+                    $i++;
+                    continue;
+                }
+                if ($ch === ';') {
+                    if ($stmtStart !== null) {
+                        $statements[] = trim(substr($sql, $stmtStart, $i - $stmtStart));
+                        $stmtStart    = null;
+                    }
+                    continue;
+                }
+                if (!ctype_space($ch)) {
+                    $stmtStart = $stmtStart ?? $i;
+                }
+                continue;
+            }
+
+            if ($state === 'single' || $state === 'double' || $state === 'backtick') {
+                $close = $state === 'single' ? "'" : ($state === 'double' ? '"' : '`');
+                if ($ch === '\\') {
+                    // Backslash escape applies inside quoted strings (MySQL
+                    // default mode), not inside backtick identifiers.
+                    if ($state !== 'backtick') {
+                        $i++;
+                    }
+                    continue;
+                }
+                if ($ch === $close) {
+                    if ($next === $close) {
+                        // Doubled quote / backtick is a literal, not the end.
+                        $i++;
+                        continue;
+                    }
+                    $state = 'code';
+                }
+                continue;
+            }
+
+            if ($state === 'line') {
+                if ($ch === "\n") {
+                    $state = 'code';
+                }
+                continue;
+            }
+
+            // $state === 'block'
+            if ($ch === '*' && $next === '/') {
+                $state = 'code';
+                $i++;
+            }
+        }
+
+        if ($stmtStart !== null) {
+            $statements[] = trim(substr($sql, $stmtStart));
+        }
+
+        return $statements;
     }
 
     // ------------------------------------------------------------------
