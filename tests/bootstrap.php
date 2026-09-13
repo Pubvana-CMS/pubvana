@@ -23,3 +23,10 @@ require __DIR__ . '/../vendor/autoload.php';
 if (getenv('PUBVANA_TESTS_USE_SQLITE')) {
     Sqlite::connection();
 }
+
+// PHPUnit buffers stdout per-test but cannot buffer error_log(), which in CLI
+// lands straight on stderr and interleaves with the progress dots. Expected
+// diagnostics (e.g. ExtensionRegistry rejection messages exercised by
+// negative-path tests) should be silent while tests pass, so redirect the PHP
+// error log to a per-run scratch file in the system temp dir.
+ini_set('error_log', sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'pubvana-phpunit-errorlog-' . getmypid() . '.log');
