@@ -19,7 +19,7 @@ Core Blocks provides two generic blocks (Text and HTML) that do not belong to an
 2. **Do not set a provider callable on a static block.** When no provider is set, RegionManager passes saved options directly as template data (`Plugin.php:15-17`). Reason: a provider would introduce a code path for data that already arrives in the template.
 3. **Keep the template key without a `/public/` segment.** The registered key is `pubvana/core-blocks/blocks/{name}` (`pubvana.json:13, 31`), while the file lives under `Views/public/blocks/{name}.tpl`. Reason: the plugin view path mapping resolves the suffix differently than the adext block key.
 4. **Keep the escaping boundary strict.** `text.tpl` renders `title` and `content` escaped (`{{ content }}`, `Views/public/blocks/text.tpl:3-7`); `html.tpl` renders `content` raw (`{! content !}`, `Views/public/blocks/html.tpl:3`). Never swap the two. Reason: the HTML block is explicitly the unescaped escape hatch for trusted admin markup; the Text block is not.
-5. **Keep options schema scalar and defaulted.** Text takes `title` (input) and `content` (textarea); HTML takes only `content` (`pubvana.json:10-40`). Reason: saved options are handed to the template as-is, so every option the template reads must have a default in the schema.
+5. **Keep options schema scalar and defaulted.** Text takes `title` (input) and `content` (textarea); HTML takes `title` (input) and `content` (textarea) (`pubvana.json:10-40`). Reason: saved options are handed to the template as-is, so every option the template reads must have a default in the schema.
 
 ## Repository layout
 
@@ -39,11 +39,11 @@ plugins/CoreBlocks/
 **Registration.** All behavior is declarative in `pubvana.json` under `provides.block.available`:
 
 - `text` (`pubvana.json:10-27`): label Text, priority 100, options `title` (input, default `''`) and `content` (textarea, default `''`), template `pubvana/core-blocks/blocks/text`.
-- `html` (`pubvana.json:28-40`): label HTML, priority 110, option `content` (textarea, default `''`), template `pubvana/core-blocks/blocks/html`.
+- `html` (`pubvana.json:28-43`): label HTML, priority 110, options `title` (input, default `''`) and `content` (textarea, default `''`), template `pubvana/core-blocks/blocks/html`.
 
 **Data flow.** An admin places a block in a region via the core block picker. RegionManager stores the options chosen in the UI, then, because no provider callable exists, feeds those saved options directly to the Vision template as data (`title`/`content`).
 
-**Templates.** Both `.tpl` files wrap output in `.block` wrappers. `text.tpl` conditionally prints an `<h6 class="block-title">` for `title` and escapes `content`; `html.tpl` prints `content` with Vision's unescaped `{! ... !}` operator.
+**Templates.** Both `.tpl` files wrap output in `.block` wrappers. `text.tpl` conditionally prints an `<h6 class="block-title">` for `title` and escapes `content`; `html.tpl` prints an escaped `title` the same way and `content` with Vision's unescaped `{! ... !}` operator.
 
 ## Development and testing
 

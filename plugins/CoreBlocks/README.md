@@ -29,9 +29,10 @@ A Text block stores two options: `title` and `content`. The template only prints
 {% if title %}<h6 class="block-title">{{ title }}</h6>{% endif %}
 ```
 
-An HTML block stores one option: `content`. The template prints it as-is:
+An HTML block stores two options: `title` and `content`. The template prints a title header when it has a value, and prints the content as-is:
 
 ```
+{% if title %}<h6 class="block-title">{{ title }}</h6>{% endif %}
 {! content !}
 ```
 
