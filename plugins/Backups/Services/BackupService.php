@@ -224,7 +224,7 @@ class BackupService
      * Dump the entire database as plain SQL.
      *
      * Fallback chain:
-     *   1. shell_exec('mysqldump ...')
+     *   1. proc_open('mysqldump ...', password via MYSQL_PWD env)
      *   2. Pure-PHP row-by-row export
      */
     public function dumpDatabase(): string
@@ -243,7 +243,7 @@ class BackupService
      * Restore a plain SQL dump into the database.
      *
      * Fallback chain:
-     *   1. exec('mysql ...' with piped SQL)
+     *   1. proc_open('mysql ...' with piped SQL, password via MYSQL_PWD env)
      *   2. Pure PHP: split statements + query each
      */
     public function restoreDatabase(string $sqlData): void
@@ -266,18 +266,19 @@ class BackupService
     {
         $c = $this->dbCredentials;
 
-        $passArg = $c['password'] !== '' ? '-p' . escapeshellarg($c['password']) : '';
-        $cmd = sprintf(
-            'mysqldump -h %s -P %s -u %s %s %s 2>/dev/null',
-            escapeshellarg($c['host']),
-            escapeshellarg((string) $c['port']),
-            escapeshellarg($c['user']),
-            $passArg,
-            escapeshellarg($c['dbname'])
-        );
+        $argv = [
+            'mysqldump',
+            '-h', $c['host'],
+            '-P', (string) $c['port'],
+            '-u', $c['user'],
+            $c['dbname'],
+        ];
 
-        $result = shell_exec($cmd);
-        return is_string($result) && $result !== '' ? $result : null;
+        $stdout = null;
+        $stderr = null;
+        $code = $this->runProc($argv, $this->mysqlEnv($c), $stdout, $stderr);
+
+        return $code === 0 && $stdout !== null && $stdout !== '' ? $stdout : null;
     }
 
     private function dumpViaPHP(): string
@@ -331,19 +332,17 @@ class BackupService
         $tmpFile = $this->backupDir . 'restore_' . time() . '.sql';
         file_put_contents($tmpFile, $sqlData);
 
-        $passArg = $c['password'] !== '' ? '-p' . escapeshellarg($c['password']) : '';
-        $cmd = sprintf(
-            'mysql -h %s -P %s -u %s %s %s < %s 2>/dev/null',
-            escapeshellarg($c['host']),
-            escapeshellarg((string) $c['port']),
-            escapeshellarg($c['user']),
-            $passArg,
-            escapeshellarg($c['dbname']),
-            escapeshellarg($tmpFile)
-        );
+        $argv = [
+            'mysql',
+            '-h', $c['host'],
+            '-P', (string) $c['port'],
+            '-u', $c['user'],
+            $c['dbname'],
+        ];
 
-        $code = 0;
-        exec($cmd, $output, $code);
+        $stdout = null;
+        $stderr = null;
+        $code = $this->runProc($argv, $this->mysqlEnv($c), $stdout, $stderr, $tmpFile);
         @unlink($tmpFile);
 
         return $code === 0;
@@ -459,10 +458,70 @@ class BackupService
 
     private function execAvailable(): bool
     {
-        if (!function_exists('exec')) {
+        if (!function_exists('proc_open')) {
             return false;
         }
         $disabled = ini_get('disable_functions') ?: '';
-        return !in_array('exec', array_map('trim', explode(',', $disabled)), true);
+        return !in_array('proc_open', array_map('trim', explode(',', $disabled)), true);
+    }
+
+    /**
+     * Run a binary via proc_open. No shell is involved, so the DB password
+     * sits only in the child environment (MYSQL_PWD), never in argv or ps.
+     *
+     * @param list<string>           $argv   Command and its arguments
+     * @param array<string, string>  $env    Full child environment
+     * @param ?string                $stdin  Path to feed on stdin, or null for /dev/null
+     * @param string|null            $stdout Captured stdout
+     * @param string|null            $stderr Captured stderr
+     *
+     * @return int Exit status, or -1 when proc_open is unavailable or cannot start
+     */
+    private function runProc(array $argv, array $env, ?string &$stdout, ?string &$stderr, ?string $stdin = null): int
+    {
+        if (!function_exists('proc_open')) {
+            return -1;
+        }
+
+        $spec = [
+            0 => ($stdin !== null && is_file($stdin)) ? ['file', $stdin, 'r'] : ['file', '/dev/null', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+
+        $process = @proc_open($argv, $spec, $pipes, null, $env);
+        if (!is_resource($process)) {
+            return -1;
+        }
+
+        $stdout = (string) stream_get_contents($pipes[1]);
+        $stderr = (string) stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+
+        return proc_close($process);
+    }
+
+    /**
+     * Build the child environment for the mysql clients.
+     *
+     * The password travels in MYSQL_PWD so it never appears on the command
+     * line. The var is unset when no password is set.
+     *
+     * @param array{host: string, port: int, dbname: string, user: string, password: string} $credentials
+     *
+     * @return array<string, string>
+     */
+    private function mysqlEnv(array $credentials): array
+    {
+        $env = getenv();
+
+        if ($credentials['password'] !== '') {
+            $env['MYSQL_PWD'] = $credentials['password'];
+        } else {
+            unset($env['MYSQL_PWD']);
+        }
+
+        return $env;
     }
 }

@@ -61,6 +61,8 @@ The `BackupService` is the singleton most code talks to. `RestoreService` and `P
 
 `dumpDatabase()` (`BackupService.php:212`) tries `mysqldump` first and falls back to `dumpViaPHP()`, a row-by-row pure-PHP export that writes `DROP TABLE` + `CREATE TABLE` + `INSERT`s wrapped in `SET FOREIGN_KEY_CHECKS`. The admin controller and CLI command both route through this same path.
 
+The CLI clients (`mysqldump`/`mysql`) run through `proc_open` with the full child environment under our control (`runProc()`, `BackupService.php:480`). The DB password is never placed in argv (which `ps` exposes); it travels only in the `MYSQL_PWD` child environment (`mysqlEnv()`, `BackupService.php:515`) and is unset when no password is configured.
+
 ### Restore flow
 
 `RestoreService::restore()` (`RestoreService.php:36`) is a 5-step reversible rollback: snapshot the current state as a `pre-rollback` backup, extract the zip, restore files, restore the database, then take a `post-rollback` backup of the restored state. The extraction directory is always removed in a `finally` block.
