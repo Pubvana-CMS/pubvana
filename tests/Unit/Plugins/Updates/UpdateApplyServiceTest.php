@@ -8,11 +8,14 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use Pubvana\Plugins\Updates\Services\UpdateApplyService;
 use Pubvana\Plugins\Updates\Services\UpdateProgress;
 use Pubvana\Tests\Support\TestCase;
+use Pubvana\Tests\Support\ZipFactory;
 
 use function mkdir;
 use function file_put_contents;
+use function symlink;
 use function sys_get_temp_dir;
 use function uniqid;
+use function unlink;
 
 /**
  * Trust client stand-in for the apply gate. One shape: a fixed cached
@@ -106,6 +109,56 @@ final class UpdateApplyServiceTest extends TestCase
     }
 
     // ------------------------------------------------------------------
+    // zipEntriesAreFreeOfSymlinks
+    // ------------------------------------------------------------------
+
+    public function testSymlinkZipEntriesAreRejected(): void
+    {
+        $zipPath = sys_get_temp_dir() . '/pv-sym-' . uniqid() . '.zip';
+        ZipFactory::write($zipPath, [
+            ['name' => 'link', 'content' => '../victim', 'mode' => 0120777],
+            ['name' => 'file.txt', 'content' => 'data', 'mode' => 0100644],
+        ]);
+
+        // The name-only check passes these entries; the mode check is the
+        // active rejector.
+        self::assertTrue(UpdateApplyService::zipEntriesAreSafe(['link', 'file.txt']));
+
+        $zip = new \ZipArchive();
+        try {
+            if ($zip->open($zipPath) !== true) {
+                self::fail('test zip could not be opened');
+            }
+
+            self::assertFalse(UpdateApplyService::zipEntriesAreFreeOfSymlinks($zip));
+            $zip->close();
+        } finally {
+            @unlink($zipPath);
+        }
+    }
+
+    public function testPlainZipHasNoSymlinkEntries(): void
+    {
+        $zipPath = sys_get_temp_dir() . '/pv-plain-' . uniqid() . '.zip';
+        ZipFactory::write($zipPath, [
+            ['name' => 'file.txt', 'content' => 'data', 'mode' => 0100644],
+            ['name' => 'dir/', 'content' => '', 'mode' => 040755],
+        ]);
+
+        $zip = new \ZipArchive();
+        try {
+            if ($zip->open($zipPath) !== true) {
+                self::fail('test zip could not be opened');
+            }
+
+            self::assertTrue(UpdateApplyService::zipEntriesAreFreeOfSymlinks($zip));
+            $zip->close();
+        } finally {
+            @unlink($zipPath);
+        }
+    }
+
+    // ------------------------------------------------------------------
     // detectInnerDir
     // ------------------------------------------------------------------
 
@@ -187,6 +240,66 @@ final class UpdateApplyServiceTest extends TestCase
 
         self::assertDirectoryDoesNotExist($source);
         self::assertDirectoryDoesNotExist($dest);
+    }
+
+    public function testCopyDirectoryNeverFollowsSymlinks(): void
+    {
+        $root    = sys_get_temp_dir() . '/pv-copy-' . uniqid();
+        $outside = $root . '-outside';
+        $source  = $root . '/src';
+        $dest    = $root . '/dst';
+
+        @mkdir($source, 0775, true);
+        @mkdir($outside, 0775, true);
+        file_put_contents($outside . '/precious.txt', 'precious');
+        file_put_contents($source . '/real.txt', 'real');
+
+        if (!@symlink($outside, $source . '/linkdir')) {
+            self::markTestSkipped('The filesystem does not support symlinks.');
+        }
+
+        try {
+            $count = UpdateApplyService::copyDirectory($source, $dest);
+
+            // real.txt plus one link, never a copy of the linked dir.
+            self::assertSame(2, $count);
+            self::assertFileExists($dest . '/real.txt');
+            self::assertTrue(is_link($dest . '/linkdir'));
+            self::assertSame($outside, readlink($dest . '/linkdir'));
+            self::assertFileDoesNotExist($dest . '/linkdir-real');
+            self::assertFileExists($outside . '/precious.txt');
+        } finally {
+            UpdateApplyService::removeDirectory($source);
+            UpdateApplyService::removeDirectory($dest);
+            UpdateApplyService::removeDirectory($outside);
+        }
+    }
+
+    public function testRemoveDirectoryUnlinksSymlinksInsteadOfDeletingTargets(): void
+    {
+        $root    = sys_get_temp_dir() . '/pv-rm-' . uniqid();
+        $outside = $root . '-outside';
+        $dir     = $root . '/dir';
+
+        @mkdir($dir, 0775, true);
+        @mkdir($outside, 0775, true);
+        file_put_contents($outside . '/precious.txt', 'precious');
+
+        if (!@symlink($outside, $dir . '/link')) {
+            self::markTestSkipped('The filesystem does not support symlinks.');
+        }
+
+        try {
+            UpdateApplyService::removeDirectory($dir);
+
+            // is_dir() follows a link; without the is_link() guard this
+            // removal would recurse into $outside and delete precious.txt.
+            self::assertDirectoryDoesNotExist($dir);
+            self::assertDirectoryExists($outside);
+            self::assertFileExists($outside . '/precious.txt');
+        } finally {
+            UpdateApplyService::removeDirectory($outside);
+        }
     }
 
     public function testPhasesListIsFixed(): void

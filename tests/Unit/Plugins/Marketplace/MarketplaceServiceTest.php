@@ -8,6 +8,11 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use Pubvana\Plugins\Marketplace\Services\MarketplaceService;
 use Pubvana\Tests\Support\Sqlite;
 use Pubvana\Tests\Support\TestCase;
+use Pubvana\Tests\Support\ZipFactory;
+
+use function sys_get_temp_dir;
+use function uniqid;
+use function unlink;
 
 #[CoversClass(MarketplaceService::class)]
 final class MarketplaceServiceTest extends TestCase
@@ -124,6 +129,48 @@ final class MarketplaceServiceTest extends TestCase
         self::assertCount(1, $items);
         self::assertSame('single_site', $items[0]['license_scope']);
         self::assertFalse($items[0]['is_free']);
+    }
+
+    public function testZipEntriesAreSafeRejectsSymlinkEntries(): void
+    {
+        $zipPath = sys_get_temp_dir() . '/pv-mkt-sym-' . uniqid() . '.zip';
+        ZipFactory::write($zipPath, [
+            ['name' => 'link', 'content' => '../../victim', 'mode' => 0120777],
+            ['name' => 'pkg/pubvana.json', 'content' => '{}', 'mode' => 0100644],
+        ]);
+
+        $archive = new \ZipArchive();
+        try {
+            if ($archive->open($zipPath) !== true) {
+                self::fail('test zip could not be opened');
+            }
+
+            self::assertFalse($this->invoke($this->service, 'zipEntriesAreSafe', [$archive]));
+            $archive->close();
+        } finally {
+            @unlink($zipPath);
+        }
+    }
+
+    public function testZipEntriesAreSafeAcceptsPlainEntries(): void
+    {
+        $zipPath = sys_get_temp_dir() . '/pv-mkt-plain-' . uniqid() . '.zip';
+        ZipFactory::write($zipPath, [
+            ['name' => 'pkg/pubvana.json', 'content' => '{}', 'mode' => 0100644],
+            ['name' => 'pkg/src/', 'content' => '', 'mode' => 040755],
+        ]);
+
+        $archive = new \ZipArchive();
+        try {
+            if ($archive->open($zipPath) !== true) {
+                self::fail('test zip could not be opened');
+            }
+
+            self::assertTrue($this->invoke($this->service, 'zipEntriesAreSafe', [$archive]));
+            $archive->close();
+        } finally {
+            @unlink($zipPath);
+        }
     }
 }
 

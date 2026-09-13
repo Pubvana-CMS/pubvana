@@ -965,6 +965,18 @@ class MarketplaceService
             if (str_contains($name, '..') || str_starts_with($name, '/') || str_contains($name, "\0") || preg_match('#^[A-Za-z]:#', $name)) {
                 return false;
             }
+
+            // Reject Unix symlink entries: extraction could restore a link
+            // that the install/cleanup recursion would follow out of the
+            // target tree.
+            $opsys = 0;
+            $attr  = 0;
+            if ($archive->getExternalAttributesIndex($i, $opsys, $attr)
+                && $opsys === \ZipArchive::OPSYS_UNIX
+                && (($attr >> 16) & 0170000) === 0120000
+            ) {
+                return false;
+            }
         }
         return true;
     }
@@ -987,6 +999,16 @@ class MarketplaceService
             }
             $src = $from . \DIRECTORY_SEPARATOR . $item;
             $dst = $to . \DIRECTORY_SEPARATOR . $item;
+
+            // Naive copy: replicate links instead of traversing them.
+            if (is_link($src)) {
+                $linkTarget = @readlink($src);
+                if (!is_string($linkTarget) || !@symlink($linkTarget, $dst)) {
+                    return false;
+                }
+                continue;
+            }
+
             if (is_dir($src)) {
                 if (!mkdir($dst, 0755, true) || !$this->copyTree($src, $dst)) {
                     return false;
@@ -1011,6 +1033,9 @@ class MarketplaceService
 
     protected function rmdir(string $dir): bool
     {
+        if (is_link($dir)) {
+            return @unlink($dir);
+        }
         if (!is_dir($dir)) {
             return !is_file($dir) || @unlink($dir);
         }
@@ -1019,6 +1044,16 @@ class MarketplaceService
                 continue;
             }
             $path = $dir . \DIRECTORY_SEPARATOR . $entry;
+
+            // Unlink-only for links: is_dir() follows a link and would let a
+            // crafted symlink turn cleanup into a delete outside the tree.
+            if (is_link($path)) {
+                if (!@unlink($path)) {
+                    return false;
+                }
+                continue;
+            }
+
             if (is_dir($path) && !$this->rmdir($path)) {
                 return false;
             }

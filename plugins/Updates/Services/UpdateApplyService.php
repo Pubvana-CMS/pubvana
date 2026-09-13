@@ -298,10 +298,11 @@ final class UpdateApplyService
                 $names[] = $name;
             }
         }
+        $hasSymlinks = !self::zipEntriesAreFreeOfSymlinks($zip);
         $zip->close();
 
-        if (!self::zipEntriesAreSafe($names)) {
-            throw new RuntimeException('The zip contains unsafe paths and was rejected.');
+        if (!self::zipEntriesAreSafe($names) || $hasSymlinks) {
+            throw new RuntimeException('The zip contains unsafe paths (traversal or symlink entries) and was rejected.');
         }
 
         $innerDir = self::detectInnerDir($names);
@@ -351,7 +352,16 @@ final class UpdateApplyService
             $from = $source . '/' . $item;
             $to   = $this->projectRoot() . '/' . $item;
 
-            if (is_dir($from)) {
+            if (is_link($from)) {
+                // Never follow a release symlink into a copy: replicate the
+                // link itself. Zip validation already rejects symlink entries;
+                // this is the second line of defense on disk.
+                $linkTarget = @readlink($from);
+                if (!is_string($linkTarget) || !@symlink($linkTarget, $to)) {
+                    throw new RuntimeException('Could not copy link: ' . $item);
+                }
+                $reporter->detail('Copied ' . $item . ' (link)');
+            } elseif (is_dir($from)) {
                 $count = self::copyDirectory($from, $to, function (int $files) use ($reporter, $item): void {
                     $reporter->detail('Copying ' . $item . '/ (' . number_format($files) . ' files)');
                 });
@@ -565,6 +575,30 @@ final class UpdateApplyService
     }
 
     /**
+     * True when no zip entry carries the Unix symlink mode bit (0120000).
+     *
+     * Extraction restores symlinks; a crafted release could otherwise plant
+     * a link that the later copy/cleanup recursion would follow out of the
+     * target tree. Entries without Unix external attributes pass: they carry
+     * no mode and therefore no symlink bit.
+     */
+    public static function zipEntriesAreFreeOfSymlinks(\ZipArchive $zip): bool
+    {
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $opsys = 0;
+            $attr  = 0;
+            if ($zip->getExternalAttributesIndex($i, $opsys, $attr)
+                && $opsys === \ZipArchive::OPSYS_UNIX
+                && (($attr >> 16) & 0170000) === 0120000
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Detect a release zip whose contents sit inside one wrapper directory
      * (GitHub zipball style: "pubvana-3.0.1/app/...").
      *
@@ -646,7 +680,24 @@ final class UpdateApplyService
         $files = 0;
 
         foreach ($iterator as $item) {
+            $path   = $item->getPathname();
             $target = $destination . '/' . $iterator->getSubPathName();
+
+            if ($item->isLink()) {
+                // Naive copy: replicate the link, never traverse it. A link
+                // to a directory would otherwise be walked and its target
+                // tree copied from outside the release.
+                $linkTarget = @readlink($path);
+                if (!is_string($linkTarget) || !@symlink($linkTarget, $target)) {
+                    throw new RuntimeException('Could not copy link: ' . $target);
+                }
+
+                $files++;
+                if ($onProgress !== null && $files % 25 === 0) {
+                    $onProgress($files);
+                }
+                continue;
+            }
 
             if ($item->isDir()) {
                 if (!is_dir($target)) {
@@ -655,7 +706,7 @@ final class UpdateApplyService
                 continue;
             }
 
-            if (!copy($item->getPathname(), $target)) {
+            if (!copy($path, $target)) {
                 throw new RuntimeException('Could not copy file: ' . $target);
             }
 
@@ -673,6 +724,11 @@ final class UpdateApplyService
      */
     public static function removeDirectory(string $path): void
     {
+        if (is_link($path)) {
+            @unlink($path);
+            return;
+        }
+
         if (!is_dir($path)) {
             return;
         }
@@ -684,6 +740,14 @@ final class UpdateApplyService
             }
 
             $full = $path . '/' . $item;
+
+            // Unlink-only for links: is_dir() follows a link and would let a
+            // crafted symlink turn cleanup into a delete outside the tree.
+            if (is_link($full)) {
+                @unlink($full);
+                continue;
+            }
+
             is_dir($full) ? self::removeDirectory($full) : @unlink($full);
         }
 
