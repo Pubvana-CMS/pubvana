@@ -38,8 +38,10 @@ Admin routes are registered under `/admin/blog`. Public routes use the `blog` ro
 | GET    | `/{prefix}/page/@page` | `BlogPublicController::index` |
 | GET    | `/{prefix}/category` | `BlogPublicController::categories` |
 | GET    | `/{prefix}/category/@slug` | `BlogPublicController::category` |
+| GET    | `/{prefix}/category/@slug/page/@page` | `BlogPublicController::category` |
 | GET    | `/{prefix}/tag` | `BlogPublicController::tags` |
 | GET    | `/{prefix}/tag/@slug` | `BlogPublicController::tag` |
+| GET    | `/{prefix}/tag/@slug/page/@page` | `BlogPublicController::tag` |
 | GET    | `/{prefix}/preview/@token` | `BlogPublicController::preview` |
 | GET    | `/{prefix}/@slug` | `BlogPublicController::show` |
 

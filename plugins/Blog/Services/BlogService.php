@@ -63,6 +63,37 @@ class BlogService
         return $this->listPosts($page, $perPage, 'published');
     }
 
+    /**
+     * Paginated published posts in a category, pagination scoped to the
+     * category count rather than the global post list.
+     *
+     * @return array{items: array<int, Post>, total: int, page: int, per_page: int}
+     */
+    public function listPostsByCategory(int $categoryId, int $page = 1, int $perPage = 25): array
+    {
+        return [
+            'items'    => $this->postModel->paginateByCategory($categoryId, $page, $perPage, 'published'),
+            'total'    => $this->postModel->countByCategory($categoryId, 'published'),
+            'page'     => $page,
+            'per_page' => $perPage,
+        ];
+    }
+
+    /**
+     * Paginated published posts carrying a tag.
+     *
+     * @return array{items: array<int, Post>, total: int, page: int, per_page: int}
+     */
+    public function listPostsByTag(int $tagId, int $page = 1, int $perPage = 25): array
+    {
+        return [
+            'items'    => $this->postModel->paginateByTag($tagId, $page, $perPage, 'published'),
+            'total'    => $this->postModel->countByTag($tagId, 'published'),
+            'page'     => $page,
+            'per_page' => $perPage,
+        ];
+    }
+
     public function findPost(int $id): ?Post
     {
         return $this->postModel->findById($id);
@@ -200,6 +231,11 @@ class BlogService
         return $this->categoryModel->findById($id);
     }
 
+    public function findCategoryBySlug(string $slug): ?Category
+    {
+        return $this->categoryModel->findBySlug($slug);
+    }
+
     public function categorySlugExists(string $slug, ?int $excludeId = null): bool
     {
         return $this->categoryModel->slugExists($slug, $excludeId);
@@ -252,6 +288,11 @@ class BlogService
     public function findTag(int $id): ?Tag
     {
         return $this->tagModel->findById($id);
+    }
+
+    public function findTagBySlug(string $slug): ?Tag
+    {
+        return $this->tagModel->findBySlug($slug);
     }
 
     public function deleteTag(int $id): bool

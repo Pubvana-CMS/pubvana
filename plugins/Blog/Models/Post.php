@@ -32,6 +32,7 @@ namespace Pubvana\Plugins\Blog\Models;
  * @method self select(string $field, string ...$fields)
  * @method self limit(int $limit)
  * @method self offset(int $offset)
+ * @method self join(string $table, string $on, string $type = 'LEFT')
  * @method self startWrap()
  * @method self endWrap(string $op)
   *
@@ -124,6 +125,86 @@ class Post extends \Pubvana\Models\AbstractModel
     {
         $query = new self($this->getDatabaseConnection());
         $query->select('COUNT(*) as cnt')->isNull('deleted_at');
+
+        if ($status !== null) {
+            $query->eq('status', $status);
+        }
+
+        $result = $query->find();
+        return (int) $result->cnt;
+    }
+
+    /**
+     * Paginated posts belonging to a category, via the posts_to_categories
+     * pivot. Keeps the taxonomy filter in SQL so pagination is scoped to the
+     * category instead of a global page slice.
+     *
+     * @return array<int, Post>
+     */
+    public function paginateByCategory(int $categoryId, int $page = 1, int $perPage = 25, ?string $status = null): array
+    {
+        $query = new self($this->getDatabaseConnection());
+        $query->join('posts_to_categories', 'posts_to_categories.post_id = posts.id', 'INNER')
+              // eq() would quote "posts_to_categories.category_id" as one
+              // identifier, so the int-cast condition goes in a raw where().
+              ->where('posts_to_categories.category_id = ' . (int) $categoryId)
+              ->isNull('deleted_at');
+
+        if ($status !== null) {
+            $query->eq('status', $status);
+        }
+
+        return $query->order('id DESC')
+            ->limit($perPage)
+            ->offset(($page - 1) * $perPage)
+            ->findAll();
+    }
+
+    public function countByCategory(int $categoryId, ?string $status = null): int
+    {
+        $query = new self($this->getDatabaseConnection());
+        $query->select('COUNT(*) as cnt')
+              ->join('posts_to_categories', 'posts_to_categories.post_id = posts.id', 'INNER')
+              ->where('posts_to_categories.category_id = ' . (int) $categoryId)
+              ->isNull('deleted_at');
+
+        if ($status !== null) {
+            $query->eq('status', $status);
+        }
+
+        $result = $query->find();
+        return (int) $result->cnt;
+    }
+
+    /**
+     * Paginated posts carrying a tag, via the tags_to_posts pivot.
+     *
+     * @return array<int, Post>
+     */
+    public function paginateByTag(int $tagId, int $page = 1, int $perPage = 25, ?string $status = null): array
+    {
+        $query = new self($this->getDatabaseConnection());
+        $query->join('tags_to_posts', 'tags_to_posts.post_id = posts.id', 'INNER')
+              ->where('tags_to_posts.tag_id = ' . (int) $tagId)
+              ->isNull('deleted_at');
+
+        if ($status !== null) {
+            $query->eq('status', $status);
+        }
+
+        return $query->order('id DESC')
+            ->limit($perPage)
+            ->offset(($page - 1) * $perPage)
+            ->findAll();
+    }
+
+    public function countByTag(int $tagId, ?string $status = null): int
+    {
+        $query = new self($this->getDatabaseConnection());
+        $query->select('COUNT(*) as cnt')
+              ->join('tags_to_posts', 'tags_to_posts.post_id = posts.id', 'INNER')
+              ->where('tags_to_posts.tag_id = ' . (int) $tagId)
+              ->isNull('deleted_at');
 
         if ($status !== null) {
             $query->eq('status', $status);

@@ -137,78 +137,52 @@ class BlogPublicController extends PublicController
     /**
      * Posts filtered by category slug.
      */
-    public function category(string $slug): void
+    public function category(string $slug, ?string $page = null): void
     {
-        $categories = $this->app->blog()->listCategories();
-        $category = null;
-        foreach ($categories as $cat) {
-            if ($cat->slug === $slug) {
-                $category = $cat;
-                break;
-            }
-        }
+        $category = $this->app->blog()->findCategoryBySlug($slug);
 
         if ($category === null) {
             $this->app->halt(404, 'Category not found');
             return;
         }
 
-        $page = max(1, (int) ($this->app->request()->query->page ?? 1));
-        $result = $this->app->blog()->listPosts($page, 10, 'published');
+        $prefix = $this->app->pluginLoader()->routePrefix('pubvana/blog');
+        $pageNum = max(1, (int) ($page ?? $this->app->request()->query->page ?? 1));
+        $result = $this->app->blog()->listPostsByCategory((int) $category->id, $pageNum, 10);
 
         $maps = $this->taxonomyMapsFor($result['items']);
-        $filtered = [];
-
-        foreach ($result['items'] as $post) {
-            $catItems = $maps['categories'][(int) $post->id] ?? [];
-            if (in_array((int) $category->id, array_column($catItems, 'id'), true)) {
-                $filtered[] = $this->formatPost($post, $maps['categories'], $maps['tags'], $maps['authors']);
-            }
-        }
+        $posts = array_map(fn($post) => $this->formatPost($post, $maps['categories'], $maps['tags'], $maps['authors']), $result['items']);
 
         $this->render('pubvana/blog/archive', [
             'archive_title' => 'Category: ' . $category->name,
-            'posts'         => $filtered,
-            'pagination'    => null,
+            'posts'         => $posts,
+            'pagination'    => $this->buildPagination($result, $prefix . '/category/' . $category->slug),
         ]);
     }
 
     /**
      * Posts filtered by tag slug.
      */
-    public function tag(string $slug): void
+    public function tag(string $slug, ?string $page = null): void
     {
-        $tags = $this->app->blog()->listTags();
-        $tag = null;
-        foreach ($tags as $item) {
-            if ($item->slug === $slug) {
-                $tag = $item;
-                break;
-            }
-        }
+        $tag = $this->app->blog()->findTagBySlug($slug);
 
         if ($tag === null) {
             $this->app->halt(404, 'Tag not found');
             return;
         }
 
-        $page = max(1, (int) ($this->app->request()->query->page ?? 1));
-        $result = $this->app->blog()->listPosts($page, 10, 'published');
+        $prefix = $this->app->pluginLoader()->routePrefix('pubvana/blog');
+        $pageNum = max(1, (int) ($page ?? $this->app->request()->query->page ?? 1));
+        $result = $this->app->blog()->listPostsByTag((int) $tag->id, $pageNum, 10);
 
         $maps = $this->taxonomyMapsFor($result['items']);
-        $filtered = [];
-
-        foreach ($result['items'] as $post) {
-            $tagItems = $maps['tags'][(int) $post->id] ?? [];
-            if (in_array($tag->name, array_column($tagItems, 'name'), true)) {
-                $filtered[] = $this->formatPost($post, $maps['categories'], $maps['tags'], $maps['authors']);
-            }
-        }
+        $posts = array_map(fn($post) => $this->formatPost($post, $maps['categories'], $maps['tags'], $maps['authors']), $result['items']);
 
         $this->render('pubvana/blog/archive', [
             'archive_title' => 'Tag: ' . $tag->name,
-            'posts'         => $filtered,
-            'pagination'    => null,
+            'posts'         => $posts,
+            'pagination'    => $this->buildPagination($result, $prefix . '/tag/' . $tag->slug),
         ]);
     }
 
