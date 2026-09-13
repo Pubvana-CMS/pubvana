@@ -535,19 +535,12 @@ $captchaMiddleware->before();
 |--------------------------------------------------------------------------
 | Catches any uncaught exception that reaches the top of the stack.
 |
-| - Logs every exception via error_log()
+| - Logs every exception to writable/logs/exception.log
 | - In development: re-throws so Tracy can display the debug page
 | - In production: returns JSON for API/AJAX requests, HTML for browsers
-| - Uses HTTP status codes from typed exceptions when available
+| - Renders only a generic message, never the exception text
 */
 $app->map('error', function (\Throwable $e) use ($app): void {
-    $status = 500;
-    if (method_exists($e, 'getHttpStatus')) {
-        $status = $e->getHttpStatus();
-    }
-
-    $class = get_class($e);
-
     if ($app->get('environment') === 'development') {
         // In development, re-throw so Tracy displays and logs the exception.
         throw $e;
@@ -555,24 +548,18 @@ $app->map('error', function (\Throwable $e) use ($app): void {
 
     // Production: log every exception to writable/logs/exception.log, the same
     // file Tracy uses, so application errors stay beside Tracy's logs. Flight's
-    // default error_log() would go to the SAPI log instead.
-    $logFile = PROJECT_ROOT . $ds . 'writable' . $ds . 'logs' . $ds . 'exception.log';
-    $line = '[' . date('Y-m-d H-i-s') . "] [{$class}] {$e->getMessage()} in {$e->getFile()}:{$e->getLine()}" . PHP_EOL;
-    @file_put_contents($logFile, $line, FILE_APPEND | LOCK_EX);
+    // default error_log() would go to the SAPI log instead. The client sees
+    // only a generic message: exception text (file paths, credentials, stack
+    // frames) is never rendered. See ProductionErrorHandler.
+    $payload = (new \Pubvana\Services\ProductionErrorHandler())->handle($e, $app);
 
-    // Determine if the client wants JSON or HTML
-    $request = $app->request();
-    $wantsJson = str_contains($request->getHeader('Accept') ?? '', 'application/json')
-        || str_contains($request->getHeader('Content-Type') ?? '', 'application/json')
-        || ($request->ajax ?? false);
-
-    if ($wantsJson) {
-        $app->json(['error' => $e->getMessage()], $status);
+    if ($payload['json']) {
+        $app->json(['error' => $payload['message']], $payload['status']);
     } else {
         $app->render('errors/error', [
-            'status'  => $status,
-            'message' => $e->getMessage(),
+            'status'  => $payload['status'],
+            'message' => $payload['message'],
         ]);
-        $app->response()->status($status);
+        $app->response()->status($payload['status']);
     }
 });
