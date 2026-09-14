@@ -40,6 +40,7 @@
             {% endfor %}
         </div>
         {% endif %}
+        <a href="{{ post.url }}" class="btn btn-primary">Read More</a>
     </div>
 </article>
 {% endfor %}

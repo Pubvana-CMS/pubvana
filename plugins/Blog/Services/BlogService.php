@@ -506,10 +506,10 @@ class BlogService
             }
 
             $tag = $this->tagModel->findOrCreate($name, $slug);
-            $tagIds[] = (int) $tag->id;
+            $tagIds[(int) $tag->id] = true;
         }
 
-        $this->postTagModel->syncForPost($postId, $tagIds);
+        $this->postTagModel->syncForPost($postId, array_keys($tagIds));
     }
 
     // ─── Blocks ───────────────────────────────────────────────────────────
@@ -587,12 +587,15 @@ class BlogService
     */
     public function archiveBlock(array $options, string $prefix): array
     {
+        // Portable month grouping: published_at stores 'Y-m-d H:i:s', so the
+        // YYYY-MM prefix groups by month on MySQL, SQLite, and Postgres
+        // alike (YEAR()/MONTH() are MySQL-only).
         $stmt = $this->pdo->query(
-            "SELECT YEAR(published_at) as y, MONTH(published_at) as m, COUNT(*) as c
+            "SELECT SUBSTR(published_at, 1, 7) as ym, COUNT(*) as c
              FROM posts
              WHERE status = 'published' AND deleted_at IS NULL AND published_at IS NOT NULL
-             GROUP BY y, m
-             ORDER BY y DESC, m DESC
+             GROUP BY ym
+             ORDER BY ym DESC
              LIMIT 24"
         );
         if ($stmt === false) {
@@ -601,13 +604,14 @@ class BlogService
 
         $months = [];
         foreach ($stmt->fetchAll(\PDO::FETCH_OBJ) as $row) {
-            $ts = strtotime($row->y . '-' . $row->m . '-01');
+            [$y, $m] = explode('-', (string) $row->ym) + [null, null];
+            $ts = strtotime($row->ym . '-01');
             $months[] = [
-                'year'  => $row->y,
-                'month' => str_pad((string) $row->m, 2, '0', STR_PAD_LEFT),
+                'year'  => $y,
+                'month' => str_pad((string) $m, 2, '0', STR_PAD_LEFT),
                 'count' => $row->c,
-                'label' => $ts === false ? $row->y . '-' . $row->m : date('F Y', $ts),
-                'url'   => $prefix . '/archive/' . $row->y . '/' . str_pad((string) $row->m, 2, '0', STR_PAD_LEFT),
+                'label' => $ts === false ? (string) $row->ym : date('F Y', $ts),
+                'url'   => $prefix . '/archive/' . $y . '/' . str_pad((string) $m, 2, '0', STR_PAD_LEFT),
             ];
         }
         return [

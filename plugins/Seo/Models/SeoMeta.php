@@ -27,7 +27,7 @@ namespace Pubvana\Plugins\Seo\Models;
  * @property string|null $updated_at
  *
  * @method self eq(string $field, mixed $value, string $operator = 'AND')
- * @method self notEq(string $field, mixed $value, string $operator = 'AND')
+ * @method self notEqual(string $field, mixed $value, string $operator = 'AND')
  * @method self isNotNull(string $field, string $operator = 'AND')
  * @method self order(string $field)
  */
@@ -124,11 +124,11 @@ class SeoMeta extends \Pubvana\Models\AbstractModel
     {
         $record = new self($this->getDatabaseConnection());
         $record->isNotNull('meta_title')
-            ->notEq('meta_title', '')
+            ->notEqual('meta_title', '')
             ->find();
 
         $records = new self($this->getDatabaseConnection());
-        $all = $records->isNotNull('meta_title')->notEq('meta_title', '')->findAll();
+        $all = $records->isNotNull('meta_title')->notEqual('meta_title', '')->findAll();
         return count($all);
     }
 

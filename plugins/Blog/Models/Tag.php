@@ -9,7 +9,7 @@ namespace Pubvana\Plugins\Blog\Models;
  * @property string $name
  * @property string $slug
  * @method self eq(string $field, mixed $value, string $operator = 'AND')
- * @method self notEq(string $field, mixed $value, string $operator = 'AND')
+ * @method self notEqual(string $field, mixed $value, string $operator = 'AND')
  * @method self like(string $field, mixed $value, string $operator = 'AND')
  * @method self in(string $field, mixed $value, string $operator = 'AND')
  * @method self isNull(string $field, string $operator = 'AND')

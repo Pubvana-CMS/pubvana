@@ -25,7 +25,7 @@ namespace Pubvana\Plugins\Pages\Models;
  *
  * @package Pubvana\Plugins\Pages\Models
  * @method self eq(string $field, mixed $value, string $operator = 'AND')
- * @method self notEq(string $field, mixed $value, string $operator = 'AND')
+ * @method self notEqual(string $field, mixed $value, string $operator = 'AND')
  * @method self like(string $field, mixed $value, string $operator = 'AND')
  * @method self isNull(string $field, string $operator = 'AND')
  * @method self order(string $field)
@@ -107,7 +107,7 @@ class Page extends \Pubvana\Models\AbstractModel
               ->isNull('deleted_at');
 
         if ($excludeId !== null) {
-            $query->notEq('id', $excludeId);
+            $query->notEqual('id', $excludeId);
         }
 
         $result = $query->find();

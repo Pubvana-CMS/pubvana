@@ -14,7 +14,7 @@ namespace Pubvana\Plugins\Marketplace\Models;
  *
  * @package Pubvana\Plugins\Marketplace\Models
  * @method self eq(string $field, mixed $value, string $operator = 'AND')
- * @method self notEq(string $field, mixed $value, string $operator = 'AND')
+ * @method self notEqual(string $field, mixed $value, string $operator = 'AND')
  * @method self like(string $field, mixed $value, string $operator = 'AND')
  * @method self isNull(string $field, string $operator = 'AND')
  * @method self order(string $field)

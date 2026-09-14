@@ -43,7 +43,7 @@ $config = [
     'dbname'   => $_ENV['DB_NAME']     ?? $_SERVER['DB_NAME']     ?? getenv('DB_NAME')     ?: '',
     'user'     => $_ENV['DB_USER']     ?? $_SERVER['DB_USER']     ?? getenv('DB_USER')     ?: '',
     'password' => $_ENV['DB_PASS']     ?? $_SERVER['DB_PASS']     ?? getenv('DB_PASS')     ?: '',
-    'charset'  => $_ENV['DB_CHARSET'] ?? $_SERVER['DB_CHARSET'] ?? getenv('DB_CHARSET') ?? 'utf8mb4',
+    'charset'  => $_ENV['DB_CHARSET'] ?? $_SERVER['DB_CHARSET'] ?? getenv('DB_CHARSET') ?: 'utf8mb4',
 ];
 
 // When reached (no Flight tier available), provide core-only migration paths,
