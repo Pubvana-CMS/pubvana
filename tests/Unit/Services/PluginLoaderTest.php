@@ -647,9 +647,22 @@ final class PluginLoaderTest extends TestCase
 
     public function testMigrationChecksSkipCliRunsOutsideRunway(): void
     {
-        // The repo marker exists and the CLI is not runway: no migrations.
-        self::assertFileExists(PROJECT_ROOT . '/.migrations_installed');
-        self::assertFalse($this->invoke($this->loader(), 'shouldRunMigrationsOnThisRequest'));
+        // The repo marker is gitignored, so CI checkouts never have it.
+        // Create it for the duration of this test instead of depending on
+        // repo state; the CLI is not runway, so no migrations run.
+        $marker = PROJECT_ROOT . '/.migrations_installed';
+        $existed = is_file($marker);
+        if (!$existed) {
+            file_put_contents($marker, 'test');
+        }
+        try {
+            self::assertFileExists($marker);
+            self::assertFalse($this->invoke($this->loader(), 'shouldRunMigrationsOnThisRequest'));
+        } finally {
+            if (!$existed && is_file($marker)) {
+                unlink($marker);
+            }
+        }
     }
 
     // -----------------------------------------------------------------

@@ -83,13 +83,15 @@ final class ChecksTest extends TestCase
         self::assertSame('', (new CheckResult('a', 'b', 'c', 'pass', 'm'))->remediation);
     }
 
-    public function testPhpVersionPassesOnSupportedRuntime(): void
+    public function testPhpVersionReportsCurrentRuntime(): void
     {
         $result = (new PhpVersionCheck())->run();
 
         self::assertSame('php-version', $result->id);
         self::assertSame(CheckResult::CAT_ENVIRONMENT, $result->category);
-        self::assertSame(CheckResult::PASS, $result->status);
+        // 8.2 (CI) warns below the 8.3 recommended floor; 8.3+ passes.
+        // Assert the contract, not the status: version named in the message.
+        self::assertContains($result->status, [CheckResult::PASS, CheckResult::WARNING]);
         self::assertStringContainsString(PHP_VERSION, $result->message);
     }
 

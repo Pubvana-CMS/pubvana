@@ -50,9 +50,11 @@ class PageRevision extends \Pubvana\Models\AbstractModel
 
     public function findById(int $id): ?self
     {
-        $this->reset();
-        $this->eq('id', $id)->find();
-        return $this->isHydrated() ? $this : null;
+        // Fresh instance: reset() does not clear declared typed props, so a
+        // miss on a reused instance would return stale data as hydrated.
+        $query = new self($this->getDatabaseConnection());
+        $query->eq('id', $id)->find();
+        return $query->isHydrated() ? $query : null;
     }
 
     /**

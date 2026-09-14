@@ -71,9 +71,11 @@ class Page extends \Pubvana\Models\AbstractModel
      */
     public function findById(int $id): ?self
     {
-        $this->reset();
-        $this->eq('id', $id)->isNull('deleted_at')->find();
-        return $this->isHydrated() ? $this : null;
+        // Fresh instance: reset() does not clear declared typed props, so a
+        // miss on a reused instance would return stale data as hydrated.
+        $query = new self($this->getDatabaseConnection());
+        $query->eq('id', $id)->isNull('deleted_at')->find();
+        return $query->isHydrated() ? $query : null;
     }
 
     /**
@@ -84,12 +86,13 @@ class Page extends \Pubvana\Models\AbstractModel
      */
     public function findBySlug(string $slug): ?self
     {
-        $this->reset();
-        $this->eq('slug', $slug)
+        // Fresh instance: see findById() for why $this cannot be reused.
+        $query = new self($this->getDatabaseConnection());
+        $query->eq('slug', $slug)
              ->eq('status', 'published')
              ->isNull('deleted_at')
              ->find();
-        return $this->isHydrated() ? $this : null;
+        return $query->isHydrated() ? $query : null;
     }
 
     /**
