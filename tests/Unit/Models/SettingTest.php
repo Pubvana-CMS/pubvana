@@ -111,7 +111,11 @@ final class SettingTest extends TestCase
     {
         self::assertNull(Setting::cast('boolean', null));
         self::assertNull(Setting::cast('integer', null));
+        self::assertNull(Setting::cast('double', null));
         self::assertNull(Setting::cast('array', null));
+        self::assertNull(Setting::cast('object', null));
+        self::assertNull(Setting::cast('NULL', null));
+        self::assertNull(Setting::cast('anything-else', null));
     }
 
     private function createSetting(string $key, string $value, string $type): Setting
