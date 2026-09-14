@@ -53,9 +53,11 @@ class MarketplaceInstall extends \Pubvana\Models\AbstractModel
 
     public function findByProductId(int $storeProductId): ?self
     {
-        $this->reset();
-        $this->eq('store_product_id', $storeProductId)->find();
-        return $this->isHydrated() ? $this : null;
+        // Fresh instance: reset() does not clear declared typed props, so a
+        // miss on a reused instance would return stale data as hydrated.
+        $query = new self($this->getDatabaseConnection());
+        $query->eq('store_product_id', $storeProductId)->find();
+        return $query->isHydrated() ? $query : null;
     }
 
     /**
@@ -64,16 +66,18 @@ class MarketplaceInstall extends \Pubvana\Models\AbstractModel
      */
     public function findByPackageId(string $packageId): ?self
     {
-        $this->reset();
-        $this->eq('package_id', $packageId)->find();
-        return $this->isHydrated() ? $this : null;
+        // Fresh instance: see findByProductId() for why $this cannot be reused.
+        $query = new self($this->getDatabaseConnection());
+        $query->eq('package_id', $packageId)->find();
+        return $query->isHydrated() ? $query : null;
     }
 
     public function findByLicenseKey(string $key): ?self
     {
-        $this->reset();
-        $this->eq('license_key', $key)->find();
-        return $this->isHydrated() ? $this : null;
+        // Fresh instance: see findByProductId() for why $this cannot be reused.
+        $query = new self($this->getDatabaseConnection());
+        $query->eq('license_key', $key)->find();
+        return $query->isHydrated() ? $query : null;
     }
 
     /**
