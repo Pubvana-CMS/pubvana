@@ -67,6 +67,24 @@ final class PagesModelsTest extends TestCase
         self::assertTrue($model->slugExists('hello', 99999));
     }
 
+    public function testPageCreatedByForSlug(): void
+    {
+        $page = (new Page($this->pdo))->createPage('About', '<p>Hi</p>', 3);
+        $page->updatePage(['status' => 'published']);
+
+        $model = new Page($this->pdo);
+        self::assertSame(3, $model->createdByForSlug('about'));
+        self::assertNull($model->createdByForSlug('missing'));
+
+        // Drafts are invisible to the lean lookup.
+        (new Page($this->pdo))->createPage('Draft', 'x', 5);
+        self::assertNull($model->createdByForSlug('draft'));
+
+        // Soft-deleted rows are invisible too.
+        $page->softDelete();
+        self::assertNull($model->createdByForSlug('about'));
+    }
+
     public function testPaginationCountPublishedOptions(): void
     {
         for ($i = 1; $i <= 5; $i++) {

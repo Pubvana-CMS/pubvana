@@ -96,6 +96,23 @@ class Page extends \Pubvana\Models\AbstractModel
     }
 
     /**
+     * Creator id for a published page slug, or null when not found.
+     *
+     * Lean single-column lookup for the Profiles author card block; avoids
+     * hydrating the full page row.
+     */
+    public function createdByForSlug(string $slug): ?int
+    {
+        $query = new self($this->getDatabaseConnection());
+        $values = $query->eq('slug', $slug)
+                        ->eq('status', 'published')
+                        ->isNull('deleted_at')
+                        ->limit(1)
+                        ->pluck('created_by');
+        return $values === [] ? null : (int) $values[0];
+    }
+
+    /**
      * Check if a slug already exists (excluding a given page ID).
      *
      * @param string $slug Slug to check

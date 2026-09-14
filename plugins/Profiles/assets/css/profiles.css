@@ -63,16 +63,24 @@
     margin: 0;
 }
 
-.pv-profile-links li {
+.pv-profile-link-item {
     padding: .25rem 0;
 }
 
-.pv-profile-links a {
+/* Each social link carries its own platform class so themes can target
+   them individually; the shared look is grouped here. */
+.pv-profile-link-website,
+.pv-profile-link-twitter,
+.pv-profile-link-facebook,
+.pv-profile-link-linkedin {
     color: #1a6b3c;
     text-decoration: none;
 }
 
-.pv-profile-links a:hover {
+.pv-profile-link-website:hover,
+.pv-profile-link-twitter:hover,
+.pv-profile-link-facebook:hover,
+.pv-profile-link-linkedin:hover {
     text-decoration: underline;
 }
 
@@ -152,4 +160,39 @@
     display: flex;
     gap: .5rem;
     margin-top: .5rem;
+}
+
+/* ── Author Card block ── */
+
+.pv-author-card {
+    margin-top: 1.5rem;
+}
+
+.pv-author-card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0 0 1rem;
+}
+
+.pv-author-card-body {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.pv-author-card-body .pv-profile-avatar {
+    flex-shrink: 0;
+}
+
+.pv-author-card-body .pv-profile-name {
+    font-size: 1.125rem;
+}
+
+.pv-author-card-body .pv-profile-username a {
+    color: #1a6b3c;
+    text-decoration: none;
+}
+
+.pv-author-card-body .pv-profile-username a:hover {
+    text-decoration: underline;
 }

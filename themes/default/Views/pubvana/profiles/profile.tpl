@@ -23,24 +23,25 @@
     {% endif %}
 
     {# Conditional: the links section renders only when at least one social field is set. #}
-    {% if profile.website or profile.twitter or profile.facebook or profile.linkedin %}
+    {% if safe_website or twitter_url or facebook_url or linkedin_url %}
     <div class="pv-profile-section">
         <h5 class="pv-profile-section-title">Links</h5>
         <ul class="pv-profile-links">
             {# One conditional per network: each renders only when the field is filled. #}
             {# rel="nofollow noopener" keeps these user-entered links from passing ranking or window access. #}
-            {# safe_website is controller-side: only full http(s) URLs become a navigable href. #}
+            {# safe_website and the *_url fields are controller-side: only full http(s) URLs become a navigable href. #}
+            {# Each link carries its own platform class so themes can target them individually. #}
             {% if safe_website %}
-            <li><a href="{{ safe_website }}" rel="nofollow noopener">{{ safe_website }}</a></li>
+            <li class="pv-profile-link-item"><a href="{{ safe_website }}" class="pv-profile-link-website" rel="nofollow noopener">{{ safe_website }}</a></li>
             {% endif %}
-            {% if profile.twitter %}
-            <li><a href="https://twitter.com/{{ profile.twitter }}" rel="nofollow noopener">@{{ profile.twitter }}</a></li>
+            {% if twitter_url %}
+            <li class="pv-profile-link-item"><a href="{{ twitter_url }}" class="pv-profile-link-twitter" rel="nofollow noopener">{{ twitter_url }}</a></li>
             {% endif %}
-            {% if profile.facebook %}
-            <li><a href="https://facebook.com/{{ profile.facebook }}" rel="nofollow noopener">{{ profile.facebook }}</a></li>
+            {% if facebook_url %}
+            <li class="pv-profile-link-item"><a href="{{ facebook_url }}" class="pv-profile-link-facebook" rel="nofollow noopener">{{ facebook_url }}</a></li>
             {% endif %}
-            {% if profile.linkedin %}
-            <li><a href="https://linkedin.com/in/{{ profile.linkedin }}" rel="nofollow noopener">{{ profile.linkedin }}</a></li>
+            {% if linkedin_url %}
+            <li class="pv-profile-link-item"><a href="{{ linkedin_url }}" class="pv-profile-link-linkedin" rel="nofollow noopener">{{ linkedin_url }}</a></li>
             {% endif %}
         </ul>
     </div>

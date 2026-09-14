@@ -142,6 +142,39 @@ class UrlService
     }
 
     /**
+     * Normalize a value into a full, safe http(s) URL.
+     *
+     * Accepts either a full URL ("https://example.com/user") or a bare
+     * value ("user") that gets the given base prepended. Full URLs pass
+     * through unchanged when they are safe external URLs; anything else
+     * returns null so callers render no link.
+     *
+     * Generic by design: the base is caller-supplied, so plugins can
+     * normalize handles for their own platforms (e.g. a profile plugin
+     * passing 'https://twitter.com/' for a Twitter handle).
+     *
+     * Pure static so models (which have no Engine reference) can use it too.
+     *
+     * @param string|null $value Raw stored value
+     * @param string      $base  Base URL to prepend to a bare value
+     */
+    public static function normalizeExternalUrl(?string $value, string $base): ?string
+    {
+        $candidate = trim((string) ($value ?? ''));
+        if ($candidate === '') {
+            return null;
+        }
+
+        // Full URL: pass through only when it is a safe external URL.
+        if (preg_match('#^https?://#i', $candidate)) {
+            return self::isSafeExternalUrl($candidate) ? $candidate : null;
+        }
+
+        $base = rtrim($base, '/') . '/';
+        return $base . $candidate;
+    }
+
+    /**
      * Reduce an absolute http(s) URL to its path and query when its host and
      * port match the site's own, null otherwise. The host is compared with
      * parse_url(), never string prefixing, so lookalike hosts

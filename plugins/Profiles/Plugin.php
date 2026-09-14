@@ -6,6 +6,7 @@ namespace Pubvana\Plugins\Profiles;
 
 use Pubvana\Plugins\Profiles\Controllers\ProfilesAdminController;
 use Pubvana\Plugins\Profiles\Controllers\ProfilesPublicController;
+use Pubvana\Plugins\Profiles\Services\ProfileBlockService;
 use Pubvana\Services\PluginInterface;
 use flight\Engine;
 use flight\net\Router;
@@ -21,6 +22,14 @@ class Plugin implements PluginInterface
             static $instance = null;
             if ($instance === null) {
                 $instance = new Models\Profile($app->db(), $config);
+            }
+            return $instance;
+        });
+
+        $app->map('profileBlock', function () use ($app) {
+            static $instance = null;
+            if ($instance === null) {
+                $instance = new ProfileBlockService($app);
             }
             return $instance;
         });
@@ -46,6 +55,23 @@ class Plugin implements PluginInterface
         $adext->register('public.css', 'default', 'pubvana.profiles', [
             'url'      => '/assets/plugin/Profiles/css/profiles.css',
             'priority' => 50,
+        ]);
+
+        // ─── Blocks ─────────────────────────────────────────────────────
+
+        $adext->register('block', 'available', 'pubvana.profiles.author-card', [
+            'label'       => 'Author Card',
+            'description' => 'Profile card for the current post or page author',
+            'provider'    => fn(array $options) => $app->profileBlock()->provide($options),
+            'template'    => 'pubvana/profiles/blocks/author-card',
+            'priority'    => 50,
+            'options'     => [
+                'show_on_blog'  => ['type' => 'toggle', 'label' => 'Show on blog posts', 'default' => 1],
+                'show_on_pages' => ['type' => 'toggle', 'label' => 'Show on pages', 'default' => 0],
+                'title'         => ['type' => 'input', 'label' => 'Title', 'default' => 'About the Author'],
+                'show_avatar'   => ['type' => 'toggle', 'label' => 'Show avatar', 'default' => 1],
+                'show_socials'  => ['type' => 'toggle', 'label' => 'Show social links', 'default' => 1],
+            ],
         ]);
     }
 }

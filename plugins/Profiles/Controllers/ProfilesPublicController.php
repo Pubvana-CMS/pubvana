@@ -41,12 +41,15 @@ class ProfilesPublicController extends PublicController
             : null;
 
         $this->render('pubvana/profiles/profile', [
-            'title'        => ($profile->display_name ?? $user->username) . "'s Profile",
-            'profile'      => $profile,
-            'user'         => $user,
-            'isOwner'      => $isOwner,
-            'avatar_url'   => $avatarUrl,
-            'safe_website' => $safeWebsite,
+            'title'         => ($profile->display_name ?? $user->username) . "'s Profile",
+            'profile'       => $profile,
+            'user'          => $user,
+            'isOwner'       => $isOwner,
+            'avatar_url'    => $avatarUrl,
+            'safe_website'  => $safeWebsite,
+            'twitter_url'   => UrlService::normalizeExternalUrl(ltrim((string) $profile->twitter, '@'), 'https://twitter.com/'),
+            'facebook_url'  => UrlService::normalizeExternalUrl(ltrim((string) $profile->facebook, '@'), 'https://facebook.com/'),
+            'linkedin_url'  => UrlService::normalizeExternalUrl(ltrim((string) $profile->linkedin, '@'), 'https://linkedin.com/in/'),
         ]);
     }
 

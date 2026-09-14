@@ -88,6 +88,23 @@ final class BlogModelsTest extends TestCase
         self::assertTrue($model->slugExists('hello', $id + 99));
     }
 
+    public function testPostAuthorIdForSlug(): void
+    {
+        $this->insertPost('Hello', 'hello', 'published');
+
+        $model = new Post($this->pdo);
+        self::assertSame(1, $model->authorIdForSlug('hello'));
+        self::assertNull($model->authorIdForSlug('missing'));
+
+        // Drafts are invisible to the lean lookup.
+        $this->insertPost('Draft', 'draft-post', 'draft');
+        self::assertNull($model->authorIdForSlug('draft-post'));
+
+        // Soft-deleted rows are invisible too.
+        $this->pdo->exec("UPDATE posts SET deleted_at = '2026-01-01 00:00:00' WHERE slug = 'hello'");
+        self::assertNull($model->authorIdForSlug('hello'));
+    }
+
     public function testPostPaginateAndCount(): void
     {
         for ($i = 1; $i <= 5; $i++) {

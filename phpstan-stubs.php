@@ -117,6 +117,7 @@ namespace flight {
      * @phpstan-method \Pubvana\Plugins\Search\Services\SearchService search()
      * @phpstan-method \Pubvana\Plugins\Forms\Services\FormsService forms()
      * @phpstan-method \Pubvana\Plugins\Profiles\Models\Profile profiles()
+     * @phpstan-method \Pubvana\Plugins\Profiles\Services\ProfileBlockService profileBlock()
      * @phpstan-method \Pubvana\Plugins\Redirects\Services\RedirectsService redirects()
      * @phpstan-method \Pubvana\Plugins\Redirects\Services\RedirectLinksService redirectLinks()
      * @phpstan-method \Pubvana\Plugins\Analytics\Services\AnalyticsService analytics()
@@ -346,6 +347,12 @@ namespace Pubvana\Plugins\Forms\Services {
 
 namespace Pubvana\Plugins\Profiles\Models {
     class Profile
+    {
+    }
+}
+
+namespace Pubvana\Plugins\Profiles\Services {
+    class ProfileBlockService
     {
     }
 }

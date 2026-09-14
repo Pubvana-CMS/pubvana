@@ -252,6 +252,18 @@ $wysiwygSelectors = [];
                                                   name="values[<?= htmlspecialchars($fieldKey) ?>]"><?= htmlspecialchars($vals[$fieldKey] ?? $fieldDef['default'] ?? '') ?></textarea>
                                     </div>
 
+                                <?php elseif ($fieldType === 'toggle'): ?>
+                                    <?php $toggleChecked = !empty($vals[$fieldKey] ?? $fieldDef['default'] ?? false); ?>
+                                    <div class="mb-3">
+                                        <label class="form-label"><?= htmlspecialchars($fieldDef['label'] ?? $fieldKey) ?></label>
+                                        <input type="hidden" name="values[<?= htmlspecialchars($fieldKey) ?>]" value="0">
+                                        <label class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox"
+                                                   name="values[<?= htmlspecialchars($fieldKey) ?>]" value="1"
+                                                   <?= $toggleChecked ? 'checked' : '' ?>>
+                                        </label>
+                                    </div>
+
                                 <?php else: ?>
                                     <div class="mb-3">
                                         <label class="form-label"><?= htmlspecialchars($fieldDef['label'] ?? $fieldKey) ?></label>

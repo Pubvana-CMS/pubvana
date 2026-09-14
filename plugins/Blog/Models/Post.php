@@ -66,6 +66,23 @@ class Post extends \Pubvana\Models\AbstractModel
         return $this->isHydrated() ? $this : null;
     }
 
+    /**
+     * Author id for a published post slug, or null when not found.
+     *
+     * Lean single-column lookup for the Profiles author card block; avoids
+     * hydrating the full post row.
+     */
+    public function authorIdForSlug(string $slug): ?int
+    {
+        $query = new self($this->getDatabaseConnection());
+        $values = $query->eq('slug', $slug)
+                        ->eq('status', 'published')
+                        ->isNull('deleted_at')
+                        ->limit(1)
+                        ->pluck('author_id');
+        return $values === [] ? null : (int) $values[0];
+    }
+
     public function findByPreviewToken(string $token): ?self
     {
         $this->reset();

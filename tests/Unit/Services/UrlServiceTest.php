@@ -204,6 +204,54 @@ final class UrlServiceTest extends TestCase
         self::assertTrue(UrlService::isSafeExternalUrl(" https://example.com/page\t"));
     }
 
+    // -----------------------------------------------------------------
+    // normalizeExternalUrl()
+    // -----------------------------------------------------------------
+
+    public function testNormalizeExternalUrlReturnsNullForEmpty(): void
+    {
+        self::assertNull(UrlService::normalizeExternalUrl(null, 'https://twitter.com/'));
+        self::assertNull(UrlService::normalizeExternalUrl('', 'https://twitter.com/'));
+        self::assertNull(UrlService::normalizeExternalUrl('   ', 'https://twitter.com/'));
+    }
+
+    public function testNormalizeExternalUrlPrependsBaseToBareValue(): void
+    {
+        self::assertSame(
+            'https://twitter.com/user',
+            UrlService::normalizeExternalUrl('user', 'https://twitter.com/')
+        );
+        self::assertSame(
+            'https://twitter.com/user',
+            UrlService::normalizeExternalUrl('user', 'https://twitter.com')
+        );
+    }
+
+    public function testNormalizeExternalUrlPassesThroughSafeFullUrl(): void
+    {
+        self::assertSame(
+            'https://x.com/user',
+            UrlService::normalizeExternalUrl('https://x.com/user', 'https://twitter.com/')
+        );
+    }
+
+    public function testNormalizeExternalUrlRefusesUnsafeFullUrl(): void
+    {
+        // javascript: has no http(s) scheme, so it is treated as a bare value
+        // and gets the base prepended (safe as an href on the base domain).
+        self::assertSame(
+            'https://twitter.com/javascript:alert(1)',
+            UrlService::normalizeExternalUrl('javascript:alert(1)', 'https://twitter.com/')
+        );
+        // Scheme-relative URLs are treated as bare values too (safe on the base domain).
+        self::assertSame(
+            'https://twitter.com///evil.com',
+            UrlService::normalizeExternalUrl('//evil.com', 'https://twitter.com/')
+        );
+        // Actual unsafe full URLs with an http(s) scheme that fail isSafeExternalUrl.
+        self::assertNull(UrlService::normalizeExternalUrl("https://example.com/\x00evil", 'https://twitter.com/'));
+    }
+
     private function service(string $siteUrl): UrlService
     {
         $app = $this->app([

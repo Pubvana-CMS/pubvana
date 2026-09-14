@@ -42,7 +42,7 @@ final class ProfilesPublicWebsiteGuardTest extends TestCase
         );
 
         self::assertStringContainsString('UrlService::isSafeExternalUrl($profile->website ?? null)', $src);
-        self::assertStringContainsString("'safe_website' =>", $src);
+        self::assertStringContainsString("'safe_website'", $src);
     }
 
     public function testTemplateRendersOnlyTheGuardedWebsite(): void
