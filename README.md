@@ -110,12 +110,7 @@ See [Security](SECURITY.md) Report at [GitHub Security Advisories](https://githu
 
 ### Production Hardening
 
-- Set `APP_ENV=production` in `.env`
-- Set `FORCE_HTTPS=true` in `.env`
-- Use a strong password for your admin account
-- Set `SITE_URL` to your actual domain
-- Ensure `.env` has permissions `600` and is not committed to version control
-- Point your web server's DocumentRoot to `public/`
+See [HARDENING.md](HARDENING.md) for the production checklist (env, HTTPS, headers, auth, logging, backups).
 
 ## Bug Reports and Feature Requests
 

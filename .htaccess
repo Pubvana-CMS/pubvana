@@ -1,9 +1,31 @@
 # Disable directory browsing
 Options -Indexes
 
+# Defense in depth when mod_rewrite is off: block sensitive files directly.
+# These work without rewrite and cover the repo-root-served fallback.
+# mod_alias RedirectMatch covers directories even with rewrite disabled.
+<IfModule mod_alias.c>
+    RedirectMatch 403 ^/(\.git|\.env|\.htaccess)(/|$)
+    RedirectMatch 403 ^/(app|vendor|writable|plugins|themes|tests|node_modules)(/|$)
+    RedirectMatch 403 ^/(composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml|psalm.*|phpstan.*|runway|cron|releases\.json|pubvana\.json|\.migrations_installed)(/|$)
+</IfModule>
+<FilesMatch "^(\.env|\.htaccess|\.gitignore|composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml|psalm.*|phpstan.*|releases\.json|pubvana\.json|\.migrations_installed|runway|cron)$">
+    Require all denied
+</FilesMatch>
+
 <IfModule mod_rewrite.c>
     Options +FollowSymlinks
     RewriteEngine On
+
+    # Block dotfiles (.env, .git, .htaccess) first, except ACME challenges
+    RewriteCond %{REQUEST_URI} !^/\.well-known/
+    RewriteRule ^\. - [F,L]
+
+    # Block sensitive files
+    RewriteRule ^(composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml|psalm.*|phpstan.*|runway|cron|releases\.json|pubvana\.json|\.migrations_installed) - [F,L]
+
+    # Deny access to sensitive directories
+    RewriteRule ^(app|vendor|writable|plugins|themes|tests|node_modules)(/|$) - [F,L]
 
     # Redirect trailing slashes
     RewriteCond %{REQUEST_FILENAME} !-d
@@ -29,9 +51,6 @@ Options -Indexes
 <IfModule !mod_rewrite.c>
     ErrorDocument 404 public/index.php
 </IfModule>
-
-# Deny access to sensitive directories
-RewriteRule ^(app|vendor|writable|plugins)(/|$) - [F,L]
 
 # Disable server signature
 ServerSignature Off
