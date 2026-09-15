@@ -4,9 +4,10 @@
 
 # Pubvana CMS
 
-Pubvana v3 is a full-featured CMS built on the [FlightPHP](https://github.com/flightphp) microframework with shared-host friendly setup for personal blogs, small to medium business websites, company intranets and more. We have completely rebuilt version 3 with a new, fresh administration panel, plugin extensions, faster internals, and more included free features than you\'d expect in a free CMS.
+Pubvana v3 is a flexible, full-featured, shared-host friendly CMS (Content Management System) for personal blogs, small to medium business websites, company intranets and more. Version 3 has a new administration panel, plugin extensions, faster internals, and more features than you'd expect in a free, open source CMS.
 
 ## v3
+
 [![v3](https://img.shields.io/badge/v3-In%20Development-blue)](https://github.com/Pubvana-CMS/pubvana)
 [![Latest Unstable Version](http://poser.pugx.org/enlivenapp/pubvana/v/unstable)](https://packagist.org/packages/enlivenapp/pubvana) 
 [![PHP](https://img.shields.io/badge/PHP-8.2%2B-blue.svg)](https://www.php.net)
@@ -23,6 +24,7 @@ Pubvana v3 is a full-featured CMS built on the [FlightPHP](https://github.com/fl
 [![Total Downloads](http://poser.pugx.org/enlivenapp/pubvana/downloads)](https://packagist.org/packages/enlivenapp/pubvana) 
 
 ## v2
+
 [![Latest Release](https://img.shields.io/github/v/release/Pubvana-CMS/pubvana)](https://github.com/Pubvana-CMS/pubvana/releases)
 [![Codeigniter 4](https://img.shields.io/badge/Codeigniter4-4.7-orange.svg)](https://codeigniter.com)
 [![status](https://img.shields.io/badge/status-maintenance-blue)](https://github.com/Pubvana-CMS/pubvana)
@@ -33,7 +35,7 @@ Pubvana v3 is a full-featured CMS built on the [FlightPHP](https://github.com/fl
 ---
 
 ## Notice: 
-v3 is currently in Alpha developement. Thing change rapidly, and untested update ability is available. If you need a stable release *right now* consider [Pubvana v2](https://github.com/Pubvana-CMS/pubvana/releases/tag/v2.3.6).  Thanks for considering Pubvana!
+v3 is currently in Alpha developement. Thing change rapidly, and untested update ability is available. Thanks for considering Pubvana!
 
 ---
 
@@ -70,16 +72,16 @@ See [Install](INSTALL.md)
 
 ```
 pubvana/
-  app/
+  app/                  - Core, like Admin, necessary services, etc
     config/             - Bootstrap, routes, services, env handling
-    Controllers/        - Admin and public controllers
+    Controllers/        - Admin, Public, and API controllers
     Database/           - Core migrations and seeds
     Models/             - Core models
     Services/           - ExtensionRegistry, PluginLoader, PluginView, etc.
     Views/admin/        - Admin templates (.php)
-  plugins/              - One folder per plugin
+  plugins/              - Extend functionality
   themes/               - Theme folders with Vision templates
-  vendor/               - software from others' we rely on
+  vendor/               - software from others we use
   writable/             - Automated writing to files from the site
 ```
 
@@ -130,13 +132,14 @@ MIT. [LICENSE](LICENSE.md)
 ## Contributors
 
 - Enliven Applications
+- Your Name Here
 
-- [FlightPHP](https://github.com/flightphp):  While the folks over at flightPHP hasn't contributed code to this project directly, they have provided the basis of the project with `core`, `active record` and others. Consider using FlightPHP for your next project! 
+- [FlightPHP](https://github.com/flightphp):  While the good folks over at flightPHP haven't contributed code to this project directly, they have provided the basis of the project with `core`, `active record` and others. Consider using FlightPHP for your next project! 
 
 ## Legacy
 
 - Orginally brought to github by [Kami](https://github.com/Kami) as [Open Blog](https://github.com/Kami/Open-Blog) around 2010 built on Codeigniter v(2-ish).
 - Dec. 2016 Kami released [Open Blog](https://github.com/enlivenapp/Open-Blog) to [Enlivenapp](https://github.com/enlivenapp) along with domains.
 - Enlivenapp brought about [Open Blog 3](https://github.com/enlivenapp/Open-Blog-3) updated with Codeigniter3 and more functionality.
-- Mar 2018 some copyright considerations caused the renaming of Open Blog to Pubvana and was release under Enlivenapp/pubvana built on Codeigniter4 until Aug of 2026.
+- Mar 2018 some copyright considerations caused the renaming of Open Blog to Pubvana and was release under Enlivenapp/pubvana built on Codeigniter4 from Feb 2026 until Aug of 2026.
 - Aug 2026 Pubvana was moved to it's own organisation(github) where [Pubvana v3](https://github.com/Pubvana-CMS/pubvana) replaced Codeigniter with [FlightPHP](https://github.com/flightphp) with updated and modern coding style, security, and a larger feature set. This is a completely different codebase and is not backwards compatable to previous versions of Pubvana and Open Blog. 
