@@ -252,7 +252,7 @@ $apiBase = rtrim((string) \Flight::app()->pluginLoader()->apiPrefix('pubvana/ai'
             <p class="text-secondary">
                 The machine-readable endpoint reference lives in two places:
                 <code>GET <?= htmlspecialchars($apiBase) ?>/help</code> serves the live guide an AI can read,
-                and <code>plugins/AiAssistant/AI-README.md</code> documents
+                and <code>plugins/AiAssistant/AGENTS.md</code> documents
                 every endpoint, the permissions each needs, and examples.
                 Broken-links and analytics endpoints are stubs and return
                 <code>501</code> until implemented.

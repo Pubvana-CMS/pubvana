@@ -1,6 +1,6 @@
 # AGENTS.md — Comments plugin
 
-Guidance for AI agents contributing to this plugin, which ships inside the main Pubvana repo.
+Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
 ## Overview
 
@@ -21,7 +21,7 @@ Comments provides nested, moderated site comments. Captcha on the comment form i
 3. **Treat comment hosts as opt-in.** A host only renders when its adext key is in the `Comments.enabledHosts` JSON setting (`Services/CommentService.php:504-541`). New hosts start closed. Reason: hosts must be explicitly enabled by an admin before accepting visitor content.
 4. **Enforce the nesting limit on every reply.** `create()` checks `getDepth()` against `max_nesting_depth` (default 3) and throws before insert (`Services/CommentService.php:187-195`). Reason: unbounded threading makes threads unreadable and the model walk expensive.
 5. **Route all host lookups through the `comments.host` adext slot.** `hostItems()`, `hostItem()`, `hostTypeMap()`, and `enabledTypes()` all resolve hosts from registered `comments.host` contributions and cache them per request (`Services/CommentService.php:410-647`). Reason: hosts are other plugins by design; the adext registry is the only allowed discovery path and the caches stop per-comment SELECT storms.
-6. **Do not bypass the public gating chain in `dataFor()`.** A thread must render nothing when the system is disabled, the host type is not enabled, or the item disallows comments (`Services/CommentService.php:356-399`). Reason: an empty string is the contract hosts rely on to decide whether to inject anything.
+6. **Do not bypass the public gating chain in `dataFor()`.** A thread must render nothing when the system is disabled, the host type is not enabled, or the item disallows comments (`Services/CommentService.php:356-399`). Reason: an empty string is the signal hosts rely on to decide whether to inject anything.
 7. **Delegate captcha to the core CaptchaService.** `create()` checks `CaptchaService::enforcedFor('comments')` (provider configured plus the "Comment form" switch on in Settings > Captcha) and calls `verify()`; the service itself fails closed on a missing secret or an unreachable provider. Templates render the captcha with the `captcha` Vision tag, never with hardcoded provider markup. Reason: captcha config is site-wide (shared with forms and the sign-in form); duplicating provider logic here would drift.
 8. **Keep guest attribution split from user attribution.** Comments store either `user_id` or `guest_name`/`guest_email`/`guest_website`, never both (`Controllers/CommentsPublicController.php:87-98`). Reason: the display and admin tooling branch on this split.
 9. **Do not add soft deletes to comments.** `delete()` is a hard delete (`Models/Comment.php:164-174`). Descendants are not cascaded; `buildTree()` promotes orphaned children to the thread root (`Services/CommentService.php:769-777`). Reason: moderation is explicit and a visitor comment must actually disappear, not linger as a tombstone.
@@ -63,7 +63,7 @@ plugins/Comments/
 - `admin.dashboard` card (pending count) and section (pending list) (`Plugin.php:62-114`).
 - `block.available` recent-comments (`Plugin.php:118-128`).
 
-**Host contract (outbound).** Content plugins register `comments.host` with a `callable` returning `{type, id, title, url, allow_comments}` items. `CommentService` consumes that catalog for the admin host manager, the recent-comments block, and host-style enrichment (`Services/CommentService.php:410-647`).
+**Host registration (outbound).** Content plugins register `comments.host` with a `label` and a `callable` returning `{type, id, title, url, allow_comments}` items. `type`/`id` identify the content the comments belong to, `allow_comments` is the per-item opt-in (default false), and `title`/`url` link stored comments back to their content in the admin. `CommentService` consumes that catalog for the admin host manager, the recent-comments block, and host-style enrichment (`Services/CommentService.php:410-647`).
 
 **Render pipeline (inbound).** A host calls `CommentService::render($type, $id, $allowComments)` or `dataFor()`; `render()` builds the view data, resolves the `.tpl` through the 3-tier override chain, and renders it (`Services/CommentService.php:267-344`). The result is injected into the host's template as `comments_html`.
 
@@ -73,9 +73,9 @@ plugins/Comments/
 
 ## Development and testing
 
-This plugin has no `composer.json` and no test suite, unlike library plugins in the Pubvana repo. It is exercised through the full app.
+The unit suite is in `tests/Unit/Plugins/Comments/` and covers the service (captcha enforcement, rate limiting, coverage), the model, and both controllers.
 
-- Lint/static analysis (app-wide, from the repo root; the plugin ships in-tree):
+- Lint/static analysis (app-wide, from the repo root; the plugin is in-tree):
   - `vendor/bin/phpstan analyse` (level 3, sees `app/` plus `scanDirectories: vendor/`; ignored-error baseline covers the migration/activerecord internals)
   - `find plugins/Comments -name '*.php' -exec php -l {} \;`
 - Manual verification checklist:
@@ -88,7 +88,7 @@ This plugin has no `composer.json` and no test suite, unlike library plugins in 
   - [ ] Delete a comment with replies and confirm orphaned replies still render at the top level
   - [ ] Confirm the recent-comments block lists approved comments linked back to their host content
 
-No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->`
+- Coverage: the unit suite covers `CommentService` (captcha enforcement, rate limiting), the `Comment` model, and the admin/public controllers. `<!-- TODO: add [coverage target] -->`
 
 ## Coding standards
 - **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
@@ -104,8 +104,8 @@ No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->
 
 | Source | Purpose |
 |--------|---------|
-| `README.md` | User and plugin-author docs: host registration shape, `render()`/`dataFor()` usage, opt-in host management, moderation permission |
-| `Plugin.php:13-22` | Plugin purpose and the `comments.host` contract description |
+| `README.md` | User-facing features and usage |
+| `Plugin.php:13-22` | Plugin purpose and the `comments.host` registration description |
 
 ## Common tasks
 
@@ -116,7 +116,7 @@ No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->
 | Change comment captcha behavior | Settings > Captcha (provider, keys, "Comment form" switch); enforcement point is `create()` calling `enforcedFor('comments')` |
 | Change the nesting limit | `Comments.max_nesting_depth` setting (database, default 3) |
 | Change moderation page pagination | `Controllers/CommentsAdminController.php:31` |
-| Register a new host side | Read `README.md` "Registering a host" (host plugin's own `Plugin.php`) |
+| Register a new host side | `comments.host` adext slot in the host plugin's `Plugin.php`; see the Host registration section |
 | Change the block output shape | `recentCommentsBlock()` (`Services/CommentService.php:661-693`) + `Views/public/blocks/recent-comments.tpl` |
 | Add an admin moderation action | Route in `Plugin.php:41-49`, action in `CommentsAdminController.php`, service method in `CommentService` |
 

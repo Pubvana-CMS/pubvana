@@ -1,6 +1,6 @@
 # AGENTS.md — Pages plugin
 
-Guidance for AI agents contributing to this plugin, which ships inside the main Pubvana repo.
+Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
 ## Overview
 
@@ -21,7 +21,7 @@ Pages is the static pages module of Pubvana: About, Contact, Terms, and similar 
 3. **Cap the revision table on every write.** Call `pruneRevisions()` after creating a revision; it prunes oldest-first to `max_revisions` (`Services/PagesService.php:156-160`). Reason: the table is unbounded otherwise, and restores never bump the counter.
 4. **Public routes only ever serve published, non-deleted pages.** `findBySlug()` requires `status = published` and `deleted_at IS NULL` (`Models/Page.php:70-78`). Reason: a leaked draft or archived page breaks the admin's draft workflow.
 5. **Delete is always a soft delete.** `deletePage()` only stamps `deleted_at` (`Services/PagesService.php:113-121`). Reason: early boot is not destructive; the schema plus indexes on `status` and `deleted_at` support later cleanup.
-6. **Never branch on a concrete migration style.** The plugin ships both a `change()` migration and an `up()`/`down()` migration (`Database/Migrations/2026-08-22-000002_CreatePagesTable.php:18`, `Database/Migrations/2026-08-29-000001_CreatePagesRevisionsTable.php:16`). Keep the style each file already uses.
+6. **Never branch on a concrete migration style.** The plugin includes both a `change()` migration and an `up()`/`down()` migration (`Database/Migrations/2026-08-22-000002_CreatePagesTable.php:18`, `Database/Migrations/2026-08-29-000001_CreatePagesRevisionsTable.php:16`). Keep the style each file already uses.
 7. **Own the excerpt logic only as finding content.** `searchContent()` supplies normalized matches; ranking and scoring belong to the Search plugin (`Models/Page.php:174-218`). Use `strip_tags` + `html_entity_decode` and `mb_*` string functions so excerpts never leak markup and never split multi-byte characters.
 8. **Keep the comments host key `page`.** `commentHostItems()` emits `type => 'page'` (`Services/PagesService.php:203-219`), matching the `commentable` payload the public view renders (`Controllers/PagesPublicController.php:58`). Reason: the Comments plugin keys threads by this type.
 9. **Keep the Jodit dependency optional.** Create/edit views guard on `!empty($joditHtml)` because `joditInit()` comes from the Media plugin (`Views/admin/edit.php:89-90`). Reason: Pages must stay usable if Media is disabled.
@@ -72,11 +72,12 @@ plugins/Pages/
 
 ## Development and testing
 
-This plugin has no `composer.json` and no test suite, unlike library plugins in the Pubvana repo. It is exercised through the full app.
+The plugin has no `composer.json` (it is in-tree), but it has a test suite under `tests/Unit/Plugins/Pages/` (9 files: `PagesUpdateTitleGuardTest`, `PagesServiceUrlTest`, `PagesAdminControllerTest`, `PagesPublicControllerTest`, `PagesAdminControllerUrlTest`, `PagesMigrationsSeedTest`, `PagesPluginTest`, `PagesServiceTest`, `PagesModelsTest`). It is also exercised through the full app.
 
-- Lint/static analysis (app-wide, from the repo root; the plugin ships in-tree):
-  - `vendor/bin/phpstan analyse` (level 3, sees `app/` plus `scanDirectories: vendor/`; ignored-error baseline covers the migration/activerecord internals)
+- Lint/static analysis (app-wide, from the repo root; the plugin is in-tree):
+  - `composer phpstan` (level 8, sees `app/` plus `plugins/`; ignored-error baseline covers the migration/activerecord internals)
   - `find plugins/Pages -name '*.php' -exec php -l {} \;`
+- Tests: `vendor/bin/phpunit --filter Pages`
 - Manual verification checklist:
   - [ ] Create a page; confirm a revision snapshot exists and the revision list shows it
   - [ ] Create two pages with the same title; confirm the second slug gets a `-N` suffix
@@ -90,7 +91,7 @@ This plugin has no `composer.json` and no test suite, unlike library plugins in 
   - [ ] Disable Media; confirm create/edit still render, just without Jodit
   - [ ] With `ai_generated` set and SEO disclosure enabled, confirm the public disclosure shows only then
 
-No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->`
+Coverage: the suite covers the service (URLs, updates, title guard), both controllers, the models, migrations/seeds, and the plugin registration.
 
 ## Coding standards
 - **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
@@ -107,9 +108,9 @@ No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->
 
 | Source | Purpose |
 |--------|---------|
-| `README.md` | Feature overview, route table, revision and `ai_generated` semantics, adext integration list |
+| `README.md` | User-facing features and usage |
 | `Services/PagesService.php:99-110` | The snapshot-before-update rule |
-| `Controllers/PagesPublicController.php:44-74` | Public rendering contract and disclosure logic |
+| `Controllers/PagesPublicController.php:44-74` | Public rendering behavior and disclosure logic |
 
 ## Common tasks
 
@@ -138,4 +139,4 @@ No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->
 - No versioned publishing, staging, or scheduled publish; a page is either `draft` or `published`.
 - No slug editing, and no multi-language page variants.
 - Hard deletion is out of scope; soft delete is the only delete path.
-- This file documents code as written. Known gap: the README claims restore snapshots the pre-restore state, but `restoreRevision()` snapshots after `updatePage()` overwrites the page (`Services/PagesService.php:143-150`), so the overwritten state is not preserved. `<!-- TODO: reconcile PagesService::restoreRevision ordering with the README claim that pre-restore state is snapshotted -->`
+- This file documents code as written. Known gap: `restoreRevision()` snapshots after `updatePage()` overwrites the page (`Services/PagesService.php:143-150`), so the pre-restore state is not preserved. `<!-- TODO: reconcile PagesService::restoreRevision ordering so the pre-restore state is snapshotted -->`

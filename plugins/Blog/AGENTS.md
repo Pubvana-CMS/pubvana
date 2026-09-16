@@ -1,6 +1,6 @@
 # AGENTS.md — Blog plugin
 
-Guidance for AI agents contributing to this plugin, which ships inside the main Pubvana repo.
+Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
 ## Overview
 
@@ -99,9 +99,9 @@ Categories and tags are many-to-many through `posts_to_categories` and `tags_to_
 
 ## Development and testing
 
-This plugin has no `composer.json` and no test suite, unlike library plugins in the Pubvana repo. It is exercised through the full app.
+The unit suite is in `tests/Unit/Plugins/Blog/` and covers the service (CRUD, revisions, taxonomy sync, blocks, search, dashboard), the models, both controllers, plugin registration, the status allowlist guard, taxonomy pagination, migrations and seed, and search wildcards.
 
-- Lint/static analysis (app-wide, from the repo root; note the app is scanned, this plugin ships in-tree):
+- Lint/static analysis (app-wide, from the repo root; note the app is scanned, this plugin is in-tree):
   - `vendor/bin/phpstan analyse` (level 3, sees `app/` plus `scanDirectories: vendor/`; the `enlivenapp` migration/activerecord internals are covered by the ignored-error baseline in `phpstan.neon`)
   - `php -l plugins/Blog/{**/*.php,*.php}` for syntax: `find plugins/Blog -name '*.php' -exec php -l {} \;`
 - Manual verification checklist:
@@ -114,7 +114,7 @@ This plugin has no `composer.json` and no test suite, unlike library plugins in 
   - [ ] Confirm the five blocks render and that related-posts scores shared tags/categories highest
   - [ ] Search a post by title word, excerpt word, and body word; check the weighted ordering
 
-No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->`
+- Coverage: the unit suite covers `BlogService` (CRUD, revisions, taxonomy sync, blocks, search, dashboard), the models, both controllers, plugin registration, the status allowlist guard, taxonomy pagination, migrations and seed, and search wildcards. `<!-- TODO: add [coverage target] -->`
 
 ## Coding standards
 - **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
@@ -130,7 +130,7 @@ No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->
 
 | Source | Purpose |
 |--------|---------|
-| `README.md` | User-facing module docs (structure, routes, revisions, previews, `ai_generated`). Note: line 78 claims `commentable_type` is `post`, but the code issues `type => 'blog'` (`Services/BlogService.php:498`, `Controllers/BlogPublicController.php:117, 223`). `<!-- TODO: reconcile README commentable_type claim with code -->` |
+| `README.md` | User-facing features and usage |
 | `Plugin.php:13-17` | Plugin purpose and `@package` attribution |
 
 ## Common tasks

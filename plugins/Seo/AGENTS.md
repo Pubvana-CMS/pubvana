@@ -1,6 +1,6 @@
 # AGENTS.md — Seo plugin
 
-Guidance for AI agents contributing to this plugin, which ships inside the main Pubvana repo.
+Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
 ## Overview
 
@@ -16,7 +16,7 @@ Seo manages on-page SEO for Pubvana: head meta tags with per-content overrides, 
 
 ## Project guidelines
 
-1. **Never let `renderHead()` emit `<title>`.** It renders description, canonical, robots, hreflang, Open Graph, Twitter, verification, injected, and JSON-LD lines only; the theme's header renders the title from `buildTitle()` (`Services/SeoService.php:392-396`, `README.md:19-27`). Reason: a duplicated `<title>` tag breaks the single-title contract the theme relies on.
+1. **Never let `renderHead()` emit `<title>`.** It renders description, canonical, robots, hreflang, Open Graph, Twitter, verification, injected, and JSON-LD lines only; the theme's header renders the title from `buildTitle()` (`Services/SeoService.php:392-396`). Reason: a duplicated `<title>` tag breaks the single-title rule the theme relies on.
 2. **Escape every value before emitting it.** Head tags use `htmlspecialchars(..., ENT_QUOTES, 'UTF-8')`; the sitemap uses `ENT_XML1` (`Services/SeoService.php:401-461`, `Services/SitemapService.php:151`). The only exception is `addTag()`, which injects raw HTML intentionally. Reason: title/description/canonical content is admin-controlled and must stay inert.
 3. **Publish only indexable URLs.** Sitemaps and llms.txt skip any item whose `seo_meta` robots directive is `noindex` (`Services/SitemapService.php:70-95`, `Services/LlmsTxtService.php:101-124`). Reason: telling crawlers to index a noindex URL defeats the directive.
 4. **Gate every fetch file in its public controller.** `/sitemap.xml` and `/llms.txt` halt 404 when their `Seo.*_enabled` setting is off (`Controllers/SeoPublicController.php:28-31, 58-61`); robots.txt always responds. New public endpoints must copy that pattern and the `X-Robots-Tag: noindex` header on the sitemap.
@@ -28,7 +28,7 @@ Seo manages on-page SEO for Pubvana: head meta tags with per-content overrides, 
 10. **`ContentAnalysisService::analyze()` stays a pure function.** It reads only its `$data` array and returns `{score, checks}` with no side effects (`Services/ContentAnalysisService.php:22-74`). Persistence happens later when the editor panel saves `seo_score` through `saveMeta()`. Keep analysis side-effect free.
 11. **Match each AI crawler against its stance.** Training bots default to `block`, retrieval/citation bots to `allow`; only `block` emits a `User-agent`/`Disallow` pair (`Services/RobotsTxtService.php:24-37, 84-101`). Adding a bot means updating the const map, its description, and the settings-key normalization. Reason: an unknown bot must never silently default to `allow`.
 12. **Keep the read-model light and per-request.** `getMetaField()` caches the meta record statically per content context for the life of the request (`Services/SeoService.php:480-503`). Reason: renderHead calls it many times; the cache keeps one query per content item.
-13. **Every emitted URL builds on the configured site origin, never the request Host header.** All five services get their base from `UrlService::siteOrigin()` (the DB-backed `CMS.siteUrl` setting; unconfigured falls back to the seeded `http://localhost`) and `getCurrentUrl()` contributes the request path only (`Services/SeoService.php`, `Services/SchemaService.php`, `Services/SitemapService.php`, `Services/RobotsTxtService.php`, `Services/LlmsTxtService.php`). Reason: the `Host` header is attacker-controlled and would otherwise poison canonical, `og:url`, JSON-LD `@id`, sitemap, robots.txt, and llms.txt URLs (AUDIT M4, same contract as the password-reset link in H5). Do not re-derive scheme/host from the request.
+13. **Every emitted URL builds on the configured site origin, never the request Host header.** All five services get their base from `UrlService::siteOrigin()` (the DB-backed `CMS.siteUrl` setting; unconfigured falls back to the seeded `http://localhost`) and `getCurrentUrl()` contributes the request path only (`Services/SeoService.php`, `Services/SchemaService.php`, `Services/SitemapService.php`, `Services/RobotsTxtService.php`, `Services/LlmsTxtService.php`). Reason: the `Host` header is attacker-controlled and would otherwise poison canonical, `og:url`, JSON-LD `@id`, sitemap, robots.txt, and llms.txt URLs (AUDIT M4, same rule as the password-reset link in H5). Do not re-derive scheme/host from the request.
 
 ## Repository layout
 
@@ -62,7 +62,7 @@ plugins/Seo/
 
 **Facades.** Six static-cached services are mapped: `seo` (DB + engine), `seoSchema`, `seoSitemap` (DB + engine), `seoRobots`, `seoLlmsTxt` (DB + engine), `seoAnalysis` (`Plugin.php:29-75`).
 
-**Context detection.** `detectContent()` inspects the request URL: homepage, `blog/{slug}` post, category/tag/blog archives, and `page/{slug}`, each building a typed context (title, description, url, image, author, AI flag, OG type, timestamps) (`Services/SeoService.php:43-134`). Core's `PublicController::render()` calls this when the plugin is loaded and seeds the theme `header` variable (`README.md:21`).
+**Context detection.** `detectContent()` inspects the request URL: homepage, `blog/{slug}` post, category/tag/blog archives, and `page/{slug}`, each building a typed context (title, description, url, image, author, AI flag, OG type, timestamps) (`Services/SeoService.php:43-134`). Core's `PublicController::render()` calls this when the plugin is loaded and seeds the theme `header` variable.
 
 **Head assembly.** `renderHead()` chains `buildDescription()` (160-char truncation), `buildCanonical()`, `buildRobots()`, `buildHreflang()`, `buildOpenGraph()`, `buildTwitterCard()`, verification tags, plugin-injected tags, then the JSON-LD block (`Services/SeoService.php:396-471`). Per-content overrides win over context values; site-level settings backfill the rest.
 
@@ -76,11 +76,12 @@ plugins/Seo/
 
 ## Development and testing
 
-This plugin has no `composer.json` and no test suite, unlike library plugins in the Pubvana repo. It is exercised through the full app.
+The plugin has no `composer.json` (it is in-tree), but it has a test suite under `tests/Unit/Plugins/Seo/` (7 files: `SeoHostHeaderTest`, `SeoFetchFileServiceTest`, `ContentAnalysisServiceTest`, `SeoMetaModelTest`, `SeoServiceTest`, `SeoControllerTest`, `SchemaServiceXssTest`). It is also exercised through the full app.
 
-- Lint/static analysis (app-wide, from the repo root; the plugin ships in-tree):
-  - `vendor/bin/phpstan analyse` (level 3; the ignored-error baseline covers the migration/activerecord internals)
+- Lint/static analysis (app-wide, from the repo root; the plugin is in-tree):
+  - `composer phpstan` (level 8, sees `app/` plus `plugins/`; the ignored-error baseline covers the migration/activerecord internals)
   - `find plugins/Seo -name '*.php' -exec php -l {} \;`
+- Tests: `vendor/bin/phpunit --filter Seo`
 - Manual verification checklist:
   - [ ] `/sitemap.xml` is valid XML, includes homepage + published content + archives, omits no-indexed items, and 404s with `Seo.sitemap_enabled` off
   - [ ] `/robots.txt` shows defaults plus `Disallow: /` only for blocked AI crawlers, the custom body when provided, and a sitemap reference using `CMS.siteUrl`
@@ -93,7 +94,7 @@ This plugin has no `composer.json` and no test suite, unlike library plugins in 
   - [ ] Dashboard Coverage/Avg Score math matches published content with/without meta
   - [ ] Disabling Blog or Pages empties their sitemap/llms sections instead of failing
 
-No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->`
+Coverage: the suite covers the service, the meta model, the content analysis service, the fetch-file services, the controller, host-header safety, and schema XSS escaping.
 
 ## Coding standards
 - **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
@@ -110,9 +111,9 @@ No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->
 
 | Source | Purpose |
 |--------|---------|
-| `README.md` | Feature scope, head output contract, panel workflow, service reference, dependencies |
+| `README.md` | User-facing features and usage |
 | `Services/SeoService.php:396-471` | The exact head block that core injects via the theme `header` variable |
-| `Services/SchemaService.php:39-99` | The connected-graph JSON-LD contract |
+| `Services/SchemaService.php:39-99` | The connected-graph JSON-LD shape |
 
 ## Common tasks
 
@@ -131,20 +132,20 @@ No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->
 - [ ] Every claim in changed code is grounded in the actual plugin code; no guessing at behavior
 - [ ] `declare(strict_types=1)` present; no em dashes in new prose; one-line reasons preserved on any edited guideline
 - [ ] PHP syntax verified (`php -l`) and PHPStan level 3 is clean on the app
-- [ ] Single `<title>` contract intact; all emitted values escaped; `addTag()` still the only raw path
+- [ ] Single `<title>` rule intact; all emitted values escaped; `addTag()` still the only raw path
 - [ ] `noindex` filtering, `*_enabled` gating, and the connected `@id` graph preserved
 - [ ] `saveMeta()` whitelist and migration stay in lockstep; author stays human; AI disclosure stays setting-gated
 - [ ] `analyze()` remains side-effect free; dashboard math resilient to missing hosts
-- [ ] README updated only if user-facing behavior changed; keep the check-count claim in sync with `analyze()`
+- [ ] README updated only if user-facing behavior changed
 
 ## Out of scope / non-goals
 
 - This is an in-tree application plugin, not a Composer package; no `composer.json` and nothing for Packagist.
-- No localization; labels are hardcoded in views (noted in `README.md`).
+- No localization; labels are hardcoded in views.
 - A single flat sitemap; no sitemap indexes, paging, or image/video sitemaps.
 - robots.txt directives are advisory text, not access enforcement; blocking a crawler there still needs server-level rules.
 - No content rewrite or keyword suggestions beyond the analysis warnings.
 - Known gaps to reconcile, not fixed here:
-  - `README.md:17` claims 14 SEO checks, but `analyze()` emits 15 checks (`Services/ContentAnalysisService.php:39-63`). `<!-- TODO: reconcile README check count with ContentAnalysisService::analyze -->`
+  - `analyze()` emits 15 checks (`Services/ContentAnalysisService.php:39-63`); keep the count in sync when adding or removing checks. `<!-- TODO: reconcile the check count with ContentAnalysisService::analyze -->`
   - Sitemap/llms/detectContent URL patterns hardcode the default Blog/Pages route prefixes (guideline 8). `<!-- TODO: derive prefixes through pluginLoader()->routePrefix when prefixes become configurable -->`
   - `getDashboardCards()` assumes `pages()` and `blog()` exist and would throw if either host were disabled (`Plugin.php:155-156`). `<!-- TODO: guard dashboard card math against missing host plugins -->`

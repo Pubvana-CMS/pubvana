@@ -1,6 +1,6 @@
 # AGENTS.md — Forms plugin
 
-Guidance for AI agents contributing to this plugin, which ships inside the main Pubvana repo.
+Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
 ## Overview
 
@@ -70,7 +70,7 @@ plugins/Forms/
 
 **Data model.** `forms` holds name, slug, description, status (`draft`/`published`), submit label, success message, notification emails; soft-deleted via `deleted_at`. `form_fields` holds per-field `type`, `name`, `label`, `help_text`, `placeholder`, `is_required`, `width`, `options_json`, `sort_order` (renders in this order). `form_submissions` stores `status`, `ip_address`, `user_agent`, `referrer_url`, and the sanitized payload as `payload_json`.
 
-**Render path.** `renderPublicForm()` resolves the field rows from the DB, builds the action URL from `flight.base_url` plus `routePrepend`, and renders each field by type (`text`, `email`, `phone`, `hidden`, `textarea`, `select`, `radio`, `checkbox`). Public styling ships in `assets/css/forms.css` via adext `public.css`. The submit button label and success message come from the `forms` row (`Services/FormsService.php:219-334`).
+**Render path.** `renderPublicForm()` resolves the field rows from the DB, builds the action URL from `flight.base_url` plus `routePrepend`, and renders each field by type (`text`, `email`, `phone`, `hidden`, `textarea`, `select`, `radio`, `checkbox`). Public styling is in `assets/css/forms.css` via adext `public.css`. The submit button label and success message come from the `forms` row (`Services/FormsService.php:219-334`).
 
 **Submission path.** The public controller loads the published form, delegates to `submitForm()` (honeypot, rate limit, captcha when the forms area is protected, per-field validation and sanitization), normalizes and redirects to `_return_url`, and stores a session flash so the next render repopulates values or errors (`Controllers/FormsPublicController.php:17-40`, `Services/FormsService.php:378-465`).
 
@@ -78,9 +78,9 @@ plugins/Forms/
 
 ## Development and testing
 
-This plugin has no `composer.json` and no test suite, unlike library plugins in the Pubvana repo. It is exercised through the full app.
+The unit suite is in `tests/Unit/Plugins/Forms/` and covers the service (captcha, coverage), the models, and the IP rate limit.
 
-- Lint/static analysis (app-wide, from the repo root; the plugin ships in-tree):
+- Lint/static analysis (app-wide, from the repo root; the plugin is in-tree):
   - `vendor/bin/phpstan analyse` (level 3, sees `app/` plus `scanDirectories: vendor/`; ignored-error baseline covers the migration/activerecord internals)
   - `find plugins/Forms -name '*.php' -exec php -l {} \;`
 - Manual verification checklist:
@@ -94,7 +94,7 @@ This plugin has no `composer.json` and no test suite, unlike library plugins in 
   - [ ] Set `_return_url` to an external URL and confirm the redirect reverts to `/`
   - [ ] Edit a form and confirm the field set is replaced (old fields gone, order follows definitions)
 
-No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->`
+- Coverage: the unit suite covers `FormsService` (captcha enforcement, coverage), the models, and the IP rate limit. `<!-- TODO: add [coverage target] -->`
 
 ## Coding standards
 - **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
@@ -111,7 +111,7 @@ No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->
 
 | Source | Purpose |
 |--------|---------|
-| `README.md` | User-facing module docs: shortcode syntax, block, service API, spam controls, emails, permissions. Note: the "Exporting per form" claim at line 44 has no corresponding route or method in this plugin's code. `<!-- TODO: reconcile README export claim with code (no export handler in Plugin.php or the controllers) -->` |
+| `README.md` | User-facing features and usage |
 | `Plugin.php:15-19` | Plugin purpose and `@package` attribution |
 
 ## Common tasks

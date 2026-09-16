@@ -1,6 +1,6 @@
 # AGENTS.md — Social Links plugin
 
-Guidance for AI agents contributing to this plugin, which ships inside the main Pubvana repo.
+Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
 ## Overview
 
@@ -24,7 +24,7 @@ Social Links is the port of the v2 SocialLinks feature. It stores site-wide soci
 6. **Treat `sort_order` as authoritative and sequential.** New links get `count(all())`, and `move()` swaps then re-normalizes 0..n via `persistOrder()` (`Services/SocialLinksService.php:238-251, 274-282`). Reason: re-normalizing absorbs any column drift so display order matches admin order.
 7. **Seed only the permission alias, do not gate in-controller.** `auth_permissions` seeds `social.manage` (`Database/Seeds/Seed.php:6-9`); `$authMiddleware = null` at `Plugin.php:40` is the development placeholder and no `can()` check is added. Reason: this matches the Redirects plugin and the core's disabled-auth state; gating is future middleware work.
 8. **Keep the three public.css FA loads in priority order.** `fontawesome` (base), `brands`, `solid`, then the plugin sheet (`Plugin.php:66-89`). Reason: brands and solid depend on the base font classes; inversing the order breaks rendering of `.fa-brands`.
-9. **Self-hosting means the staged files are part of the plugin.** Never swap to a CDN without updating both the CSP (`app/Middleware/SecurityHeadersMiddleware.php`) and this plugin's README. The current CSP (`style-src 'self'`, `font-src 'self'`) already permits `/assets/plugin/SocialLinks/...`.
+9. **Self-hosting means the staged files are part of the plugin.** Never swap to a CDN without updating the CSP (`app/Middleware/SecurityHeadersMiddleware.php`). The current CSP (`style-src 'self'`, `font-src 'self'`) already permits `/assets/plugin/SocialLinks/...`.
 10. **The block is icons-only.** The v2 "icons vs icons+text" style option is dropped because the region manager renders block options only as `repeater`, `textarea`, or text input (no select), so the block exposes a single `title` option (`Plugin.php:51-55`).
 11. **No runtime auto-sharing.** v2's `SocialSharingService` (auto-post to X/Facebook on publish) is not part of this port; this plugin only displays links. OAuth (v2 `SocialAuth`) is likewise out of scope.
 
@@ -65,12 +65,12 @@ plugins/SocialLinks/
 
 ## Development and testing
 
-This plugin has no `composer.json` and no test suite, like other in-tree Pubvana plugins. It is exercised through the full app.
+The plugin has no `composer.json` (it is in-tree), but it has a test suite under `tests/Unit/Plugins/SocialLinks/` (4 files: `SocialLinksAdminControllerTest`, `SocialLinksServiceTest`, `SocialLinksPluginTest`, `SocialLinksMigrationsSeedTest`). It is also exercised through the full app.
 
-- Static analysis (the app standard): code is written to PHPStan **level 8**; the committed `phpstan.neon` gates pushes at **level 3**. Neither config analyses `plugins/`, so run the plugin against a throwaway level-8 config:
-  - `vendor/bin/phpstan analyse --no-progress -c /tmp/opencode/phpstan-l8.neon` (level 8; mirror `phpstan.neon` paths/ignores but point `paths` at `plugins/SocialLinks` and `app/`)
-  - `vendor/bin/phpstan analyse` (the repo's level-3 gate, from the root)
-  - `find plugins/SocialLinks -name '*.php' -exec php -l {} \;``
+- Lint/static analysis (app-wide, from the repo root; the plugin is in-tree):
+  - `composer phpstan` (level 8, sees `app/` plus `plugins/`; the ignored-error baseline covers the migration/activerecord internals)
+  - `find plugins/SocialLinks -name '*.php' -exec php -l {} \;`
+- Tests: `vendor/bin/phpunit --filter SocialLinks`
 - Manual verification checklist:
   - [ ] Add every catalog platform; each row stores the matching label and `.fa-brands` class
   - [ ] Add a custom link; label and icon class are honored; empty fields fall back to `Website` / `fa-solid fa-link`
@@ -82,7 +82,7 @@ This plugin has no `composer.json` and no test suite, like other in-tree Pubvana
   - [ ] `GET /assets/plugin/SocialLinks/css/brands.min.css` and the two webfonts return 200
   - [ ] The admin list icons render (admin.css FA registration works)
 
-No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->`
+Coverage: the suite covers the service, the admin controller, migrations/seeds, and the plugin registration.
 
 ## Coding standards
 - **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
@@ -100,7 +100,7 @@ No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->
 
 | Source | Purpose |
 |--------|---------|
-| `README.md` | User-facing docs: install, admin usage, block placement, catalog, config, license |
+| `README.md` | User-facing features and usage |
 | `Services/SocialLinksService.php:33-70` | The authoritative platform/icon catalog |
 | `Config/Config.php` | Defaults for labels, icons, target, rel, title |
 

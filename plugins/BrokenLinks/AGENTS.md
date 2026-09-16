@@ -1,6 +1,6 @@
 # AGENTS.md — Broken Links plugin
 
-Guidance for AI agents contributing to this plugin, which ships inside the main Pubvana repo.
+Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
 ## Overview
 
@@ -89,7 +89,7 @@ This plugin has no `composer.json`. It is exercised through the full app and has
   - [ ] Run a scan twice; confirm no duplicate rows are created
   - [ ] Confirm a dismissed row is not updated when the same URL is found broken again
 
-No coverage is configured for this plugin.
+- Coverage: the unit suite covers `BrokenLinksService` (scan, extraction, CRUD, dismissal) and the SSRF vetting path. `<!-- TODO: add [coverage target] -->`
 
 ## Coding standards
 - **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.

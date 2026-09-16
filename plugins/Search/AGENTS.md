@@ -1,10 +1,10 @@
 # AGENTS.md — Search plugin
 
-Guidance for AI agents contributing to this plugin, which ships inside the main Pubvana repo.
+Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
 ## Overview
 
-Search aggregates content matches from content plugins (Blog, Pages, and future sources) into a single ranked, paginated results page. Content plugins register themselves as adext `search` providers; admins toggle whole sources on and off and edit two scalar settings. The plugin also ships a theme-region search form block.
+Search aggregates content matches from content plugins (Blog, Pages, and future sources) into a single ranked, paginated results page. Content plugins register themselves as adext `search` providers; admins toggle whole sources on and off and edit two scalar settings. The plugin also provides a theme-region search form block.
 
 - **Package:** `pubvana/search` (`pubvana.json:2`), semver `0.1.0`, category `content`
 - **License:** MIT, matching the main project (repo `composer.json` declares `"license": "MIT"`)
@@ -17,7 +17,7 @@ Search aggregates content matches from content plugins (Blog, Pages, and future 
 ## Project guidelines
 
 1. **Own the ranking here, nowhere else.** `scoreItem()` applies uniform weights (title first, then excerpt, then full body, plus a small recency boost) to every source (`Services/SearchService.php:232-285`). Provider plugins must find content only; their AGENTS.md files say the same. Reason: consistent, explainable results across sources.
-2. **Enforce the provider result contract at the boundary.** Items without a non-empty `title` or `url` are dropped, and a throwing provider is caught and skipped (`Services/SearchService.php:82-95`). Reason: one bad provider must never blank the whole search page.
+2. **Enforce the provider result shape at the boundary.** Items without a non-empty `title` or `url` are dropped, and a throwing provider is caught and skipped (`Services/SearchService.php:82-95`). Reason: one bad provider must never blank the whole search page.
 3. **Strip HTML before anything is scored or highlighted.** Scoring lowercases a `strip_tags` copy of `content` (`Services/SearchService.php:236`); highlighting runs `htmlspecialchars` first and only then injects `<mark>` (`Services/SearchService.php:307-327`). Never highlight unescaped text. Reason: `<mark>` injection over provider-unsanitized HTML is an XSS vector.
 4. **Keep highlight work on the visible slice only.** Highlighting runs after pagination, on the `array_slice` result (`Services/SearchService.php:112-117`). Reason: highlighting the full result set on a large index would waste the request.
 5. **Non-legacy sources are enabled by default.** `enabledSources()` treats a source as on unless its key sits in the `Search.disabledSources` JSON list (`Services/SearchService.php:146-162, 191-196`). New providers therefore appear automatically; never require an admin to flip them on.
@@ -40,7 +40,7 @@ plugins/Search/
 ├── pubvana.json                          Manifest; admin.menu (Search, ti-search)
 ├── Views/admin/index.php                 Source manager and settings form
 ├── Views/public/blocks/search.tpl         Block form (action, label, placeholder, button_text)
-└── README.md                             Provider contract, result shape, source management
+└── README.md                             Provider registration, result shape, source management
 ```
 
 ## Core architecture
@@ -57,13 +57,44 @@ plugins/Search/
 
 **Block registration.** The `pubvana.search.form` block is registered in PHP under adext `block`/`available` (`Plugin.php:55-66`) with four input options and a Vision template that GET-posts `q` to the configurable `action` URL (`Views/public/blocks/search.tpl`).
 
+## Provider registration
+
+Content plugins register as search sources through adext type `search`, slot `provider`:
+
+```php
+$adext->register('search', 'provider', 'pubvana.my-plugin', [
+    'label'        => 'My Items',
+    'content_type' => 'Item',
+    'description'  => 'Short description shown in the admin source list.',
+    'callable'     => fn(string $term) => $app->myPlugin()->searchProvider($term, $prefix),
+]);
+```
+
+`label` and `callable` are required; `description` and `content_type` are optional. The callable receives the raw query string and returns content matches; it finds content only, it does not rank it.
+
+**Result shape.** Return a list of normalized matches:
+
+```php
+[
+    'id'           => 12,
+    'title'        => 'My Item',
+    'url'          => $prefix . '/item-slug',
+    'excerpt'      => 'Plain-text snippet, may be pre-truncated around the term',
+    'content_type' => 'Item',
+    'published_at' => '2026-05-06 12:00:00',
+]
+```
+
+Providers should return only published or otherwise visible content, give `excerpt` as plain text with HTML stripped, optionally give `content` (also stripped) so the service can score the full body, and set `published_at` for the recency boost (use a creation date when there is no publish date).
+
 ## Development and testing
 
-This plugin has no `composer.json` and no test suite, unlike library plugins in the Pubvana repo. It is exercised through the full app.
+The plugin has no `composer.json` (it is in-tree), but it has a test suite under `tests/Unit/Plugins/Search/` (3 files: `SearchServiceTest`, `SearchPluginTest`, `SearchControllersTest`). It is also exercised through the full app.
 
-- Lint/static analysis (app-wide, from the repo root; the plugin ships in-tree):
-  - `vendor/bin/phpstan analyse` (level 3)
+- Lint/static analysis (app-wide, from the repo root; the plugin is in-tree):
+  - `composer phpstan` (level 8, sees `app/` plus `plugins/`)
   - `find plugins/Search -name '*.php' -exec php -l {} \;`
+- Tests: `vendor/bin/phpunit --filter Search`
 - Manual verification checklist:
   - [ ] Query shorter than `minQueryLength` returns the error state with zero results; empty `q` renders the empty page
   - [ ] Toggle a source off in `/admin/search`; its items vanish from results and from the `from` line; the toggle persists across a reload
@@ -76,7 +107,7 @@ This plugin has no `composer.json` and no test suite, unlike library plugins in 
   - [ ] The search form block, placed in a region, GET-submits `q` to its configured `action`
   - [ ] A provider that throws is silently skipped (nothing fatal)
 
-No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->`
+Coverage: the suite covers the service (scoring, aggregation, highlighting), the controllers, and the plugin registration.
 
 ## Coding standards
 - **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
@@ -93,7 +124,8 @@ No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->
 
 | Source | Purpose |
 |--------|---------|
-| `README.md` | Provider registration, result shape, ranking model, source management, block options |
+| `README.md` | User-facing features and usage |
+| `AGENTS.md` "Provider registration" | adext search registration and result shape |
 | `Services/SearchService.php:41-128` | The envelope the public and admin controllers consume |
 
 ## Common tasks
@@ -105,7 +137,7 @@ No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->
 | Add a scalar setting | `Controllers/SearchAdminController.php:43-47` + `Services/SearchService.php:201-204` + admin view |
 | Adjust block options | `Plugin.php:55-66` and `Views/public/blocks/search.tpl` |
 | Change pagination links | `buildPagination()` (`Controllers/SearchPublicController.php:52-71`) |
-| Document a new provider | `README.md` "Registering a search source" against the actual contract |
+| Document a new provider | `AGENTS.md` "Provider registration" |
 
 ## PR / contribution checklist
 

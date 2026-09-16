@@ -1,6 +1,6 @@
 # AGENTS.md — Backups plugin
 
-Guidance for AI agents contributing to this plugin, which ships inside the main Pubvana repo.
+Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
 ## Overview
 
@@ -8,7 +8,7 @@ Guidance for AI agents contributing to this plugin, which ships inside the main 
 
 - **Package:** `pubvana/backups` (local plugin, no Packagist)
 - **License:** MIT, matching the main project (repo `composer.json` declares `"license": "MIT"`)
-- **PHP:** not declared in the plugin (the repo `README.md:17` claims 8.1); the main project requires PHP `^8.2` (repo `composer.json`), which governs, and the code stays within it (`str_contains`/`str_starts_with` used)
+- **PHP:** not declared in the plugin; the main project requires PHP `^8.2` (repo `composer.json`), which governs, and the code stays within it (`str_contains`/`str_starts_with` used)
 - **Namespace:** `Pubvana\Plugins\Backups` (PSR-4 style, matches the folder path)
 - **Runtime dependencies:** Pubvana core (plugin interface, admin controller, adext, sessions, shield, CSRF). No third-party composer packages, no service worker
 - **Manifest:** `pubvana.json` (admin menu entry)
@@ -29,7 +29,7 @@ Guidance for AI agents contributing to this plugin, which ships inside the main 
 Backups/
   Plugin.php                    # Entry point: registers config, maps the 'backups' singleton, adds admin routes
   pubvana.json                  # Plugin manifest and admin menu (Backups, /backups)
-  README.md                     # User-facing install and usage docs
+  README.md                     # User-facing usage docs
   Config/
     Config.php                  # Defaults: max_backups, backup_path, backup_dirs, protected_configs
   Controllers/
@@ -81,11 +81,12 @@ The admin screen posts to `/admin/backups/create` or `/admin/backups/restore/{fi
 
 ## Development and testing
 
-This plugin has no `composer.json` and no test suite, unlike library plugins in the Pubvana repo.
+The unit suite is in `tests/Unit/Plugins/Backups/` and covers the SQL splitter, credential handling, download streaming, the progress lock, zip safety, and zip naming.
 
 ```bash
 php -l plugins/Backups/Config/Config.php           # lint syntax on every touched file
 php -l plugins/Backups/Plugin.php
+vendor/bin/phpunit tests/Unit/Plugins/Backups
 cd /var/www/html && php runway backups:create      # exercise the CLI create path
 php runway backups:restore 2026-01-01_000000-full.zip  # exercise the CLI restore path
 ```
@@ -93,7 +94,7 @@ php runway backups:restore 2026-01-01_000000-full.zip  # exercise the CLI restor
 - Verify both the `exec` branch (background, polled) and the fallback branch (sync) on the create and restore routes from `/admin/backups`.
 - Verify a restore leaves `.env` and the `protected_configs` files untouched.
 - Verify that a second concurrent operation is refused while a lock is held.
-- Coverage: none configured for this plugin. `<!-- TODO: add [coverage target] -->`
+- Coverage: the unit suite covers `BackupService` (SQL splitting, credentials, zip naming), `RestoreService` (zip safety), `ProgressReporter` (locking), and the download streaming guard. `<!-- TODO: add [coverage target] -->`
 
 ## Coding standards
 - **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
@@ -102,19 +103,19 @@ Steps that go beyond the repo-wide style, derived from the existing code:
 
 1. `declare(strict_types=1);` first line in every class file.
 2. Docblock header on every file: `@package Pubvana\Plugins\Backups`, `@copyright 2026 enlivenapp`, `@license MIT`.
-3. Class name, file name, and namespace must align: `Pubvana\Plugins\Backups\Services\BackupService` lives in `Services/BackupService.php`.
-4. Keep the progress callback contract. All `$onProgress` params are `?callable = null` with signature `fn(int $step, int $total, string $label, string $detail = '')`. Do not introduce a different one.
+3. Class name, file name, and namespace must align: `Pubvana\Plugins\Backups\Services\BackupService` is in `Services/BackupService.php`.
+4. Keep the progress callback signature. All `$onProgress` params are `?callable = null` with signature `fn(int $step, int $total, string $label, string $detail = '')`. Do not introduce a different one.
 5. Guard every shell call with `execAvailable()` and escape every shell argument with `escapeshellarg`. Never interpolate raw user input into a command string.
 6. Validate backup filenames against `^\d{4}-\d{2}-\d{2}_\d{6}-full\.zip$` before any file access. This is the only accepted form.
 7. Normalize zip entry paths to forward slashes when adding them (`str_replace('\\', '/', ...)` at `BackupService.php:390`). Do not weaken this.
 8. Keep identifiers/table names in generated SQL backtick-quoted and always take them from the database (SHOW statements), never from user input.
-9. Prefer `??` defaults matching `Config/Config.php` when reading config, so the singleton and the CLI commands resolve the same values. Do not invent new config keys without adding them to `Config/Config.php` and the README.
+9. Prefer `??` defaults matching `Config/Config.php` when reading config, so the singleton and the CLI commands resolve the same values. Do not invent new config keys without adding them to `Config/Config.php` and the Common tasks table in this file.
 
 ## Documentation sources
 
 | Resource | Use for |
 |----------|---------|
-| [README.md](./README.md) | Install, usage, config table, CLI examples |
+| [README.md](./README.md) | User-facing features and usage |
 | [Config/Config.php](./Config/Config.php) | Current defaults for backup_path, max_backups, backup_dirs, protected_configs |
 
 ## Common tasks
@@ -146,5 +147,5 @@ Steps that go beyond the repo-wide style, derived from the existing code:
 
 - Incremental, partial, or scheduled backups. This plugin produces only full `*-full.zip` snapshots on demand.
 - Remote or offsite storage, encryption of zip contents, or streaming backups to a cloud bucket.
-- Separate database-only or table-level backup UI (the database always ships inside a full zip).
+- Separate database-only or table-level backup UI (the database is always included in a full zip).
 - A drop-in replacement for the host's own mysqldump tooling when shell access exists (the CLI is used as-is, not wrapped).

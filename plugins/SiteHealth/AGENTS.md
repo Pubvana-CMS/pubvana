@@ -1,6 +1,6 @@
 # AGENTS.md — SiteHealth plugin
 
-Guidance for AI agents contributing to this plugin, which ships inside the main Pubvana repo.
+Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
 ## Overview
 
@@ -21,8 +21,8 @@ SiteHealth runs a battery of read-only diagnostics over the environment, securit
 3. **Use the `CheckResult` constants, never string literals, for `status` and `category`.** `PASS`/`WARNING`/`CRITICAL` and `CAT_*` (`Services/CheckResult.php:9-16`). Reason: the view's badge/icon/severity mapping keys off these exact values (unknown categories never render, summary counts only known statuses).
 4. **Keep the severity bar honest.** Critical is reserved for "broken or dangerously misconfigured": PHP below the floor, a missing required extension, < 100 MB free, non-HTTP(S) HTTPS off in production, `display_errors` on in production, `.env` missing or world-writable, no Shield, non-writable runtime dirs, pending migrations, unmet package dependencies. Everything softer is a warning. Do not upgrade warnings to critical.
 5. **A check must always return one `CheckResult`, even on unexpected failure.** I/O that can throw is caught inside the check and degrades to a WARNING with remediation (`Services/DatabaseCheck.php:21-33`, `Services/PluginMigrationsCheck.php:27-39`). Reason: one throwing check must never kill the whole run or the dashboard.
-6. **Do not break the cache contract.** `runAll()` returns cached results for `cache_ttl` seconds, refreshes when the cache expires or `$force` is true, and `POST /admin/site-health/rerun` clears then forces. Results must stay JSON-serializable (only the `toArray()` shape) so the cache round-trips.
-7. **Plugins that ship elsewhere extend SiteHealth through `addCheck()` or the adext `health` / `checks` point, not by editing this plugin.** External contributions may return a `CheckResult` or an array that includes `id`; anything else is ignored (`Services/HealthService.php:54-64`). Only in-tree diagnostics belong in `getChecks()`.
+6. **Do not break the cache behavior.** `runAll()` returns cached results for `cache_ttl` seconds, refreshes when the cache expires or `$force` is true, and `POST /admin/site-health/rerun` clears then forces. Results must stay JSON-serializable (only the `toArray()` shape) so the cache round-trips.
+7. **Plugins that live elsewhere extend SiteHealth through `addCheck()` or the adext `health` / `checks` point, not by editing this plugin.** External contributions may return a `CheckResult` or an array that includes `id`; anything else is ignored (`Services/HealthService.php:54-64`). Only in-tree diagnostics belong in `getChecks()`.
 8. **Stick to the four existing categories for new built-in checks.** Environment, Security, Configuration, Plugins. The view renders categories from a fixed map in the controller (`Controllers/HealthAdminController.php:23-28`); a fifth category added to code but not to that map would be collected yet invisible.
 9. **Keep the dashboard card conditional.** `dashboardCards()` returns an empty array (no card) when nothing is wrong, and at most one card (dangers out-rank warnings) otherwise (`Services/HealthService.php:80-116`). "No issues, no card" is an advertised behavior.
 10. **Build messages from check results, not from user/anonymous input.** Every dynamic fragment is `htmlspecialchars`-escaped in the view and derived from environment/status values. No message content is ever echoed raw.
@@ -71,11 +71,12 @@ plugins/SiteHealth/
 
 ## Development and testing
 
-This plugin has no `composer.json` and no test suite, unlike library plugins in the Pubvana repo. It is exercised through the full app.
+The plugin has no `composer.json` (it is in-tree), but it has a test suite under `tests/Unit/Plugins/SiteHealth/` (3 files: `ChecksTest`, `HealthServiceControllerTest`, `HealthResilienceTest`). It is also exercised through the full app.
 
-- Lint/static analysis (app-wide, from the repo root; the plugin ships in-tree):
-  - `vendor/bin/phpstan analyse` (level 3; the ignored-error baseline covers the MigrationSetup/ActiveRecord internals)
+- Lint/static analysis (app-wide, from the repo root; the plugin is in-tree):
+  - `composer phpstan` (level 8, sees `app/` plus `plugins/`; the ignored-error baseline covers the MigrationSetup/ActiveRecord internals)
   - `find plugins/SiteHealth -name '*.php' -exec php -l {} \;`
+- Tests: `vendor/bin/phpunit --filter SiteHealth`
 - Manual verification checklist:
   - [ ] The admin page lists 14 checks across the 4 categories with correct statuses, messages, and remediation (rendered only for non-pass)
   - [ ] `cached_at` shows the run time; visiting again within `cache_ttl` shows the same timestamp; after expiry it refreshes automatically
@@ -86,7 +87,7 @@ This plugin has no `composer.json` and no test suite, unlike library plugins in 
   - [ ] SessionConfigCheck stays warning (not critical) under 3 issues and critical at 3+
   - [ ] View output is escaped (htmlspecialchars on every message/name/url); nothing rendered raw
 
-No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->`
+Coverage: the suite covers the built-in checks, the service and controller, and resilience (throwing checks, cache round-trips).
 
 ## Coding standards
 - **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
@@ -104,7 +105,7 @@ No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->
 
 | Source | Purpose |
 |--------|---------|
-| `README.md` | User-facing behavior, check list, extensibility contract, routes |
+| `README.md` | User-facing features and usage |
 | `Services/HealthService.php:151-173` | The authoritative list of built-in checks per category |
 | `Services/CheckResult.php` | The status/category vocabulary every check must use |
 | `Controllers/HealthAdminController.php:23-28` | The category → label/icon display map |
@@ -128,7 +129,7 @@ No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->
 - [ ] PHP syntax verified (`php -l`); PHPStan level 3 clean on the app; only `CheckResult` consts used for status/category
 - [ ] New checks stay read-only, self-contained, exception-safe, and below the critical-or-warning severity bar
 - [ ] Messages leak no credentials or config values; view output fully escaped
-- [ ] Cache contract intact (serializable results, TTL respected, rerun clears + forces)
+- [ ] Cache behavior intact (serializable results, TTL respected, rerun clears + forces)
 - [ ] Dashboard card still appears only when issues exist
 - [ ] README updated only if user-facing behavior changed; keep the check count and category list in sync
 

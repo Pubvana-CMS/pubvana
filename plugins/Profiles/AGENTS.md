@@ -1,6 +1,6 @@
 # AGENTS.md — Profiles plugin
 
-Guidance for AI agents contributing to this plugin, which ships inside the main Pubvana repo.
+Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
 ## Overview
 
@@ -12,7 +12,7 @@ Profiles gives each user a browsable public profile and a self-service edit page
 - **Namespace:** `Pubvana\Plugins\Profiles` (`Plugin.php:5`), with `Controllers`, `Models`, and `Database\Migrations` sub-namespaces
 - **Runtime dependencies (declared at the app level, not in the plugin):** `flightphp/active-record` (model base), `enlivenapp/migrations` (migration base), `enlivenapp/flight-shield` (the `User` model used for lookups at `Controllers/ProfilesPublicController.php:8, 89`); Pubvana core classes `AdminController`, `PublicController`, `PluginInterface`; core services `$app->db()`, `adext()`, `auth()`, `session()`, `media()` (the avatar picker only), `pluginLoader()->routePrefix()`, and the `render`/`redirect`/`halt` helpers
 - **Config:** `Config/Config.php`: `routePrepend` (`profile`)
-- **Docs:** none existed; `README.md` added alongside this file
+- **Docs:** `README.md`
 
 ## Project guidelines
 
@@ -62,11 +62,12 @@ plugins/Profiles/
 
 ## Development and testing
 
-This plugin has no `composer.json` and no test suite, unlike library plugins in the Pubvana repo. It is exercised through the full app.
+The plugin has no `composer.json` (it is in-tree), but it has a test suite under `tests/Unit/Plugins/Profiles/` (12 files: `ProfilesPluginTest`, `ProfilesBlockRegistrationTest`, `ProfileWebsiteValidationTest`, `ProfilesAdminReturnUrlTest`, `ProfilesPublicControllerTest`, `ProfilesPublicWebsiteGuardTest`, `ProfilesAdminControllerUrlTest`, `ProfilesAdminWebsiteRejectionTest`, `ProfilesAdminControllerTest`, `ProfileModelTest`, `ProfileBlockServiceTest`, `ProfilesMigrationsSeedTest`). It is also exercised through the full app.
 
-- Lint/static analysis (app-wide, from the repo root; the plugin ships in-tree):
-  - `vendor/bin/phpstan analyse` (level 3, sees `app/` plus `scanDirectories: vendor/`; ignored-error baseline covers the migration/activerecord internals)
+- Lint/static analysis (app-wide, from the repo root; the plugin is in-tree):
+  - `composer phpstan` (level 8, sees `app/` plus `plugins/`; ignored-error baseline covers the migration/activerecord internals)
   - `find plugins/Profiles -name '*.php' -exec php -l {} \;`
+- Tests: `vendor/bin/phpunit --filter Profiles`
 - Manual verification checklist:
   - [ ] First visit to any own-profile path creates exactly one row; a second visit reuses it
   - [ ] Save all nine fields; confirm empty inputs store `null` and the whitelist rejects unknown keys
@@ -78,7 +79,7 @@ This plugin has no `composer.json` and no test suite, unlike library plugins in 
   - [ ] No dashboard card or section appears for Profiles (matches current code, despite the manifest declaration)
   - [ ] Deleting a user cascades the profile row (foreign key `CASCADE`)
 
-No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->`
+Coverage: the suite covers the model, both controllers (URLs, website validation, return-url, guards), the block service, migrations/seeds, and the plugin registration.
 
 ## Coding standards
 - **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
@@ -95,7 +96,7 @@ No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->
 
 | Source | Purpose |
 |--------|---------|
-| `README.md` | User-facing docs: features, installation, usage, contributing |
+| `README.md` | User-facing features and usage |
 | `Controllers/ProfilesPublicController.php:21-33, 44-56` | Owner-only edit rules and 404 handling |
 
 ## Common tasks

@@ -1,79 +1,27 @@
 # Broken Links
 
-Scans outbound links in published posts and pages and reports broken URLs. Manage broken links under **Tools > Broken Links**.
+Scans outbound links in your posts and pages and reports the ones that are broken. Manage them under **Tools → Broken Links**.
 
-## How it works
+## Features
 
-1. **Content sources** are registered via adext by each plugin that has content with outbound links. Blog and Pages register their own sources; future plugins follow the same pattern.
-2. **Link extraction** parses HTML `<a>` tags, Markdown `[text](url)` links, and bare URLs from content. Only external, checkable URLs are kept (same-site, mailto, tel, javascript, data, and fragment-only links are excluded).
-3. **HTTP checking** sends a HEAD request (falling back to GET on 405) with a 10-second timeout and up to 5 redirects. Redirects are followed by hand and every hop is checked before connecting.
-4. **Results** are stored in the `broken_links` table, keyed on `(source_type, source_id, url_hash)`. Previously broken links that are now OK are removed automatically.
+- Scans outbound links in published posts and pages
+- Recheck a single link, or run a full scan
+- Dismiss a link permanently so it never shows up again
+- Runs automatically once a day
+- Also runs from the command line
 
-## Admin UI
+## Usage
 
-Under **Tools > Broken Links**:
+Open **Tools → Broken Links**. From there you can run a scan, recheck a single link, or dismiss one.
 
-- **Run Scan** - checks all registered content sources for outbound broken links
-- **Recheck** - rechecks a single URL; removes it if it is now reachable
-- **Dismiss** - permanently hides a broken link (never re-appears on future scans)
-- **Show/Hide Dismissed** - toggle visibility of dismissed entries
-
-Results are grouped by source content (post or page) with the source title linking to the edit form.
-
-## Services
-
-Register the service on the app engine:
-
-```php
-$app->brokenLinks()->scan();              // Full scan; returns ['total', 'broken', 'sources']
-$app->brokenLinks()->all($showDismissed); // Grouped results
-$app->brokenLinks()->recheck($id);        // Recheck one URL
-$app->brokenLinks()->dismiss($id);        // Permanent dismiss
-$app->brokenLinks()->countBroken();       // Count for dashboard
-$app->brokenLinks()->recent($limit);      // Recent entries for dashboard
-```
-
-## CLI
+From the command line:
 
 ```bash
 php runway broken-links:check
 ```
 
-Runs the same scan logic as the admin UI. Exit code 1 if any broken links found, 0 otherwise.
+## License
 
-## Extensibility
+MIT
 
-Plugins register as content sources via adext:
-
-```php
-$adext->register('brokenlinks', 'source', 'pubvana.myplugin', [
-    'label'    => 'My Plugin Items',
-    'callable' => function () use ($app): array {
-        return [
-            [
-                'type'    => 'mytype',       // source type identifier
-                'id'      => $item->id,       // ID in your plugin's table
-                'title'   => $item->title,    // display title
-                'content' => $item->content,  // HTML content to scan for links
-            ],
-        ];
-    },
-]);
-```
-
-The callable must return an array of items with `type`, `id`, `title`, and `content` keys.
-
-## Cron
-
-A daily scan runs through the core cron system: the plugin registers a `24h` task that calls the same `scan()` used by the admin UI and CLI. Findings are surfaced on the admin screen; failures in the scan never abort the cron run.
-
-You can also trigger the scan manually with the `broken-links:cron` runway command.
-
-## Notes
-
-- Dismissal is permanent; dismissed entries are never re-enabled by scans.
-- URL checking runs sequentially for shared-host safety.
-- The `broken_links` table has a unique index on `(source_type, source_id, url_hash)` to prevent duplicates.
-- Links to the same site are automatically excluded from scanning.
-- **SSRF protection.** Targets are vetted before connecting: only http/https URLs are probed, and hosts that resolve to loopback, private, link-local (including cloud metadata `169.254.169.254`), or other non-public ranges are never fetched. The vetted address is pinned so curl cannot re-resolve (DNS-rebinding guard), and response bodies are capped at `max_bytes` (default 1 MB).
-- **Shared-hosts escape hatch.** `verify_targets` defaults to `true`. Set it to `false` only on hosts where PHP has no working DNS functions and curl was built without connect-time vetting; doing so weakens SSRF protection.
+Note: extensive details can be found in AGENTS.md

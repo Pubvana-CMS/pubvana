@@ -1,138 +1,147 @@
-# AGENTS.md — Activity Log plugin
-
-Guidance for AI agents contributing to this plugin, which ships inside the main Pubvana repo.
+# Activity Log
 
 ## Overview
 
-**pubvana/activity-log** (display name "Activity Log") is an audit trail of admin actions. It provides an explicit logging API and optional auto-tracking of admin mutating routes.
+`pubvana/activity-log` records admin changes. It logs mutating admin routes automatically and lets other plugins write entries through `$app->activityLog()->log()`.
 
-- **Package:** `pubvana/activity-log` (local plugin, no Packagist)
-- **License:** MIT, matching the main project
-- **PHP:** requires PHP `^8.2` (repo `composer.json`)
-- **Namespace:** `Pubvana\Plugins\ActivityLog`
-- **Manifest:** `pubvana.json` (admin menu under Tools)
-- **Config:** `Config/Config.php`
-- **Docs:** [README.md](./README.md)
+- Package: `pubvana/activity-log` (local plugin, `pubvana.json:2`)
+- PHP: `^8.2` (repo `composer.json`)
+- Namespace: `Pubvana\Plugins\ActivityLog`
+- Enabled by default. No install step.
+- License: MIT
+- Docs: [README.md](./README.md)
 
 ## Project guidelines
 
-1. **Auto-tracking must never break page delivery.** `logFromRoute()` swallows every failure. A cache, DB, or routing problem on a public request is a no-op, never an error page.
-2. **Track mutations only.** The `flight.route.executed` listener only fires for POST/PUT/DELETE/PATCH on `/admin/*` routes. GET requests are never logged.
-3. **Respect the skip list.** Auth, assets, API, and self-referential routes are excluded from auto-tracking (`Plugin.php:85`). Keep new skip patterns inside the same list.
-4. **No sensitive data in details.** The `details` field stores JSON context (route, method, params). Do not add passwords, tokens, or PII.
-5. **Keep action/entity_type vocabularies stable.** New actions/entity types should follow existing naming (snake_case, singular). Update `getActions()`/`getEntityTypes()` if needed for filter dropdowns.
+1. Do not let logging break the request. `log()` and `logFromRoute()` catch all failures (`Services/ActivityLogService.php:59`, `Services/ActivityLogService.php:90`). Reason: a logging error must never become an error page.
+2. Track mutations only. The listener checks POST, PUT, DELETE, PATCH on `/admin/*` (`Plugin.php:72`). Reason: reads would flood the table.
+3. Keep skip patterns together. Auth, assets, API, and self routes are skipped (`Plugin.php:92`, `Services/ActivityLogService.php:216`). Reason: avoids loops and noise.
+4. Do not store secrets in `details`. Only route, method, and params are stored (`Services/ActivityLogService.php:90`). Reason: logs are readable by staff and must not leak credentials.
+5. Keep action and entity_type names stable, snake_case, singular (`Services/ActivityLogService.php:239`). Reason: filter dropdowns and history depend on consistent values.
+6. Use bound parameters for all queries (`Models/ActivityLog.php:112`). Reason: request input reaches filters directly.
 
 ## Repository layout
 
 ```
 ActivityLog/
-  Plugin.php                          # Entry point: service, routes, event listener, dashboard card
-  pubvana.json                        # Plugin manifest and admin menu under Tools
-  README.md                           # User-facing docs
+  Plugin.php                          # Entry point, routes, listener, dashboard card
+  pubvana.json                        # Manifest, Tools menu entry (pubvana.json:8)
+  README.md                           # User docs
   Config/
-    Config.php                        # Defaults: track_admin_actions, retention_days
+    Config.php                        # routePrepend, track_admin_actions, retention_days (Config/Config.php:6)
   Controllers/
-    ActivityLogAdminController.php    # Admin: index (filterable list with pagination)
+    ActivityLogAdminController.php    # index list with filters (Controllers/ActivityLogAdminController.php:15)
   Services/
-    ActivityLogService.php            # log(), logFromRoute(), list(), count(), dashboard data
+    ActivityLogService.php            # log, logFromRoute, list, count (Services/ActivityLogService.php:59)
   Models/
-    ActivityLog.php                   # activity_logs table model with filtered queries
+    ActivityLog.php                   # activity_logs queries (Models/ActivityLog.php:56)
   Database/
     Migrations/
-      2026-09-02-000001_CreateActivityLogsTable.php
-    Seeds/Seed.php                    # Seeds activity_log.view permission
+      2026-09-02-000001_CreateActivityLogsTable.php  # activity_logs table (Database/Migrations/2026-09-02-000001_CreateActivityLogsTable.php:13)
+    Seeds/Seed.php                    # activity_log.view permission (Database/Seeds/Seed.php:9)
   Views/
-    admin/index.php                   # Filterable table with pagination
+    admin/index.php                   # Filter form and table (Views/admin/index.php:1)
 ```
+
+No generated dirs in this plugin.
 
 ## Core architecture
 
-### Plugin registration
+Entry point is `Plugin.php:24`. It maps `activityLog` to `ActivityLogService` (`Plugin.php:30`), adds `GET /admin/activity-log` with `activity_log.view` check (`Plugin.php:43`), adds a dashboard card (`Plugin.php:48`), and listens for `flight.route.executed` (`Plugin.php:72`).
 
-`Plugin.php:31` maps `activityLog` as a singleton `ActivityLogService` on the app engine, wired to `$app->db()` and the plugin config. The service receives the app instance via `setApp()` for accessing auth/request.
+Data flow for auto tracking: listener checks config (`Plugin.php:74`), keeps only POST, PUT, DELETE, PATCH on `/admin/*`, skips auth, assets, API, and self routes (`Plugin.php:92`), then calls `logFromRoute()` (`Services/ActivityLogService.php:90`). That method checks config, skips non admin routes (`Services/ActivityLogService.php:216`), maps route to action and entity (`Services/ActivityLogService.php:239`), then calls `log()` (`Services/ActivityLogService.php:59`).
 
-Admin route registered under `pubvana.activity-log` (`Plugin.php:45`): `GET /admin/activity-log` → `ActivityLogAdminController::index`, gated by `activity_log.view` permission.
+Data flow for manual logging: any plugin calls `$app->activityLog()->log()` with action, entity_type, entity_id, entity_name, and details. The service fills user, IP, user agent, and timestamp, then saves through `Models/ActivityLog.php:56`.
 
-Dashboard card registered via adext (`Plugin.php:52`) showing 24h activity count.
+Data flow for reads: controller `index()` (`Controllers/ActivityLogAdminController.php:15`) reads query filters, calls `list()` (`Services/ActivityLogService.php:142`) and `count()` (`Services/ActivityLogService.php:153`), which use `filtered()` (`Models/ActivityLog.php:78`) and `countFiltered()` (`Models/ActivityLog.php:94`). Page size is 25.
 
-### Auto-tracking
+### Route to action map
 
-`Plugin.php:72` registers a listener on `flight.route.executed`. After every successfully dispatched route:
-- Checks `activity_log.track_admin_actions` config (default `true`)
-- Filters to `/admin/*` routes with POST/PUT/DELETE/PATCH
-- Skips `/admin/auth/*`, `/admin/assets/*`, `/admin/api/*`, `/admin/activity-log*`
-- Calls `$app->activityLog()->logFromRoute($route)`
+`inferFromRoute()` (`Services/ActivityLogService.php:239`) strips `/admin` and matches by prefix, with longer paths first (for example `/redirects/404-manager` before `/redirects`). `matchAction()` (`Services/ActivityLogService.php:325`) picks the action by HTTP method and path. Entity ID comes from route params (`Services/ActivityLogService.php:350`). Entity name comes from route params or falls back to entity type (`Services/ActivityLogService.php:365`).
 
-`ActivityLogService::logFromRoute()` (`Services/ActivityLogService.php:135`) infers action/entity from route pattern using a whitelist map (`inferFromRoute()`), extracts entity ID/name from route params, and calls `log()`.
+### IP handling
 
-### Explicit logging
-
-Plugins call `$app->activityLog()->log([...])` with structured data. The service enriches with current user, IP, user agent, and timestamp.
-
-### Reporting
-
-`list()` and `count()` support filtering by user, action, entity_type, entity_name, date range. Pagination at 25/page.
+Only `$_SERVER['REMOTE_ADDR']` is used (`Services/ActivityLogService.php:385`). Reason: proxy headers can be forged. Do not add `X-Forwarded-For` handling here.
 
 ## Development and testing
 
-This plugin has no `composer.json` and no test suite.
+No `composer.json` in this plugin. Use repo root commands.
 
 ```bash
-php -l plugins/ActivityLog/Plugin.php
-php -l plugins/ActivityLog/Services/ActivityLogService.php
-php -l plugins/ActivityLog/Models/ActivityLog.php
-php -l plugins/ActivityLog/Controllers/ActivityLogAdminController.php
+composer lint
+composer phpstan
+composer psalm
+composer test
 ```
 
-- Enable plugin at `/admin/plugins` (runs migration)
-- Visit `/admin/activity-log` — verify filters, pagination, empty state
-- Perform admin actions (create/edit/delete blog post, page, redirect, etc.) — verify entries appear
-- Disable `track_admin_actions` in Config — verify auto-tracking stops, explicit logging still works
-- Check dashboard card at `/admin` shows 24h count
-- Verify permission gate: user without `activity_log.view` cannot access
+Tests live in `tests/Unit/Plugins/ActivityLog/`:
+
+```
+tests/Unit/Plugins/ActivityLog/ActivityLogAdminControllerTest.php
+tests/Unit/Plugins/ActivityLog/ActivityLogMigrationsSeedTest.php
+tests/Unit/Plugins/ActivityLog/ActivityLogPluginTest.php
+tests/Unit/Plugins/ActivityLog/ActivityLogServiceTest.php
+tests/Unit/Plugins/ActivityLog/ClientIpSourceTest.php
+```
+
+Run the scoped suite with:
+
+```bash
+vendor/bin/phpunit tests/Unit/Plugins/ActivityLog
+```
+
+<!-- TODO: add coverage target -->
+
+Manual check: visit `/admin/activity-log`, confirm filters, pages, and empty state. Do an admin create, edit, and delete, confirm rows appear. Turn off `track_admin_actions` in `Config/Config.php:7`, confirm auto rows stop but manual `log()` still writes. Check `/admin` card count. Confirm a user without `activity_log.view` cannot open the page.
 
 ## Coding standards
 
-- **PHPStan (level 8):** model carries `@property`/`@method` annotations; service facade has `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
-- `declare(strict_types=1);` first line in every class file.
-- Class name, file name, and namespace must align.
-- All SQL uses bound parameters; no interpolation of request input.
-- Keep the log shape stable: `log()` always writes the same columns. The view consumes `created_at`, `user_name`, `action`, `entity_type`, `entity_id`, `entity_name`, `ip`.
+1. Keep `declare(strict_types=1);` as the first line in every class file (`Plugin.php:1`, `Services/ActivityLogService.php:1`, `Models/ActivityLog.php:1`, `Controllers/ActivityLogAdminController.php:1`). Reason: repo rule, PHP 8.2 only.
+2. Keep class name, file name, and namespace aligned (`Plugin.php:9`, `Services/ActivityLogService.php:5`, `Models/ActivityLog.php:5`). Reason: PSR-4 autoloading breaks otherwise.
+3. Keep model annotations current (`Models/ActivityLog.php:32`). Reason: PHPStan level 8 needs the property and method shapes.
+4. Use bound parameter helpers (`eq`, `like`, `ge`, `le`) in `Models/ActivityLog.php:112`. Do not use raw `where()` with input. Reason: filters come from the query string.
+5. Keep the `log()` column shape stable (`Services/ActivityLogService.php:59`). Reason: the view (`Views/admin/index.php:1`) reads those exact fields.
+6. Follow strict MVC(S): controller reads input and calls the service (`Controllers/ActivityLogAdminController.php:15`), service holds logic (`Services/ActivityLogService.php:59`), model touches the DB (`Models/ActivityLog.php:56`). Reason: project rule, only models may query.
 
 ## Documentation sources
 
 | Resource | Use for |
 |----------|---------|
-| [README.md](./README.md) | User-facing features, configuration, API |
-| [Config/Config.php](./Config/Config.php) | Skip lists and retention defaults |
-| [Services/ActivityLogService.php:135](./Services/ActivityLogService.php) | `inferFromRoute()` — route-to-action mapping |
+| [README.md](./README.md) | User docs, what it does and where to click |
+| [Config/Config.php](./Config/Config.php) | Defaults for route prefix, tracking flag, retention |
+| [Services/ActivityLogService.php](./Services/ActivityLogService.php) | `log()` at line 59, `logFromRoute()` at line 90, `inferFromRoute()` at line 239 |
+| [Plugin.php](./Plugin.php) | Service setup at line 30, admin route at line 43, dashboard card at line 48, listener at line 72 |
+| [Models/ActivityLog.php](./Models/ActivityLog.php) | Filtered reads at line 78, counts at line 94, filter rules at line 112 |
 
 ## Common tasks
 
 | Goal | Where to look |
 |------|---------------|
-| Add a route to auto-tracking | `inferFromRoute()` at `Services/ActivityLogService.php:175` |
-| Change skip patterns | `shouldSkipRoute()` at `Services/ActivityLogService.php:158` and `Plugin.php:85` |
-| Add a filter field | `filtered()`/`countFiltered()` in `Models/ActivityLog.php:75`, view form in `Views/admin/index.php` |
-| Change dashboard card | `Plugin.php:52` |
-| Change retention/cleanup | `Config/Config.php:5` (future CLI command) |
-| Add action/entity_type to dropdowns | `getActions()`/`getEntityTypes()` in `Services/ActivityLogService.php` |
+| Add a route to auto tracking | `inferFromRoute()` in `Services/ActivityLogService.php:239` |
+| Change skip patterns | `Plugin.php:92` and `shouldSkipRoute()` in `Services/ActivityLogService.php:216` |
+| Add a filter field | `applyFilters()` in `Models/ActivityLog.php:112`, `filtered()` in `Models/ActivityLog.php:78`, form in `Views/admin/index.php` |
+| Change dashboard card | `Plugin.php:48` |
+| Change retention default | `Config/Config.php:8` |
+| Change permission | Seed in `Database/Seeds/Seed.php:9`, check in `Plugin.php:40` |
+| Change table shape | Migration in `Database/Migrations/2026-09-02-000001_CreateActivityLogsTable.php:13` |
 
 ## PR / contribution checklist
 
-- [ ] `php -l` clean on every touched file
-- [ ] Auto-tracking verified: admin POST logged, GET skipped, auth/assets/api skipped, config toggle works
-- [ ] Explicit `log()` API works and enriches user/IP/UA
-- [ ] Filters and pagination work; empty state renders
+- [ ] `composer lint` clean on touched files
+- [ ] `composer phpstan` level 8 clean
+- [ ] `composer psalm` clean
+- [ ] `composer test` green, or scoped `vendor/bin/phpunit tests/Unit/Plugins/ActivityLog` green
+- [ ] Auto tracking checked: admin POST logged, GET skipped, auth, assets, API, and self routes skipped, config flag works
+- [ ] Manual `log()` fills user, IP, and user agent
+- [ ] Filters and pages work, empty state renders
 - [ ] Dashboard card shows correct 24h count
-- [ ] Permission gate works
-- [ ] SQL uses bound parameters
-- [ ] README.md updated if user-facing behavior changed
+- [ ] User without `activity_log.view` cannot open the page
+- [ ] README.md updated if user visible behavior changed
 
 ## Out of scope / non-goals
 
-- Login/logout tracking (not implemented)
-- Real-time UI (polling/WebSocket)
-- Per-visitor or frontend tracking
-- IP/location/geolocation storage beyond request IP
-- Automatic log pruning (retention_days is config only; future CLI command)
+- Login and logout tracking (not implemented)
+- Live updates in the list UI
+- Visitor or front end tracking
+- Location lookup beyond request IP
+- Auto prune (retention_days is a setting only, no cleanup job yet)

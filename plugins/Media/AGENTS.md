@@ -1,10 +1,10 @@
 # AGENTS.md — Media plugin
 
-Guidance for AI agents contributing to this plugin, which ships inside the main Pubvana repo.
+Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
 ## Overview
 
-Media is the media library for Pubvana: image and video uploads, DVD-style derivatives (original, working, medium, thumb), an in-browser image editor, video posters, embeds, and reusable admin widgets. Other plugins use the `$app->media()` service facade to embed pickers and Jodit editors.
+Media is the media library for Pubvana: image and video uploads, DVD-style derivatives (original, working, medium, thumb), an in-browser image editor, video posters, embeds, and reusable admin code snippets. Other plugins use the `$app->media()` service facade to embed pickers and Jodit editors.
 
 - **Package:** `pubvana/media` (`pubvana.json:2`), semver `0.1.0`, category `content`
 - **License:** MIT, matching the main project (repo `composer.json` declares `"license": "MIT"`)
@@ -41,7 +41,7 @@ plugins/Media/
 ├── Models/Media.php                   media table; find/paginate/count, whitelisted updateMeta
 ├── Services/
 │   ├── MediaService.php               Service facade mapped as $app->media() (Plugin.php:16-27)
-│   ├── ImageProcessorInterface.php    Processor contract (load/resize/crop/rotate/... /toWebp/save/getInfo/getExif/capabilities)
+│   ├── ImageProcessorInterface.php    Processor interface (load/resize/crop/rotate/... /toWebp/save/getInfo/getExif/capabilities)
 │   ├── GdProcessor.php                GD backend (uses getimagesize, imageX functions, exif_read_data)
 │   ├── ImagickProcessor.php           Imagick backend (uses \Imagick throughout)
 │   └── VideoThumbnailService.php      Best-effort ffmpeg poster extraction
@@ -50,8 +50,8 @@ plugins/Media/
 ├── Views/admin/
 │   ├── index.php                      Library grid
 │   ├── editor.php                     Image editor UI
-│   ├── picker.php                     Media image picker widget (rendered by MediaService::picker())
-│   ├── avatar-picker.php              Avatar picker widget
+│   ├── picker.php                     Media image picker (rendered by MediaService::picker())
+│   ├── avatar-picker.php              Avatar picker
 │   └── jodit.php                      Jodit init snippet (rendered by MediaService::joditInit())
 └── README.md
 ```
@@ -68,17 +68,43 @@ plugins/Media/
 
 **Edit path.** `applyEdit()` loads the working image, dispatches the operation by name, saves the working copy, regenerates derivatives, and refreshes `size`/`updated_at` (`Services/MediaService.php:153-195`). `revert()` copies `originals/` back over the working copy and regenerates (`Services/MediaService.php:197-222`).
 
-**Widget path.** `picker()`, `avatarPicker()`, and `joditInit()` capture a view partial via `ob_start()` and return its HTML, giving each instance a unique `pickerId`/`joditId` (`Services/MediaService.php:367-401`). The picker talks to `GET /admin/media/json?type=image` and `POST /admin/media/upload/image` from inline JS (`Views/admin/picker.php`).
+**Snippet path.** `picker()`, `avatarPicker()`, and `joditInit()` capture a view partial via `ob_start()` and return its HTML, giving each instance a unique `pickerId`/`joditId` (`Services/MediaService.php:367-401`). The picker talks to `GET /admin/media/json?type=image` and `POST /admin/media/upload/image` from inline JS (`Views/admin/picker.php`).
 
 **Derivative pipeline.** `generateDerivatives()` writes `medium/{hex}.webp` at `medium_width` and `thumbs/{hex}.webp` at `thumb_width`, both at `webp_quality` (`Services/MediaService.php:261-278`). Widths only downscale: `resize()` returns unchanged when the source is not wider (`Services/GdProcessor.php:41-43`).
 
+## Plugin author API
+
+Other plugins use `$app->media()` to embed editors, pickers, and query the library.
+
+**Jodit editor.** `joditInit($selector)` returns a `<script>` block that creates a Jodit instance on the selector. It handles dark mode, CSP-safe plugin disabling, and custom image controls automatically. If you construct Jodit directly instead, disable the `beautify` and `ace` plugins yourself (they violate the app's CSP):
+
+```js
+new Jodit('#content', { disablePlugins: 'beautify,ace' });
+```
+
+**Media picker.** `picker($inputName, $currentValue)` returns a self-contained image picker (preview plus offcanvas media library) for a form field; `avatarPicker($inputName, $currentValue)` is the avatar variant. The picker talks to `GET /admin/media/json?type=image` and `POST /admin/media/upload/image` from inline JS.
+
+**Featured image pattern.** Hidden inputs (`featured_image` path and `media_id` ID), an offcanvas panel listing images from `/admin/media/json?type=image`, a drag-and-drop upload zone posting to `/admin/media/upload/image`, a select handler that sets the hidden inputs and preview, and a remove button. See `plugins/Blog/Views/admin/edit.php` for a full working example.
+
+**Querying the library.**
+
+```php
+$items = $this->app->media()->list($page, $perPage, $type);   // paginated, default 24/page, filter by type
+$count = $this->app->media()->countAll($type);                // total count
+$recent = $this->app->media()->recent($limit, $type);         // most recent
+$media = $this->app->media()->find($id);                      // single item
+```
+
+**Admin endpoints.** `GET /admin/media/json` lists media (`?type=image` filters); `POST /admin/media/upload/image` and `POST /admin/media/upload/video` upload files.
+
 ## Development and testing
 
-This plugin has no `composer.json` and no test suite, unlike library plugins in the Pubvana repo. It is exercised through the full app and depends on runtime image extensions.
+The plugin has no `composer.json` (it is in-tree), but it has a test suite under `tests/Unit/Plugins/Media/` (5 files: `MediaModelTest`, `GdProcessorTest`, `MediaServiceTest`, `AdminViewsEscapingTest`, `MediaUploadFailureGuardsTest`). It is also exercised through the full app and depends on runtime image extensions.
 
-- Lint/static analysis (app-wide, from the repo root; the plugin ships in-tree):
-  - `vendor/bin/phpstan analyse` (level 3, sees `app/` plus `scanDirectories: vendor/`; ignored-error baseline covers the migration/activerecord internals)
+- Lint/static analysis (app-wide, from the repo root; the plugin is in-tree):
+  - `composer phpstan` (level 8, sees `app/` plus `plugins/`; ignored-error baseline covers the migration/activerecord internals)
   - `find plugins/Media -name '*.php' -exec php -l {} \;`
+- Tests: `vendor/bin/phpunit --filter Media`
 - Manual verification checklist:
   - [ ] Upload a PNG with alpha and a large JPEG; confirm `originals/`, working file, `medium/`, and `thumbs/` all exist with expected names, and the JSON returns slash-prefixed URLs
   - [ ] Upload a `.php` disguised as `.jpg`; confirm rejection via finfo MIME check
@@ -87,9 +113,9 @@ This plugin has no `composer.json` and no test suite, unlike library plugins in 
   - [ ] Delete an item; confirm all disk artifacts (working, original, medium, thumb, poster) are gone
   - [ ] Upload a video with ffmpeg present and absent; confirm the poster row is populated only in the first case
   - [ ] Store a YouTube and a Vimeo URL; confirm `embed_provider` and that non-provider URLs store null
-  - [ ] Open the picker and Jodit widget in a dark-mode admin; confirm both initialize with sites CSS reachable
+  - [ ] Open the picker and Jodit editor in a dark-mode admin; confirm both initialize with sites CSS reachable
 
-No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->`
+Coverage: the suite covers the model, the GD processor, the service facade, admin view escaping, and upload failure guards.
 
 ## Coding standards
 - **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
@@ -99,14 +125,15 @@ No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->
 3. **Keep the two processors symmetric.** Both implement the interface fully; when changing one, change both, and confirm identical `capabilities()` where possible.
 4. **`updateMeta()` must stay whitelisted.** Only `alt_text`, `title`, `poster_path` are writable, and values are trimmed to `null` when empty (`Models/Media.php:67-79`). Never pass raw request data.
 5. **Use `DateTimeImmutable` for all timestamp writes** (`Models/Media.php:52, 77`).
-6. **Escape every interpolated value in widget partials** (`Views/admin/picker.php` uses `htmlspecialchars` on all echoed values). Never concatenate a path or name into markup raw.
+6. **Escape every interpolated value in snippet partials** (`Views/admin/picker.php` uses `htmlspecialchars` on all echoed values). Never concatenate a path or name into markup raw.
 7. **Respect the no-external-assets rule.** New widgets embed their own inline `<style>`/`<script>` blocks; nothing is registered via `admin.css`/`admin.js`.
 
 ## Documentation sources
 
 | Source | Purpose |
 |--------|---------|
-| `README.md` | User and plugin-author docs: Jodit embedding, picker widgets, featured-image pattern, library queries, URL slashes, inline-JS rule, the GD image-key gotcha |
+| `README.md` | User-facing features and usage |
+| `AGENTS.md` "Plugin author API" | Embedding Jodit, pickers, featured-image pattern, library queries, admin endpoints |
 | `Services/MediaService.php:26-37` | Processor selection order (Imagick, then GD) |
 
 ## Common tasks
@@ -117,7 +144,7 @@ No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->
 | Add an image edit operation | `ImageProcessorInterface.php` + both processors + `applyEdit()` dispatch (`Services/MediaService.php:167-182`) |
 | Change derivative sizes or quality | `Config/Config.php` (`thumb_width`, `medium_width`, `webp_quality`) |
 | Change the upload folder | `Config/Config.php` (`upload_path`) |
-| Add a widget | New view partial under `Views/admin/` exposed via a `MediaService` method using `ob_start()` |
+| Add a snippet | New view partial under `Views/admin/` exposed via a `MediaService` method using `ob_start()` |
 | Serialize a new field to API consumers | `mediaToArray()` (`Controllers/MediaAdminController.php:239-276`) |
 
 ## PR / contribution checklist
@@ -127,7 +154,7 @@ No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->
 - [ ] PHP syntax verified (`php -l`) and PHPStan level 3 is clean on the app
 - [ ] Uploads validated by extension, size, and finfo MIME; storage layout unchanged; originals preserved
 - [ ] Both GD and Imagick paths updated together; no concrete-processor branches in business logic
-- [ ] `delete()` removes all artifacts; URLs stay leading-slash; widget output escaped; no external assets added
+- [ ] `delete()` removes all artifacts; URLs stay leading-slash; snippet output escaped; no external assets added
 - [ ] README updated only if user-facing behavior changed
 
 ## Out of scope / non-goals

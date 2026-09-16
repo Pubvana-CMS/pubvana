@@ -1,6 +1,6 @@
 # AGENTS.md — Redirects plugin
 
-Guidance for AI agents contributing to this plugin, which ships inside the main Pubvana repo.
+Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
 ## Overview
 
@@ -70,15 +70,16 @@ plugins/Redirects/
 
 **Data flow (log).** A 404 request normalizes its path, skips prefixed paths, then finds-or-creates a `redirects_links` row. New rows start active with a hit count of zero; every hit increments `hit_count`, refreshes `last_seen_at` plus the last query/referrer/user-agent, and re-opens the entry by clearing resolution.
 
-**Extension points (adext).** `admin.dashboard` cards (active 404s with danger tone, enabled redirects) and a recent-redirect-links section (`Plugin.php:68-128`). No public routes: everything ships as a plugin, nothing renders a page.
+**Extension points (adext).** `admin.dashboard` cards (active 404s with danger tone, enabled redirects) and a recent-redirect-links section (`Plugin.php:68-128`). No public routes: everything is a plugin, nothing renders a page.
 
 ## Development and testing
 
-This plugin has no `composer.json` and no test suite, unlike library plugins in the Pubvana repo. It is exercised through the full app.
+The plugin has no `composer.json` (it is in-tree), but it has a test suite under `tests/Unit/Plugins/Redirects/` (6 files: `RedirectsPluginTest`, `RedirectsAdminControllersTest`, `RedirectsServiceTest`, `RedirectLinksServiceTest`, `RedirectsTargetUrlSafetyTest`, `RedirectsMigrationsSeedTest`). It is also exercised through the full app.
 
-- Lint/static analysis (app-wide, from the repo root; the plugin ships in-tree):
-  - `vendor/bin/phpstan analyse` (level 3, sees `app/` plus `scanDirectories: vendor/`; ignored-error baseline covers the migration/activerecord internals)
+- Lint/static analysis (app-wide, from the repo root; the plugin is in-tree):
+  - `composer phpstan` (level 8, sees `app/` plus `plugins/`; ignored-error baseline covers the migration/activerecord internals)
   - `find plugins/Redirects -name '*.php' -exec php -l {} \;`
+- Tests: `vendor/bin/phpunit --filter Redirects`
 - Manual verification checklist:
   - [ ] Create a 301 for `/old/path/`; verify `/old/path`, `/old/path/`, and `//old//path` all redirect because normalization is identical on both sides
   - [ ] Disable the redirect; verify the path stops redirecting
@@ -92,7 +93,7 @@ This plugin has no `composer.json` and no test suite, unlike library plugins in 
   - [ ] Run a 404 through the CLI; verify nothing is logged (CLI guard)
   - [ ] Confirm the anti-scan seed rows land as 301s to `/page/not-wordpress`
 
-No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->`
+Coverage: the suite covers both services, the admin controllers, target URL safety, migrations/seeds, and the plugin registration.
 
 ## Coding standards
 - **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
@@ -110,8 +111,8 @@ No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->
 
 | Source | Purpose |
 |--------|---------|
-| `README.md` | Table semantics, matching rules, 404 manager workflow, service reference, normalization notes |
-| `Plugin.php:130-146` | The interception contract (start/notFound/halt) |
+| `README.md` | User-facing features and usage |
+| `Plugin.php:130-146` | The interception behavior (start/notFound/halt) |
 | `Services/RedirectsService.php:231-286` | Canonical path and target normalization |
 
 ## Common tasks
@@ -123,7 +124,7 @@ No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->
 | Add a target-suggestion group | `getTargetSuggestions()` (`Services/RedirectsService.php:139-174`) |
 | Change 404 status filtering | `RedirectLink::allByStatus()` (`Models/RedirectLink.php:30-45`) and the `?status=` switch in `RedirectLinksAdminController::index()` |
 | Add a 404 manager action | New controller method + route (`Plugin.php:53-64`) + view button |
-| Change matching behavior (e.g. regex) | `findActiveBySourcePath()` and `handleCurrentRequest()`; update the README "Exact-path matching only" claim |
+| Change matching behavior (e.g. regex) | `findActiveBySourcePath()` and `handleCurrentRequest()` |
 
 ## PR / contribution checklist
 
@@ -133,7 +134,7 @@ No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->
 - [ ] Matching still gated to enabled redirects, `GET`/`HEAD`, non-CLI, and non-skipped prefixes; self-redirect guard intact
 - [ ] Query-string forwarding preserved; status codes still coerced to 301/302; 404 entries still reset on log
 - [ ] Seed rows stay on the anti-scan 301 pattern; the create-from-404 association still links entries
-- [ ] README updated only if user-facing behavior changed; keep the "Exact-path matching only" and normalization claims truthful
+- [ ] README updated only if user-facing behavior changed
 
 ## Out of scope / non-goals
 
@@ -141,5 +142,5 @@ No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->
 - Exact-path matching only; no regex, wildcard, or case-insensitive rules.
 - 404 logging keeps the most recent query/referrer/user-agent per path, not a history of hits.
 - No automatic resolution; 404s are triaged by an admin.
-- No translations; labels are hardcoded in views (noted in `README.md`).
+- No translations; labels are hardcoded in views.
 - Auth middleware is disabled for development (`Plugin.php:49`); enforcement is future work against seeded permissions.

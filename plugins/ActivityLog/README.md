@@ -1,88 +1,21 @@
-# Activity Log Plugin
+# Activity Log
 
-Audit trail of admin actions for Pubvana CMS.
+Keeps a record of admin changes so you can see who did what (and clear up confusion later).
 
 ## Features
 
-- **Explicit logging API**: Plugins call `$app->activityLog()->log([...])` to record actions
-- **Auto-tracking**: Automatically logs admin POST/PUT/DELETE/PATCH routes (configurable)
-- **Admin UI**: Filterable, paginated table under Tools → Activity Log
-- **Dashboard card**: Shows recent activity count (last 24 hours)
-- **Retention**: Configurable retention period (default 365 days)
-
-## Installation
-
-The plugin is included with Pubvana. Enable it at **Settings → Plugins**.
-
-## Configuration
-
-Edit `plugins/ActivityLog/Config/Config.php`:
-
-```php
-return [
-    'routePrepend' => 'activity-log',
-    'track_admin_actions' => true,  // Enable/disable auto-tracking
-    'retention_days' => 365,        // Future: cleanup CLI command
-];
-```
+- Records admin changes automatically
+- List is under Tools, with filters and pages
+- Shows last 24 hours on the dashboard
+- Retention setting defaults to 365 days
+- Limits viewing to staff with permission
 
 ## Usage
 
-### Explicit Logging
+Open Tools then Activity Log to browse changes. Filter by user, action, item type, name, or date. You'll see when it happened and from which address. The dashboard card shows how many actions happened in the last 24 hours. Tracking stays on unless you turn off `track_admin_actions` in `plugins/ActivityLog/Config/Config.php`. Retention is set by `retention_days` in the same file.
 
-```php
-$app->activityLog()->log([
-    'action'      => 'publish',
-    'entity_type' => 'blog_post',
-    'entity_id'   => $post->id,
-    'entity_name' => $post->title,
-    'details'     => ['status' => 'published', 'previous_status' => 'draft'],
-]);
-```
+## License
 
-### Auto-Tracking
+MIT
 
-When `track_admin_actions` is `true` (default), the plugin automatically logs:
-- Content CRUD: blog posts, pages, categories, tags, media
-- Redirects and 404 manager actions
-- Forms and submissions
-- Users, groups, permissions
-- Settings changes
-- Navigation, themes, regions
-- Plugins toggle
-- SEO settings
-- Comments moderation
-- Profiles
-- Backups
-- Analytics toggle
-- Social links
-
-Routes matching `/admin/auth/`, `/admin/assets/`, `/admin/api/`, and `/admin/activity-log` are excluded.
-
-## Database
-
-Table: `activity_logs`
-
-| Column | Type | Description |
-|--------|------|-------------|
-| id | primary | Auto-increment |
-| user_id | integer NULL | FK to users.id |
-| user_name | varchar(255) | Snapshot of username |
-| action | varchar(50) | create, update, delete, publish, etc. |
-| entity_type | varchar(100) | blog_post, page, redirect, user, etc. |
-| entity_id | integer NULL | Target entity ID |
-| entity_name | varchar(255) | Human-readable name |
-| details | text NULL | JSON context |
-| ip | varchar(45) | Client IP |
-| user_agent | text NULL | Client user agent |
-| created_at | datetime | Timestamp |
-
-Indexes: `(user_id)`, `(action)`, `(entity_type, entity_id)`, `(created_at)`
-
-## Permissions
-
-- `activity_log.view` — View activity log (seeded on enable)
-
-## Dashboard Card
-
-Shows count of admin actions in the last 24 hours. Click to navigate to full log.
+Note: extensive details can be found in AGENTS.md

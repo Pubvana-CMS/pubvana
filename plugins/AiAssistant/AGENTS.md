@@ -1,6 +1,6 @@
 # AGENTS.md — AI Assistant plugin
 
-Guidance for AI agents contributing to this plugin, which ships inside the main Pubvana repo.
+Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
 ## Overview
 
@@ -14,7 +14,7 @@ Guidance for AI agents contributing to this plugin, which ships inside the main 
 - **Peer plugin dependencies:** Blog, Pages, Comments, Redirects, Navigation, SEO, and the Settings service. Every `svc()` call depends on the peer plugin being registered
 - **Manifest:** `pubvana.json` (admin menu under Tools: Manage, Fact Checking, Help)
 - **Config:** `Config/Config.php` (also `Config/fact-check-prompt.json`, the bundled fact-checking prompt)
-- **Docs:** [README.md](./README.md), [AI-README.md](./AI-README.md) (the API guide written for the AI itself)
+- **Docs:** [README.md](./README.md) (human-facing), this file (contributor guide and API reference)
 
 ## Project guidelines
 
@@ -33,7 +33,6 @@ AiAssistant/
   Plugin.php                    # Entry point: maps 'ai', 'aiFactCheck', and 'aiMarkdown' services; registers admin + public routes, editor panel, block
   pubvana.json                  # Plugin manifest and admin menu under Tools (Manage, Fact Checking, Help)
   README.md                     # Short human-facing intro and where-to-go-next
-  AI-README.md                  # Full API guide written for the AI caller
   Config/
     Config.php                  # Defaults: key_prefix, max_failed_attempts, block_minutes, log_limit, factcheck URLs/timeout
     fact-check-prompt.json      # Bundled copy of the fact-checking prompt (fallback when the hosted fetch fails)
@@ -102,13 +101,96 @@ The checking brain is external (the site owner's AI assistant over the API); the
 
 `AiService::log()` writes one row per API request to `ai_logs`, snapshotting the key name so the trail survives key deletion (`AiService.php:239`). Failures to write are swallowed and pushed to `error_log`.
 
+## API reference
+
+The live guide an AI caller reads is served by `GET /api/ai/help`, generated from `helpCatalog()` (`AiService.php:330`). This section is the contributor-side reference for the same surface: envelope, grants, and endpoint rules. Keep it in sync with `helpCatalog()` and the admin help view when you change the API.
+
+### Envelope and auth
+
+- Every request sends the key as `Authorization: Bearer <key>`; bodies are JSON with `Content-Type: application/json`.
+- Every response is `{status, data, errors}` via `ok()`/`fail()`. `status` is `ok` or `error`; on failure `data` is `null` and `errors` is a list like `[{"code": 422, "message": "title is required."}]`.
+- `GET /api/ai/help` returns the live grant catalog and the grants the current key holds; `GET /api/ai/help/{permission}` returns one grant's details.
+
+### Grants
+
+Grants are deny-all and per key. A request that needs an ungranted permission fails with `403`.
+
+| Grant | Purpose |
+| --- | --- |
+| `posts.read` | `GET /api/ai/posts` lists posts; `GET /api/ai/posts/{slug}` fetches one with full content |
+| `posts.create` | `POST /api/ai/posts` creates a draft post |
+| `posts.update` | `POST /api/ai/posts/{id}/update` |
+| `posts.delete` | `POST /api/ai/posts/{id}/delete` |
+| `posts.publish` | status `published` on create/update, and removing it (published -> draft) on update |
+| `posts.schedule` | status `scheduled` + `publish_on` on create/update, and cancelling it (scheduled -> draft) on update |
+| `posts.tags.read` | `GET /api/ai/posts/tags` |
+| `posts.categories.read` | `GET /api/ai/posts/categories` |
+| `pages.read` | `GET /api/ai/pages` lists pages; `GET /api/ai/pages/{slug}` fetches one with full content |
+| `pages.create` | `POST /api/ai/pages` creates a draft page |
+| `pages.update` | `POST /api/ai/pages/{id}/update` |
+| `pages.delete` | `POST /api/ai/pages/{id}/delete` |
+| `pages.publish` | status `published` on create/update, and removing it (published -> draft) on update |
+| `comments.read` | `GET /api/ai/comments?status=pending\|approved\|rejected&page=1&per_page=25` (status optional) |
+| `comments.approve` | `POST /api/ai/comments/{id}/approve` |
+| `comments.reject` | `POST /api/ai/comments/{id}/reject` |
+| `comments.delete` | `POST /api/ai/comments/{id}/delete` |
+| `redirects.read` | `GET /api/ai/redirects` |
+| `redirects.create` | `POST /api/ai/redirects` |
+| `redirects.update` | `POST /api/ai/redirects/{id}/update` |
+| `redirects.delete` | `POST /api/ai/redirects/{id}/delete` |
+| `navigation.read` | `GET /api/ai/navigation` |
+| `navigation.create` | `POST /api/ai/navigation` |
+| `navigation.update` | `POST /api/ai/navigation/{id}/update` |
+| `navigation.delete` | `POST /api/ai/navigation/{id}/delete` |
+
+Fact checking has no per-key grants; its endpoints open to every authenticated key when the admin accepts the terms and switches the service on.
+
+### Content rules
+
+- Lists and single fetches need the matching read grant. `GET /api/ai/posts` and `GET /api/ai/pages` paginate over every status, drafts included. Query params: `page` (default 1), `per_page` (default 25, max 100), `status`, `search` (adds a `snippet` around the first match).
+- `GET /api/ai/posts/{slug}` and `/api/ai/pages/{slug}` return the full record; `content` is served as Markdown, converted from stored HTML.
+- `POST /api/ai/posts` needs `title` plus `content_md` (Markdown, sanitized to HTML) or `content` (already-rendered HTML). `status` is `draft` (default), `published` (needs `posts.publish`), or `scheduled` (needs `posts.schedule` plus `publish_on`). Optional: `slug`, `tags`, `categories`, `excerpt`, `featured_image`, `is_featured`, `allow_comments`, and a nested `seo` object.
+- Updates are partial; omitting `status` leaves the current state. Demoting a live item to `draft` takes the grant for the state being torn down (`requireDemoteGrant()`).
+- `POST /api/ai/pages` uses the same content rule; `status` is `draft` or `published`.
+- `POST /api/ai/redirects` needs `source_path` (normalized: leading slash, no trailing slash) and `target_url`; optional `status_code` (301/302), `enabled`, `notes`.
+- `POST /api/ai/navigation` needs `label` and `url`; optional `nav_group` (default `primary`), `parent_id`, `sort_order`, `target` (`_self`/`_blank`).
+- Stored HTML is sanitized: Markdown input strips raw HTML, output is HTMLPurified. Raw `<script>` tags are stripped, not executed.
+- `GET /api/ai/broken-links` and `GET /api/ai/analytics` are stubs and return `501`.
+
+### Fact checking flow
+
+- `GET /api/ai/fact-check/prompt` returns the versioned terms; the caller must fetch it before every check.
+- Submit `POST /api/ai/posts/{id}/fact-check` or `/api/ai/pages/{id}/fact-check` with `prompt_version`, `summary`, `overall_verdict`, `claims`, `prompt_interference`, `interference_note`.
+- Verdicts: `supported`, `partially_supported`, `refuted`, `unverifiable`. Opinions take `kind: "opinion"` with a `determination` and never a verdict.
+- `prompt_version` must match the current version or the submission is refused with `409`.
+- Read reports back with `GET /api/ai/fact-checks?page=1&per_page=25&content_type=post&content_id=5` and `GET /api/ai/fact-checks/{id}`; `stale: true` means the content was edited after the check.
+- Submitting requires the matching read grant (`posts.read` or `pages.read`).
+
+### SEO metadata
+
+Posts and pages accept a nested `seo` object on create and update. Only included fields are written; omit `seo` entirely to leave SEO untouched.
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `meta_title` | string | Title override; blank clears it |
+| `meta_description` | string | Description override |
+| `canonical_url` | string | Canonical override |
+| `robots_directive` | string | `noindex`, `nofollow`, `noindex, nofollow`, or blank |
+| `focus_keywords` | string[] or string | Array, or comma-separated string (max 5 kept) |
+| `og_title` | string | Open Graph title override |
+| `og_description` | string | Open Graph description override |
+| `og_image` | string | Open Graph image URL/path |
+| `og_type` | string | e.g. `article`, `website` |
+| `twitter_card` | string | `summary`, `summary_large_image` |
+| `hreflang` | string | e.g. `en`, `en-US` |
+
 ## Development and testing
 
-This plugin has a unit test suite for the fact-checking service; the rest is exercised through the full app.
+The unit suite lives in `tests/Unit/Plugins/AiAssistant/` and covers the services, models, and grant logic; controllers and views are exercised through the full app.
 
 ```bash
 php -l plugins/AiAssistant/Plugin.php           # lint every touched file
-vendor/bin/phpunit tests/Unit/Plugins/AiAssistant/FactCheckServiceTest.php
+vendor/bin/phpunit tests/Unit/Plugins/AiAssistant
 ```
 
 - Verify the admin screens at `/admin/ai/manage`, `/admin/ai/fact-checks`, and `/admin/ai/help` after any controller or view change.
@@ -116,7 +198,7 @@ vendor/bin/phpunit tests/Unit/Plugins/AiAssistant/FactCheckServiceTest.php
 - Exercise the public API with a bearer token and confirm 401 (no key), 403 (no grant), 422 (bad input), and the `{status, data, errors}` envelope.
 - Confirm a request against a disabled key clicks up `failed_attempts` and blocks when the threshold is crossed, and that a sessionless request still works (no CSRF token involved).
 - Fact checking end to end: accept terms, toggle on, `GET /api/ai/fact-check/prompt`, submit a report, see it in the history and editor panel, edit the content and confirm the stale badge, toggle off and confirm endpoints refuse.
-- Coverage: `tests/Unit/Plugins/AiAssistant/FactCheckServiceTest.php` covers the service; controllers and views stay manual. `<!-- TODO: add [coverage target] -->`
+- Coverage: the unit suite covers `AiService`, `FactCheckService`, `MarkdownService`, the models, and demote-grant logic; controllers and views stay manual. `<!-- TODO: add [coverage target] -->`
 
 ## Coding standards
 - **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
@@ -137,10 +219,10 @@ Steps that go beyond the repo-wide style, derived from the existing code:
 
 | Resource | Use for |
 |----------|---------|
-| [AI-README.md](./AI-README.md) | The complete endpoint reference, grant list, and request/response examples for the AI caller |
-| [README.md](./README.md) | Human-facing intro and pointing reader to the AI guide and live `/api/ai/help` |
+| [README.md](./README.md) | Human-facing intro for site owners |
+| This file | Contributor guide and the API reference (envelope, grants, endpoints) |
 | [help.php](./Views/admin/help.php) | Admin-facing plain-language description of each grant |
-| [helpCatalog()](./Services/AiService.php) | Single source of truth for grant semantics |
+| [helpCatalog()](./Services/AiService.php) | Single source of truth for grant semantics; drives `/api/ai/help` |
 
 ## Common tasks
 
@@ -163,7 +245,7 @@ Steps that go beyond the repo-wide style, derived from the existing code:
 
 - [ ] Changes fit the project guidelines (no weakened key logic, no ungated endpoint, grants stay deny-all, fact-check gate stays site-level)
 - [ ] `php -l` clean on every touched file
-- [ ] New permission/endpoint documented in `helpCatalog()`, AI-README.md, and the admin help view as appropriate (fact-check endpoints: AI-README.md and the admin help view only)
+- [ ] New permission/endpoint documented in `helpCatalog()` and the admin help view as appropriate (fact-check endpoints: the admin help view only)
 - [ ] Endpoint verified for 401, 403, 422, and the `{status, data, errors}` envelope
 - [ ] Audit log written and tolerated-failure path intact
 - [ ] Static routes still registered before parameterized routes in `Plugin.php`

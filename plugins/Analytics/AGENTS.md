@@ -1,6 +1,6 @@
 # AGENTS.md — Analytics plugin
 
-Guidance for AI agents contributing to this plugin, which ships inside the main Pubvana repo.
+Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
 ## Overview
 
@@ -17,10 +17,10 @@ Guidance for AI agents contributing to this plugin, which ships inside the main 
 
 ## Project guidelines
 
-1. **Tracking must never break page delivery.** `logView()` and `maybeRollup()` swallow every failure (`AnalyticsService.php:400`, `AnalyticsService.php:345`). New tracking code must keep this contract; a cache, DB, or lock problem on a public request is a no-op, never an error page.
+1. **Tracking must never break page delivery.** `logView()` and `maybeRollup()` swallow every failure (`AnalyticsService.php:400`, `AnalyticsService.php:345`). New tracking code must keep this behavior; a cache, DB, or lock problem on a public request is a no-op, never an error page.
 2. **Track rows only, never a hit per byte.** The raw table holds one row per view; the daily rollup compacts rows older than the hot window so retention is unbounded without unbounded rows (`AnalyticsService.php:266`). Do not add another row-eater or drop the rollup path.
 3. **Respect the skip rules.** Non-GET/HEAD verbs, bots (`AnalyticsService.php:712`), static file extensions, admin/api/assets prefixes, and the configured feed paths are never counted (`AnalyticsService.php:685`). Keep new tracking paths inside the same filters.
-4. **No IP or location data.** The README promises visitors are not tracked by IP or location (`README.md:7`), and the service records only the path, a derived group, and the referrer host. Do not add IP, user-agent, or geolocation capture.
+4. **No IP or location data.** The README promises visitors are not tracked by IP or location, and the service records only the path, a derived group, and the referrer host. Do not add IP, user-agent, or geolocation capture.
 5. **Keep ranges canonical.** A range is one of `7`, `30`, `90`, `180`, `365`, or `all` (`AnalyticsService.php:77`). The controller sanitizes request input against this before it reaches a query.
 6. **Rollup is idempotent and once-a-day.** The flag file in `writable/cache/` plus an exclusive flock gates the daily run (`AnalyticsService.php:314`). Never run rollup from a request without that guard, and keep the `ON DUPLICATE KEY UPDATE` merge so re-runs cannot double count.
 
@@ -30,7 +30,7 @@ Guidance for AI agents contributing to this plugin, which ships inside the main 
 Analytics/
   Plugin.php                    # Entry point: maps 'analytics' service, admin routes, page-view event listener, dashboard card
   pubvana.json                  # Plugin manifest and admin menu under Tools
-  README.md                     # User-facing tracking, report, retention, and schema docs
+  README.md                     # User-facing features and usage
   Config/
     Config.php                  # Defaults: tracking skip lists, rollup hot window
   Controllers/
@@ -65,20 +65,58 @@ A listener on `flight.route.executed` calls `logView()` then `maybeRollup()` aft
 
 `rollup()` (`AnalyticsService.php:266`) merges raw rows older than the hot window into `analytics_views_daily` and `analytics_referrers_daily` with `ON DUPLICATE KEY UPDATE`, then deletes the raw rows in batches of 5000. `maybeRollup()` (`AnalyticsService.php:314`) guards it with a dated flag file under `writable/cache/analytics_rollup` and an exclusive flock, so the rollup runs at most once a day and never on CLI.
 
+### Data model
+
+Three tables, all created by the migrations in `Database/Migrations/`.
+
+`analytics_page_views` holds one row per tracked view, kept only inside the hot window:
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | primary | |
+| `page_path` | varchar(255) | Normalized request path, indexed |
+| `page_group` | varchar(50) | First URL segment, indexed |
+| `referrer_domain` | varchar(255) | Host of the incoming referrer, nullable |
+| `viewed_at` | datetime | Indexed |
+
+`analytics_views_daily` holds rolled views by day, group, and path:
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | primary | |
+| `day` | varchar(10) | `YYYY-MM-DD` |
+| `page_group` | varchar(50) | |
+| `page_path` | varchar(255) | |
+| `view_count` | int | |
+
+Unique index on `(day, page_group, page_path)`.
+
+`analytics_referrers_daily` holds rolled views by day and referrer domain:
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | primary | |
+| `day` | varchar(10) | `YYYY-MM-DD` |
+| `referrer_domain` | varchar(255) | |
+| `view_count` | int | |
+
+Unique index on `(day, referrer_domain)`.
+
 ## Development and testing
 
-This plugin has no `composer.json` and no test suite, unlike library plugins in the Pubvana repo.
+The unit suite lives in `tests/Unit/Plugins/Analytics/` and covers the service, the model and controller helpers, the rollup upsert SQL, and the report view's inline-script escaping.
 
 ```bash
 php -l plugins/Analytics/Plugin.php           # lint every touched file
 php -l plugins/Analytics/Services/AnalyticsService.php
+vendor/bin/phpunit tests/Unit/Plugins/Analytics
 ```
 
 - View the report at `/admin/analytics` and confirm the range buttons (7d/30d/90d/180d/1y/All) redraw the chart and tables through `/admin/analytics/data`.
 - Confirm the tracking toggle persists and that a disabled state stops new rows.
 - Visit a public page and confirm one row lands in `analytics_page_views`, then confirm an admin path, a bot user agent, and a `.css` request do not.
 - Confirm the 404 path is not counted (the listener only fires on dispatched routes).
-- Coverage: none configured for this plugin. `<!-- TODO: add [coverage target] -->`
+- Coverage: the unit suite covers `AnalyticsService` reporting and helpers, `PageView` and `AnalyticsAdminController` helpers, the rollup upsert SQL (MySQL vs MariaDB forms), and the report view's inline JSON escaping. `<!-- TODO: add [coverage target] -->`
 
 ## Coding standards
 - **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
@@ -87,7 +125,7 @@ Steps that go beyond the repo-wide style, derived from the existing code:
 
 1. `declare(strict_types=1);` first line in every class file.
 2. Class name, file name, and namespace must align: `Pubvana\Plugins\Analytics\Services\AnalyticsService` lives in `Services/AnalyticsService.php`.
-3. All report SQL lives inside `AnalyticsService`; the controller and view never write SQL.
+3. All report SQL is in `AnalyticsService`; the controller and view never write SQL.
 4. Bound parameters only: every user-facing value (range cutoff is derived; limits are interiors) is bound with `bindValue`. Do not interpolate request input into SQL strings. The `LIMIT` value is already sanitized by `max(1, $limit)` before concatenation (`AnalyticsService.php:155`).
 5. Keep the report shape stable: `dashboard()` always returns `range`, `totalViews`, `trends` (`granularity`/`labels`/`series`), `topContent`, `referrers`. The view and the JSON endpoint both consume that exact shape.
 6. Sanitize ranges with `normalizeRange()` before they reach any query; never trust a raw `range` param.
@@ -98,7 +136,7 @@ Steps that go beyond the repo-wide style, derived from the existing code:
 
 | Resource | Use for |
 |----------|---------|
-| [README.md](./README.md) | Tracking behavior, report features, retention, and the table schemas |
+| [README.md](./README.md) | User-facing features and usage |
 | [Config/Config.php](./Config/Config.php) | Skip lists and rollup hot window defaults |
 
 ## Common tasks

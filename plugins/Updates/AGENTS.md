@@ -1,6 +1,6 @@
 # AGENTS.md — Updates plugin
 
-Guidance for AI agents contributing to this plugin, which ships inside the main Pubvana repo.
+Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
 ## Overview
 
@@ -26,8 +26,8 @@ Guidance for AI agents contributing to this plugin, which ships inside the main 
 7. **Keep progress granular.** `UpdateProgress` writes a phase checklist plus a free-form detail line (download bytes via `CURLOPT_XFERINFOFUNCTION`, per-directory copy counts). The admin UI polls `update_progress.json`. Reason: v2's "starting..." then silence was the most complained-about UX gap.
 8. **The apply flow holds the update lock before preflight; preflight must not check locks itself.** `preFlight($version, false)` from the apply path; `locksCheck()` runs only for display on the index page. Reason: the flow would flag its own lock (real bug found in testing).
 9. **Check state is cached 24h in settings, never on dashboard renders with network.** `dashboardCards()` and the Site Health check read `lastCheck()` only. Reason: no network on every dashboard load; SiteHealth forbids network in checks.
-10. **Addon updates belong to the Marketplace's install contract.** `UpdatesAdminController::addonUpdate()` passes the package identity (the addon's manifest `pubvana.json` `name`) to `$app->marketplace()->installFromPackage()` and reports the result; it owns no download, zip, or filesystem logic. Marketplace ingest is keyed by package (`checkAddonUpdates()`), never by folders. Reason: one install path, one identity, cross-plugin.
-11. **Addon origin is declared, never guessed.** The root `pubvana.json` `includes` block is the authority for what ships with the distribution (`UpdateService::readIncluded()`); `marketplace_installs` is the authority for store items (facade `trackedPackages()`); composer vendor discovery is the authority for dependency packages. Anything else is rendered `manual`: copied in outside every update channel, no update action is offered, no origin is invented for it.     Labels: `core`, `marketplace`, `composer`, `free`, `notpurchased`, `manual`.
+10. **Addon updates belong to the Marketplace's install path.** `UpdatesAdminController::addonUpdate()` passes the package identity (the addon's manifest `pubvana.json` `name`) to `$app->marketplace()->installFromPackage()` and reports the result; it owns no download, zip, or filesystem logic. Marketplace ingest is keyed by package (`checkAddonUpdates()`), never by folders. Reason: one install path, one identity, cross-plugin.
+11. **Addon origin is declared, never guessed.** The root `pubvana.json` `includes` block is the authority for what is included with the distribution (`UpdateService::readIncluded()`); `marketplace_installs` is the authority for store items (facade `trackedPackages()`); composer vendor discovery is the authority for dependency packages. Anything else is rendered `manual`: copied in outside every update channel, no update action is offered, no origin is invented for it.     Labels: `core`, `marketplace`, `composer`, `free`, `notpurchased`, `manual`.
     - `notpurchased` covers the disclosure-only case: the package is sold at the store catalog but holds no purchase record here. It is not an accusation (the item may be a paid item owned elsewhere, or mid-transfer); no enforcement, no extra phone-home, no update button (there is no license to drive one); the action is a pointer to Tools > Marketplace and the admin's own next step (buy, verify purchases, or remove).
     - `free` covers genuinely free store items (scope none) that are untracked here: same Update button as tracked items, they update for free through the store's free endpoint; never "not purchased" phrasing.
 12. **Controllers strip `_csrf_token` before POST data use; permission gate is flash + redirect, never `halt()`.** Standard v3 patterns.
@@ -110,7 +110,7 @@ Scratch end-to-end (done once for v1; repeat when changing the apply flow): copy
 | [README.md](./README.md) | User-facing behavior, config table, CLI + cron usage |
 | `releases.json` (repo root) | Feed schema: `version`, `release_date`, `min_php_version`, `breaking_changes`, `migration_notes`, `notices`, `download_url` |
 | `.github/workflows/release.yml` | Release packaging and the three guards |
-| `plugins/Backups/AGENTS.md` | The backup/restore contract this plugin depends on |
+| `plugins/Backups/AGENTS.md` | The backup/restore behavior this plugin depends on |
 
 ## Common tasks
 
@@ -141,5 +141,5 @@ Scratch end-to-end (done once for v1; repeat when changing the apply flow): copy
 - In-place rollback: rollback is a Backups restore of the pre-update snapshot.
 - Delta/patch updates: every release is a full-file zip including `vendor/`.
 - Deleting files removed between releases (a full-file copy cannot know what to remove).
-- The cron system itself (runner, schedules, registry type): owned by core. This plugin only ships the chain the scheduler will invoke.
+- The cron system itself (runner, schedules, registry type): owned by core. This plugin only provides the chain the scheduler will invoke.
 - Email notifications on new releases; the dashboard card and Site Health check are the notification surface.

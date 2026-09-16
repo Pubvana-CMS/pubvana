@@ -1,6 +1,6 @@
 # AGENTS.md — Core Blocks plugin
 
-Guidance for AI agents contributing to this plugin, which ships inside the main Pubvana repo.
+Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
 ## Overview
 
@@ -49,7 +49,7 @@ plugins/CoreBlocks/
 
 This plugin has no `composer.json` and no test suite. It is a declarative plugin with no runtime code paths to execute.
 
-- Lint/static analysis (app-wide, from the repo root; the plugin ships in-tree):
+- Lint/static analysis (app-wide, from the repo root; the plugin is in-tree):
   - `vendor/bin/phpstan analyse` (level 3); PHPStan does not analyze `plugins/`, so syntax is the main automated check
   - `find plugins/CoreBlocks -name '*.php' -exec php -l {} \;`
 - Manual verification checklist:
@@ -71,7 +71,7 @@ No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->
 
 | Source | Purpose |
 |--------|---------|
-| `README.md` | User-facing docs: features, installation, usage, contributing |
+| `README.md` | User-facing features and usage |
 | `pubvana.json` | Single source of truth for block keys, labels, options, and priorities |
 
 ## Common tasks
