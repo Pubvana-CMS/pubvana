@@ -147,8 +147,14 @@ class Plugin implements PluginInterface
     {
         $seoModel = new SeoMeta($app->db());
 
-        $totalPages = count($app->pages()->listPublished());
-        $totalPosts = (int) ($app->blog()->listPosts(1, 1, 'published')['total']);
+        // Host plugins may be disabled; guard so a missing pages()/blog()
+        // service contributes 0 instead of throwing.
+        $totalPages = $app->pluginLoader()->isEnabled('pubvana/pages')
+            ? count($app->pages()->listPublished())
+            : 0;
+        $totalPosts = $app->pluginLoader()->isEnabled('pubvana/blog')
+            ? (int) ($app->blog()->listPosts(1, 1, 'published')['total'])
+            : 0;
         $totalContent = $totalPages + $totalPosts;
 
         $withMeta = $seoModel->countWithMetaTitle();

@@ -126,4 +126,3 @@ Coverage: the suite covers the model, both controllers (URLs, website validation
 - No hard profile delete; profiles disappear only through the `users` cascade delete.
 - No external avatar sources (Gravatar, Uploadcare, etc.); the avatar is a stored image path picked via the Media plugin.
 - No pagination, search, or discovery of profiles; a profile is reached by a known username.
-- Known gap to reconcile, not implemented here: the unimplemented dashboard declaration at `pubvana.json:7-12`.
