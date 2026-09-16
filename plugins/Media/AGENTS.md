@@ -163,4 +163,4 @@ Coverage: the suite covers the model, the GD processor, the service facade, admi
 - No CDN or remote storage integration; files live under `public/uploads`.
 - No watermarking, faces/object detection, or non-WebP derivative formats.
 - No localization; labels are hardcoded English.
-- GD's `stripExif()` is a no-op that advertises the capability (`Services/GdProcessor.php:170-173, 268`); do not rely on GD to strip metadata. `<!-- TODO: decide whether GD should stop advertising strip_exif or implement it -->`
+- GD does not advertise `strip_exif`. GD has no EXIF API and re-encodes on every save (its JPEG encoder never writes EXIF), so it cannot offer a keep-or-strip choice; `stripExif()` stays a no-op to satisfy the interface (`Services/GdProcessor.php`). Imagick advertises `strip_exif` because `stripImage()` is a real opt-in.

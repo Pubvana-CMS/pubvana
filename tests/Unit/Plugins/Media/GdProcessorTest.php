@@ -201,8 +201,10 @@ final class GdProcessorTest extends TestCase
     {
         $caps = (new GdProcessor())->capabilities();
 
-        foreach (['crop', 'rotate', 'flip', 'resize', 'sharpen', 'brightness', 'contrast', 'strip_exif'] as $op) {
+        foreach (['crop', 'rotate', 'flip', 'resize', 'sharpen', 'brightness', 'contrast'] as $op) {
             self::assertContains($op, $caps);
         }
+        // GD cannot offer a keep-or-strip EXIF choice; strip_exif is Imagick-only.
+        self::assertNotContains('strip_exif', $caps);
     }
 }

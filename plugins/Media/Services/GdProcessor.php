@@ -205,6 +205,12 @@ class GdProcessor implements ImageProcessorInterface
         $this->image = $newImage;
     }
 
+    /**
+     * No-op: GD has no EXIF API, so there is nothing to strip in memory.
+     * GD re-encodes on every save and its JPEG encoder never writes EXIF,
+     * so metadata is always dropped regardless. The strip_exif capability
+     * is therefore not advertised for GD; Imagick implements this for real.
+     */
     public function stripExif(): static
     {
         return $this;
@@ -314,7 +320,10 @@ class GdProcessor implements ImageProcessorInterface
      */
     public function capabilities(): array
     {
-        $caps = ['crop', 'rotate', 'flip', 'resize', 'sharpen', 'brightness', 'contrast', 'strip_exif'];
+        // No strip_exif: GD has no EXIF API and re-encodes on every save,
+        // so it cannot offer the user a keep-or-strip choice. Imagick
+        // advertises it because stripImage() is a real opt-in.
+        $caps = ['crop', 'rotate', 'flip', 'resize', 'sharpen', 'brightness', 'contrast'];
 
         if (function_exists('exif_read_data')) {
             $caps[] = 'auto_orient';
