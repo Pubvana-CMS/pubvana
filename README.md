@@ -4,7 +4,7 @@
 
 # Pubvana CMS
 
-Pubvana v3 is a flexible, full-featured, shared-host friendly CMS (Content Management System) for personal blogs, small to medium business websites, company intranets and more. v3 also offers the flexibility of a CMF (Content Management Framework) to build your own custom plugins faster than starting from scratch.  Version 3 has a new administration panel, plugin extensions, faster internals, and more features than you'd expect in a free, open source CMS.
+Pubvana is a flexible, full-featured, shared-host friendly CMS (Content Management System) for personal blogs, small to medium business websites, company intranets and more. v3 also offers the flexibility of a CMF (Content Management Framework) to build your own custom plugins faster than starting from scratch.  Version 3 has a new administration panel, plugin extensions, faster internals, and more features than you'd expect in a free, open source CMS.
 
 ## v3
 
@@ -30,6 +30,13 @@ Pubvana v3 is a flexible, full-featured, shared-host friendly CMS (Content Manag
 [![status](https://img.shields.io/badge/status-maintenance-blue)](https://github.com/Pubvana-CMS/pubvana)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.2%2B-blue.svg)](https://www.php.net)
+
+
+## v1 (Includes Open-Blog and Open-Blog3)
+
+[![status](https://img.shields.io/badge/status-obsolete.unsupported-blue)](https://github.com/Pubvana-CMS/pubvana)
+[![Codeigniter 3](https://img.shields.io/badge/Codeigniter-3.x-orange.svg)](https://codeigniter.com)
+[![Codeigniter 2](https://img.shields.io/badge/Codeigniter-2.x-orange.svg)](https://codeigniter.com)
 
 
 ---
