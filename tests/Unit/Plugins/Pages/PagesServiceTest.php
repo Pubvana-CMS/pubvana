@@ -151,6 +151,11 @@ final class PagesServiceTest extends TestCase
         self::assertNotNull($restored);
         self::assertSame('V1', $restored->title);
 
+        // The pre-restore state (V2) is snapshotted before the restore, so
+        // the restore is reversible.
+        $after = $this->service->getRevisions($id);
+        self::assertSame('V2', $after[0]->title);
+
         self::assertNull($this->service->restoreRevision(99999, (int) $oldest->id, 1));
         self::assertNull($this->service->restoreRevision($id, 99999, 1));
 

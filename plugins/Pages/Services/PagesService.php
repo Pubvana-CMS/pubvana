@@ -154,6 +154,10 @@ class PagesService
             return null;
         }
 
+        // Snapshot the current (pre-restore) state first so the restore is
+        // reversible; updatePage() below would otherwise overwrite it.
+        $this->revisionModel->createFromPage($page, $userId);
+
         $page->updatePage([
             'title'          => $revision->title,
             'content'        => $revision->content,
@@ -161,7 +165,6 @@ class PagesService
             'allow_comments' => (int) $revision->allow_comments,
         ]);
 
-        $this->revisionModel->createFromPage($page, $userId);
         $this->pruneRevisions($pageId);
 
         return $page;

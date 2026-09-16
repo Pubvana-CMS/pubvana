@@ -194,6 +194,10 @@ class BlogService
             return null;
         }
 
+        // Snapshot the current (pre-restore) state first so the restore is
+        // reversible; updateRecord() below would otherwise overwrite it.
+        $this->revisionModel->createFromPost($post, $userId);
+
         $post->updateRecord([
             'title'   => $revision->title,
             'content' => $revision->content,
@@ -201,7 +205,6 @@ class BlogService
             'status'  => $revision->status,
         ]);
 
-        $this->revisionModel->createFromPost($post, $userId);
         $this->pruneRevisions($postId);
 
         return $post;
