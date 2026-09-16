@@ -12,7 +12,7 @@ Create an empty MySQL database and a user with full privileges on it. You'll nee
 
 ## v2 Automated Installation 
 
-See the Pubvana Website for [v2 web installer](https://pubvana.net/dstore/product/pubvana-easy-installer) or [v2 Docker Compose](https://github.com/Pubvana-CMS/v2-docker) on Github. 
+See the Pubvana Website for [v2 web installer](https://pubvanacms.com/dstore/product/pubvana-easy-installer) or [v2 Docker Compose](https://github.com/Pubvana-CMS/v2-docker) on Github. 
 
 ## v3 Automated Installation  
 

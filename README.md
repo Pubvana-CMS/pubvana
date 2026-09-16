@@ -92,11 +92,6 @@ pubvana/
   writable/             - Automated writing to files from the site
 ```
 
-## Developer Documentation
-
-- Coming Soon
-
-
 ## Stack
 
 | Layer | Technology |

@@ -139,7 +139,7 @@ final class MarketplacePluginTest extends TestCase
         $config = require PROJECT_ROOT . '/plugins/Marketplace/Config/Config.php';
 
         self::assertSame('marketplace', $config['routePrepend']);
-        self::assertSame('http://plugindev', $config['store_url']);
+        self::assertSame('https://pubvanacms.com', $config['store_url']);
         self::assertSame(14, $config['verify_days']);
         self::assertSame(1048576, $config['max_bytes']);
     }
