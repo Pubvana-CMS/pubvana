@@ -34,13 +34,12 @@ class Plugin implements PluginInterface
         });
 
         $adext = $app->adext();
-        $authMiddleware = null;
 
         // ─── Admin Routes ──────────────────────────────────────────────
 
         $adext->addRoutes('admin', [
-            ['GET',  $prefix,              [HealthAdminController::class, 'index'], [$authMiddleware]],
-            ['POST', $prefix . '/rerun',   [HealthAdminController::class, 'rerun'], [$authMiddleware]],
+            ['GET',  $prefix,              [HealthAdminController::class, 'index'], []],
+            ['POST', $prefix . '/rerun',   [HealthAdminController::class, 'rerun'], []],
         ], 'pubvana.sitehealth');
 
         // ─── Dashboard ──────────────────────────────────────────────────

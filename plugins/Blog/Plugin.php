@@ -31,36 +31,35 @@ class Plugin implements PluginInterface
         });
 
         $adext = $app->adext();
-        $authMiddleware = null;
 
         // ─── Admin Routes ──────────────────────────────────────────────
 
         // Posts
         $adext->addRoutes('admin', [
-            ['GET',  $prefix,                              [BlogAdminController::class, 'index'],       [$authMiddleware]],
-            ['GET',  $prefix . '/create',                  [BlogAdminController::class, 'create'],      [$authMiddleware]],
-            ['POST', $prefix . '/store',                   [BlogAdminController::class, 'store'],       [$authMiddleware]],
-            ['GET',  $prefix . '/@id/edit',                [BlogAdminController::class, 'edit'],        [$authMiddleware]],
-            ['POST', $prefix . '/@id/update',              [BlogAdminController::class, 'update'],      [$authMiddleware]],
-            ['POST', $prefix . '/@id/delete',              [BlogAdminController::class, 'delete'],      [$authMiddleware]],
-            ['GET',  $prefix . '/@id/revisions',           [BlogAdminController::class, 'revisions'],   [$authMiddleware]],
-            ['POST', $prefix . '/@id/restore/@revisionId', [BlogAdminController::class, 'restore'],     [$authMiddleware]],
+            ['GET',  $prefix,                              [BlogAdminController::class, 'index'],       []],
+            ['GET',  $prefix . '/create',                  [BlogAdminController::class, 'create'],      []],
+            ['POST', $prefix . '/store',                   [BlogAdminController::class, 'store'],       []],
+            ['GET',  $prefix . '/@id/edit',                [BlogAdminController::class, 'edit'],        []],
+            ['POST', $prefix . '/@id/update',              [BlogAdminController::class, 'update'],      []],
+            ['POST', $prefix . '/@id/delete',              [BlogAdminController::class, 'delete'],      []],
+            ['GET',  $prefix . '/@id/revisions',           [BlogAdminController::class, 'revisions'],   []],
+            ['POST', $prefix . '/@id/restore/@revisionId', [BlogAdminController::class, 'restore'],     []],
         ], 'pubvana.blog');
 
         // Categories
         $adext->addRoutes('admin', [
-            ['GET',  $prefix . '/categories',              [BlogAdminController::class, 'categories'],     [$authMiddleware]],
-            ['GET',  $prefix . '/categories/create',       [BlogAdminController::class, 'createCategory'], [$authMiddleware]],
-            ['POST', $prefix . '/categories/store',        [BlogAdminController::class, 'storeCategory'],  [$authMiddleware]],
-            ['GET',  $prefix . '/categories/@id/edit',     [BlogAdminController::class, 'editCategory'],   [$authMiddleware]],
-            ['POST', $prefix . '/categories/@id/update',   [BlogAdminController::class, 'updateCategory'], [$authMiddleware]],
-            ['POST', $prefix . '/categories/@id/delete',   [BlogAdminController::class, 'deleteCategory'], [$authMiddleware]],
+            ['GET',  $prefix . '/categories',              [BlogAdminController::class, 'categories'],     []],
+            ['GET',  $prefix . '/categories/create',       [BlogAdminController::class, 'createCategory'], []],
+            ['POST', $prefix . '/categories/store',        [BlogAdminController::class, 'storeCategory'],  []],
+            ['GET',  $prefix . '/categories/@id/edit',     [BlogAdminController::class, 'editCategory'],   []],
+            ['POST', $prefix . '/categories/@id/update',   [BlogAdminController::class, 'updateCategory'], []],
+            ['POST', $prefix . '/categories/@id/delete',   [BlogAdminController::class, 'deleteCategory'], []],
         ], 'pubvana.blog');
 
         // Tags
         $adext->addRoutes('admin', [
-            ['GET',  $prefix . '/tags',              [BlogAdminController::class, 'tags'],      [$authMiddleware]],
-            ['POST', $prefix . '/tags/@id/delete',   [BlogAdminController::class, 'deleteTag'], [$authMiddleware]],
+            ['GET',  $prefix . '/tags',              [BlogAdminController::class, 'tags'],      []],
+            ['POST', $prefix . '/tags/@id/delete',   [BlogAdminController::class, 'deleteTag'], []],
         ], 'pubvana.blog');
 
         // ─── Public Routes ──────────────────────────────────────────────

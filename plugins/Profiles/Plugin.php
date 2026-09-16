@@ -35,13 +35,12 @@ class Plugin implements PluginInterface
         });
 
         $adext = $app->adext();
-        $authMiddleware = null;
 
         // Admin routes
         $adext->addRoutes('admin', [
-            ['GET',  $prefix,                  [ProfilesAdminController::class, 'index'],  [$authMiddleware]],
-            ['GET',  $prefix . '/@userId',     [ProfilesAdminController::class, 'show'],   [$authMiddleware]],
-            ['POST', $prefix . '/@userId/update', [ProfilesAdminController::class, 'update'], [$authMiddleware]],
+            ['GET',  $prefix,                  [ProfilesAdminController::class, 'index'],  []],
+            ['GET',  $prefix . '/@userId',     [ProfilesAdminController::class, 'show'],   []],
+            ['POST', $prefix . '/@userId/update', [ProfilesAdminController::class, 'update'], []],
         ], 'pubvana.profiles');
 
         // Public routes

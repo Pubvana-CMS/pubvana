@@ -40,15 +40,13 @@ class Plugin implements PluginInterface
             return $instance;
         });
 
-        $authMiddleware = null;
-
         $app->adext()->addRoutes('admin', [
-            ['GET',  $prefix,                      [BackupsAdminController::class, 'index'],    [$authMiddleware]],
-            ['POST', $prefix . '/create',          [BackupsAdminController::class, 'create'],   [$authMiddleware]],
-            ['GET',  $prefix . '/status',          [BackupsAdminController::class, 'status'],   [$authMiddleware]],
-            ['GET',  $prefix . '/download/@filename', [BackupsAdminController::class, 'download'], [$authMiddleware]],
-            ['POST', $prefix . '/@filename/delete',   [BackupsAdminController::class, 'delete'],   [$authMiddleware]],
-            ['POST', $prefix . '/restore/@filename',  [BackupsAdminController::class, 'restore'],  [$authMiddleware]],
+            ['GET',  $prefix,                      [BackupsAdminController::class, 'index'],    []],
+            ['POST', $prefix . '/create',          [BackupsAdminController::class, 'create'],   []],
+            ['GET',  $prefix . '/status',          [BackupsAdminController::class, 'status'],   []],
+            ['GET',  $prefix . '/download/@filename', [BackupsAdminController::class, 'download'], []],
+            ['POST', $prefix . '/@filename/delete',   [BackupsAdminController::class, 'delete'],   []],
+            ['POST', $prefix . '/restore/@filename',  [BackupsAdminController::class, 'restore'],  []],
         ], 'pubvana.backups');
     }
 }

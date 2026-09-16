@@ -51,7 +51,7 @@ Backups/
 
 ### Plugin registration
 
-`Plugin.php:22` registers the plugin. It stores the config under `pubvana.backups`, maps `backups` as a singleton service (`BackupService` wired to `$app->db()` and the raw database credentials), and registers six admin routes through `adext()` under the same config key. `$authMiddleware` is deliberately `null` here; Pubvana's admin route group already protects the routes.
+`Plugin.php:22` registers the plugin. It stores the config under `pubvana.backups`, maps `backups` as a singleton service (`BackupService` wired to `$app->db()` and the raw database credentials), and registers six admin routes through `adext()` under the same config key. Admin routes carry no per-route middleware; Pubvana's admin route group already gates them on `admin.access`.
 
 The `BackupService` is the singleton most code talks to. `RestoreService` and `ProgressReporter` are constructed on demand with the config and the backup directory.
 

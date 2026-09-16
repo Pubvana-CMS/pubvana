@@ -35,15 +35,14 @@ class Plugin implements PluginInterface
         });
 
         $adext = $app->adext();
-        $authMiddleware = null;
 
         // ─── Admin Routes ──────────────────────────────────────────────
 
         $adext->addRoutes('admin', [
-            ['GET',  $prefix,                        [BrokenLinksAdminController::class, 'index'],   [$authMiddleware]],
-            ['POST', $prefix . '/scan',              [BrokenLinksAdminController::class, 'scan'],    [$authMiddleware]],
-            ['POST', $prefix . '/@id/recheck',       [BrokenLinksAdminController::class, 'recheck'], [$authMiddleware]],
-            ['POST', $prefix . '/@id/dismiss',       [BrokenLinksAdminController::class, 'dismiss'], [$authMiddleware]],
+            ['GET',  $prefix,                        [BrokenLinksAdminController::class, 'index'],   []],
+            ['POST', $prefix . '/scan',              [BrokenLinksAdminController::class, 'scan'],    []],
+            ['POST', $prefix . '/@id/recheck',       [BrokenLinksAdminController::class, 'recheck'], []],
+            ['POST', $prefix . '/@id/dismiss',       [BrokenLinksAdminController::class, 'dismiss'], []],
         ], 'pubvana.brokenlinks');
 
         // Core cron system (docs/Cron.md): daily scan of all registered

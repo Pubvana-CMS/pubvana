@@ -38,12 +38,11 @@ class Plugin implements PluginInterface
         });
 
         $adext = $app->adext();
-        $authMiddleware = null; // Disabled for development
 
         // Admin route — adext auto-prefixes with /admin
         $adext->addRoutes('admin', [
-            ['GET',    '/search',       [SearchAdminController::class, 'index'],  [$authMiddleware]],
-            ['POST',   '/search',       [SearchAdminController::class, 'save'],   [$authMiddleware]],
+            ['GET',    '/search',       [SearchAdminController::class, 'index'],  []],
+            ['POST',   '/search',       [SearchAdminController::class, 'save'],   []],
         ], 'pubvana.search');
 
         // Public route — root-level /search

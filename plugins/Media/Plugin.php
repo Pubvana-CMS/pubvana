@@ -30,28 +30,26 @@ class Plugin implements PluginInterface
         });
 
         $adext = $app->adext();
-        // Media routes gate on the `media.manage` permission. Middleware is
-        // null for development (auth off). To reinstate protection:
-        //   use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
-        //   $authMiddleware = new SessionAuthMiddleware($app) ...
+        // Admin routes are gated on `admin.access` automatically by
+        // ExtensionRegistry::registerRoutes(). For a finer-grained gate,
+        // pass a PermissionMiddleware in the route's middleware slot, e.g.:
         //   [new PermissionMiddleware($app, 'media.manage')]
-        $authMiddleware = null;
 
         // ─── Admin Routes ──────────────────────────────────────────────
 
         $adext->addRoutes('admin', [
-            ['GET',  $prefix,                       [MediaAdminController::class, 'index'],        [$authMiddleware]],
-            ['GET',  $prefix . '/json',             [MediaAdminController::class, 'json'],         [$authMiddleware]],
-            ['GET',  $prefix . '/capabilities',     [MediaAdminController::class, 'capabilities'], [$authMiddleware]],
-            ['GET',  $prefix . '/@id/editor',       [MediaAdminController::class, 'editor'],       [$authMiddleware]],
-            ['POST', $prefix . '/upload/image',     [MediaAdminController::class, 'uploadImage'],  [$authMiddleware]],
-            ['POST', $prefix . '/upload/video',     [MediaAdminController::class, 'uploadVideo'],  [$authMiddleware]],
-            ['POST', $prefix . '/embed',            [MediaAdminController::class, 'storeEmbed'],   [$authMiddleware]],
-            ['POST', $prefix . '/@id/poster',       [MediaAdminController::class, 'uploadPoster'], [$authMiddleware]],
-            ['POST', $prefix . '/@id/update',       [MediaAdminController::class, 'update'],       [$authMiddleware]],
-            ['POST', $prefix . '/@id/delete',       [MediaAdminController::class, 'destroy'],      [$authMiddleware]],
-            ['POST', $prefix . '/@id/edit',         [MediaAdminController::class, 'applyEdit'],    [$authMiddleware]],
-            ['POST', $prefix . '/@id/revert',       [MediaAdminController::class, 'revert'],       [$authMiddleware]],
+            ['GET',  $prefix,                       [MediaAdminController::class, 'index'],        []],
+            ['GET',  $prefix . '/json',             [MediaAdminController::class, 'json'],         []],
+            ['GET',  $prefix . '/capabilities',     [MediaAdminController::class, 'capabilities'], []],
+            ['GET',  $prefix . '/@id/editor',       [MediaAdminController::class, 'editor'],       []],
+            ['POST', $prefix . '/upload/image',     [MediaAdminController::class, 'uploadImage'],  []],
+            ['POST', $prefix . '/upload/video',     [MediaAdminController::class, 'uploadVideo'],  []],
+            ['POST', $prefix . '/embed',            [MediaAdminController::class, 'storeEmbed'],   []],
+            ['POST', $prefix . '/@id/poster',       [MediaAdminController::class, 'uploadPoster'], []],
+            ['POST', $prefix . '/@id/update',       [MediaAdminController::class, 'update'],       []],
+            ['POST', $prefix . '/@id/delete',       [MediaAdminController::class, 'destroy'],      []],
+            ['POST', $prefix . '/@id/edit',         [MediaAdminController::class, 'applyEdit'],    []],
+            ['POST', $prefix . '/@id/revert',       [MediaAdminController::class, 'revert'],       []],
         ], 'pubvana.media');
 
         // ─── Dashboard ──────────────────────────────────────────────────

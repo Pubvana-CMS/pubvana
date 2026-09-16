@@ -35,14 +35,13 @@ class Plugin implements PluginInterface
         });
 
         $adext = $app->adext();
-        $authMiddleware = null;
 
         // ─── Admin Routes ──────────────────────────────────────────────
 
         $adext->addRoutes('admin', [
-            ['GET',  $prefix,                [AnalyticsAdminController::class, 'index'],          [$authMiddleware]],
-            ['GET',  $prefix . '/data',      [AnalyticsAdminController::class, 'data'],           [$authMiddleware]],
-            ['POST', $prefix . '/tracking',  [AnalyticsAdminController::class, 'toggleTracking'], [$authMiddleware]],
+            ['GET',  $prefix,                [AnalyticsAdminController::class, 'index'],          []],
+            ['GET',  $prefix . '/data',      [AnalyticsAdminController::class, 'data'],           []],
+            ['POST', $prefix . '/tracking',  [AnalyticsAdminController::class, 'toggleTracking'], []],
         ], 'pubvana.analytics');
 
         // ─── Page View Tracking ────────────────────────────────────────

@@ -49,21 +49,20 @@ class Plugin implements PluginInterface
         });
 
         $adext = $app->adext();
-        $authMiddleware = null;
 
         // ─── Admin Routes ──────────────────────────────────────────────
 
         $adext->addRoutes('admin', [
-            ['GET',  $prefix,                             [RedirectsAdminController::class, 'index'],        [$authMiddleware]],
-            ['GET',  $prefix . '/create',                 [RedirectsAdminController::class, 'create'],       [$authMiddleware]],
-            ['POST', $prefix . '/store',                  [RedirectsAdminController::class, 'store'],        [$authMiddleware]],
-            ['GET',  $prefix . '/@id/edit',               [RedirectsAdminController::class, 'edit'],         [$authMiddleware]],
-            ['POST', $prefix . '/@id/update',             [RedirectsAdminController::class, 'update'],       [$authMiddleware]],
-            ['POST', $prefix . '/@id/delete',             [RedirectsAdminController::class, 'delete'],       [$authMiddleware]],
-            ['GET',  $prefix . '/404-manager',            [RedirectLinksAdminController::class, 'index'],    [$authMiddleware]],
-            ['POST', $prefix . '/404-manager/@id/ignore',   [RedirectLinksAdminController::class, 'ignore'],   [$authMiddleware]],
-            ['POST', $prefix . '/404-manager/@id/unignore', [RedirectLinksAdminController::class, 'unignore'], [$authMiddleware]],
-            ['POST', $prefix . '/404-manager/@id/delete',   [RedirectLinksAdminController::class, 'delete'],   [$authMiddleware]],
+            ['GET',  $prefix,                             [RedirectsAdminController::class, 'index'],        []],
+            ['GET',  $prefix . '/create',                 [RedirectsAdminController::class, 'create'],       []],
+            ['POST', $prefix . '/store',                  [RedirectsAdminController::class, 'store'],        []],
+            ['GET',  $prefix . '/@id/edit',               [RedirectsAdminController::class, 'edit'],         []],
+            ['POST', $prefix . '/@id/update',             [RedirectsAdminController::class, 'update'],       []],
+            ['POST', $prefix . '/@id/delete',             [RedirectsAdminController::class, 'delete'],       []],
+            ['GET',  $prefix . '/404-manager',            [RedirectLinksAdminController::class, 'index'],    []],
+            ['POST', $prefix . '/404-manager/@id/ignore',   [RedirectLinksAdminController::class, 'ignore'],   []],
+            ['POST', $prefix . '/404-manager/@id/unignore', [RedirectLinksAdminController::class, 'unignore'], []],
+            ['POST', $prefix . '/404-manager/@id/delete',   [RedirectLinksAdminController::class, 'delete'],   []],
         ], 'pubvana.redirects');
 
         // ─── Dashboard ──────────────────────────────────────────────────

@@ -120,7 +120,7 @@ Coverage: the suite covers the service (URLs, updates, title guard), both contro
 | Adjust slug generation | `Page::generateSlug()` (`Models/Page.php:295-313`) |
 | Add a searchable field | `Page::searchContent()` (`Models/Page.php:183-218`) |
 | Add a public route | `Plugin.php` public `addRoutes` block and `PagesPublicController` |
-| Enforce permissions | Replace `$authMiddleware = null` at `Plugin.php:43` with a middleware keyed on `pages.manage` |
+| Enforce permissions | Add a `PermissionMiddleware` keyed on `pages.manage` to the admin route middleware slots |
 | Add an admin field | Migration + `Page`/`PageRevision` typed props + `updatePage` + create/edit views |
 
 ## PR / contribution checklist

@@ -35,16 +35,15 @@ class Plugin implements PluginInterface
         });
 
         $adext = $app->adext();
-        $authMiddleware = null;
 
         // ─── Admin Routes ──────────────────────────────────────────────
 
         $adext->addRoutes('admin', [
-            ['GET',  '/social-links',                [SocialLinksAdminController::class, 'index'],   [$authMiddleware]],
-            ['POST', '/social-links/store',          [SocialLinksAdminController::class, 'store'],   [$authMiddleware]],
-            ['POST', '/social-links/@id/toggle',     [SocialLinksAdminController::class, 'toggle'],  [$authMiddleware]],
-            ['POST', '/social-links/@id/delete',     [SocialLinksAdminController::class, 'delete'],  [$authMiddleware]],
-            ['POST', '/social-links/@id/reorder',    [SocialLinksAdminController::class, 'reorder'], [$authMiddleware]],
+            ['GET',  '/social-links',                [SocialLinksAdminController::class, 'index'],   []],
+            ['POST', '/social-links/store',          [SocialLinksAdminController::class, 'store'],   []],
+            ['POST', '/social-links/@id/toggle',     [SocialLinksAdminController::class, 'toggle'],  []],
+            ['POST', '/social-links/@id/delete',     [SocialLinksAdminController::class, 'delete'],  []],
+            ['POST', '/social-links/@id/reorder',    [SocialLinksAdminController::class, 'reorder'], []],
         ], 'pubvana.social-links');
 
         // ─── Public Block ──────────────────────────────────────────────

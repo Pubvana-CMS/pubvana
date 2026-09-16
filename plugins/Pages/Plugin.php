@@ -43,18 +43,17 @@ class Plugin implements PluginInterface
         });
 
         $adext = $app->adext();
-        $authMiddleware = null; // Disabled for development
 
         // Admin routes
         $adext->addRoutes('admin', [
-            ['GET',    $prefix,                      [PagesAdminController::class, 'index'],    [$authMiddleware]],
-            ['GET',    $prefix . '/create',          [PagesAdminController::class, 'create'],   [$authMiddleware]],
-            ['POST',   $prefix . '/store',           [PagesAdminController::class, 'store'],    [$authMiddleware]],
-            ['GET',    $prefix . '/@id/edit',        [PagesAdminController::class, 'edit'],     [$authMiddleware]],
-            ['POST',   $prefix . '/@id/update',      [PagesAdminController::class, 'update'],   [$authMiddleware]],
-            ['POST',   $prefix . '/@id/delete',      [PagesAdminController::class, 'delete'],   [$authMiddleware]],
-            ['GET',    $prefix . '/@id/revisions',   [PagesAdminController::class, 'revisions'],[$authMiddleware]],
-            ['POST',   $prefix . '/@id/restore/@revisionId', [PagesAdminController::class, 'restore'], [$authMiddleware]],
+            ['GET',    $prefix,                      [PagesAdminController::class, 'index'],    []],
+            ['GET',    $prefix . '/create',          [PagesAdminController::class, 'create'],   []],
+            ['POST',   $prefix . '/store',           [PagesAdminController::class, 'store'],    []],
+            ['GET',    $prefix . '/@id/edit',        [PagesAdminController::class, 'edit'],     []],
+            ['POST',   $prefix . '/@id/update',      [PagesAdminController::class, 'update'],   []],
+            ['POST',   $prefix . '/@id/delete',      [PagesAdminController::class, 'delete'],   []],
+            ['GET',    $prefix . '/@id/revisions',   [PagesAdminController::class, 'revisions'],[]],
+            ['POST',   $prefix . '/@id/restore/@revisionId', [PagesAdminController::class, 'restore'], []],
         ], 'pubvana.pages');
 
         // Public routes

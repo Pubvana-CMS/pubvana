@@ -75,15 +75,14 @@ class Plugin implements PluginInterface
         });
 
         $adext = $app->adext();
-        $authMiddleware = null;
 
         // ─── Admin Routes ──────────────────────────────────────────────
 
         $adext->addRoutes('admin', [
-            ['GET',  '/seo',         [SeoAdminController::class, 'settings'],     [$authMiddleware]],
-            ['POST', '/seo',         [SeoAdminController::class, 'saveSettings'], [$authMiddleware]],
-            ['POST', '/seo/meta',    [SeoAdminController::class, 'saveMeta'],     [$authMiddleware]],
-            ['GET',  '/seo/analyze', [SeoAdminController::class, 'analyze'],      [$authMiddleware]],
+            ['GET',  '/seo',         [SeoAdminController::class, 'settings'],     []],
+            ['POST', '/seo',         [SeoAdminController::class, 'saveSettings'], []],
+            ['POST', '/seo/meta',    [SeoAdminController::class, 'saveMeta'],     []],
+            ['GET',  '/seo/analyze', [SeoAdminController::class, 'analyze'],      []],
         ], 'pubvana.seo');
 
         // ─── Public Routes (root-level, no prefix) ──────────────────────

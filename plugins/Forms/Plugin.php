@@ -33,20 +33,19 @@ class Plugin implements PluginInterface
         });
 
         $adext = $app->adext();
-        $authMiddleware = null;
 
         // ─── Admin Routes ──────────────────────────────────────────────
 
         $adext->addRoutes('admin', [
-            ['GET',  $prefix,                          [FormsAdminController::class, 'index'],            [$authMiddleware]],
-            ['GET',  $prefix . '/create',              [FormsAdminController::class, 'create'],           [$authMiddleware]],
-            ['POST', $prefix . '/store',               [FormsAdminController::class, 'store'],            [$authMiddleware]],
-            ['GET',  $prefix . '/@id/edit',            [FormsAdminController::class, 'edit'],             [$authMiddleware]],
-            ['POST', $prefix . '/@id/update',          [FormsAdminController::class, 'update'],           [$authMiddleware]],
-            ['POST', $prefix . '/@id/delete',          [FormsAdminController::class, 'delete'],           [$authMiddleware]],
-            ['GET',  $prefix . '/submissions',         [FormSubmissionsAdminController::class, 'index'],  [$authMiddleware]],
-            ['GET',  $prefix . '/@formId/submissions', [FormSubmissionsAdminController::class, 'index'],  [$authMiddleware]],
-            ['GET',  $prefix . '/submissions/@id',     [FormSubmissionsAdminController::class, 'show'],   [$authMiddleware]],
+            ['GET',  $prefix,                          [FormsAdminController::class, 'index'],            []],
+            ['GET',  $prefix . '/create',              [FormsAdminController::class, 'create'],           []],
+            ['POST', $prefix . '/store',               [FormsAdminController::class, 'store'],            []],
+            ['GET',  $prefix . '/@id/edit',            [FormsAdminController::class, 'edit'],             []],
+            ['POST', $prefix . '/@id/update',          [FormsAdminController::class, 'update'],           []],
+            ['POST', $prefix . '/@id/delete',          [FormsAdminController::class, 'delete'],           []],
+            ['GET',  $prefix . '/submissions',         [FormSubmissionsAdminController::class, 'index'],  []],
+            ['GET',  $prefix . '/@formId/submissions', [FormSubmissionsAdminController::class, 'index'],  []],
+            ['GET',  $prefix . '/submissions/@id',     [FormSubmissionsAdminController::class, 'show'],   []],
         ], 'pubvana.forms');
 
         // ─── Public Routes ──────────────────────────────────────────────

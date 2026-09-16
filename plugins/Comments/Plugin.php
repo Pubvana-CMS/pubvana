@@ -36,7 +36,6 @@ class Plugin implements PluginInterface
         });
 
         $adext = $app->adext();
-        $authMiddleware = null;
 
         // Public CSS: served from assets/css/comments.css
         $adext->register('public.css', 'default', 'pubvana.comments', [
@@ -55,13 +54,13 @@ class Plugin implements PluginInterface
         // ─── Admin Routes ──────────────────────────────────────────────
 
         $adext->addRoutes('admin', [
-            ['GET',  $prefix,                  [CommentsAdminController::class, 'index'],            [$authMiddleware]],
-            ['GET',  $prefix . '/settings',    [CommentsAdminController::class, 'settingsIndex'],    [$authMiddleware]],
-            ['POST', $prefix . '/settings',    [CommentsAdminController::class, 'settingsSave'],     [$authMiddleware]],
-            ['GET',  $prefix . '/@id',         [CommentsAdminController::class, 'show'],             [$authMiddleware]],
-            ['POST', $prefix . '/@id/approve', [CommentsAdminController::class, 'approve'],          [$authMiddleware]],
-            ['POST', $prefix . '/@id/reject',  [CommentsAdminController::class, 'reject'],           [$authMiddleware]],
-            ['POST', $prefix . '/@id/delete',  [CommentsAdminController::class, 'delete'],           [$authMiddleware]],
+            ['GET',  $prefix,                  [CommentsAdminController::class, 'index'],            []],
+            ['GET',  $prefix . '/settings',    [CommentsAdminController::class, 'settingsIndex'],    []],
+            ['POST', $prefix . '/settings',    [CommentsAdminController::class, 'settingsSave'],     []],
+            ['GET',  $prefix . '/@id',         [CommentsAdminController::class, 'show'],             []],
+            ['POST', $prefix . '/@id/approve', [CommentsAdminController::class, 'approve'],          []],
+            ['POST', $prefix . '/@id/reject',  [CommentsAdminController::class, 'reject'],           []],
+            ['POST', $prefix . '/@id/delete',  [CommentsAdminController::class, 'delete'],           []],
         ], 'pubvana.comments');
 
         // ─── Public Routes ─────────────────────────────────────────────
