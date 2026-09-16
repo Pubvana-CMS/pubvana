@@ -20,7 +20,6 @@ final class MarketplaceMigrationsSeedTest extends TestCase
     /** @var array<string, string> */
     private const FILES = [
         'create' => '2026-09-06-000001_CreateMarketplaceInstallsTable.php',
-        'package_id' => '2026-09-11-115828_AddPackageIdToMarketplaceInstalls.php',
     ];
 
     public static function setUpBeforeClass(): void
@@ -39,7 +38,7 @@ final class MarketplaceMigrationsSeedTest extends TestCase
         ));
         self::assertStringContainsStringIgnoringCase('CREATE TABLE', $sql);
         self::assertStringContainsString('marketplace_installs', $sql);
-        foreach (['store_product_id', 'product_name', 'item_type', 'folder', 'installed_version', 'license_key', 'license_scope', 'license_valid', 'registered_domain'] as $column) {
+        foreach (['store_product_id', 'product_name', 'item_type', 'folder', 'installed_version', 'license_key', 'license_scope', 'license_valid', 'registered_domain', 'package_id'] as $column) {
             self::assertStringContainsString($column, $sql, "marketplace_installs::{$column}");
         }
     }
@@ -51,26 +50,6 @@ final class MarketplaceMigrationsSeedTest extends TestCase
             'down'
         ));
         self::assertStringContainsStringIgnoringCase('DROP TABLE', $sql);
-        self::assertStringContainsString('marketplace_installs', $sql);
-    }
-
-    public function testPackageIdMigrationAddsColumn(): void
-    {
-        $sql = implode("\n", $this->pretendSql(
-            new \Pubvana\Plugins\Marketplace\Database\Migrations\AddPackageIdToMarketplaceInstalls(),
-            'up'
-        ));
-        self::assertStringContainsString('marketplace_installs', $sql);
-        self::assertStringContainsString('package_id', $sql);
-    }
-
-    public function testPackageIdMigrationRemovesColumnOnDown(): void
-    {
-        $sql = implode("\n", $this->pretendSql(
-            new \Pubvana\Plugins\Marketplace\Database\Migrations\AddPackageIdToMarketplaceInstalls(),
-            'down'
-        ));
-        self::assertStringContainsString('package_id', $sql);
         self::assertStringContainsString('marketplace_installs', $sql);
     }
 

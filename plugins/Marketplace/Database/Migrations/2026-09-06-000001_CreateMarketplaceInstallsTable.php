@@ -26,10 +26,12 @@ class CreateMarketplaceInstallsTable extends Migration
             ->addColumn('renews_at', 'datetime', ['nullable' => true, 'default' => null])
             ->addColumn('is_subscription', 'boolean', ['default' => false])
             ->addColumn('registered_domain', 'string', ['length' => 255, 'nullable' => true, 'default' => null])
+            ->addColumn('package_id', 'string', ['length' => 191, 'nullable' => true, 'default' => null])
             ->addColumn('created_at', 'datetime', ['nullable' => true, 'default' => null])
             ->addColumn('updated_at', 'datetime', ['nullable' => true, 'default' => null])
             ->addIndex(['store_product_id'], ['unique' => true])
             ->addIndex(['license_key'])
+            ->addIndex(['package_id'])
             ->create();
     }
 
