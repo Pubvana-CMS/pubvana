@@ -70,7 +70,7 @@ $overallLabel = match ($summary['overall'] ?? 'good') {
 <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
     <i class="ti ti-info-circle me-2"></i>
     <div>
-        Results are cached and updated only when you click <strong>Re-run Checks</strong>.
+        Results are cached and refresh automatically when the cache expires. Click <strong>Re-run Checks</strong> to refresh immediately.
     </div>
 </div>
 
