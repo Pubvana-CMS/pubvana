@@ -4,7 +4,7 @@
 
 # Pubvana CMS
 
-Pubvana v3 is a flexible, full-featured, shared-host friendly CMS (Content Management System) for personal blogs, small to medium business websites, company intranets and more. Version 3 has a new administration panel, plugin extensions, faster internals, and more features than you'd expect in a free, open source CMS.
+Pubvana v3 is a flexible, full-featured, shared-host friendly CMS (Content Management System) for personal blogs, small to medium business websites, company intranets and more. v3 also offers the flexibility of a CMF (Content Management Framework) to build your own custom plugins faster than starting from scratch.  Version 3 has a new administration panel, plugin extensions, faster internals, and more features than you'd expect in a free, open source CMS.
 
 ## v3
 
