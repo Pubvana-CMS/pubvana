@@ -100,11 +100,14 @@ final class CommentServiceCoverageTest extends TestCase
      */
     private function payload(array $extra = []): array
     {
+        static $call = 0;
+        $call++;
+
         return array_merge([
             'commentable_type' => 'blog',
             'commentable_id' => 1,
             'body' => 'Hello world',
-            'ip_address' => '10.9.0.' . random_int(1, 250),
+            'ip_address' => '10.9.0.' . $call,
             'guest_name' => 'Ada',
         ], $extra);
     }
