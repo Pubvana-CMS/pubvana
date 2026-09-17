@@ -6,7 +6,8 @@ namespace Pubvana\Tests\Unit\Plugins\AiAssistant;
 
 use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
-use Pubvana\Plugins\AiAssistant\Controllers\AiApiController;
+use Pubvana\Plugins\AiAssistant\Controllers\AiPagesApiController;
+use Pubvana\Plugins\AiAssistant\Controllers\AiPostsApiController;
 use Pubvana\Plugins\AiAssistant\Models\AiKey;
 use Pubvana\Plugins\AiAssistant\Services\AiService;
 use Pubvana\Plugins\Blog\Models\Post;
@@ -34,7 +35,18 @@ final class GrantDenied extends \RuntimeException
  * Harness controller: fail() throws instead of halting so denial paths can
  * be asserted. Everything else is the real gate logic.
  */
-final class HarnessController extends AiApiController
+final class HarnessController extends AiPostsApiController
+{
+    protected function fail(int $status, string $message): never
+    {
+        throw new GrantDenied($status, $message);
+    }
+}
+
+/**
+ * Same harness over the pages controller for resolvePageStatus().
+ */
+final class PagesHarnessController extends AiPagesApiController
 {
     protected function fail(int $status, string $message): never
     {
@@ -52,7 +64,8 @@ final class HarnessController extends AiApiController
  * untouched (a bare content edit takes no publish-family grant), and
  * re-applying the current status is not a state change.
  */
-#[CoversClass(AiApiController::class)]
+#[CoversClass(AiPostsApiController::class)]
+#[CoversClass(AiPagesApiController::class)]
 final class DemoteGrantTest extends TestCase
 {
     private PDO $pdo;
@@ -220,7 +233,7 @@ final class DemoteGrantTest extends TestCase
     public function testUpdateOnlyKeyCannotDemotePublishedPage(): void
     {
         $page = $this->page(20, 'published');
-        $controller = $this->controller(['pages.update']);
+        $controller = $this->pageController(['pages.update']);
 
         try {
             $this->invoke($controller, 'resolvePageStatus', [$this->key(), ['status' => 'draft'], $page]);
@@ -234,7 +247,7 @@ final class DemoteGrantTest extends TestCase
     public function testPublishGrantDemotesPublishedPage(): void
     {
         $page = $this->page(20, 'published');
-        $controller = $this->controller(['pages.update', 'pages.publish']);
+        $controller = $this->pageController(['pages.update', 'pages.publish']);
 
         $result = $this->invoke($controller, 'resolvePageStatus', [$this->key(), ['status' => 'draft'], $page]);
 
@@ -244,7 +257,7 @@ final class DemoteGrantTest extends TestCase
     public function testPagePromotionNeedsPublishGrant(): void
     {
         $page = $this->page(21, 'draft');
-        $controller = $this->controller(['pages.update']);
+        $controller = $this->pageController(['pages.update']);
 
         try {
             $this->invoke($controller, 'resolvePageStatus', [$this->key(), ['status' => 'published'], $page]);
@@ -256,7 +269,7 @@ final class DemoteGrantTest extends TestCase
 
     public function testPageCreateDefaultsToDraftWithoutGrant(): void
     {
-        $controller = $this->controller(['pages.create']);
+        $controller = $this->pageController(['pages.create']);
 
         $result = $this->invoke($controller, 'resolvePageStatus', [$this->key(), ['title' => 'New'], null]);
 
@@ -265,7 +278,7 @@ final class DemoteGrantTest extends TestCase
 
     public function testPageCreatePublishedNeedsPublishGrant(): void
     {
-        $controller = $this->controller(['pages.create']);
+        $controller = $this->pageController(['pages.create']);
 
         try {
             $this->invoke($controller, 'resolvePageStatus', [$this->key(), ['status' => 'published'], null]);
@@ -277,7 +290,7 @@ final class DemoteGrantTest extends TestCase
 
     public function testPageCreatePublishedWithGrantPasses(): void
     {
-        $controller = $this->controller(['pages.create', 'pages.publish']);
+        $controller = $this->pageController(['pages.create', 'pages.publish']);
 
         $result = $this->invoke($controller, 'resolvePageStatus', [$this->key(), ['status' => 'published'], null]);
 
@@ -304,7 +317,7 @@ final class DemoteGrantTest extends TestCase
     public function testInvalidPageStatusFails422(): void
     {
         $page = $this->page(20, 'published');
-        $controller = $this->controller(['pages.update', 'pages.publish']);
+        $controller = $this->pageController(['pages.update', 'pages.publish']);
 
         try {
             $this->invoke($controller, 'resolvePageStatus', [$this->key(), ['status' => 'yolo'], $page]);
@@ -336,7 +349,27 @@ final class DemoteGrantTest extends TestCase
             $statement->execute(['permission' => $permission]);
         }
 
-        return new HarnessController($app, 'pubvana.ai');
+        return new HarnessController($app);
+    }
+
+    /**
+     * Same builder over the pages harness.
+     *
+     * @param string[] $grants
+     */
+    private function pageController(array $grants): PagesHarnessController
+    {
+        $app = $this->app([]);
+        $app->map('ai', function () use ($app): AiService {
+            return new AiService($this->pdo, $app);
+        });
+
+        $statement = $this->pdo->prepare('INSERT INTO ai_key_grants (key_id, permission) VALUES (1, :permission)');
+        foreach ($grants as $permission) {
+            $statement->execute(['permission' => $permission]);
+        }
+
+        return new PagesHarnessController($app);
     }
 
     private function key(): AiKey

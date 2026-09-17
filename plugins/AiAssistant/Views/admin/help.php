@@ -254,8 +254,6 @@ $apiBase = rtrim((string) \Flight::app()->pluginLoader()->apiPrefix('pubvana/ai'
                 <code>GET <?= htmlspecialchars($apiBase) ?>/help</code> serves the live guide an AI can read,
                 and <code>plugins/AiAssistant/AGENTS.md</code> documents
                 every endpoint, the permissions each needs, and examples.
-                Broken-links and analytics endpoints are stubs and return
-                <code>501</code> until implemented.
             </p>
             <table class="table table-vcenter card-table">
                 <thead>

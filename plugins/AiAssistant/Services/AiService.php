@@ -357,6 +357,11 @@ class AiService
             'navigation.create'      => ['method' => 'POST', 'path' => $base . '/navigation',            'group' => 'navigation', 'label' => 'Add menu items',        'summary' => 'Create a navigation menu item.'],
             'navigation.update'      => ['method' => 'POST', 'path' => $base . '/navigation/{id}/update','group' => 'navigation', 'label' => 'Edit menu items',      'summary' => 'Change a navigation menu item.'],
             'navigation.delete'      => ['method' => 'POST', 'path' => $base . '/navigation/{id}/delete','group' => 'navigation', 'label' => 'Delete menu items',      'summary' => 'Remove a navigation menu item.'],
+            'brokenlinks.read'       => ['method' => 'GET',  'path' => $base . '/broken-links',             'group' => 'brokenlinks', 'label' => 'View broken links',      'summary' => 'See outbound links that failed, grouped by the post or page they appear on.'],
+            'brokenlinks.scan'       => ['method' => 'POST', 'path' => $base . '/broken-links/scan',        'group' => 'brokenlinks', 'label' => 'Scan for broken links',   'summary' => 'Run a full scan of all outbound links in published posts and pages.'],
+            'brokenlinks.recheck'    => ['method' => 'POST', 'path' => $base . '/broken-links/{id}/recheck','group' => 'brokenlinks', 'label' => 'Recheck a broken link',    'summary' => 'Re-test one previously broken link.'],
+            'brokenlinks.dismiss'    => ['method' => 'POST', 'path' => $base . '/broken-links/{id}/dismiss','group' => 'brokenlinks', 'label' => 'Dismiss a broken link',    'summary' => 'Permanently dismiss a broken link entry so scans stop reporting it.'],
+            'analytics.read'         => ['method' => 'GET',  'path' => $base . '/analytics',                'group' => 'analytics',   'label' => 'View analytics',       'summary' => 'See page view totals, trends, top content, and referrers for a period.'],
         ];
     }
 
@@ -468,6 +473,33 @@ class AiService
             'status'   => $status,
             'search'   => $search,
         ];
+    }
+
+    /**
+     * Find one post by slug across every status, soft deletes excluded.
+     *
+     * The Blog service's findBySlug only resolves published posts, so the
+     * API can list a draft but not fetch it. The lists here are not
+     * status-filtered, so the single fetch must not be either.
+     */
+    public function findPostForApi(string $slug): ?\Pubvana\Plugins\Blog\Models\Post
+    {
+        $query = new Post($this->pdo);
+        $query->eq('slug', $slug)->isNull('deleted_at')->find();
+        return $query->isHydrated() ? $query : null;
+    }
+
+    /**
+     * Find one page by slug across every status, soft deletes excluded.
+     *
+     * Same reasoning as findPostForApi; the Pages service's findBySlug is
+     * published-only.
+     */
+    public function findPageForApi(string $slug): ?\Pubvana\Plugins\Pages\Models\Page
+    {
+        $query = new \Pubvana\Plugins\Pages\Models\Page($this->pdo);
+        $query->eq('slug', $slug)->isNull('deleted_at')->find();
+        return $query->isHydrated() ? $query : null;
     }
 
     /**
@@ -810,6 +842,25 @@ class AiService
     }
 
     /**
+     * @param \Pubvana\Plugins\BrokenLinks\Models\BrokenLink $entry
+     * @return array<string, mixed>
+     */
+    public function serializeBrokenLink($entry): array
+    {
+        return [
+            'id'              => (int) $entry->id,
+            'source_type'     => (string) $entry->source_type,
+            'source_id'       => (int) $entry->source_id,
+            'source_title'    => (string) $entry->source_title,
+            'url'             => (string) $entry->url,
+            'http_status'     => $entry->http_status !== null ? (int) $entry->http_status : null,
+            'error_message'   => $entry->error_message !== null ? (string) $entry->error_message : null,
+            'dismissed'       => (int) $entry->dismissed === 1,
+            'last_checked_at' => $entry->last_checked_at !== null ? (string) $entry->last_checked_at : null,
+        ];
+    }
+
+    /**
      * @param \Pubvana\Models\NavigationItem $item
      * @return array<string, mixed>
      */
@@ -825,6 +876,161 @@ class AiService
             'nav_group'  => (string) $item->nav_group,
             'updated_at' => $item->updated_at !== null ? (string) $item->updated_at : null,
         ];
+    }
+
+    // -----------------------------------------------------------------
+    // Content helpers
+    // -----------------------------------------------------------------
+
+    /**
+     * Choose the body a client submitted for a post or page.
+     *
+     * Prefers markdown, falling back to raw HTML. Returns null when the
+     * payload carries neither field and an empty string when it carries a
+     * key with a blank value (an explicit clear, not a missing field).
+     *
+     * @param array<string, mixed> $payload
+     */
+    public function resolveContent(array $payload): ?string
+    {
+        $md = (string) ($payload['content_md'] ?? '');
+        $html = (string) ($payload['content'] ?? '');
+
+        if ($md !== '') {
+            return $this->app->aiMarkdown()->toHtml($md);
+        }
+        if ($html !== '') {
+            return $html;
+        }
+        if (array_key_exists('content_md', $payload) || array_key_exists('content', $payload)) {
+            return '';
+        }
+        return null;
+    }
+
+    /**
+     * Save a nested "seo" block for a content item, when one is present.
+     *
+     * Does nothing when the payload has no SEO data or the SEO plugin is
+     * off (a create/update should not fail over optional SEO). Only fields
+     * the caller sent are written. The rest stay untouched, matching
+     * SeoService::saveMeta()'s partial-update behavior.
+     *
+     * robots_directive is whitelisted. A value outside noindex, nofollow,
+     * or noindex, nofollow is dropped, not written, so an existing valid
+     * directive is never clobbered by a malformed one. A blank value still
+     * clears whatever sits there.
+     *
+     * @param array<string, mixed> $payload
+     */
+    public function saveSeo(string $contentType, int $contentId, array $payload): void
+    {
+        $block = $payload['seo'] ?? null;
+        if (!is_array($block) || $block === []) {
+            return;
+        }
+
+        try {
+            $seo = $this->app->seo();
+        } catch (\Throwable) {
+            return;
+        }
+
+        $fields = [];
+        if (array_key_exists('robots_directive', $block)) {
+            $directive = $this->nullableString($block['robots_directive']);
+            if ($directive === null || in_array($directive, ['noindex', 'nofollow', 'noindex, nofollow'], true)) {
+                $fields['robots_directive'] = $directive;
+            }
+        }
+
+        foreach ([
+            'meta_title', 'meta_description', 'canonical_url',
+            'og_title', 'og_description', 'og_image', 'og_type', 'twitter_card', 'hreflang',
+        ] as $field) {
+            if (array_key_exists($field, $block)) {
+                $fields[$field] = $this->nullableString($block[$field]);
+            }
+        }
+
+        if (array_key_exists('focus_keywords', $block)) {
+            $keywords = $block['focus_keywords'];
+            if (is_array($keywords)) {
+                $keywords = array_filter(array_map('strval', $keywords));
+            } else {
+                $keywords = array_filter(array_map('trim', explode(',', (string) $keywords)));
+            }
+            $fields['focus_keywords'] = array_values($keywords);
+        }
+
+        if ($fields === []) {
+            return;
+        }
+
+        $seo->saveMeta($contentType, $contentId, $fields);
+    }
+
+    /**
+     * Positive category ids from raw input.
+     *
+     * @return array<int, int>
+     */
+    public function categoryIds(mixed $raw): array
+    {
+        $raw = is_array($raw) ? $raw : [];
+        $ids = [];
+        foreach ($raw as $value) {
+            $id = (int) $value;
+            if ($id > 0) {
+                $ids[] = $id;
+            }
+        }
+        return $ids;
+    }
+
+    /**
+     * The trimmed search query from the request, or null when absent.
+     */
+    public function searchParam(\flight\util\Collection $query): ?string
+    {
+        $search = $query->search ?? null;
+        if ($search !== null) {
+            $search = trim((string) $search);
+            if ($search === '') {
+                $search = null;
+            }
+        }
+        return $search;
+    }
+
+    /**
+     * The grant that governs a live content state, or null for a state
+     * with no grant (a draft).
+     *
+     * Demoting a post/page out of publish or schedule counts as a state
+     * change, so the caller must hold the grant for the state being left.
+     *
+     * @param string $grantPrefix 'posts' or 'pages'
+     */
+    public function demoteGrant(string $grantPrefix, string $existingStatus): ?string
+    {
+        return match ($existingStatus) {
+            'published' => $grantPrefix . '.publish',
+            'scheduled' => $grantPrefix . '.schedule',
+            default => null,
+        };
+    }
+
+    /**
+     * Null-safe trimmed string. Blank or null becomes null.
+     */
+    public function nullableString(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+        $value = trim((string) $value);
+        return $value === '' ? null : $value;
     }
 
     // -----------------------------------------------------------------

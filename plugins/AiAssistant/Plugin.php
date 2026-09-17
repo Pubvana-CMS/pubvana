@@ -6,8 +6,16 @@ namespace Pubvana\Plugins\AiAssistant;
 
 use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 use Pubvana\Plugins\AiAssistant\Controllers\AiAdminController;
+use Pubvana\Plugins\AiAssistant\Controllers\AiAnalyticsApiController;
 use Pubvana\Plugins\AiAssistant\Controllers\AiApiController;
+use Pubvana\Plugins\AiAssistant\Controllers\AiBrokenLinksApiController;
+use Pubvana\Plugins\AiAssistant\Controllers\AiCommentsApiController;
 use Pubvana\Plugins\AiAssistant\Controllers\AiFactCheckAdminController;
+use Pubvana\Plugins\AiAssistant\Controllers\AiFactCheckApiController;
+use Pubvana\Plugins\AiAssistant\Controllers\AiNavigationApiController;
+use Pubvana\Plugins\AiAssistant\Controllers\AiPagesApiController;
+use Pubvana\Plugins\AiAssistant\Controllers\AiPostsApiController;
+use Pubvana\Plugins\AiAssistant\Controllers\AiRedirectsApiController;
 use Pubvana\Plugins\AiAssistant\Services\AiService;
 use Pubvana\Plugins\AiAssistant\Services\FactCheckService;
 use Pubvana\Plugins\AiAssistant\Services\MarkdownService;
@@ -99,37 +107,40 @@ class Plugin implements PluginInterface
         $adext->addRoutes('public', [
             ['GET',  $apiPrefix . '/help',                        [AiApiController::class, 'help']],
             ['GET',  $apiPrefix . '/help/@permission',             [AiApiController::class, 'helpPermission']],
-            ['GET',  $apiPrefix . '/posts',                        [AiApiController::class, 'posts']],
-            ['GET',  $apiPrefix . '/posts/tags',                   [AiApiController::class, 'tags']],
-            ['GET',  $apiPrefix . '/posts/categories',             [AiApiController::class, 'categories']],
-            ['GET',  $apiPrefix . '/posts/@slug',                  [AiApiController::class, 'post']],
-            ['POST', $apiPrefix . '/posts',                        [AiApiController::class, 'createPost']],
-            ['POST', $apiPrefix . '/posts/@id/update',             [AiApiController::class, 'updatePost']],
-            ['POST', $apiPrefix . '/posts/@id/delete',             [AiApiController::class, 'deletePost']],
-            ['GET',  $apiPrefix . '/pages',                        [AiApiController::class, 'pages']],
-            ['GET',  $apiPrefix . '/pages/@slug',                  [AiApiController::class, 'page']],
-            ['POST', $apiPrefix . '/pages',                        [AiApiController::class, 'createPage']],
-            ['POST', $apiPrefix . '/pages/@id/update',             [AiApiController::class, 'updatePage']],
-            ['POST', $apiPrefix . '/pages/@id/delete',             [AiApiController::class, 'deletePage']],
-            ['GET',  $apiPrefix . '/comments',                     [AiApiController::class, 'comments']],
-            ['POST', $apiPrefix . '/comments/@id/approve',         [AiApiController::class, 'approveComment']],
-            ['POST', $apiPrefix . '/comments/@id/reject',          [AiApiController::class, 'rejectComment']],
-            ['POST', $apiPrefix . '/comments/@id/delete',          [AiApiController::class, 'deleteComment']],
-            ['GET',  $apiPrefix . '/redirects',                    [AiApiController::class, 'redirects']],
-            ['POST', $apiPrefix . '/redirects',                    [AiApiController::class, 'createRedirect']],
-            ['POST', $apiPrefix . '/redirects/@id/update',         [AiApiController::class, 'updateRedirect']],
-            ['POST', $apiPrefix . '/redirects/@id/delete',         [AiApiController::class, 'deleteRedirect']],
-            ['GET',  $apiPrefix . '/navigation',                   [AiApiController::class, 'navigation']],
-            ['POST', $apiPrefix . '/navigation',                   [AiApiController::class, 'createNavigation']],
-            ['POST', $apiPrefix . '/navigation/@id/update',        [AiApiController::class, 'updateNavigation']],
-            ['POST', $apiPrefix . '/navigation/@id/delete',        [AiApiController::class, 'deleteNavigation']],
-            ['GET',  $apiPrefix . '/fact-check/prompt',            [AiApiController::class, 'factCheckPrompt']],
-            ['GET',  $apiPrefix . '/fact-checks',                  [AiApiController::class, 'factChecks']],
-            ['GET',  $apiPrefix . '/fact-checks/@id',              [AiApiController::class, 'factCheck']],
-            ['POST', $apiPrefix . '/posts/@id/fact-check',         [AiApiController::class, 'submitPostFactCheck']],
-            ['POST', $apiPrefix . '/pages/@id/fact-check',         [AiApiController::class, 'submitPageFactCheck']],
-            ['GET',  $apiPrefix . '/broken-links',                 [AiApiController::class, 'brokenLinks']],
-            ['GET',  $apiPrefix . '/analytics',                    [AiApiController::class, 'analytics']],
+            ['GET',  $apiPrefix . '/posts',                        [AiPostsApiController::class, 'posts']],
+            ['GET',  $apiPrefix . '/posts/tags',                   [AiPostsApiController::class, 'tags']],
+            ['GET',  $apiPrefix . '/posts/categories',             [AiPostsApiController::class, 'categories']],
+            ['GET',  $apiPrefix . '/posts/@slug',                  [AiPostsApiController::class, 'post']],
+            ['POST', $apiPrefix . '/posts',                        [AiPostsApiController::class, 'createPost']],
+            ['POST', $apiPrefix . '/posts/@id/update',             [AiPostsApiController::class, 'updatePost']],
+            ['POST', $apiPrefix . '/posts/@id/delete',             [AiPostsApiController::class, 'deletePost']],
+            ['GET',  $apiPrefix . '/pages',                        [AiPagesApiController::class, 'pages']],
+            ['GET',  $apiPrefix . '/pages/@slug',                  [AiPagesApiController::class, 'page']],
+            ['POST', $apiPrefix . '/pages',                        [AiPagesApiController::class, 'createPage']],
+            ['POST', $apiPrefix . '/pages/@id/update',             [AiPagesApiController::class, 'updatePage']],
+            ['POST', $apiPrefix . '/pages/@id/delete',             [AiPagesApiController::class, 'deletePage']],
+            ['GET',  $apiPrefix . '/comments',                     [AiCommentsApiController::class, 'comments']],
+            ['POST', $apiPrefix . '/comments/@id/approve',         [AiCommentsApiController::class, 'approveComment']],
+            ['POST', $apiPrefix . '/comments/@id/reject',          [AiCommentsApiController::class, 'rejectComment']],
+            ['POST', $apiPrefix . '/comments/@id/delete',          [AiCommentsApiController::class, 'deleteComment']],
+            ['GET',  $apiPrefix . '/redirects',                    [AiRedirectsApiController::class, 'redirects']],
+            ['POST', $apiPrefix . '/redirects',                    [AiRedirectsApiController::class, 'createRedirect']],
+            ['POST', $apiPrefix . '/redirects/@id/update',         [AiRedirectsApiController::class, 'updateRedirect']],
+            ['POST', $apiPrefix . '/redirects/@id/delete',         [AiRedirectsApiController::class, 'deleteRedirect']],
+            ['GET',  $apiPrefix . '/navigation',                   [AiNavigationApiController::class, 'navigation']],
+            ['POST', $apiPrefix . '/navigation',                   [AiNavigationApiController::class, 'createNavigation']],
+            ['POST', $apiPrefix . '/navigation/@id/update',        [AiNavigationApiController::class, 'updateNavigation']],
+            ['POST', $apiPrefix . '/navigation/@id/delete',        [AiNavigationApiController::class, 'deleteNavigation']],
+            ['GET',  $apiPrefix . '/fact-check/prompt',            [AiFactCheckApiController::class, 'factCheckPrompt']],
+            ['GET',  $apiPrefix . '/fact-checks',                  [AiFactCheckApiController::class, 'factChecks']],
+            ['GET',  $apiPrefix . '/fact-checks/@id',              [AiFactCheckApiController::class, 'factCheck']],
+            ['POST', $apiPrefix . '/posts/@id/fact-check',         [AiFactCheckApiController::class, 'submitPostFactCheck']],
+            ['POST', $apiPrefix . '/pages/@id/fact-check',         [AiFactCheckApiController::class, 'submitPageFactCheck']],
+            ['GET',  $apiPrefix . '/broken-links',                 [AiBrokenLinksApiController::class, 'brokenLinks']],
+            ['POST', $apiPrefix . '/broken-links/scan',            [AiBrokenLinksApiController::class, 'scanBrokenLinks']],
+            ['POST', $apiPrefix . '/broken-links/@id/recheck',     [AiBrokenLinksApiController::class, 'recheckBrokenLink']],
+            ['POST', $apiPrefix . '/broken-links/@id/dismiss',     [AiBrokenLinksApiController::class, 'dismissBrokenLink']],
+            ['GET',  $apiPrefix . '/analytics',                    [AiAnalyticsApiController::class, 'analytics']],
         ], 'pubvana.ai');
 
         // ─── Content Edit Panel (read-only, in Blog/Pages editors) ─────

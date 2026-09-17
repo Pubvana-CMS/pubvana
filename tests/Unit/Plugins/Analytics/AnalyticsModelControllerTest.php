@@ -107,7 +107,7 @@ final class AnalyticsModelControllerTest extends TestCase
         $controller->toggleTracking();
 
         self::assertSame(['Analytics.tracking_enabled' => true], $this->savedSettings);
-        self::assertSame(['success' => 'Analytics tracking enabled.'], $this->flashes);
+        self::assertSame(['success' => 'Page tracking enabled.'], $this->flashes);
         self::assertSame('/admin/analytics', $this->redirectTarget);
 
         $this->savedSettings = [];
@@ -118,7 +118,7 @@ final class AnalyticsModelControllerTest extends TestCase
         $controller->toggleTracking();
 
         self::assertSame(['Analytics.tracking_enabled' => false], $this->savedSettings);
-        self::assertSame(['success' => 'Analytics tracking disabled.'], $this->flashes);
+        self::assertSame(['success' => 'Page tracking disabled.'], $this->flashes);
     }
 
     /**

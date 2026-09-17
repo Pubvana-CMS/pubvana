@@ -39,7 +39,7 @@ class AnalyticsAdminController extends AdminController
     }
 
     /**
-     * Toggle server-side tracking on or off.
+     * Toggle server-side page tracking on or off.
      */
     public function toggleTracking(): void
     {
@@ -48,7 +48,7 @@ class AnalyticsAdminController extends AdminController
 
         $this->app->session()->flash(
             'success',
-            $enabled ? 'Analytics tracking enabled.' : 'Analytics tracking disabled.'
+            $enabled ? 'Page tracking enabled.' : 'Page tracking disabled.'
         );
         $this->app->redirect($this->adminBase());
     }

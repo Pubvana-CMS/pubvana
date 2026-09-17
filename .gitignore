@@ -1,6 +1,7 @@
 # Local project instructions / working docs (not published)
 /AGENTS.md
 /todo.md
+/.vscode
 # Composer
 /vendor/
 
