@@ -5,6 +5,21 @@ All notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [3.0.0-beta.2] - 2026-09-18
+
+### Added
+- Release zip now ships `writable/` and `cron`, so a GitHub release installs out of the box
+- `.gitkeep` whitelists for `writable/store`, `writable/tmp`, `writable/trust`, and `public/uploads`
+- INSTALL.md: File & Folder Permissions section documenting the chgrp/chmod scheme for shared hosts
+
+### Changed
+- Environment handling made production-safe:
+  - `flight.debug` derives from the environment; `APP_DEBUG` is no longer read
+  - `FORCE_HTTPS` is independent of the environment and only applies when set explicitly
+  - Boot no longer fatals in `--no-dev` installs: Tracy references are guarded, so a release build without the dev packages starts cleanly
+- Trust client always reports to `https://pubvanacms.com`; the development localhost endpoint is removed
+- Updates dashboard and Site Health messages point at Tools > Maintenance > Updates
+
 ## [3.0.0-beta.1] - 2026-09-17
 
 ### Added

@@ -8,7 +8,7 @@
         "flightphp/core": "^3.0",
         "flightphp/active-record": "dev-master",
         "flightphp/runway": "^1.2",
-        "enlivenapp/flight-shield": "^0.3",
+        "enlivenapp/flight-shield": "^0.4",
         "enlivenapp/flight-csrf": "^0.2",
         "enlivenapp/flight-sessions": "^0.1",
         "enlivenapp/migrations": "^0.4",

@@ -1,6 +1,15 @@
 {
     "releases": [
         {
+            "version": "3.0.0-beta.2",
+            "release_date": "2026-09-18",
+            "min_php_version": "8.2",
+            "breaking_changes": [],
+            "migration_notes": [],
+            "notices": [],
+            "download_url": "https://github.com/Pubvana-CMS/pubvana/releases/download/3.0.0-beta.2/release.zip"
+        },
+        {
             "version": "3.0.0-beta.1",
             "release_date": "2026-09-17",
             "min_php_version": "8.2",

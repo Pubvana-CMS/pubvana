@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "739b19a951e3eba04754e80d12103496",
+    "content-hash": "b9ad83a2d286f84ee0f390f3a8e43b67",
     "packages": [
         {
             "name": "adhocore/cli",
@@ -322,16 +322,16 @@
         },
         {
             "name": "enlivenapp/flight-shield",
-            "version": "0.3.4",
+            "version": "0.4.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/enlivenapp/FlightPHP-Shield.git",
-                "reference": "7abdf9f78a69f12d3d6aade33533d58ab721b249"
+                "reference": "8f9322d4b006484d82f7f465b89892f049227695"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/enlivenapp/FlightPHP-Shield/zipball/7abdf9f78a69f12d3d6aade33533d58ab721b249",
-                "reference": "7abdf9f78a69f12d3d6aade33533d58ab721b249",
+                "url": "https://api.github.com/repos/enlivenapp/FlightPHP-Shield/zipball/8f9322d4b006484d82f7f465b89892f049227695",
+                "reference": "8f9322d4b006484d82f7f465b89892f049227695",
                 "shasum": ""
             },
             "require": {
@@ -347,7 +347,7 @@
                 "phpunit/phpunit": "^11.0"
             },
             "suggest": {
-                "firebase/php-jwt": "Required for JWT authentication (^6.0)"
+                "firebase/php-jwt": "Required for JWT authentication (^7.0)"
             },
             "type": "flightphp-foundation",
             "autoload": {
@@ -371,9 +371,9 @@
             "description": "Authentication and authorization for FlightPHP, ported from CodeIgniter Shield",
             "support": {
                 "issues": "https://github.com/enlivenapp/FlightPHP-Shield/issues",
-                "source": "https://github.com/enlivenapp/FlightPHP-Shield/tree/0.3.4"
+                "source": "https://github.com/enlivenapp/FlightPHP-Shield/tree/0.4.2"
             },
-            "time": "2026-09-01T03:42:13+00:00"
+            "time": "2026-09-18T18:28:48+00:00"
         },
         {
             "name": "enlivenapp/migrations",
@@ -424,16 +424,16 @@
         },
         {
             "name": "enlivenapp/vision",
-            "version": "1.0.3",
+            "version": "1.0.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/enlivenapp/Vision.git",
-                "reference": "738d33fee95b8428efd5f0ea837be693dc52186c"
+                "reference": "d4e54839f7041f6203523f86b1788887acc88fdb"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/enlivenapp/Vision/zipball/738d33fee95b8428efd5f0ea837be693dc52186c",
-                "reference": "738d33fee95b8428efd5f0ea837be693dc52186c",
+                "url": "https://api.github.com/repos/enlivenapp/Vision/zipball/d4e54839f7041f6203523f86b1788887acc88fdb",
+                "reference": "d4e54839f7041f6203523f86b1788887acc88fdb",
                 "shasum": ""
             },
             "require": {
@@ -458,9 +458,9 @@
             "description": "Lightweight template engine with auto-escaping, extends, includes, filters, and custom tags",
             "support": {
                 "issues": "https://github.com/enlivenapp/Vision/issues",
-                "source": "https://github.com/enlivenapp/Vision/tree/1.0.3"
+                "source": "https://github.com/enlivenapp/Vision/tree/1.0.4"
             },
-            "time": "2026-09-01T15:28:39+00:00"
+            "time": "2026-09-08T02:04:26+00:00"
         },
         {
             "name": "ezyang/htmlpurifier",
@@ -529,12 +529,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/flightphp/active-record.git",
-                "reference": "6b3c0234bca1e8b9910be6921a3224bd9b9d0ea8"
+                "reference": "54c8cf794954d3e73913399c53a8f2ae9313cfe6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/flightphp/active-record/zipball/6b3c0234bca1e8b9910be6921a3224bd9b9d0ea8",
-                "reference": "6b3c0234bca1e8b9910be6921a3224bd9b9d0ea8",
+                "url": "https://api.github.com/repos/flightphp/active-record/zipball/54c8cf794954d3e73913399c53a8f2ae9313cfe6",
+                "reference": "54c8cf794954d3e73913399c53a8f2ae9313cfe6",
                 "shasum": ""
             },
             "require": {
@@ -587,7 +587,7 @@
                 "issues": "https://github.com/flightphp/active-record/issues",
                 "source": "https://github.com/flightphp/active-record/tree/master"
             },
-            "time": "2026-09-04T02:50:14+00:00"
+            "time": "2026-09-14T13:49:21+00:00"
         },
         {
             "name": "flightphp/core",
