@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "0be2110f17d29ea429b295f7a3ad5252",
+    "content-hash": "739b19a951e3eba04754e80d12103496",
     "packages": [
         {
             "name": "adhocore/cli",
@@ -377,16 +377,16 @@
         },
         {
             "name": "enlivenapp/migrations",
-            "version": "0.3.0",
+            "version": "0.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/enlivenapp/Migrations.git",
-                "reference": "5c8235e5bbb70dce81b79b3eb9fc49f79ee3a533"
+                "reference": "747e41397b68700955e044e17e59a53965f06fb7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/enlivenapp/Migrations/zipball/5c8235e5bbb70dce81b79b3eb9fc49f79ee3a533",
-                "reference": "5c8235e5bbb70dce81b79b3eb9fc49f79ee3a533",
+                "url": "https://api.github.com/repos/enlivenapp/Migrations/zipball/747e41397b68700955e044e17e59a53965f06fb7",
+                "reference": "747e41397b68700955e044e17e59a53965f06fb7",
                 "shasum": ""
             },
             "require": {
@@ -418,9 +418,9 @@
             "description": "Database migrations and seeds for modular PHP applications",
             "support": {
                 "issues": "https://github.com/enlivenapp/Migrations/issues",
-                "source": "https://github.com/enlivenapp/Migrations/tree/0.3.0"
+                "source": "https://github.com/enlivenapp/Migrations/tree/0.4.0"
             },
-            "time": "2026-08-28T04:11:28+00:00"
+            "time": "2026-09-17T21:47:02+00:00"
         },
         {
             "name": "enlivenapp/vision",

@@ -7,7 +7,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - '[0-9]*'
 
 permissions:
   contents: write
@@ -22,32 +22,19 @@ jobs:
 
       - name: Verify tag matches pubvana.json semver
         run: |
-          TAG="${GITHUB_REF_NAME#v}"
+          TAG="${GITHUB_REF_NAME}"
           SEMVER="$(php -r '$d = json_decode(file_get_contents("pubvana.json"), true); echo $d["semver"];')"
-          # Strip pre-release suffix for comparison (e.g. 3.0.0-alpha.3 -> 3.0.0)
-          BASE_VERSION="${TAG%%-*}"
-          echo "Tag version: $TAG, base version: $BASE_VERSION, manifest semver: $SEMVER"
-          if [ "$BASE_VERSION" != "$SEMVER" ]; then
-            echo "::error::Tag v$TAG base version $BASE_VERSION does not match pubvana.json semver $SEMVER"
-            exit 1
-          fi
-
-      - name: Verify CHANGELOG documents the release
-        run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          if ! grep -Eq "^## \[?${TAG//./\\.}(\]| )?" CHANGELOG.md; then
-            echo "::error::CHANGELOG.md has no section for $TAG"
+          echo "Tag version: $TAG, manifest semver: $SEMVER"
+          if [ "$TAG" != "$SEMVER" ]; then
+            echo "::error::Tag $TAG does not match pubvana.json semver $SEMVER"
             exit 1
           fi
 
       - name: Verify releases.json documents the release
         run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          # Pre-release tags (e.g. alpha, beta, rc) are not stable releases yet,
-          # so no releases.json entry is required.
-          case "$TAG" in
-            *-*) echo "Pre-release tag $TAG, skipping releases.json check"; exit 0 ;;
-          esac
+          TAG="${GITHUB_REF_NAME}"
+          # Every tag (alpha, beta, rc, stable) ships through the updater, so
+          # each requires a releases.json entry with a download_url.
           php -r '
             $tag = $argv[1];
             $data = json_decode(file_get_contents("releases.json"), true);

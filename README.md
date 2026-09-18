@@ -4,12 +4,12 @@
 
 # Pubvana CMS
 
-Pubvana is a flexible, full-featured, shared-host friendly CMS (Content Management System) for personal blogs, small to medium business websites, company intranets and more. v3 also offers the flexibility of a CMF (Content Management Framework) to build your own custom plugins faster than starting from scratch.  Version 3 has a new administration panel, plugin extensions, faster internals, and more features than you'd expect in a free, open source CMS.
+Pubvana is a flexible, full-featured, shared-host friendly CMS (Content Management System) for personal blogs, small to medium business websites, company intranets and more. v3 offers the flexibility of a CMF (Content Management Framework) to build your own custom plugins faster than starting from scratch.  Version 3 has a new administration panel, plugin extensions, faster internals, and more features than you'd expect in a free, open source CMS.
 
 ## v3
 
-[![v3](https://img.shields.io/badge/v3-In%20Development-blue)](https://github.com/Pubvana-CMS/pubvana)
-[![Latest Unstable Version](http://poser.pugx.org/enlivenapp/pubvana/v/unstable)](https://packagist.org/packages/enlivenapp/pubvana) 
+[![v3](https://img.shields.io/badge/v3-In%20Beta-blue)](https://github.com/Pubvana-CMS/pubvana)
+[![Latest Release](https://img.shields.io/github/v/release/Pubvana-CMS/pubvana)](https://github.com/Pubvana-CMS/pubvana/releases)
 [![PHP](https://img.shields.io/badge/PHP-8.2%2B-blue.svg)](https://www.php.net)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -25,7 +25,6 @@ Pubvana is a flexible, full-featured, shared-host friendly CMS (Content Manageme
 
 ## v2
 
-[![Latest Release](https://img.shields.io/github/v/release/Pubvana-CMS/pubvana)](https://github.com/Pubvana-CMS/pubvana/releases)
 [![Codeigniter 4](https://img.shields.io/badge/Codeigniter4-4.7-orange.svg)](https://codeigniter.com)
 [![status](https://img.shields.io/badge/status-maintenance-blue)](https://github.com/Pubvana-CMS/pubvana)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -41,11 +40,6 @@ Pubvana is a flexible, full-featured, shared-host friendly CMS (Content Manageme
 
 ---
 
-## Notice: 
-v3 is currently in Alpha developement. Thing change rapidly, and untested update ability is available. Thanks for considering Pubvana!
-
----
-
 ## Installation
 
 See [Install](INSTALL.md)
@@ -57,17 +51,19 @@ See [Install](INSTALL.md)
 - RSS/Atom feeds, media library with image processing, video posters, embeds
 - Nested moderated comments with captcha and sanitization
 - AI assistant with fact-checking workflow
-- Content blocks in regions with drag-and-drop placement
+- Content blocks in regions with drag-and-drop placement and per-block on/off toggles
 - Vision templates for public pages (no PHP execution)
 - Theme system with per-theme options
 - Nested navigation menus, plugin system with enable/disable
 - Admin dashboard with plugin cards
 - Role-based access control (Shield), user bans, forced password resets
 - Optional email 2FA and email activation
-- Activity log audit trail, site health checks
+- Activity log audit trail, site health checks, public-side flash messages
 - SMTP email with encrypted credentials, cron scheduler
 - Full-site backup and restore, core update flow
 - Marketplace, digital store with products, orders, and payment webhooks
+- Trust Service: plugin, theme, and release safety from the Pubvana trust service, shown as admin trust badges
+- Stand-alone JSON API for integrations and addon services
 - Security headers, CSRF protection, rate-limited login
 - Search across content types, SEO (sitemap, schema, robots, Open Graph)
 - Redirect manager with 404 tracking and broken-link scanning

@@ -75,9 +75,10 @@ This runs the foundation packages (sessions, Shield, CSRF), core migrations, and
 
 ## Create an Admin User
 
+*Use caution with who is allowed access to your hosting account's terminal. Anyone with terminal access can find and run these commands.*
+
 ```bash
 php runway shield:user create -n yourusername -e you@example.com
-php runway shield:user password -e you@example.com
 php runway shield:user addgroup -e you@example.com -g superadmin
 ```
 
@@ -94,7 +95,5 @@ Visit `https://your-server/auth/login` and sign in with the admin credentials yo
 | Command | Description |
 |---------|-------------|
 | `php runway migrate:all` | Run all pending migrations and seeds |
-| `php runway routes` | List all registered routes |
 | `php runway shield:user create -n <name> -e <email>` | Create a user |
-| `php runway shield:user password -e <email>` | Set a user's password |
 | `php runway shield:user addgroup -e <email> -g <group>` | Assign a user to a group |

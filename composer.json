@@ -11,7 +11,7 @@
         "enlivenapp/flight-shield": "^0.3",
         "enlivenapp/flight-csrf": "^0.2",
         "enlivenapp/flight-sessions": "^0.1",
-        "enlivenapp/migrations": "^0.3",
+        "enlivenapp/migrations": "^0.4",
         "enlivenapp/vision": "^1.0",
         "ezyang/htmlpurifier": "^4.19",
         "vlucas/phpdotenv": "^5.6",

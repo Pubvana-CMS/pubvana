@@ -5,11 +5,74 @@ All notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [3.0.0-beta.1]
 
 ### Added
-- AI Assistant: Fact Checking. Your external AI assistant (CLI, IDE, desktop) verifies the claims in posts and pages under a versioned integrity prompt it fetches from the site before every check, then files structured reports (findings, per-claim verdicts with cited sources, facts separated from opinion, interference flags). Site-level gate: the admin accepts the terms per prompt version and toggles the service on under Tools > AI Assistant > Fact Checking; enabling requires the accepted terms and at least one enabled key. Reports surface in a report history, a read-only panel in the post and page editors, and a placeable "Fact Check Summary" public block that marks stale reports after later edits
-- Unit test suite for the Fact Checking service (`tests/Unit/Plugins/AiAssistant/FactCheckServiceTest.php`)
+- PHPUnit tests almost entirely throughout
+- Admin block toggles: individual blocks can be enabled or disabled from the admin panel
+- Author Card block
+- `normalizeExternalUrl()` helper: accepts a full URL or a bare value combined with a base
+- Optional title on the HTML block
+- OWASP-based hardening guidance for site operators
+
+### Changed
+- Migrations renamed to the `YYYY-MM-DD-HHMMSS_` filename convention across core and all plugins
+- Migrations library bumped to `enlivenapp/migrations ^0.4`; `MigrationSetup` no longer takes a database handle, callers pass the project root and an explicit `path_mode`
+- README and plugin AGENTS.md files standardized; v3 marked "In Beta" and the alpha notice removed
+- Website domain updated to pubvanacms.com
+- Marketplace migration files combined
+- Docker files removed from the repository
+- Monolithic admin controller untangled
+- INSTALL.md: removed the redundant `shield:user password` step, dropped the stale `runway routes` row, and added a caution about guarding terminal access
+
+### Fixed
+- Security hardening batch:
+  - Open redirects: `sameSite()` host validation applied to Forms, Comments, and Profiles return-url handling
+  - Host-header injection into canonical/OG/JSON-LD URLs
+  - LIKE wildcard injection in the blog service
+  - Stored XSS: `javascript:` URLs in Profiles, media admin innerHTML injection, and raw `application/ld+json` output
+  - Symlink traversal in archive and snapshot validators
+  - cURL hardening: redirect hop checking, scheme enforcement, private/loopback/link-local IP filtering, and response size caps
+  - `mysqldump`/`mysql` credentials no longer visible in process listings
+  - Admin-group users could escalate to superadmin (blocked)
+  - Plugin admin routes reachable without authentication
+  - AI update-only key could unpublish content
+  - ActivityLog no longer trusts `X-Forwarded-For`/`X-Real-IP`
+  - CSP no longer relies on `'unsafe-inline'`/`'unsafe-eval'` and unpkg scripts
+- Backup restore: pre-restore snapshot taken before the restore runs; SQL dump and restore splitting made splitter-safe
+- Blog taxonomy pagination queries per page instead of filtering the global post list in memory
+- Generic error message rendered in production instead of leaking internals
+- Theme override resolution (again)
+- Misc PHPStan/Psalm findings: Pages update validation parity, media upload checks, Analytics deprecations, TrustClient default URL, zip-name collision, advisory-locked backup restore
+
+## [3.0.0-alpha.4] - 2026-09-12
+
+### Added
+- AI Assistant: Fact Checking. External AI assistants verify claims in posts and pages under a versioned integrity prompt and file structured reports (per-claim verdicts with cited sources, facts separated from opinion); enabled by an admin under Tools > AI Assistant, with a report history, editor panels, and a placeable public block
+- Trust client integrated into core, plugins, themes, and Updates
+- Stand-alone API controller; AI Assistant and Marketplace wired to it
+- Admin menu system rewritten so plugins can register submenus, not just top-level menus
+- (h)reCaptcha extracted from Comments into its own service; Comments, Forms, and Login now use it
+- Flash messages on the public side, surfaced in the default theme
+- Plugin asset CSS resolution with theme override, plus `footer_scripts` output
+- Extended Shield login hardening and theme override views
+- Default page and blog post seed data
+- Marketplace and Updates integration with each other and the store
+
+### Changed
+- Performance pass: homepage load from ~2500ms to ~450ms (DB call stacking and asset-serving fat trimmed)
+- Public page template restructure
+- Theme service rework: activation/switching fixed, override paths fixed, region tags simplified to a single `{% region name %}` call
+- Plugins no longer auto-enable on install; core plugins ship enabled
+- Repository trimmed to Pubvana v3 code and releasables only (private plugins moved to their own repo), feature freeze for the initial release
+- Composer and documentation updates throughout
+
+### Fixed
+- Theme activation/switching (all themes were being activated)
+- Login redirect bug, especially with 2FA enabled
+- Theme override path bug
+- PHPStan Level 8 errors from the performance work
+- Marketplace build and `csrf.exempt` handling for Marketplace and AI Assistant
 
 ## [3.0.0-alpha.3] - 2026-09-03
 

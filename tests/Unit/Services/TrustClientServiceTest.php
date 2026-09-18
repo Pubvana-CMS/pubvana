@@ -583,7 +583,7 @@ final class TrustClientServiceTest extends TestCase
 
         $payload = $this->service->requests[0] ?? null;
         self::assertNotNull($payload);
-        self::assertSame('3.0.0', $payload['pv_version'] ?? null);
+        self::assertSame('3.0.0-beta.1', $payload['pv_version'] ?? null);
         self::assertSame('https://test.example.com', $payload['base_url'] ?? null);
         // Blog (local, uncached) leads the batch; Orphan's identity proves
         // the manifest name split and the local origin survive the trip.
