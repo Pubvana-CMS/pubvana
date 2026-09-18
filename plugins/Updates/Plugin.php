@@ -115,10 +115,10 @@ class Plugin implements PluginInterface
 
         if (($state['status'] ?? '') === 'available' && isset($state['target_version'])) {
             $card['tone']        = 'warning';
-            $card['description'] = 'Version ' . $state['target_version'] . ' is available. Visit Tools > Updates.';
+            $card['description'] = 'Version ' . $state['target_version'] . ' is available. Visit Tools > Maintenance > Updates.';
         } elseif (($state['status'] ?? '') === 'error') {
             $card['tone']        = 'secondary';
-            $card['description'] = 'Last update check failed. Visit Tools > Updates.';
+            $card['description'] = 'Last update check failed. Visit Tools > Maintenance > Updates.';
         }
 
         return [$card];
@@ -148,7 +148,7 @@ class Plugin implements PluginInterface
                 category: CheckResult::CAT_PLUGINS,
                 status: CheckResult::WARNING,
                 message: 'Version ' . ($state['target_version'] ?? 'newer') . ' is available.',
-                remediation: 'Apply it from Tools > Updates. A pre-update backup is taken automatically.'
+                remediation: 'Apply it from Tools > Maintenance > Updates. A pre-update backup is taken automatically.'
             ),
             default => new CheckResult(
                 id: 'pubvana-update',
@@ -156,7 +156,7 @@ class Plugin implements PluginInterface
                 category: CheckResult::CAT_PLUGINS,
                 status: CheckResult::WARNING,
                 message: 'No recent update check.',
-                remediation: 'Visit Tools > Updates and run a check.'
+                remediation: 'Visit Tools > Maintenance > Updates and run a check.'
             ),
         };
     }

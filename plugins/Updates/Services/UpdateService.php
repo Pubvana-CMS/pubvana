@@ -383,7 +383,7 @@ class UpdateService
         if (((array) ($state['breaking_changes'] ?? [])) !== []) {
             return [
                 'status'  => 'refused',
-                'message' => 'Breaking changes in the update path. Automatic updates refuse to apply; apply manually from Tools > Updates.',
+                'message' => 'Breaking changes in the update path. Automatic updates refuse to apply; apply manually from Tools > Maintenance > Updates.',
                 'version' => $target !== '' ? $target : null,
             ];
         }

@@ -600,7 +600,6 @@ final class TrustClientServiceTest extends TestCase
     public function testProductionEndpointIsTheHomeSite(): void
     {
         self::assertSame('https://pubvanacms.com/api/trust/v1/check', TrustClientService::TRUST_API_URL);
-        self::assertSame('http://localhost/api/trust/v1/check', TrustClientService::DEV_TRUST_API_URL);
     }
 
     public function testProductionAppHitsTheHomeSiteEndpoint(): void
@@ -624,7 +623,7 @@ final class TrustClientServiceTest extends TestCase
         self::assertSame(TrustClientService::TRUST_API_URL, $this->invoke($service, 'effectiveApiUrl'));
     }
 
-    public function testDevelopmentAppHitsTheLocalEndpoint(): void
+    public function testDevelopmentAppHitsTheHomeSiteEndpoint(): void
     {
         $app = $this->app([
             'environment' => 'development',
@@ -632,10 +631,10 @@ final class TrustClientServiceTest extends TestCase
         ]);
         $service = new FakeHttpTrustClient($this->pdo, $app, $this->maliciousFile);
 
-        self::assertSame(TrustClientService::DEV_TRUST_API_URL, $this->invoke($service, 'effectiveApiUrl'));
+        self::assertSame(TrustClientService::TRUST_API_URL, $this->invoke($service, 'effectiveApiUrl'));
     }
 
-    public function testExplicitOverrideBeatsBothEndpoints(): void
+    public function testExplicitOverrideBeatsTheHomeSite(): void
     {
         $app = $this->app([
             'environment' => 'development',
@@ -689,7 +688,7 @@ final class TrustClientServiceTest extends TestCase
 
         $service->checkIfDue();
 
-        self::assertSame([TrustClientService::DEV_TRUST_API_URL], $service->urls);
+        self::assertSame([TrustClientService::TRUST_API_URL], $service->urls);
     }
 
     // -----------------------------------------------------------------

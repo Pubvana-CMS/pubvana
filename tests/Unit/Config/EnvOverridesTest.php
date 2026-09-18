@@ -69,8 +69,8 @@ final class EnvOverridesTest extends TestCase
         self::assertSame('production', $app->get('environment'));
         self::assertSame('/', $app->get('flight.base_url'));
         self::assertSame([], $app->get('plugins'));
-        // No FORCE_HTTPS + production default => true.
-        self::assertTrue($app->get('flight.force_https'));
+        // No FORCE_HTTPS: off by default regardless of APP_ENV.
+        self::assertFalse($app->get('flight.force_https'));
     }
 
     public function testScalarKeysFoldOntoStore(): void
@@ -86,7 +86,7 @@ final class EnvOverridesTest extends TestCase
         self::assertSame('My Site', $app->get('CMS.siteName'));
         self::assertSame('a@b.test', $app->get('CMS.adminEmail'));
         self::assertSame('https://example.test', $app->get('CMS.siteUrl'));
-        // Development default => false.
+        // No FORCE_HTTPS: off by default regardless of APP_ENV.
         self::assertFalse($app->get('flight.force_https'));
     }
 
@@ -133,18 +133,43 @@ final class EnvOverridesTest extends TestCase
         self::assertSame('secret123', $plugins['enlivenapp/flight-sessions']['encryption_key']);
     }
 
-    public function testAppDebugStrictParsing(): void
+    public function testAppDebugFollowsEnvironmentOnly(): void
     {
+        // No APP_ENV, no APP_DEBUG: production default, debug off.
+        $app = $this->freshEngine();
+        $this->includeOverrides($app);
+        self::assertSame('production', $app->get('environment'));
+        self::assertFalse($app->get('flight.debug'));
+
+        // APP_ENV=development with no APP_DEBUG: debug on.
+        $app2 = $this->freshEngine();
+        putenv('APP_ENV=development');
+        $this->includeOverrides($app2);
+        self::assertSame('development', $app2->get('environment'));
+        self::assertTrue($app2->get('flight.debug'));
+    }
+
+    public function testAppDebugIsIgnored(): void
+    {
+        // Explicit APP_DEBUG=true cannot enable debug in production.
         $app = $this->freshEngine();
         putenv('APP_DEBUG=true');
         $this->includeOverrides($app);
-        self::assertTrue($app->get('flight.debug'));
+        self::assertFalse($app->get('flight.debug'));
 
+        // Explicit APP_DEBUG=false cannot disable debug in development.
         $app2 = $this->freshEngine();
-        putenv('APP_DEBUG=banana');
+        putenv('APP_ENV=development');
+        putenv('APP_DEBUG=false');
         $this->includeOverrides($app2);
-        // Junk is ignored: the Engine default (false) is left untouched.
-        self::assertFalse($app2->get('flight.debug'));
+        self::assertTrue($app2->get('flight.debug'));
+
+        // Junk APP_DEBUG is ignored entirely.
+        $app3 = $this->freshEngine();
+        putenv('APP_ENV=production');
+        putenv('APP_DEBUG=banana');
+        $this->includeOverrides($app3);
+        self::assertFalse($app3->get('flight.debug'));
     }
 
     public function testForceHttpsExplicitBeatsDefault(): void
@@ -166,8 +191,8 @@ final class EnvOverridesTest extends TestCase
         $app = $this->freshEngine();
         putenv('FORCE_HTTPS=banana');
         $this->includeOverrides($app);
-        // Production default.
-        self::assertTrue($app->get('flight.force_https'));
+        // Junk is ignored: default off.
+        self::assertFalse($app->get('flight.force_https'));
     }
 
     public function testIdempotentDoubleInclude(): void
