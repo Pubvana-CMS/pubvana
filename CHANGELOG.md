@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - Boot no longer fatals in `--no-dev` installs: Tracy references are guarded, so a release build without the dev packages starts cleanly
 - Trust client always reports to `https://pubvanacms.com`; the development localhost endpoint is removed
 - Updates dashboard and Site Health messages point at Tools > Maintenance > Updates
+- Vendored libraries upgraded and pinned in the lock file:
+  - `enlivenapp/flight-shield` `^0.4` (`0.4.2`), including the auth-groups `updated_at` migration
+  - `enlivenapp/vision` `1.0.4`
+  - `flightphp/active-record` latest
+- The migrations database `versions` marker reads `semver` from `pubvana.json` instead of a hardcoded value
+- Tests read the current semver from `pubvana.json`, so version bumps no longer break the suite
 
 ## [3.0.0-beta.1] - 2026-09-17
 
