@@ -5,7 +5,7 @@ All notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [3.0.0-beta.1]
+## [3.0.0-beta.1] - 2026-09-17
 
 ### Added
 - PHPUnit tests almost entirely throughout

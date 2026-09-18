@@ -120,7 +120,7 @@ Use the [Issues Tracker](https://github.com/Pubvana-CMS/pubvana/issues).
 
 ## License
 
-MIT. [LICENSE](LICENSE.md)
+MIT. [LICENSE](LICENSE)
 
 ## Contributors
 
