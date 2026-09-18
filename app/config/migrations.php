@@ -46,6 +46,17 @@ $config = [
     'charset'  => $_ENV['DB_CHARSET'] ?? $_SERVER['DB_CHARSET'] ?? getenv('DB_CHARSET') ?: 'utf8mb4',
 ];
 
+$semver = '0.0.0';
+$_manifestFile = $root . '/pubvana.json';
+if (is_file($_manifestFile)) {
+    try {
+        $_manifest = json_decode((string) file_get_contents($_manifestFile), true, 512, JSON_THROW_ON_ERROR);
+        $semver = is_string($_manifest['semver'] ?? null) ? $_manifest['semver'] : '0.0.0';
+    } catch (\JsonException $e) {
+        error_log('migrations.php: pubvana.json is not valid JSON - ' . $e->getMessage());
+    }
+}
+
 // When reached (no Flight tier available), provide core-only migration paths,
 // never a blanket glob. The app's other plugins supply their gated set via the
 // Flight store in services.php.
@@ -53,7 +64,7 @@ $config['migrations'] = [
     'path_mode'    => 'replace',
     'paths'        => ['app/Database/Migrations'],
     'seeds'        => ['paths' => []],
-    'versions'     => ['pubvana/pubvana' => '3.0.0-beta.1'],
+    'versions'     => ['pubvana/pubvana' => $semver],
     'module_names' => ['app/Database/Migrations' => 'pubvana/pubvana'],
 ];
 

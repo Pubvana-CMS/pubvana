@@ -134,7 +134,7 @@ final class ShieldMigrationsConfigTest extends TestCase
             self::assertSame('utf8mb4', $config['charset']);
             self::assertSame(['app/Database/Migrations'], $config['migrations']['paths']);
             self::assertSame([], $config['migrations']['seeds']['paths']);
-            self::assertSame(['pubvana/pubvana' => '3.0.0-beta.1'], $config['migrations']['versions']);
+            self::assertSame(['pubvana/pubvana' => $this->manifestSemver()], $config['migrations']['versions']);
             self::assertSame(
                 ['app/Database/Migrations' => 'pubvana/pubvana'],
                 $config['migrations']['module_names']
@@ -152,5 +152,11 @@ final class ShieldMigrationsConfigTest extends TestCase
                 }
             }
         }
+    }
+
+    private function manifestSemver(): string
+    {
+        $payload = json_decode((string) file_get_contents(PROJECT_ROOT . '/pubvana.json'), true, 512, JSON_THROW_ON_ERROR);
+        return (string) ($payload['semver'] ?? '');
     }
 }

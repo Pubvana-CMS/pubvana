@@ -585,7 +585,7 @@ final class PluginLoaderTest extends TestCase
         $loader = $this->loader();
 
         self::assertSame('pubvana/pubvana', $this->invoke($loader, 'coreName'));
-        self::assertSame('3.0.0-beta.1', $loader->coreSemver());
+        self::assertSame($this->manifestSemver(), $loader->coreSemver());
     }
 
     public function testFoundationGateRequiresBothTrustedNamespaceAndType(): void
@@ -637,7 +637,7 @@ final class PluginLoaderTest extends TestCase
         self::assertNotContains('plugins/_fxmuted/Database/Migrations', $config['paths']);
 
         // Versions: the core identity plus the enabled plugin's semver.
-        self::assertSame('3.0.0-beta.1', $config['versions']['pubvana/pubvana']);
+        self::assertSame($this->manifestSemver(), $config['versions']['pubvana/pubvana']);
         self::assertSame('1.2.3', $config['versions']['plugins/_fxalpha']);
         self::assertArrayNotHasKey('plugins/_fxmuted', $config['versions']);
 
@@ -899,5 +899,11 @@ final class PluginLoaderTest extends TestCase
             is_dir($filePath) ? rmdir($filePath) : unlink($filePath);
         }
         rmdir($path);
+    }
+
+    private function manifestSemver(): string
+    {
+        $payload = json_decode((string) file_get_contents(PROJECT_ROOT . '/pubvana.json'), true, 512, JSON_THROW_ON_ERROR);
+        return (string) ($payload['semver'] ?? '');
     }
 }
