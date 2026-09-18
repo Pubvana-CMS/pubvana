@@ -38,6 +38,26 @@ cd pubvana
 composer install
 ```
 
+## File & Folder Permissions
+
+The release `.zip` ships the `writable/` tree and `public/uploads/` with empty `.gitkeep` marker files so the folders exist after extraction. Git does not record file ownership, so everything you extract is owned by your account, not the web server. The web server (typically `www-data`) needs write access to `writable/` and `public/uploads/` at runtime.
+
+If your shell user is a member of the web server's group (for example `rob` in the `www-data` group), group-write is the simplest scheme:
+
+```bash
+chgrp -R www-data writable public/uploads
+chmod -R g+w writable public/uploads
+```
+
+If the web server is the only writer, take ownership instead:
+
+```bash
+chown -R www-data:www-data writable public/uploads
+chmod -R g+w writable public/uploads
+```
+
+The `.gitkeep` marker files only keep empty directories inside the zip; who owns them does not matter.
+
 ## Configuration
 
 Generate a session key if you don't have one (don't reuse keys):
