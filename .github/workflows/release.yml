@@ -63,10 +63,10 @@ jobs:
       - name: Build release.zip
         run: |
           zip -r release.zip \
-            app public vendor plugins themes \
+            app public vendor plugins themes writable \
             pubvana.json releases.json CHANGELOG.md README.md INSTALL.md HARDENING.md \
             LICENSE SECURITY.md CODE_OF_CONDUCT.md CONTRIBUTING.md \
-            .env.example .htaccess runway \
+            .env.example .htaccess runway cron \
             composer.json composer.lock .runway-config.json \
             -x "*.DS_Store"
 
