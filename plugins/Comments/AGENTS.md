@@ -36,7 +36,7 @@ plugins/Comments/
 │   ├── CommentsAdminController.php    Moderation queue + settings/host-manager (extends core AdminController)
 │   └── CommentsPublicController.php   Submission endpoint + standalone fallback page (extends core PublicController)
 ├── Database/
-│   ├── Migrations/2026-08-26-100002_CreateCommentsTable.php
+│   ├── Migrations/2026-09-17-105228_CreateCommentsTable.php
 │   │                                  comments (commentable_type/id, parent_id, user/guest cols,
 │   │                                  status, ip_address; indexes on host pair, parent, status, user)
 │   └── Seeds/Seed.php                 Seed: 5 "Comments.*" settings rows + comments.moderate permission

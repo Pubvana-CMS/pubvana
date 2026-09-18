@@ -41,7 +41,7 @@ plugins/Blog/
 │   ├── BlogAdminController.php      Admin CRUD for posts, categories, tags (extends core AdminController)
 │   └── BlogPublicController.php     Public listing, post, category, tag, preview, RSS/Atom (extends core PublicController)
 ├── Database/
-│   ├── Migrations/                  Six migrations dated 2026-08-26
+│   ├── Migrations/                  Six migrations dated 2026-09-17
 │   │   ...000001_CreatePostsTable.php            posts (slug, preview_token unique; soft-delete cols)
 │   │   ...000002_CreateCategoriesTable.php       categories (slug unique; parent_id)
 │   │   ...000003_CreateTagsTable.php             tags (slug unique)
@@ -143,7 +143,7 @@ The unit suite is in `tests/Unit/Plugins/Blog/` and covers the service (CRUD, re
 | Change post listing/pagination per page | `Services/BlogService.php:40-53` (admin) and `Controllers/BlogPublicController.php:35` (public, 10/page) |
 | Add a permission alias | `Database/Seeds/Seed.php` install rows (`auth_permissions`) |
 | Change feed item limit or XML shape | `Controllers/BlogPublicController.php:399-526` |
-| Add a column to `posts` | Migration `Database/Migrations/2026-08-26-000001_CreatePostsTable.php`, `Models/Post.php` property docblock, and the `updateRecord()` whitelist |
+| Add a column to `posts` | Migration `Database/Migrations/2026-09-17-104821_CreatePostsTable.php`, `Models/Post.php` property docblock, and the `updateRecord()` whitelist |
 
 ## PR / contribution checklist
 

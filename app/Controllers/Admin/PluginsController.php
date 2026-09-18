@@ -196,7 +196,7 @@ class PluginsController extends AdminController
                 }
 
                 try {
-                    $migrate = new \Enlivenapp\Migrations\Services\MigrationSetup($this->app->db(), [
+                    $migrate = new \Enlivenapp\Migrations\Services\MigrationSetup([
                         'migrations' => ['paths' => $paths, 'seeds' => ['paths' => $seeds]],
                     ]);
                     $result = $migrate->runMigrate();

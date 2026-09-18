@@ -406,7 +406,6 @@ final class UpdateApplyService
 
         try {
             $setup = new \Enlivenapp\Migrations\Services\MigrationSetup(
-                $this->app->db(),
                 (array) ($this->app->get('migrations') ?? []),
                 $this->projectRoot()
             );

@@ -20,7 +20,7 @@ final class ActivityLogMigrationsSeedTest extends TestCase
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
-        require_once PROJECT_ROOT . '/plugins/ActivityLog/Database/Migrations/2026-09-02-000001_CreateActivityLogsTable.php';
+        require_once PROJECT_ROOT . '/plugins/ActivityLog/Database/Migrations/2026-09-17-104829_CreateActivityLogsTable.php';
     }
 
     public function testUpCreatesExpectedTable(): void

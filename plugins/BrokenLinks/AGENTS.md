@@ -20,7 +20,7 @@ Broken Links scans outbound links in published posts and pages, checks each via 
 2. **Dismissal is permanent.** Once `dismissed = 1`, the row is never updated, re-enabled, or touched on re-scan (`Services/BrokenLinksService.php:168-170`). The upsert skips dismissed rows entirely. Reason: permanent dismissal prevents scan noise from dismissed entries re-appearing.
 3. **Sequential URL checking.** All HTTP checks run one at a time (`Services/BrokenLinksService.php:scan()`). Reason: shared-host friendly, avoids hammering external servers.
 4. **Never modify dismissed rows during upsert.** The upsert method returns early if the existing entry is dismissed (`Services/BrokenLinksService.php:170-172`). Reason: a re-scan must not override a permanent dismiss decision.
-5. **Upsert keys on (source_type, source_id, url_hash).** The unique index prevents duplicate rows for the same URL in the same content item (`Database/Migrations/2026-09-03-100001`). The SHA1 hash enables indexing without a full-text key. Reason: deterministic deduplication across scans.
+5. **Upsert keys on (source_type, source_id, url_hash).** The unique index prevents duplicate rows for the same URL in the same content item (`Database/Migrations/2026-09-17-105227`). The SHA1 hash enables indexing without a full-text key. Reason: deterministic deduplication across scans.
 6. **Delete OK rows after scanning each source.** After all URLs for a source are checked, rows with 2xx status are deleted (`Services/BrokenLinksService.php:248-255`). Reason: links that were broken but are now fixed should not linger in the results.
 7. **Use DOMDocument for HTML link extraction.** Parse `<a href>` tags with `LIBXML_NOERROR | LIBXML_NOWARNING` to suppress warnings on fragment HTML (`Services/BrokenLinksService.php:291-298`). Reason: handles real-world HTML from Jodit editors better than regex alone.
 8. **Filter to external URLs only.** Same-host, mailto, tel, javascript, data, and fragment-only links are excluded (`Services/BrokenLinksService.php:310-318`). Reason: only outbound links need HTTP checking.
@@ -39,7 +39,7 @@ plugins/BrokenLinks/
 │   └── BrokenLinksAdminController.php                     Admin UI: list, scan, recheck, dismiss
 ├── Database/
 │   └── Migrations/
-│       └── 2026-09-03-100001_CreateBrokenLinksTable.php   broken_links table
+│       └── 2026-09-17-105227_CreateBrokenLinksTable.php   broken_links table
 ├── Models/
 │   └── BrokenLink.php                                     broken_links table model
 ├── Services/

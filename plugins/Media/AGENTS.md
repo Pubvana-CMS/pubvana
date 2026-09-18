@@ -35,7 +35,7 @@ plugins/Media/
 ├── Config/Config.php                  routePrepend, upload_path, size caps, allowed exts, widths, quality
 ├── Controllers/MediaAdminController.php  Library, JSON, uploads, embeds, editor, edits, revert
 ├── Database/
-│   ├── Migrations/2026-04-25-100000_CreateMediaTable.php
+│   ├── Migrations/2026-09-17-105233_CreateMediaTable.php
 │   │                                  media (type enum image/video/embed; indexed on type, uploaded_by)
 │   └── Seeds/Seed.php                 Seed: media.manage permission
 ├── Models/Media.php                   media table; find/paginate/count, whitelisted updateMeta

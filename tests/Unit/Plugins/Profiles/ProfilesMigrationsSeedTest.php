@@ -20,7 +20,7 @@ final class ProfilesMigrationsSeedTest extends TestCase
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
-        require_once PROJECT_ROOT . '/plugins/Profiles/Database/Migrations/2026-08-26-100001_CreateProfilesTable.php';
+        require_once PROJECT_ROOT . '/plugins/Profiles/Database/Migrations/2026-09-17-105234_CreateProfilesTable.php';
     }
 
     public function testUpCreatesExpectedTable(): void

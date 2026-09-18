@@ -39,9 +39,9 @@ plugins/Forms/
 │   └── FormsPublicController.php      POST /{prefix}/submit/@id (extends core PublicController)
 ├── Database/
 │   ├── Migrations/
-│   │   2026-08-29-100001_CreateFormsTable.php        forms (slug unique, status enum, soft-delete cols)
-│   │   2026-08-29-100002_CreateFormFieldsTable.php   form_fields (type/name/label, options_json, sort_order)
-│   │   2026-08-29-100003_CreateFormSubmissionsTable.php  form_submissions (IP/UA/referrer, payload_json)
+│   │   2026-09-17-105230_CreateFormsTable.php        forms (slug unique, status enum, soft-delete cols)
+│   │   2026-09-17-105231_CreateFormFieldsTable.php   form_fields (type/name/label, options_json, sort_order)
+│   │   2026-09-17-105232_CreateFormSubmissionsTable.php  form_submissions (IP/UA/referrer, payload_json)
 │   └── Seeds/Seed.php                 Seed: forms.manage permission + draft Contact form with 3 fields
 ├── Models/
 │   ├── Form.php                       forms; find/paginate/count, whitelisted updateRecord, softDelete
@@ -124,7 +124,7 @@ The unit suite is in `tests/Unit/Plugins/Forms/` and covers the service (captcha
 | Add a field type | `renderPublicForm()` render branch (`Services/FormsService.php:274-328`) and `sanitizeScalarValue()` (`Services/FormsService.php:672-693`) |
 | Change the shortcode syntax | `renderContentEmbeds()` + the two tokenizers (`Services/FormsService.php:346-357, 564-587`) |
 | Change the default seed form | `Database/Seeds/Seed.php` (forms + form_fields rows) |
-| Add a column to `forms` | Migration `2026-08-29-100001`, `Models/Form.php` property docblock, and the `updateRecord()` whitelist |
+| Add a column to `forms` | Migration `2026-09-17-105230`, `Models/Form.php` property docblock, and the `updateRecord()` whitelist |
 
 ## PR / contribution checklist
 

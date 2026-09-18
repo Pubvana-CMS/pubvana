@@ -19,8 +19,8 @@ final class RedirectsMigrationsSeedTest extends TestCase
 {
     /** @var array<string, string> */
     private const FILES = [
-        'redirects' => '2026-08-28-100001_CreateRedirectsTable.php',
-        'redirects_links' => '2026-08-28-100002_CreateRedirectLinksTable.php',
+        'redirects' => '2026-09-17-105235_CreateRedirectsTable.php',
+        'redirects_links' => '2026-09-17-105236_CreateRedirectLinksTable.php',
     ];
 
     public static function setUpBeforeClass(): void

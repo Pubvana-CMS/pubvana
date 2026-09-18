@@ -45,7 +45,7 @@ plugins/Marketplace/
 │   └── MarketplaceInstall.php            marketplace_installs table model
 ├── Database/
 │   ├── Migrations/
-│   │   ├── 2026-09-06-000001_CreateMarketplaceInstallsTable.php   marketplace_installs (store_product_id unique)
+│   │   ├── 2026-09-17-104830_CreateMarketplaceInstallsTable.php   marketplace_installs (store_product_id unique)
 │   │   └── 2026-09-11-115828_AddPackageIdToMarketplaceInstalls.php  adds package_id
 │   └── Seeds/Seed.php                    Seed: marketplace.manage permission
 └── Views/admin/

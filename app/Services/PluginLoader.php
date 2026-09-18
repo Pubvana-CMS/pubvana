@@ -1062,13 +1062,14 @@ class PluginLoader
         }
 
         try {
-            $migrate = new \Enlivenapp\Migrations\Services\MigrationSetup($this->app->db(), [
+            $migrate = new \Enlivenapp\Migrations\Services\MigrationSetup([
                 'migrations' => [
-                    'paths'    => $paths,
-                    'seeds'    => $seeds !== [] ? ['paths' => $seeds] : [],
-                    'versions' => $versions,
+                    'path_mode' => 'replace',
+                    'paths'     => $paths,
+                    'seeds'     => $seeds !== [] ? ['paths' => $seeds] : [],
+                    'versions'  => $versions,
                 ],
-            ]);
+            ], PROJECT_ROOT);
             $migrate->runMigrate();
         } catch (\Throwable $e) {
             error_log("Foundation migration error: " . $e->getMessage());
@@ -1095,8 +1096,9 @@ class PluginLoader
             if ($coreName !== null && $coreSemver !== null) {
                 $versions[$coreName] = $coreSemver;
             }
-            $migrate = new \Enlivenapp\Migrations\Services\MigrationSetup($this->app->db(), [
+            $migrate = new \Enlivenapp\Migrations\Services\MigrationSetup([
                 'migrations' => [
+                    'path_mode'   => 'replace',
                     'paths'       => ['app/Database/Migrations'],
                     'seeds'       => ['paths' => []],
                     'versions'    => $versions,
@@ -1104,7 +1106,7 @@ class PluginLoader
                         ? ['app/Database/Migrations' => $coreName]
                         : [],
                 ],
-            ]);
+            ], PROJECT_ROOT);
             $migrate->runMigrate();
         } catch (\Throwable $e) {
             error_log("Migration error: " . $e->getMessage());
@@ -1158,13 +1160,14 @@ class PluginLoader
         }
 
         try {
-            $migrate = new \Enlivenapp\Migrations\Services\MigrationSetup($this->app->db(), [
+            $migrate = new \Enlivenapp\Migrations\Services\MigrationSetup([
                 'migrations' => [
-                    'paths'    => $paths,
-                    'seeds'    => $seeds !== [] ? ['paths' => $seeds] : [],
-                    'versions' => $versions,
+                    'path_mode' => 'replace',
+                    'paths'     => $paths,
+                    'seeds'     => $seeds !== [] ? ['paths' => $seeds] : [],
+                    'versions'  => $versions,
                 ],
-            ]);
+            ], PROJECT_ROOT);
             $migrate->runMigrate();
         } catch (\Throwable $e) {
             error_log("Plugin migration error: " . $e->getMessage());
@@ -1432,9 +1435,10 @@ class PluginLoader
         }
 
         return [
-            'paths'       => array_merge($foundationPaths, $paths),
-            'seeds'       => ['paths' => array_merge($foundationSeeds, $seeds)],
-            'versions'    => $versions,
+            'path_mode'    => 'replace',
+            'paths'        => array_merge($foundationPaths, $paths),
+            'seeds'        => ['paths' => array_merge($foundationSeeds, $seeds)],
+            'versions'     => $versions,
             'module_names' => $moduleNames,
         ];
     }

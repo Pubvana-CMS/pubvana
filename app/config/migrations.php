@@ -50,9 +50,10 @@ $config = [
 // never a blanket glob. The app's other plugins supply their gated set via the
 // Flight store in services.php.
 $config['migrations'] = [
+    'path_mode'    => 'replace',
     'paths'        => ['app/Database/Migrations'],
     'seeds'        => ['paths' => []],
-    'versions'     => ['pubvana/pubvana' => '3.0.0'],
+    'versions'     => ['pubvana/pubvana' => '3.0.0-beta.1'],
     'module_names' => ['app/Database/Migrations' => 'pubvana/pubvana'],
 ];
 

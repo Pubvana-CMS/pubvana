@@ -19,12 +19,12 @@ final class BlogMigrationsSeedTest extends TestCase
 {
     /** @var array<string, string> */
     private const FILES = [
-        'posts' => '2026-08-26-000001_CreatePostsTable.php',
-        'categories' => '2026-08-26-000002_CreateCategoriesTable.php',
-        'tags' => '2026-08-26-000003_CreateTagsTable.php',
-        'posts_to_categories' => '2026-08-26-000004_CreatePostsToCategoriesTable.php',
-        'tags_to_posts' => '2026-08-26-000005_CreateTagsToPostsTable.php',
-        'post_revisions' => '2026-08-26-000006_CreatePostRevisionsTable.php',
+        'posts' => '2026-09-17-104821_CreatePostsTable.php',
+        'categories' => '2026-09-17-104822_CreateCategoriesTable.php',
+        'tags' => '2026-09-17-104823_CreateTagsTable.php',
+        'posts_to_categories' => '2026-09-17-104824_CreatePostsToCategoriesTable.php',
+        'tags_to_posts' => '2026-09-17-104825_CreateTagsToPostsTable.php',
+        'post_revisions' => '2026-09-17-104826_CreatePostRevisionsTable.php',
     ];
 
     public static function setUpBeforeClass(): void

@@ -35,10 +35,23 @@ return [
                 ['key' => 'CMS.siteUrl',        'value' => 'http://localhost',                    'type' => 'string', 'autoload' => true],
                 ['key' => 'CMS.adminEmail',     'value' => 'admin@example.com',                   'type' => 'string', 'autoload' => true],
                 ['key' => 'CMS.defaultTimezone','value' => 'UTC',                                 'type' => 'string', 'autoload' => true],
-                ['key' => 'CMS.siteByline',     'value' => '',                                    'type' => 'string', 'autoload' => true],
-                ['key' => 'CMS.logo',           'value' => '',                                    'type' => 'string', 'autoload' => true],
+                ['key' => 'CMS.siteByline',     'value' => 'Publishing Nirvana',                                    'type' => 'string', 'autoload' => true],
+                ['key' => 'CMS.logo',           'value' => '/pubvana-nodrop-nobg.png',                                    'type' => 'string', 'autoload' => true],
                 ['key' => 'CMS.favicon',        'value' => '/favicon.ico',                         'type' => 'string', 'autoload' => true],
-                ['key' => 'CMS.copyright',      'value' => '© Pubvana v3',                        'type' => 'string', 'autoload' => true],
+                ['key' => 'CMS.copyright',      'value' => '© Your Site',                        'type' => 'string', 'autoload' => true],
+            ],
+        ],
+        [
+            'table' => 'themes',
+            'rows'  => [
+                [
+                    'name'        => 'Default',
+                    'folder'      => 'default',
+                    'description' => "Pubvana's free default theme built on Bootswatch Flatly (Bootstrap 5). See Tools -> Marketplace -> Catalog for more options",
+                    'version'     => '1.4.12',
+                    'author'      => 'pubvana',
+                    'is_active'   => 1,
+                ],
             ],
         ],
         [

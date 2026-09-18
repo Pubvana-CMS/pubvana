@@ -20,7 +20,7 @@ final class SocialLinksMigrationsSeedTest extends TestCase
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
-        require_once PROJECT_ROOT . '/plugins/SocialLinks/Database/Migrations/2026-09-01-100001_CreateSocialLinksTable.php';
+        require_once PROJECT_ROOT . '/plugins/SocialLinks/Database/Migrations/2026-09-17-105238_CreateSocialLinksTable.php';
     }
 
     public function testUpCreatesExpectedTable(): void

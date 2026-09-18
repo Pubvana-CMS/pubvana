@@ -12,7 +12,7 @@ class PluginMigrationsCheck implements CheckInterface
     /**
      * @param array<string, mixed> $migrationConfig
      */
-    public function __construct(private \PDO $pdo, private array $migrationConfig = []) {}
+    public function __construct(private array $migrationConfig = []) {}
 
     public function run(): CheckResult
     {
@@ -28,7 +28,7 @@ class PluginMigrationsCheck implements CheckInterface
         }
 
         try {
-            $setup = new MigrationSetup($this->pdo, $this->migrationConfig);
+            $setup = new MigrationSetup($this->migrationConfig);
             $pending = $setup->getPendingMigrations();
         } catch (\Throwable $e) {
             return new CheckResult(

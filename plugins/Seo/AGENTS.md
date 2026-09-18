@@ -39,7 +39,7 @@ plugins/Seo/
 │   ├── SeoAdminController.php            Settings page, save meta (AJAX), analyze (AJAX)
 │   └── SeoPublicController.php           /sitemap.xml, /robots.txt, /llms.txt
 ├── Database/
-│   └── Migrations/2026-08-29-100004_CreateSeoMetaTable.php
+│   └── Migrations/2026-09-17-105237_CreateSeoMetaTable.php
 │                                        seo_meta (unique (content_type, content_id); indexed content_type)
 ├── Models/SeoMeta.php                    seo_meta table; focus keywords JSON, noindex/nofollow helpers, stats
 ├── Services/
@@ -119,7 +119,7 @@ Coverage: the suite covers the service, the meta model, the content analysis ser
 
 | Goal | Where to look |
 |------|---------------|
-| Add a per-content meta field | `saveMeta()` whitelist + `2026-08-29-100004` migration + `content-panel.php` + `build*()` consumer |
+| Add a per-content meta field | `saveMeta()` whitelist + `2026-09-17-105237` migration + `content-panel.php` + `build*()` consumer |
 | Change world defaults | Settings view + the matching `build*()` default in the service |
 | Adjust AI crawler set or stances | `AI_CRAWLERS` const + `getAiCrawlerList()` descriptions + settings view |
 | Add a public fetch file | Public controller route (`Plugin.php:91-95`) following the `*_enabled` gating pattern |

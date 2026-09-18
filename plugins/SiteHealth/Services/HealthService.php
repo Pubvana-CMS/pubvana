@@ -215,7 +215,7 @@ class HealthService
             new ConfigDefaultsCheck($projectRoot),
 
             // Plugins
-            new PluginMigrationsCheck($this->pdo, $migrationConfig),
+            new PluginMigrationsCheck($migrationConfig),
             new PluginDependenciesCheck($projectRoot),
         ];
 

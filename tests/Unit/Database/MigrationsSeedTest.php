@@ -32,14 +32,14 @@ final class MigrationsSeedTest extends TestCase
 
     /** @var array<string, string> */
     private const FILES = [
-        'block_placements' => '2026-08-22-000001_CreateBlockPlacementsTable.php',
-        'settings' => '2026-08-25-000001_CreateSettingsTable.php',
-        'themes' => '2026-08-25-000002_CreateThemesTable.php',
-        'theme_options' => '2026-08-25-000003_CreateThemeOptionsTable.php',
-        'navigation' => '2026-08-25-000004_CreateNavigationTable.php',
-        'mail_logs' => '2026-08-25-000005_CreateMailLogsTable.php',
-        'plugin_state' => '2026-08-27-000001_CreatePluginStateTable.php',
-        'trust_cache' => '2026-09-09-172135_CreateTrustCacheTable.php',
+        'block_placements' => '2026-09-17-105101_CreateBlockPlacementsTable.php',
+        'settings' => '2026-09-17-105102_CreateSettingsTable.php',
+        'themes' => '2026-09-17-105103_CreateThemesTable.php',
+        'theme_options' => '2026-09-17-105104_CreateThemeOptionsTable.php',
+        'navigation' => '2026-09-17-105105_CreateNavigationTable.php',
+        'mail_logs' => '2026-09-17-105106_CreateMailLogsTable.php',
+        'plugin_state' => '2026-09-17-105107_CreatePluginStateTable.php',
+        'trust_cache' => '2026-09-17-105108_CreateTrustCacheTable.php',
     ];
 
     /**
@@ -122,7 +122,7 @@ final class MigrationsSeedTest extends TestCase
             self::assertNotEmpty($entry['rows']);
             $tables[] = $entry['table'];
         }
-        foreach (['auth_permissions', 'navigation', 'settings', 'plugin_state'] as $table) {
+        foreach (['auth_permissions', 'navigation', 'settings', 'themes', 'plugin_state'] as $table) {
             self::assertContains($table, $tables, $table);
         }
     }
@@ -154,6 +154,14 @@ final class MigrationsSeedTest extends TestCase
             }
         }
         self::assertContains('CMS.siteName', array_column($byTable['settings'], 'key'));
+
+        foreach ($byTable['themes'] as $row) {
+            foreach (['name', 'folder', 'is_active'] as $key) {
+                self::assertArrayHasKey($key, $row, "themes.{$key}");
+            }
+        }
+        self::assertContains('default', array_column($byTable['themes'], 'folder'));
+        self::assertContains(1, array_column($byTable['themes'], 'is_active'), 'the default theme ships active');
 
         foreach ($byTable['plugin_state'] as $row) {
             foreach (['plugin_id', 'enabled', 'priority'] as $key) {

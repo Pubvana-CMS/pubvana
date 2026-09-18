@@ -37,7 +37,7 @@ plugins/Profiles/
 │   ├── ProfilesAdminController.php    Own profile page, admin edit of any user (profile.edit.any), update
 │   └── ProfilesPublicController.php   Public show/edit/update (owner-only edit), user lookup via FlightShield
 ├── Database/
-│   ├── Migrations/2026-08-26-100001_CreateProfilesTable.php
+│   ├── Migrations/2026-09-17-105234_CreateProfilesTable.php
 │   │                                  profiles (user_id unique, FK to users with CASCADE delete)
 │   └── Seeds/Seed.php                 Seed: profile.edit, profile.edit.any
 ├── Models/Profile.php                 profiles table; findOrCreate, whitelisted updateFromArray
@@ -103,7 +103,7 @@ Coverage: the suite covers the model, both controllers (URLs, website validation
 
 | Goal | Where to look |
 |------|---------------|
-| Add a profile field | Migration (`2026-08-26-100001_CreateProfilesTable.php`) + `updateFromArray()` whitelist + admin view + theme template |
+| Add a profile field | Migration (`2026-09-17-105234_CreateProfilesTable.php`) + `updateFromArray()` whitelist + admin view + theme template |
 | Change the public route prefix | `Config/Config.php` (`routePrepend`) |
 | Gate other-user editing differently | `Controllers/ProfilesAdminController.php:28-61` (`profile.edit.any` checks) |
 | Change public profile markup | Active theme `profile`/`profile_edit` templates and `assets/css/profiles.css` |

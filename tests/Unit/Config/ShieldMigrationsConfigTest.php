@@ -134,7 +134,7 @@ final class ShieldMigrationsConfigTest extends TestCase
             self::assertSame('utf8mb4', $config['charset']);
             self::assertSame(['app/Database/Migrations'], $config['migrations']['paths']);
             self::assertSame([], $config['migrations']['seeds']['paths']);
-            self::assertSame(['pubvana/pubvana' => '3.0.0'], $config['migrations']['versions']);
+            self::assertSame(['pubvana/pubvana' => '3.0.0-beta.1'], $config['migrations']['versions']);
             self::assertSame(
                 ['app/Database/Migrations' => 'pubvana/pubvana'],
                 $config['migrations']['module_names']

@@ -37,7 +37,7 @@ ActivityLog/
     ActivityLog.php                   # activity_logs queries (Models/ActivityLog.php:56)
   Database/
     Migrations/
-      2026-09-02-000001_CreateActivityLogsTable.php  # activity_logs table (Database/Migrations/2026-09-02-000001_CreateActivityLogsTable.php:13)
+      2026-09-17-104829_CreateActivityLogsTable.php  # activity_logs table (Database/Migrations/2026-09-17-104829_CreateActivityLogsTable.php:13)
     Seeds/Seed.php                    # activity_log.view permission (Database/Seeds/Seed.php:9)
   Views/
     admin/index.php                   # Filter form and table (Views/admin/index.php:1)
@@ -123,7 +123,7 @@ Manual check: visit `/admin/activity-log`, confirm filters, pages, and empty sta
 | Change dashboard card | `Plugin.php:48` |
 | Change retention default | `Config/Config.php:8` |
 | Change permission | Seed in `Database/Seeds/Seed.php:9`, check in `Plugin.php:40` |
-| Change table shape | Migration in `Database/Migrations/2026-09-02-000001_CreateActivityLogsTable.php:13` |
+| Change table shape | Migration in `Database/Migrations/2026-09-17-104829_CreateActivityLogsTable.php:13` |
 
 ## PR / contribution checklist
 

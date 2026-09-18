@@ -19,7 +19,7 @@ final class MarketplaceMigrationsSeedTest extends TestCase
 {
     /** @var array<string, string> */
     private const FILES = [
-        'create' => '2026-09-06-000001_CreateMarketplaceInstallsTable.php',
+        'create' => '2026-09-17-104830_CreateMarketplaceInstallsTable.php',
     ];
 
     public static function setUpBeforeClass(): void

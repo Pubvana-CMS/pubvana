@@ -359,7 +359,7 @@ final class ChecksTest extends TestCase
 
     public function testPluginMigrationsReturnsAShapedResult(): void
     {
-        $result = (new PluginMigrationsCheck(Sqlite::recreate(), []))->run();
+        $result = (new PluginMigrationsCheck([]))->run();
 
         self::assertSame('plugin-migrations', $result->id);
         self::assertContains($result->status, [CheckResult::PASS, CheckResult::WARNING, CheckResult::CRITICAL]);

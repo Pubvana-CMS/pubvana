@@ -182,7 +182,7 @@ final class Sqlite
 
         /*
          * Comments plugin tables. Column shapes mirror
-         * plugins/Comments/Database/Migrations/2026-08-26-100002_CreateCommentsTable.php.
+         * plugins/Comments/Database/Migrations/2026-09-17-105228_CreateCommentsTable.php.
          */
         $pdo->exec(
             "CREATE TABLE comments (
@@ -204,7 +204,9 @@ final class Sqlite
 
         /*
          * Forms plugin tables. Column shapes mirror
-         * plugins/Forms/Database/Migrations/2026-08-29-1000{01,02,03}_*.php.
+         * plugins/Forms/Database/Migrations/2026-09-17-105230_CreateFormsTable.php,
+         * 2026-09-17-105231_CreateFormFieldsTable.php, and
+         * 2026-09-17-105232_CreateFormSubmissionsTable.php.
          */
         $pdo->exec(
             'CREATE TABLE forms (
@@ -441,7 +443,7 @@ final class Sqlite
 
         /*
          * Trust client cache. Column shapes mirror
-         * app/Database/Migrations/2026-09-09-172135_CreateTrustCacheTable.php.
+         * app/Database/Migrations/2026-09-17-105108_CreateTrustCacheTable.php.
          */
         $pdo->exec(
             "CREATE TABLE trust_cache (

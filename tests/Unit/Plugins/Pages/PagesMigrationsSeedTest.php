@@ -19,8 +19,8 @@ final class PagesMigrationsSeedTest extends TestCase
 {
     /** @var array<string, string> */
     private const FILES = [
-        'pages' => '2026-08-22-000002_CreatePagesTable.php',
-        'pages_revisions' => '2026-08-29-000001_CreatePagesRevisionsTable.php',
+        'pages' => '2026-09-17-104827_CreatePagesTable.php',
+        'pages_revisions' => '2026-09-17-104828_CreatePagesRevisionsTable.php',
     ];
 
     public static function setUpBeforeClass(): void

@@ -35,7 +35,7 @@ plugins/SocialLinks/
 ├── Config/Config.php                     default_target, link_rel, fallback_label, fallback_icon, block_title
 ├── Controllers/SocialLinksAdminController.php  List, store, toggle, delete, reorder
 ├── Database/
-│   ├── Migrations/2026-09-01-100001_CreateSocialLinksTable.php  social_links (is_active indexed)
+│   ├── Migrations/2026-09-17-105238_CreateSocialLinksTable.php  social_links (is_active indexed)
 │   └── Seeds/Seed.php                    Seed: social.manage permission
 ├── Models/SocialLink.php                 social_links table; allOrdered, activeOrdered, findById
 ├── Services/SocialLinksService.php       $app->socialLinks(): platform catalog, CRUD, ordering, block provider

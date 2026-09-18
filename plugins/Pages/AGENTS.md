@@ -21,7 +21,7 @@ Pages is the static pages module of Pubvana: About, Contact, Terms, and similar 
 3. **Cap the revision table on every write.** Call `pruneRevisions()` after creating a revision; it prunes oldest-first to `max_revisions` (`Services/PagesService.php:156-160`). Reason: the table is unbounded otherwise, and restores never bump the counter.
 4. **Public routes only ever serve published, non-deleted pages.** `findBySlug()` requires `status = published` and `deleted_at IS NULL` (`Models/Page.php:70-78`). Reason: a leaked draft or archived page breaks the admin's draft workflow.
 5. **Delete is always a soft delete.** `deletePage()` only stamps `deleted_at` (`Services/PagesService.php:113-121`). Reason: early boot is not destructive; the schema plus indexes on `status` and `deleted_at` support later cleanup.
-6. **Never branch on a concrete migration style.** The plugin includes both a `change()` migration and an `up()`/`down()` migration (`Database/Migrations/2026-08-22-000002_CreatePagesTable.php:18`, `Database/Migrations/2026-08-29-000001_CreatePagesRevisionsTable.php:16`). Keep the style each file already uses.
+6. **Never branch on a concrete migration style.** The plugin includes both a `change()` migration and an `up()`/`down()` migration (`Database/Migrations/2026-09-17-104827_CreatePagesTable.php:18`, `Database/Migrations/2026-09-17-104828_CreatePagesRevisionsTable.php:16`). Keep the style each file already uses.
 7. **Own the excerpt logic only as finding content.** `searchContent()` supplies normalized matches; ranking and scoring belong to the Search plugin (`Models/Page.php:174-218`). Use `strip_tags` + `html_entity_decode` and `mb_*` string functions so excerpts never leak markup and never split multi-byte characters.
 8. **Keep the comments host key `page`.** `commentHostItems()` emits `type => 'page'` (`Services/PagesService.php:203-219`), matching the `commentable` payload the public view renders (`Controllers/PagesPublicController.php:58`). Reason: the Comments plugin keys threads by this type.
 9. **Keep the Jodit dependency optional.** Create/edit views guard on `!empty($joditHtml)` because `joditInit()` comes from the Media plugin (`Views/admin/edit.php:89-90`). Reason: Pages must stay usable if Media is disabled.
@@ -37,8 +37,8 @@ plugins/Pages/
 │   └── PagesPublicController.php      Public render (/page, /page/@slug) with AI disclosure
 ├── Database/
 │   ├── Migrations/
-│   │   ├── 2026-08-22-000002_CreatePagesTable.php       pages (slug unique; indexed status, deleted_at)
-│   │   └── 2026-08-29-000001_CreatePagesRevisionsTable.php  pages_revisions (indexed page_id)
+│   │   ├── 2026-09-17-104827_CreatePagesTable.php       pages (slug unique; indexed status, deleted_at)
+│   │   └── 2026-09-17-104828_CreatePagesRevisionsTable.php  pages_revisions (indexed page_id)
 │   └── Seeds/Seed.php                 Seed: pages.manage permission + default "Not WordPress" page
 ├── Models/
 │   ├── Page.php                       pages table; finders, pagination, slug gen, soft delete, search

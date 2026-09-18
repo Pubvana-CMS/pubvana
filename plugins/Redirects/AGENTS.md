@@ -38,8 +38,8 @@ plugins/Redirects/
 │   └── RedirectLinksAdminController.php  404 manager: list statuses, ignore/unignore, delete
 ├── Database/
 │   ├── Migrations/
-│   │   ├── 2026-08-28-100001_CreateRedirectsTable.php       redirects (source_path unique, enabled indexed)
-│   │   └── 2026-08-28-100002_CreateRedirectLinksTable.php   redirects_links (source_path unique; ignored, resolved_redirect_id indexed)
+│   │   ├── 2026-09-17-105235_CreateRedirectsTable.php       redirects (source_path unique, enabled indexed)
+│   │   └── 2026-09-17-105236_CreateRedirectLinksTable.php   redirects_links (source_path unique; ignored, resolved_redirect_id indexed)
 │   └── Seeds/Seed.php                    Seed: 116 WordPress attack-vector redirects to /page/not-wordpress
 ├── Models/
 │   ├── Redirect.php                      redirects table; ordered list, by-id, active-by-source-path
@@ -119,7 +119,7 @@ Coverage: the suite covers both services, the admin controllers, target URL safe
 
 | Goal | Where to look |
 |------|---------------|
-| Add a redirect field | Migration `2026-08-28-100001` + `preparePayload()` + views |
+| Add a redirect field | Migration `2026-09-17-105235` + `preparePayload()` + views |
 | Change skip prefixes | `Config/Config.php` (both `skip_prefixes` sets) |
 | Add a target-suggestion group | `getTargetSuggestions()` (`Services/RedirectsService.php:139-174`) |
 | Change 404 status filtering | `RedirectLink::allByStatus()` (`Models/RedirectLink.php:30-45`) and the `?status=` switch in `RedirectLinksAdminController::index()` |

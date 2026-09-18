@@ -57,7 +57,7 @@ Updates/
 └── AGENTS.md                             This file
 ```
 
-Repo-level companions owned by this feature: root `releases.json` (machine feed, per-entry `download_url`), `CHANGELOG.md` (human log), `.github/workflows/release.yml` (tag/semver guard, CHANGELOG+releases.json sync guards, builds `release.zip` with vendor/ included), `.gitignore` entry for `/writable/updates/*`.
+Repo-level companions owned by this feature: root `releases.json` (machine feed, per-entry `download_url`), `CHANGELOG.md` (human log), `.github/workflows/release.yml` (tag/semver requirement, releases.json sync requirement, builds `release.zip` with vendor/ included), `.gitignore` entry for `/writable/updates/*`.
 
 ## Core architecture
 
@@ -121,7 +121,7 @@ Scratch end-to-end (done once for v1; repeat when changing the apply flow): copy
 | Change cron task behavior | `UpdateService::runAutoUpdateChain()` + the registration in `Plugin.php` |
 | Tune safe-target behavior | `UpdateService::pickTarget()` (pure static, unit-tested) |
 | Protect another path from updates | `protected_paths` in `Config/Config.php` |
-| Change the feed | Repo root `releases.json`; keep `CHANGELOG.md` in sync (workflow guards it) |
+| Change the feed | Repo root `releases.json`; the workflow requires an entry with `download_url` for each tag. `CHANGELOG.md` stays a human log, no workflow requirement |
 | Add a CLI flag | The matching `commands/` class; avoid `--version` (runway registers it globally) |
 | Change admin UI | `Views/admin/index.php`; keep polling JS inline |
 
