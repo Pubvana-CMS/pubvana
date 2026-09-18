@@ -11,8 +11,8 @@
  *   1. Load .env once per process
  *   2. Apply those values over the app's existing config
  *   3. Decide 'flight.force_https':
- *        FORCE_HTTPS wins if set; otherwise production => true,
- *        development => false.
+ *        FORCE_HTTPS only when explicitly set; otherwise off, so an install
+ *        can run over http or https regardless of APP_ENV.
  *
  * Idempotent: safe to include from both boot paths in one process.
  * Every operation is either guarded or a pure re-assignment.
@@ -97,13 +97,13 @@ $resolveEnv = static function (string $key): ?string {
 // null means "fold into the database array", arrays are nested paths.
 $envMap = [
     'APP_ENV'     => 'environment',
-    // APP_DEBUG / FORCE_HTTPS are parsed strictly below rather than in this
-    // map, so raw strings never end up as app config values.
+    // FORCE_HTTPS is parsed strictly below rather than in this map, so raw
+    // strings never end up as app config values.
     'SITE_NAME'   => 'CMS.siteName',
     'ADMIN_EMAIL' => 'CMS.adminEmail',
     'SITE_URL'    => 'CMS.siteUrl',
-    // APP_DEBUG / FORCE_HTTPS are parsed strictly below rather than in this
-    // map, so raw strings never end up as app config values.
+    // FORCE_HTTPS is parsed strictly below rather than in this map, so raw
+    // strings never end up as app config values.
     'DB_HOST'     => null,
     'DB_PORT'     => null,
     'DB_NAME'     => null,
@@ -159,21 +159,15 @@ foreach ($envMap as $envKey => $appKey) {
     }
 }
 
-// Normalize booleans so consumers never see the string "false".
-// Junk values are ignored (and logged) rather than coerced. A typoed
-// APP_DEBUG shouldn't flip anything, and a typoed FORCE_HTTPS must
-// NOT silently disable HTTPS in production.
-$debug = $toBool((string) $resolveEnv('APP_DEBUG'));
-if ($debug === null) {
-    if ($resolveEnv('APP_DEBUG') !== null) {
-        error_log('env-overrides: ignoring invalid APP_DEBUG value "' . $resolveEnv('APP_DEBUG') . '"');
-    }
-} else {
-    $app->set('flight.debug', $debug);
-}
+// Normalize the final bool so consumers never see the string "false".
+// A typoed FORCE_HTTPS must NOT silently enable forcing.
+// Debug follows the environment: off in production, on in development.
+// APP_DEBUG is deliberately not read; APP_ENV alone drives behavior.
+$app->set('flight.debug', ($app->get('environment') ?? 'production') === 'development');
 
-// Derive the HTTPS policy: explicit override beats environment default.
-// Shield requires this key to exist (throws on null), so it is ALWAYS set.
+// HTTPS policy: only an explicit FORCE_HTTPS enables forcing. The default is
+// off so the site runs over http or https regardless of APP_ENV. Shield
+// requires this key to exist (throws on null), so it is ALWAYS set.
 $forceHttpsRaw = $resolveEnv('FORCE_HTTPS');
 $forceHttps    = $forceHttpsRaw === null ? null : $toBool($forceHttpsRaw);
 if ($forceHttpsRaw !== null && $forceHttps === null) {
@@ -181,5 +175,5 @@ if ($forceHttpsRaw !== null && $forceHttps === null) {
 }
 $app->set(
     'flight.force_https',
-    $forceHttps ?? (($app->get('environment') ?? 'production') === 'production')
+    $forceHttps ?? false
 );

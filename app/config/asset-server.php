@@ -23,8 +23,9 @@ if (!defined('PROJECT_ROOT')) {
 
 require(PROJECT_ROOT . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php');
 
-// HTTPS policy, same rule as app/config/env-overrides.php: an explicit
-// FORCE_HTTPS wins; otherwise production forces, development does not.
+// HTTPS policy, same rule as app/config/env-overrides.php: only an explicit
+// FORCE_HTTPS enables the upgrade. Default off, so http or https both work
+// regardless of APP_ENV.
 $assetEnv = [];
 $envFile = PROJECT_ROOT . '/.env';
 if (is_file($envFile)) {
@@ -35,7 +36,7 @@ $forceHttps = $assetEnv['FORCE_HTTPS'] ?? null;
 if ($forceHttps !== null) {
     $forceHttps = in_array(strtolower((string) $forceHttps), ['1', 'true', 'yes', 'on'], true);
 } else {
-    $forceHttps = (($assetEnv['APP_ENV'] ?? 'production') !== 'development');
+    $forceHttps = false;
 }
 
 $isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')

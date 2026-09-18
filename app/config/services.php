@@ -80,11 +80,19 @@ require(__DIR__ . $ds . 'env-overrides.php');
 |                                    handler logs + renders JSON/HTML below
 */
 
-// All Tracy logging, regardless of environment, lands in writable/logs so it
-// stays beside Flight's error-handler logs below.
-Debugger::$logDirectory = PROJECT_ROOT . $ds . 'writable' . $ds . 'logs';
+// Tracy is a dev-only dependency (require-dev): release builds install with
+// --no-dev and carry no Tracy classes. Every reference is guarded so a
+// production build boots without it, and a development build lumped with a
+// no-dev install degrades to Flight's own handlers instead of fataling.
+$hasTracy = class_exists(\Tracy\Debugger::class);
 
-if ($app->get('environment') === 'development') {
+// All Tracy logging lands in writable/logs so it stays beside Flight's
+// error-handler logs below. Only reachable when Tracy is actually installed.
+if ($hasTracy) {
+    Debugger::$logDirectory = PROJECT_ROOT . $ds . 'writable' . $ds . 'logs';
+}
+
+if ($app->get('environment') === 'development' && $hasTracy) {
     // Flight must NOT register its own handlers or they overwrite Tracy's
     // (start() registers later than this file runs).
     $app->set('flight.handle_errors', false);
@@ -122,7 +130,12 @@ if ($app->get('environment') === 'development') {
 $db = $app->get('database');
 $dsn = "{$db['driver']}:host={$db['host']};port={$db['port']};dbname={$db['dbname']};charset={$db['charset']}";
 
-if ($app->get('environment') === 'development' && Debugger::$showBar === true) {
+if (
+    $app->get('environment') === 'development'
+    && $hasTracy
+    && class_exists(\flight\debug\database\PdoQueryCapture::class)
+    && Debugger::$showBar === true
+) {
     $pdo = new PdoQueryCapture($dsn, $db['user'], $db['password']);
 } else {
     $pdo = new SimplePdo($dsn, $db['user'], $db['password']);
