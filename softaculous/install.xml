@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<softinstall xmlns="http://www.softaculous.com">
+	<settings>
+		<group>
+			<name>{{site_settings}}</name>
+			<fields>
+				<field>
+					<variable>site_name</variable>
+					<type>text</type>
+					<name>{{site_name}}</name>
+					<exp>{{site_name_exp}}</exp>
+					<value>Pubvana</value>
+					<onerror>Please enter a site name.</onerror>
+				</field>
+			</fields>
+		</group>
+		<group>
+			<name>{{admin_account}}</name>
+			<fields>
+				<field>
+					<variable>admin_username</variable>
+					<type>text</type>
+					<name>{{admin_username}}</name>
+					<exp>{{admin_username_exp}}</exp>
+					<onerror>Admin username cannot be empty.</onerror>
+				</field>
+				<field>
+					<variable>admin_pass</variable>
+					<type>password</type>
+					<name>{{admin_pass}}</name>
+					<exp>{{admin_pass_exp}}</exp>
+					<stage>install</stage>
+					<onerror>Password must be at least 8 characters.</onerror>
+				</field>
+				<field>
+					<variable>admin_email</variable>
+					<type>text</type>
+					<name>{{admin_email}}</name>
+					<exp>{{admin_email_exp}}</exp>
+					<softmail>true</softmail>
+					<onerror>Please enter a valid email address.</onerror>
+				</field>
+			</fields>
+		</group>
+	</settings>
+	<db>mysql</db>
+	<cron>
+		<cl>
+			<path>/usr/local/bin/php -q [[softpath]]/cron 1m</path>
+			<min>*/1</min>
+			<hour>*</hour>
+			<day>*</day>
+			<month>*</month>
+			<weakday>*</weakday>
+		</cl>
+		<cl>
+			<path>/usr/local/bin/php -q [[softpath]]/cron 4h</path>
+			<min>0</min>
+			<hour>*/4</hour>
+			<day>*</day>
+			<month>*</month>
+			<weakday>*</weakday>
+		</cl>
+		<cl>
+			<path>/usr/local/bin/php -q [[softpath]]/cron 24h</path>
+			<min>0</min>
+			<hour>0</hour>
+			<day>*</day>
+			<month>*</month>
+			<weakday>*</weakday>
+		</cl>
+	</cron>
+</softinstall>

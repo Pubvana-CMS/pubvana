@@ -1,0 +1,28 @@
+<?php
+
+$files = [
+    '.env',
+    '.env.example',
+    '.htaccess',
+    '.runway-config.json',
+    'CHANGELOG.md',
+    'CODE_OF_CONDUCT.md',
+    'CONTRIBUTING.md',
+    'HARDENING.md',
+    'INSTALL.md',
+    'LICENSE',
+    'README.md',
+    'SECURITY.md',
+    'app',
+    'composer.json',
+    'composer.lock',
+    'cron',
+    'plugins',
+    'pubvana.json',
+    'public',
+    'releases.json',
+    'runway',
+    'themes',
+    'vendor',
+    'writable',
+];

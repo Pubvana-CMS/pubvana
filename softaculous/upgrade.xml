@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<softupgrade xmlns="http://www.softaculous.com">
+	<settings>
+		<group>
+			<name>{{upgrade_note}}</name>
+			<fields>
+				<field>
+					<variable>upgrade_note</variable>
+					<type>text</type>
+					<name>{{upgrade_note}}</name>
+					<exp>{{upgrade_note_exp}}</exp>
+					<value1>Your database, settings and uploaded files are kept during the upgrade.</value1>
+				</field>
+			</fields>
+		</group>
+	</settings>
+	<files>
+		<exclude>.env</exclude>
+		<exclude>.runway-config.json</exclude>
+		<exclude>writable</exclude>
+	</files>
+</softupgrade>

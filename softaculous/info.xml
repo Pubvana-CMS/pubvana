@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soft xmlns="http://www.softaculous.com">
+	<overview>{{overview}}</overview>
+	<features>{{features}}</features>
+	<demo>{{demo}}</demo>
+	<ratings>{{ratings}}</ratings>
+	<space>7468561</space>
+	<support>{{support}}</support>
+	<version>3.0.0-beta.1</version>
+	<softversion>4.0.6</softversion>
+	<languages>
+		<language>
+			<name>english</name>
+			<overview><![CDATA[Pubvana CMS is a modern open source PHP content management system. It ships with a clean, responsive default theme, flat-file friendly plugin and theme management, a widget-free block system, built in security hardening and a one click update path through the Pubvana release service.]]></overview>
+			<features><![CDATA[<ul>
+<li>Open source, MIT licensed PHP 8.2 CMS</li>
+<li>Modern block based content regions via the extension registry</li>
+<li>Trust Plugin: plugin, theme and release safety from the Pubvana trust service, shown as admin trust badges</li>
+<li>One click updates through a signed releases feed with checksum verification</li>
+<li>Built in cron scheduler for plugin tasks and maintenance</li>
+<li>Stand alone JSON API and Banjo authentication</li>
+<li>Flat-file and Composer plugin support over the adext extension registry</li>
+<li>Hardenable production defaults, from CSP to session encryption keys</li>
+<li>CLI tooling (Runway) for migrations, users, groups and maintenance</li>
+</ul>]]></features>
+			<demo>https://github.com/Pubvana-CMS/pubvana</demo>
+			<ratings>http://www.softaculous.com/ratings.php?soft=<!--soft--></ratings>
+			<support>https://github.com/Pubvana-CMS/pubvana/issues</support>
+			<site_settings>Site Settings</site_settings>
+			<upgrade_note>Upgrade</upgrade_note>
+			<upgrade_note_exp>Your database, settings and uploaded files are kept during the upgrade.</upgrade_note_exp>
+			<admin_account>Administrator Account</admin_account>
+			<site_name>Site Name</site_name>
+			<site_name_exp>The name used for your site across the application.</site_name_exp>
+			<admin_username>Admin Username</admin_username>
+			<admin_username_exp>Username to log in to the admin area (max 30 characters).</admin_username_exp>
+			<admin_pass>Admin Password</admin_pass>
+			<admin_pass_exp>Password for the admin account (min 8 characters).</admin_pass_exp>
+			<admin_email>Admin E-mail</admin_email>
+			<admin_email_exp>Email address for the admin account, used for password resets.</admin_email_exp>
+		</language>
+	</languages>
+</soft>
