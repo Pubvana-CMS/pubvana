@@ -147,6 +147,63 @@ abstract class PublicController
     }
 
     /**
+     * Render a full themed page for an error status.
+     *
+     * Assembly mirrors render(): full global layout data plus an
+     * errors/error content template fetched through Vision and wrapped in
+     * the active theme's layout. ErrorController calls this from the
+     * before('notFound')/before('halt') 404 hooks; the header title and
+     * body headline both fall back to a friendly status name.
+     *
+     * @param int    $status  HTTP status code (e.g. 404)
+     * @param string $message Display message; empty uses the status name
+     */
+    protected function renderErrorPage(int $status, string $message = ''): void
+    {
+        $display = $message !== '' ? $message : $this->friendlyMessage($status);
+
+        $global = $this->buildGlobalData();
+        $viewData = array_merge($global, [
+            'status'  => $status,
+            'message' => $display,
+        ]);
+        $viewData['sidebar_kind'] = $this->sidebarKind($viewData);
+        $viewData['header']['title'] = $display . ' - ' . $this->getSiteName();
+        $viewData['header'] = $this->buildHeadHtml($viewData['header']);
+
+        $view = $this->app->view();
+
+        if (!$view instanceof \Pubvana\Services\PluginView) {
+            // Non-plugin view service: legacy native render path.
+            $this->app->render('errors/error', $viewData);
+            return;
+        }
+
+        // Sync the View basePath with the active theme, exactly as render()
+        // does, so includes and region blocks resolve against the theme.
+        try {
+            $activeTheme = $this->app->themes()->getActive();
+            if ($activeTheme !== null) {
+                $activeThemePath = PROJECT_ROOT . DIRECTORY_SEPARATOR . 'themes'
+                    . DIRECTORY_SEPARATOR . $activeTheme->folder
+                    . DIRECTORY_SEPARATOR . 'Views';
+                if ($view->getThemePath() !== rtrim($activeThemePath, DIRECTORY_SEPARATOR)) {
+                    $view->setThemePath($activeThemePath);
+                }
+            }
+        } catch (\Throwable) {
+            // Themes table missing on fresh installs; boot already
+            // placed a fallback theme path.
+        }
+
+        $templateFile = $this->resolveErrorTemplate();
+        $content = $view->fetch($templateFile, $viewData);
+
+        $layoutFile = $this->resolveLayout($view);
+        echo $view->fetch($layoutFile, array_merge($viewData, ['content' => $content]));
+    }
+
+    /**
      * Resolve the active theme's layout template. The layout lives at the
      * theme root (themes/{active}/Views/layout.tpl) and is the page shell.
      *
@@ -220,6 +277,36 @@ abstract class PublicController
 
         // Fall back to the theme candidate so the engine reports a
         // meaningful missing-template error against the theme.
+        return $themeCandidate;
+    }
+
+    /**
+     * Resolve the error content template.
+     *
+     * Error pages are theme-owned, so the active theme's errors/error.tpl
+     * wins and app/Views/errors/error.tpl is the fallback. That app copy
+     * also feeds the production error handler's render('errors/error')
+     * call, so it must exist even when every theme ships its own.
+     *
+     * @return string Resolved absolute path
+     */
+    protected function resolveErrorTemplate(): string
+    {
+        $themeName = $this->getActiveThemeName();
+        $themeCandidate = PROJECT_ROOT . DIRECTORY_SEPARATOR . 'themes'
+            . DIRECTORY_SEPARATOR . $themeName . DIRECTORY_SEPARATOR . 'Views'
+            . DIRECTORY_SEPARATOR . 'errors' . DIRECTORY_SEPARATOR . 'error.tpl';
+        if (is_file($themeCandidate)) {
+            return $themeCandidate;
+        }
+
+        $appCandidate = PROJECT_ROOT . DIRECTORY_SEPARATOR . 'app'
+            . DIRECTORY_SEPARATOR . 'Views' . DIRECTORY_SEPARATOR . 'errors'
+            . DIRECTORY_SEPARATOR . 'error.tpl';
+        if (is_file($appCandidate)) {
+            return $appCandidate;
+        }
+
         return $themeCandidate;
     }
 
@@ -546,6 +633,25 @@ abstract class PublicController
         return $this->app->settings()->get('CMS.siteName')
             ?? $this->app->get('CMS.siteName')
             ?? 'Pubvana';
+    }
+
+    /**
+     * Human-facing headline for an HTTP status code.
+     *
+     * @return string e.g. 'Page not found'
+     */
+    protected function friendlyMessage(int $status): string
+    {
+        return match ($status) {
+            401 => 'Unauthorized',
+            403 => 'Forbidden',
+            404 => 'Page not found',
+            405 => 'Method not allowed',
+            410 => 'Gone',
+            500 => 'Server error',
+            503 => 'Service unavailable',
+            default => 'Request failed',
+        };
     }
 
     /**

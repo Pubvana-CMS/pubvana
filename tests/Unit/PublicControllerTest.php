@@ -526,6 +526,41 @@ final class PublicControllerTest extends TestCase
         self::assertFileExists(PROJECT_ROOT . '/themes/default/Views/layout.tpl');
     }
 
+    public function testResolveErrorTemplatePrefersThemeThenAppFallback(): void
+    {
+        $app = $this->engine(['CMS.siteName' => 'Pubvana']);
+        $controller = new class($app) extends PublicController {};
+
+        $this->makeFixtureTheme();
+        $themeError = PROJECT_ROOT . '/themes/' . self::FIXTURE_THEME . '/Views/errors/error.tpl';
+        mkdir(dirname($themeError), 0777, true);
+        file_put_contents($themeError, 'theme');
+
+        self::assertSame($themeError, $this->invoke($controller, 'resolveErrorTemplate'));
+
+        // No theme file: the shipped app/Views copy answers.
+        unlink($themeError);
+        self::assertSame(
+            PROJECT_ROOT . '/app/Views/errors/error.tpl',
+            $this->invoke($controller, 'resolveErrorTemplate')
+        );
+        self::assertFileExists(PROJECT_ROOT . '/app/Views/errors/error.tpl');
+    }
+
+    public function testFriendlyMessageDefaults(): void
+    {
+        $app = $this->engine(['CMS.siteName' => 'Pubvana']);
+        $controller = new class($app) extends PublicController {};
+
+        self::assertSame('Unauthorized', $this->invoke($controller, 'friendlyMessage', [401]));
+        self::assertSame('Forbidden', $this->invoke($controller, 'friendlyMessage', [403]));
+        self::assertSame('Page not found', $this->invoke($controller, 'friendlyMessage', [404]));
+        self::assertSame('Method not allowed', $this->invoke($controller, 'friendlyMessage', [405]));
+        self::assertSame('Server error', $this->invoke($controller, 'friendlyMessage', [500]));
+        self::assertSame('Service unavailable', $this->invoke($controller, 'friendlyMessage', [503]));
+        self::assertSame('Request failed', $this->invoke($controller, 'friendlyMessage', [999]));
+    }
+
     // -----------------------------------------------------------------
     // The full render pipeline
     // -----------------------------------------------------------------
@@ -575,6 +610,34 @@ final class PublicControllerTest extends TestCase
         self::assertStringContainsString('Home', $output, 'provided breadcrumbs land in the layout');
         self::assertStringContainsString('Deep', $output, 'provided crumbs flow unfiltered');
         self::assertStringContainsString('RENDERED(raw content)', $output, 'content.render transformers ran centrally');
+    }
+
+    public function testRenderErrorPageAssemblesLayoutThroughVision(): void
+    {
+        $app = $this->engine(['CMS.siteName' => 'FromDb']);
+        $view = $app->view();
+        self::assertInstanceOf(PluginView::class, $view);
+
+        $this->makeFixtureTheme();
+        $view->setThemePath(PROJECT_ROOT . '/themes/' . self::FIXTURE_THEME . '/Views');
+        mkdir(PROJECT_ROOT . '/themes/' . self::FIXTURE_THEME . '/Views/errors', 0777, true);
+
+        file_put_contents(
+            PROJECT_ROOT . '/themes/' . self::FIXTURE_THEME . '/Views/errors/error.tpl',
+            'ERRBODY({{ status }}|{{ message }})'
+        );
+        file_put_contents(
+            PROJECT_ROOT . '/themes/' . self::FIXTURE_THEME . '/Views/layout.tpl',
+            'ERRORLAYOUT({{ content }})|{{ site.name }}'
+        );
+
+        // No message: the friendly status name fills the body.
+        $output = $this->publishErrorPage($app, 404);
+        self::assertStringContainsString('ERRORLAYOUT(ERRBODY(404|Page not found))|FromDb', $output);
+
+        // A halt message overrides the friendly headline in body and title.
+        $output = $this->publishErrorPage($app, 404, 'Post not found');
+        self::assertStringContainsString('ERRORLAYOUT(ERRBODY(404|Post not found))|FromDb', $output);
     }
 
     public function testRenderUsesSeoContextWhenThePluginIsEnabled(): void
@@ -686,6 +749,30 @@ final class PublicControllerTest extends TestCase
         };
 
         return $controller->publish($template, $data);
+    }
+
+    /**
+     * Run the protected renderErrorPage() through an anonymous concrete
+     * subclass, capturing the echoed output (throw-safe).
+     */
+    private function publishErrorPage(Engine $app, int $status, string $message = ''): string
+    {
+        $controller = new class($app, 'pubvana.test') extends PublicController {
+            public function publishError(int $status, string $message): string
+            {
+                ob_start();
+                try {
+                    $this->renderErrorPage($status, $message);
+
+                    return (string) ob_get_clean();
+                } catch (\Throwable $e) {
+                    ob_end_clean();
+                    throw $e;
+                }
+            }
+        };
+
+        return $controller->publishError($status, $message);
     }
 
     /**

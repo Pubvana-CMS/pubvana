@@ -109,3 +109,24 @@ $app->route('POST /auth/reset-password/process', function () use ($app) {
 $app->route('GET /', function () use ($app) {
     $app->pluginLoader()->dispatchHomepage();
 });
+
+/*
+|--------------------------------------------------------------------------
+| Themed Error Pages
+|--------------------------------------------------------------------------
+| 404s (an unmatched URL, or a halt(404) from a missing post, page, tag,
+| etc.) render inside the active theme's layout for browser requests.
+| Registered after plugins load, so the Redirects plugin's 404 logging
+| hooks run first. Admin, API, JSON, CLI, and AJAX requests keep the
+| framework's plain responses.
+*/
+$app->before('notFound', function () use ($app) {
+    (new \Pubvana\Controllers\Public\ErrorController($app))->showNotFound();
+});
+
+$app->before('halt', function (array &$params) use ($app) {
+    if ((int) ($params[0] ?? 200) !== 404) {
+        return;
+    }
+    (new \Pubvana\Controllers\Public\ErrorController($app))->showHalt((string) ($params[1] ?? ''));
+});
