@@ -183,46 +183,14 @@ class Plugin implements PluginInterface
 
         $adext->register('brokenlinks', 'source', 'pubvana.blog', [
             'label'    => 'Blog Posts',
-            'callable' => function () use ($app): array {
-                $stmt = $app->db()->query(
-                    "SELECT id, title, content FROM posts WHERE status = 'published' AND deleted_at IS NULL"
-                );
-                if ($stmt === false) {
-                    return [];
-                }
-                $items = [];
-                while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
-                    $items[] = [
-                        'type'    => 'post',
-                        'id'      => (int) $row['id'],
-                        'title'   => $row['title'],
-                        'content' => (string) ($row['content'] ?? ''),
-                    ];
-                }
-                return $items;
-            },
+            'callable' => fn() => $app->blog()->brokenLinksItems(),
         ]);
 
         // ─── Navigation Linkable ────────────────────────────────────────
 
         $adext->register('nav.linkable', 'default', 'pubvana.blog', [
             'label'    => 'Blog Posts',
-            'callable' => function() use ($app, $prefix) {
-                $stmt = $app->db()->query(
-                    "SELECT title, slug FROM posts WHERE status = 'published' AND deleted_at IS NULL ORDER BY published_at DESC"
-                );
-                if ($stmt === false) {
-                    return [];
-                }
-                $items = [];
-                while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
-                    $items[] = [
-                        'label' => $row['title'],
-                        'url'   => $prefix . '/' . $row['slug'],
-                    ];
-                }
-                return $items;
-            },
+            'callable' => fn() => $app->blog()->navLinkableItems($prefix),
         ]);
 
         // ─── Admin CSS ──────────────────────────────────────────────────

@@ -749,14 +749,8 @@ class BlogService
      */
     public function commentHostItems(string $urlPrefix): array
     {
-        $posts = (new Post($this->postModel->getDatabaseConnection()))
-            ->eq('status', 'published')
-            ->isNull('deleted_at')
-            ->order('published_at DESC')
-            ->findAll();
-
         $items = [];
-        foreach ($posts as $post) {
+        foreach ($this->postModel->findAllPublished() as $post) {
             $items[] = [
                 'type'           => 'blog',
                 'id'             => (int) $post->id,
@@ -766,6 +760,42 @@ class BlogService
             ];
         }
 
+        return $items;
+    }
+
+    /**
+     * Published posts as navigation manager Quick Add targets.
+     *
+     * @return array<int, array{label: string, url: string}>
+     */
+    public function navLinkableItems(string $urlPrefix): array
+    {
+        $items = [];
+        foreach ($this->postModel->findAllPublished() as $post) {
+            $items[] = [
+                'label' => (string) $post->title,
+                'url'   => $urlPrefix . '/' . (string) $post->slug,
+            ];
+        }
+        return $items;
+    }
+
+    /**
+     * Published posts for the Broken Links scanner.
+     *
+     * @return array<int, array{type: string, id: int, title: string, content: string}>
+     */
+    public function brokenLinksItems(): array
+    {
+        $items = [];
+        foreach ($this->postModel->findAllPublished() as $post) {
+            $items[] = [
+                'type'    => 'post',
+                'id'      => (int) $post->id,
+                'title'   => (string) $post->title,
+                'content' => (string) ($post->content ?? ''),
+            ];
+        }
         return $items;
     }
 

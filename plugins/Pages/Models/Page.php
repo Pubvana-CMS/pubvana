@@ -153,22 +153,26 @@ class Page extends \Pubvana\Models\AbstractModel
     }
 
     /**
-* Find published pages ordered by title.
- *
- * Consumed by link collectors (redirect target suggestions, navigation)
+     * Find published pages ordered by title.
+     *
+     * Consumed by link collectors (redirect target suggestions, navigation)
      * that need a stable, alphabetized list of live pages.
      *
-     * @param int $limit Maximum results
+     * @param int|null $limit Maximum results, null for every published page
      * @return self[] Array of published pages
      */
-    public function findAllPublished(int $limit = 100): array
+    public function findAllPublished(?int $limit = null): array
     {
         $model = new self($this->getDatabaseConnection());
-        return $model->eq('status', 'published')
-                     ->isNull('deleted_at')
-                     ->order('title ASC')
-                     ->limit($limit)
-                     ->findAll();
+        $model->eq('status', 'published')
+              ->isNull('deleted_at')
+              ->order('title ASC');
+
+        if ($limit !== null) {
+            $model->limit($limit);
+        }
+
+        return $model->findAll();
     }
 
     /**
@@ -261,6 +265,10 @@ class Page extends \Pubvana\Models\AbstractModel
     /**
      * Create a new page with auto-generated slug.
      *
+     * Runs on a fresh instance so the returned page is not aliased to the
+     * model that created it. Mutating `$this` would mean a second call
+     * overwrites the page handed back by the first.
+     *
      * @param string $title Page title
      * @param string $content HTML content
      * @param int $createdBy User ID of creator
@@ -270,17 +278,18 @@ class Page extends \Pubvana\Models\AbstractModel
     {
         $now = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
 
-        $this->title = $title;
-        $this->slug = $this->generateSlug($title);
-        $this->content = $content;
-        $this->status = 'draft';
-        $this->created_by = $createdBy;
-        $this->ai_generated = $ai_generated;
-        $this->created_at = $now;
-        $this->updated_at = $now;
-        $this->insert();
+        $page = new self($this->getDatabaseConnection());
+        $page->title = $title;
+        $page->slug = $page->generateSlug($title);
+        $page->content = $content;
+        $page->status = 'draft';
+        $page->created_by = $createdBy;
+        $page->ai_generated = $ai_generated;
+        $page->created_at = $now;
+        $page->updated_at = $now;
+        $page->insert();
 
-        return $this;
+        return $page;
     }
 
     /**

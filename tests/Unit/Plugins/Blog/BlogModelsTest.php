@@ -263,6 +263,28 @@ final class BlogModelsTest extends TestCase
         self::assertCount(1, $revisions->getForPost($postId));
     }
 
+    public function testFindersRunOnFreshInstances(): void
+    {
+        $id = $this->insertPost('Hello', 'hello', 'published');
+
+        $model = new Post($this->pdo);
+        $first = $model->findById($id);
+        $second = $model->findById($id);
+
+        self::assertNotNull($first);
+        self::assertNotNull($second);
+        self::assertNotSame($model, $first);
+        self::assertNotSame($first, $second);
+
+        $bySlug = $model->findBySlug('hello');
+        self::assertNotNull($bySlug);
+        self::assertNotSame($first, $bySlug);
+
+        // Misses stay null on a reused model.
+        self::assertNull($model->findById(999));
+        self::assertNull($model->findBySlug('does-not-exist'));
+    }
+
     private function insertPost(string $title, string $slug, string $status): int
     {
         $now = date('Y-m-d H:i:s');

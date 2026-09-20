@@ -189,6 +189,7 @@ final class PagesServiceTest extends TestCase
     {
         self::assertSame([], $this->service->navLinkableItems());
         self::assertSame([], $this->service->commentHostItems());
+        self::assertSame([], $this->service->brokenLinksItems());
 
         $page = $this->service->createPage(['title' => 'About', 'status' => 'published', 'allow_comments' => '1'], 1);
         $id = (int) $page->id;
@@ -201,6 +202,22 @@ final class PagesServiceTest extends TestCase
         self::assertSame('page', $hosts[0]['type']);
         self::assertSame($id, $hosts[0]['id']);
         self::assertTrue($hosts[0]['allow_comments']);
+    }
+
+    public function testBrokenLinksItemsReturnPublishedPagesWithContent(): void
+    {
+        $page = $this->service->createPage(['title' => 'About', 'content' => '<p>Hello</p>', 'status' => 'published'], 1);
+        $id = (int) $page->id;
+
+        $this->service->createPage(['title' => 'Draft', 'content' => '<p>Nope</p>', 'status' => 'draft'], 1);
+
+        $items = $this->service->brokenLinksItems();
+
+        self::assertSame(['About'], array_column($items, 'title'));
+        self::assertSame('page', $items[0]['type']);
+        self::assertSame($id, $items[0]['id']);
+        self::assertSame('About', $items[0]['title']);
+        self::assertStringContainsString('Hello', $items[0]['content']);
     }
 
     public function testDashboardCardsAndSections(): void

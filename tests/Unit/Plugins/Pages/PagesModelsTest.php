@@ -112,6 +112,37 @@ final class PagesModelsTest extends TestCase
         self::assertContains('P1', $options);
     }
 
+    public function testCreatePageReturnsIndependentInstance(): void
+    {
+        $model = new Page($this->pdo);
+        $first = $model->createPage('First', 'one', 1);
+        $second = $model->createPage('Second', 'two', 1);
+
+        // The creating model must not become the returned page, or the
+        // second call would overwrite the first result.
+        self::assertNotSame($first, $second);
+        self::assertSame('First', $first->title);
+        self::assertSame('one', $first->content);
+        self::assertSame('Second', $second->title);
+        self::assertNotSame((int) $first->id, (int) $second->id);
+    }
+
+    public function testFindAllPublishedLimitIsOptional(): void
+    {
+        for ($i = 1; $i <= 3; $i++) {
+            $p = (new Page($this->pdo))->createPage("P{$i}", 'x', 1);
+            $p->updatePage(['status' => 'published']);
+        }
+        (new Page($this->pdo))->createPage('Draft', 'x', 1);
+
+        $model = new Page($this->pdo);
+
+        // Null limit (the default) returns every published page, so host
+        // integrations are not silently capped at 100.
+        self::assertCount(3, $model->findAllPublished());
+        self::assertCount(2, $model->findAllPublished(2));
+    }
+
     public function testUpdatePageFields(): void
     {
         $page = (new Page($this->pdo))->createPage('T', 'c', 1);

@@ -20,7 +20,6 @@ class PagesService
 {
     private Page $pageModel;
     private PageRevision $revisionModel;
-    private \PDO $pdo;
 
     /** @var array<string, mixed> */
     private array $config;
@@ -32,7 +31,6 @@ class PagesService
     {
         $this->pageModel = new Page($pdo);
         $this->revisionModel = new PageRevision($pdo);
-        $this->pdo = $pdo;
         $this->config = $config;
     }
 
@@ -197,22 +195,36 @@ class PagesService
     }
 
     /**
+     * Published pages as navigation manager Quick Add targets.
+     *
      * @return array<int, array{label: string, url: string}>
      */
     public function navLinkableItems(): array
     {
-        $stmt = $this->pdo->query(
-            "SELECT title, slug FROM pages WHERE status = 'published' AND deleted_at IS NULL ORDER BY title"
-        );
-
         $items = [];
-        if ($stmt === false) {
-            return $items;
-        }
-        while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+        foreach ($this->pageModel->findAllPublished() as $page) {
             $items[] = [
-                'label' => $row['title'],
-                'url'   => $this->routePrefix() . '/' . $row['slug'],
+                'label' => (string) $page->title,
+                'url'   => $this->routePrefix() . '/' . (string) $page->slug,
+            ];
+        }
+        return $items;
+    }
+
+    /**
+     * Published pages for the Broken Links scanner.
+     *
+     * @return array<int, array{type: string, id: int, title: string, content: string}>
+     */
+    public function brokenLinksItems(): array
+    {
+        $items = [];
+        foreach ($this->pageModel->findAllPublished() as $page) {
+            $items[] = [
+                'type'    => 'page',
+                'id'      => (int) $page->id,
+                'title'   => (string) $page->title,
+                'content' => (string) ($page->content ?? ''),
             ];
         }
         return $items;
@@ -225,21 +237,14 @@ class PagesService
      */
     public function commentHostItems(): array
     {
-        $stmt = $this->pdo->query(
-            "SELECT id, title, slug, allow_comments FROM pages WHERE status = 'published' AND deleted_at IS NULL ORDER BY title"
-        );
-
         $items = [];
-        if ($stmt === false) {
-            return $items;
-        }
-        while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+        foreach ($this->pageModel->findAllPublished() as $page) {
             $items[] = [
                 'type'           => 'page',
-                'id'             => (int) $row['id'],
-                'title'          => $row['title'],
-                'url'            => $this->routePrefix() . '/' . $row['slug'],
-                'allow_comments' => (bool) $row['allow_comments'],
+                'id'             => (int) $page->id,
+                'title'          => (string) $page->title,
+                'url'            => $this->routePrefix() . '/' . (string) $page->slug,
+                'allow_comments' => (bool) $page->allow_comments,
             ];
         }
         return $items;

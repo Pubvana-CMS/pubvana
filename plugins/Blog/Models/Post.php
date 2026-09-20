@@ -49,21 +49,31 @@ class Post extends \Pubvana\Models\AbstractModel
         parent::__construct($pdo, 'posts', $config);
     }
 
+    /**
+     * Find a post by ID (excluding soft-deleted).
+     *
+     * Runs on a fresh instance so a lookup never aliases the model the
+     * caller holds, and so a miss cannot report stale data should this
+     * model ever gain declared typed props (see Page::findById).
+     */
     public function findById(int $id): ?self
     {
-        $this->reset();
-        $this->eq('id', $id)->isNull('deleted_at')->find();
-        return $this->isHydrated() ? $this : null;
+        $query = new self($this->getDatabaseConnection());
+        $query->eq('id', $id)->isNull('deleted_at')->find();
+        return $query->isHydrated() ? $query : null;
     }
 
+    /**
+     * Find a published post by slug.
+     */
     public function findBySlug(string $slug): ?self
     {
-        $this->reset();
-        $this->eq('slug', $slug)
-             ->eq('status', 'published')
-             ->isNull('deleted_at')
-             ->find();
-        return $this->isHydrated() ? $this : null;
+        $query = new self($this->getDatabaseConnection());
+        $query->eq('slug', $slug)
+              ->eq('status', 'published')
+              ->isNull('deleted_at')
+              ->find();
+        return $query->isHydrated() ? $query : null;
     }
 
     /**
@@ -83,11 +93,14 @@ class Post extends \Pubvana\Models\AbstractModel
         return $values === [] ? null : (int) $values[0];
     }
 
+    /**
+     * Find a post by preview token, drafts included.
+     */
     public function findByPreviewToken(string $token): ?self
     {
-        $this->reset();
-        $this->eq('preview_token', $token)->isNull('deleted_at')->find();
-        return $this->isHydrated() ? $this : null;
+        $query = new self($this->getDatabaseConnection());
+        $query->eq('preview_token', $token)->isNull('deleted_at')->find();
+        return $query->isHydrated() ? $query : null;
     }
 
     public function slugExists(string $slug, ?int $excludeId = null): bool
@@ -136,6 +149,30 @@ class Post extends \Pubvana\Models\AbstractModel
             ->order('id DESC')
             ->limit($limit)
             ->findAll();
+    }
+
+    /**
+     * Every published post, newest first, for host integrations.
+     *
+     * Backs the navigation manager Quick Add list, the Comments host
+     * contract, and the Broken Links scanner, so all three read the same
+     * ordered set from one query shape.
+     *
+     * @param int|null $limit Maximum results, null for every published post
+     * @return array<int, Post>
+     */
+    public function findAllPublished(?int $limit = null): array
+    {
+        $query = new self($this->getDatabaseConnection());
+        $query->eq('status', 'published')
+              ->isNull('deleted_at')
+              ->order('published_at DESC');
+
+        if ($limit !== null) {
+            $query->limit($limit);
+        }
+
+        return $query->findAll();
     }
 
     public function countAll(?string $status = null): int

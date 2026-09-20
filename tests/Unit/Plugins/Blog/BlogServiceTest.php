@@ -320,6 +320,23 @@ final class BlogServiceTest extends TestCase
         self::assertTrue($items[0]['allow_comments']);
     }
 
+    public function testNavLinkableAndBrokenLinksItems(): void
+    {
+        $this->service->createPost(['title' => 'Live', 'slug' => 'live', 'content' => '<p>Body text</p>', 'status' => 'published'], 1);
+        $this->service->createPost(['title' => 'Draft', 'slug' => 'draft-x', 'status' => 'draft'], 1);
+
+        $nav = $this->service->navLinkableItems('/blog');
+        self::assertCount(1, $nav);
+        self::assertSame('Live', $nav[0]['label']);
+        self::assertSame('/blog/live', $nav[0]['url']);
+
+        $links = $this->service->brokenLinksItems();
+        self::assertCount(1, $links);
+        self::assertSame('post', $links[0]['type']);
+        self::assertSame('Live', $links[0]['title']);
+        self::assertStringContainsString('Body text', $links[0]['content']);
+    }
+
     public function testDashboard(): void
     {
         $this->service->createPost(['title' => 'P', 'slug' => 'p', 'status' => 'published'], 1);

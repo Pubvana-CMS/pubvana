@@ -75,6 +75,13 @@ final class BlogPluginTest extends TestCase
         self::assertArrayHasKey('pubvana.blog', $adext->get('search', 'provider'));
         self::assertArrayHasKey('pubvana.blog', $adext->get('comments.host', 'content'));
         self::assertArrayHasKey('pubvana.blog', $adext->get('nav.linkable', 'default'));
+        self::assertArrayHasKey('pubvana.blog', $adext->get('brokenlinks', 'source'));
+
+        // Host callables resolve through the service, not inline SQL.
+        $nav = $adext->get('nav.linkable', 'default');
+        self::assertSame([], $nav['pubvana.blog']['callable']());
+        $sources = $adext->get('brokenlinks', 'source');
+        self::assertSame([], $sources['pubvana.blog']['callable']());
 
         // Block providers resolve through the service.
         $blocks = $adext->get('block', 'available');

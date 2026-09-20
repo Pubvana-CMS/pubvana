@@ -85,24 +85,7 @@ class Plugin implements PluginInterface
         // Broken Links Source
         $adext->register('brokenlinks', 'source', 'pubvana.pages', [
             'label'    => 'Pages',
-            'callable' => function () use ($app): array {
-                $stmt = $app->db()->query(
-                    "SELECT id, title, content FROM pages WHERE status = 'published' AND deleted_at IS NULL"
-                );
-                if ($stmt === false) {
-                    return [];
-                }
-                $items = [];
-                while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
-                    $items[] = [
-                        'type'    => 'page',
-                        'id'      => (int) $row['id'],
-                        'title'   => $row['title'],
-                        'content' => (string) ($row['content'] ?? ''),
-                    ];
-                }
-                return $items;
-            },
+            'callable' => fn() => $app->pages()->brokenLinksItems(),
         ]);
 
         // Search source — pages are searchable content
