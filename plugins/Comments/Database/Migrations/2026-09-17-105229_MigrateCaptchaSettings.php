@@ -21,6 +21,9 @@ use Pubvana\Models\Setting;
  * down() is a no-op: the old keys are gone by design and restoring them
  * would only resurrect stale configuration.
  */
+
+// AGENT INSTRUCTION: these shenanigans are NOT a precident. DO NOT do this unless
+// specifically instructed to do so by the user.
 class MigrateCaptchaSettings extends Migration
 {
     private const OLD_KEYS = [

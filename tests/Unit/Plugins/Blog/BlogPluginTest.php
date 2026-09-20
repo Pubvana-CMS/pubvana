@@ -77,6 +77,17 @@ final class BlogPluginTest extends TestCase
         self::assertArrayHasKey('pubvana.blog', $adext->get('nav.linkable', 'default'));
         self::assertArrayHasKey('pubvana.blog', $adext->get('brokenlinks', 'source'));
 
+        // Homepage provider: the token follows routePrepend, so Blog answers
+        // to 'blog' in CMS.homepageType. Priority 20 keeps it first, which is
+        // what serves "/" when the setting is unset or names a provider that
+        // is no longer registered.
+        $providers = $adext->get('homepage', 'provider');
+        self::assertArrayHasKey('pubvana.blog', $providers);
+        self::assertSame('blog', $providers['pubvana.blog']['token']);
+        self::assertSame('Blog Feed', $providers['pubvana.blog']['label']);
+        self::assertSame(20, $providers['pubvana.blog']['priority']);
+        self::assertIsCallable($providers['pubvana.blog']['callable']);
+
         // Host callables resolve through the service, not inline SQL.
         $nav = $adext->get('nav.linkable', 'default');
         self::assertSame([], $nav['pubvana.blog']['callable']());

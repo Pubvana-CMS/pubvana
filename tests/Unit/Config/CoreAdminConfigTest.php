@@ -75,10 +75,26 @@ final class CoreAdminConfigTest extends TestCase
 
         $general = $adext->get('admin.settings', 'general');
         self::assertArrayHasKey('pubvana.cms.site', $general);
-        $keys = array_column($general['pubvana.cms.site']['fields'], 'key');
-        foreach (['CMS.siteName', 'CMS.siteByline', 'CMS.siteUrl', 'CMS.adminEmail', 'CMS.defaultTimezone', 'CMS.homepageType', 'CMS.homepagePageId'] as $key) {
+        $siteFields = $general['pubvana.cms.site']['fields'];
+        $keys = array_column($siteFields, 'key');
+        foreach (['CMS.siteName', 'CMS.siteByline', 'CMS.siteUrl', 'CMS.adminEmail', 'CMS.defaultTimezone', 'CMS.homepageType'] as $key) {
             self::assertContains($key, $keys, $key);
         }
+
+        // The Homepage select is driven by the adext 'homepage' registrations,
+        // so core declares the source rather than an option list. The page
+        // picker is no longer a core setting: the Pages provider declares it
+        // as a field of its own.
+        $homepage = null;
+        foreach ($siteFields as $field) {
+            if (($field['key'] ?? '') === 'CMS.homepageType') {
+                $homepage = $field;
+            }
+        }
+        self::assertIsArray($homepage);
+        self::assertSame(['type' => 'homepage', 'slot' => 'provider'], $homepage['providers']);
+        self::assertSame([], $homepage['options']);
+        self::assertNotContains('CMS.homepagePageId', $keys);
 
         $email = $adext->get('admin.settings', 'email');
         $emailKeys = array_column($email['pubvana.cms.mail']['fields'], 'key');

@@ -92,6 +92,24 @@ class Plugin implements PluginInterface
             'priority' => 10,
         ]);
 
+        // ─── Homepage ───────────────────────────────────────────────────
+
+        // Blog offers itself as a front page candidate. The token follows the
+        // plugin's routePrepend, so the stored value and the public URL prefix
+        // stay in step. Priority 20 puts it first in the Settings Homepage
+        // select, which is also what serves "/" when the setting is unset or
+        // names a provider that is no longer registered.
+        $adext->register('homepage', 'provider', 'pubvana.blog', [
+            'label'    => 'Blog Feed',
+            'token'    => trim($prefix, '/'),
+            'priority' => 20,
+            'callable' => function () use ($app): bool {
+                (new BlogPublicController($app))->index();
+
+                return true;
+            },
+        ]);
+
         // ─── Dashboard ──────────────────────────────────────────────────
 
         $adext->register('admin.dashboard', 'cards', 'pubvana.blog', [

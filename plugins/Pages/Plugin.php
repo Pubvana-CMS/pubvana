@@ -100,5 +100,48 @@ class Plugin implements PluginInterface
             'label'    => 'Pages',
             'callable' => fn() => $app->pages()->commentHostItems(),
         ]);
+
+        // ─── Homepage ───────────────────────────────────────────────────
+
+        // Pages offers itself as a front page candidate. The token follows the
+        // plugin's routePrepend ('page'). The page picker is declared here as
+        // a field this provider owns, so core carries no Pages setting:
+        // SettingsController renders it under the Homepage select for us, and
+        // its options load only when the admin form renders or saves.
+        //
+        // Declining (false) hands "/" back to the next provider, which is what
+        // happens when no page is chosen or the chosen page is unpublished.
+        $adext->register('homepage', 'provider', 'pubvana.pages', [
+            'label'    => 'Static Page',
+            'token'    => trim($prefix, '/'),
+            'priority' => 30,
+            'callable' => function () use ($app): bool {
+                $pageId = (int) $app->settings()->get('CMS.homepagePageId', 0);
+                if ($pageId <= 0) {
+                    return false;
+                }
+
+                $page = $app->pages()->findPage($pageId);
+                if ($page === null || $page->status !== 'published') {
+                    error_log("Pages: homepage page {$pageId} is missing or unpublished - declining '/'");
+                    return false;
+                }
+
+                (new PagesPublicController($app))->view((string) $page->slug, true);
+
+                return true;
+            },
+            'fields'   => [
+                [
+                    'key'              => 'CMS.homepagePageId',
+                    'label'            => 'Homepage Page',
+                    'type'             => 'select',
+                    'options'          => [],
+                    'default'          => null,
+                    'description'      => 'Which published page to show when Homepage is set to Static Page.',
+                    'options_callable' => fn() => $app->pages()->publishedOptions(),
+                ],
+            ],
+        ]);
     }
 }

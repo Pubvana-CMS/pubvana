@@ -111,7 +111,6 @@ class SettingsController extends AdminController
      */
     protected function tabs(): array
     {
-        $settings = $this->app->settings();
         $tabs = $this->app->adext()->get('admin.settings', 'general');
 
         $out = [];
@@ -123,11 +122,14 @@ class SettingsController extends AdminController
                     continue;
                 }
                 $this->resolveOptions($normalized);
-                $normalized['value'] = $settings->get(
-                    $normalized['key'],
-                    $normalized['default'] ?? null
-                );
-                $fields[] = $normalized;
+
+                // A provider select carries the fields its providers own,
+                // such as the homepage page picker that belongs to Pages.
+                // They render directly under the select that lists them.
+                $renderable = array_merge([$normalized], $normalized['provider_fields'] ?? []);
+                foreach ($renderable as $one) {
+                    $fields[] = $this->withValue($one);
+                }
             }
 
             if (empty($fields)) {
@@ -167,22 +169,114 @@ class SettingsController extends AdminController
     }
 
     /**
-     * Lazily resolve a select field's options.
+     * Lazily resolve a select field's options, and expand provider selects.
      *
-     * Fields whose options are derived data (the homepage page selector)
-     * declare an empty list and get filled here, only when the admin
-     * Settings form renders or saves. Public requests never reach this.
+     * Two derived sources exist, and both defer to render/save time so the
+     * boot-time declaration scan never touches a table or the registry:
+     *
+     *   providers        options and extra fields come from a registry type
+     *                    and slot. The Homepage select lists every plugin
+     *                    registered as a homepage provider.
+     *   options_callable a callable returning the id => label map, used by a
+     *                    plugin that owns the data behind a selector.
+     *
+     * Public requests never reach this: the settings page and its save
+     * handler are the only callers.
      *
      * @param array<string, mixed> $field Field declaration (mutated in place)
      */
     protected function resolveOptions(array &$field): void
     {
-        if ($field['type'] !== 'select' || !empty($field['options'])) {
+        if (($field['type'] ?? '') !== 'select') {
             return;
         }
-        if (($field['key'] ?? '') === 'CMS.homepagePageId') {
-            $field['options'] = $this->app->pages()->publishedOptions();
+
+        $providers = $field['providers'] ?? null;
+        if (is_array($providers)) {
+            $this->resolveProviders($field, $providers);
+            return;
         }
+
+        if (!empty($field['options'])) {
+            return;
+        }
+
+        $callable = $field['options_callable'] ?? null;
+        if (is_callable($callable)) {
+            $field['options'] = (array) call_user_func($callable);
+        }
+    }
+
+    /**
+     * Build a select from a registry type/slot, and queue the fields its
+     * contributors declare.
+     *
+     * Option keys are the contributors' tokens, which is what gets stored.
+     * The first token becomes the default, because the field is not allowed
+     * to name a provider core does not know about.
+     *
+     * With nothing registered the select cannot mean anything, so the field
+     * carries an 'unavailable' notice instead and the view explains how to
+     * fix it (enable a plugin that can serve the homepage).
+     *
+     * @param array<string, mixed> $field       Field declaration (mutated in place)
+     * @param array<string, mixed> $declaration Registration source: type, slot
+     */
+    protected function resolveProviders(array &$field, array $declaration): void
+    {
+        $type = (string) ($declaration['type'] ?? '');
+        $slot = (string) ($declaration['slot'] ?? '');
+
+        $providers = ($type === '' || $slot === '')
+            ? []
+            : $this->app->adext()->get($type, $slot);
+
+        if ($providers === []) {
+            $field['options'] = [];
+            $field['unavailable'] = [
+                'message' => 'No plugin is currently registered that can serve the homepage.',
+                'link'    => '/admin/plugins',
+                'label'   => 'Open the plugin manager',
+            ];
+            return;
+        }
+
+        $options = [];
+        $providerFields = [];
+
+        foreach ($providers as $contributor => $provider) {
+            $token = (string) ($provider['token'] ?? $contributor);
+            $options[$token] = (string) ($provider['label'] ?? $token);
+
+            foreach ($provider['fields'] ?? [] as $declared) {
+                $normalized = $this->normalizeField($declared);
+                if ($normalized === null) {
+                    continue;
+                }
+                $this->resolveOptions($normalized);
+                $providerFields[] = $normalized;
+            }
+        }
+
+        $field['options'] = $options;
+        $field['provider_fields'] = $providerFields;
+        $field['default'] = $field['default'] ?? array_key_first($options);
+    }
+
+    /**
+     * Attach the stored value, or the declared default, to a field.
+     *
+     * @param array<string, mixed> $field Normalized field declaration
+     * @return array<string, mixed> Field with its 'value' key set for the view
+     */
+    protected function withValue(array $field): array
+    {
+        $field['value'] = $this->app->settings()->get(
+            (string) $field['key'],
+            $field['default'] ?? null
+        );
+
+        return $field;
     }
 
     /**

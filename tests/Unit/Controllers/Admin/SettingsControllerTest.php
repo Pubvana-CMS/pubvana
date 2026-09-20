@@ -22,6 +22,8 @@ final class SettingsControllerTest extends TestCase
     public array $redirects = [];
     /** @var array<string, list<string>> */
     public array $flashes = [];
+    /** @var array<string, array<string, mixed>> */
+    public array $providers = [];
     public FakeSettings $settings;
 
     protected function setUp(): void
@@ -30,6 +32,7 @@ final class SettingsControllerTest extends TestCase
         $this->fetches = [];
         $this->redirects = [];
         $this->flashes = [];
+        $this->providers = [];
         $this->settings = new FakeSettings();
     }
 
@@ -101,29 +104,129 @@ final class SettingsControllerTest extends TestCase
         } catch (\InvalidArgumentException) {
         }
         try {
-            $this->invoke($c, 'coerce', [['type' => 'select', 'key' => 'CMS.homepagePageId', 'options' => []], '9']);
+            $this->invoke($c, 'coerce', [['type' => 'select', 'key' => 'X.emptySelect', 'options' => []], '9']);
             self::fail('must throw');
         } catch (\InvalidArgumentException) {
         }
     }
 
-    public function testResolveOptionsFillsHomepage(): void
+    public function testResolveOptionsBuildsProviderSelectFromRegistry(): void
     {
-        $c = new SettingsController($this->engine(pagesOptions: ['1' => 'Home']));
-        $field = ['type' => 'select', 'key' => 'CMS.homepagePageId', 'options' => []];
+        $this->providers = [
+            'pubvana.blog'  => ['label' => 'Blog Feed', 'token' => 'blog'],
+            'pubvana.pages' => [
+                'label'  => 'Static Page',
+                'token'  => 'page',
+                'fields' => [
+                    ['key' => 'CMS.homepagePageId', 'label' => 'Homepage Page', 'type' => 'select', 'options' => []],
+                ],
+            ],
+        ];
+
+        $c = new SettingsController($this->engine());
+        $field = [
+            'key'       => 'CMS.homepageType',
+            'label'     => 'Homepage',
+            'type'      => 'select',
+            'options'   => [],
+            'providers' => ['type' => 'homepage', 'slot' => 'provider'],
+        ];
         $this->invoke($c, 'resolveOptions', [&$field]);
-        self::assertSame(['1' => 'Home'], $field['options']);
 
-        $other = ['type' => 'select', 'key' => 'X.y', 'options' => []];
-        $this->invoke($c, 'resolveOptions', [&$other]);
-        self::assertSame([], $other['options']);
-
-        $filled = ['type' => 'select', 'key' => 'CMS.homepagePageId', 'options' => ['a' => 'b']];
-        $this->invoke($c, 'resolveOptions', [&$filled]);
-        self::assertSame(['a' => 'b'], $filled['options']);
+        // Tokens are the stored values; labels are what the admin reads.
+        self::assertSame(['blog' => 'Blog Feed', 'page' => 'Static Page'], $field['options']);
+        // The first provider is the default when the setting was never saved.
+        self::assertSame('blog', $field['default']);
+        // A provider's own fields ride along under the select that lists it.
+        self::assertCount(1, $field['provider_fields']);
+        self::assertSame('CMS.homepagePageId', $field['provider_fields'][0]['key']);
     }
 
-    private function engine(array $data = [], array $query = [], array $pagesOptions = []): Engine
+    public function testResolveOptionsRunsOptionsCallable(): void
+    {
+        $c = new SettingsController($this->engine());
+        $field = [
+            'key'              => 'X.selector',
+            'label'            => 'Selector',
+            'type'             => 'select',
+            'options'          => [],
+            'options_callable' => static fn(): array => [1 => 'Home'],
+        ];
+        $this->invoke($c, 'resolveOptions', [&$field]);
+
+        self::assertSame([1 => 'Home'], $field['options']);
+    }
+
+    public function testResolveOptionsLeavesStaticSelectsAndNonSelectsAlone(): void
+    {
+        $c = new SettingsController($this->engine());
+
+        $filled = ['key' => 'X.y', 'label' => 'Y', 'type' => 'select', 'options' => ['a' => 'b']];
+        $this->invoke($c, 'resolveOptions', [&$filled]);
+        self::assertSame(['a' => 'b'], $filled['options']);
+
+        $bare = ['key' => 'X.y', 'label' => 'Y', 'type' => 'select', 'options' => []];
+        $this->invoke($c, 'resolveOptions', [&$bare]);
+        self::assertSame([], $bare['options']);
+
+        $text = ['key' => 'X.y', 'label' => 'Y', 'type' => 'text'];
+        $this->invoke($c, 'resolveOptions', [&$text]);
+        self::assertArrayNotHasKey('options', $text);
+    }
+
+    public function testResolveOptionsMarksProviderSelectUnavailableWithoutProviders(): void
+    {
+        $c = new SettingsController($this->engine());
+        $field = [
+            'key'       => 'CMS.homepageType',
+            'label'     => 'Homepage',
+            'type'      => 'select',
+            'options'   => [],
+            'providers' => ['type' => 'homepage', 'slot' => 'provider'],
+        ];
+        $this->invoke($c, 'resolveOptions', [&$field]);
+
+        // No providers means the select cannot mean anything, so the field
+        // carries a notice instead of rendering an empty dropdown.
+        self::assertSame([], $field['options']);
+        self::assertIsArray($field['unavailable']);
+        self::assertSame('/admin/plugins', $field['unavailable']['link']);
+        self::assertStringContainsString('No plugin', (string) $field['unavailable']['message']);
+    }
+
+    public function testGeneralRendersProviderFieldsUnderTheirSelect(): void
+    {
+        $this->providers = [
+            'pubvana.pages' => [
+                'label'  => 'Static Page',
+                'token'  => 'page',
+                'fields' => [
+                    ['key' => 'CMS.homepagePageId', 'label' => 'Homepage Page', 'type' => 'select', 'options' => []],
+                ],
+            ],
+        ];
+        $this->settings->tabs = [
+            [
+                'label'  => 'Site',
+                'fields' => [[
+                    'key'       => 'CMS.homepageType',
+                    'label'     => 'Homepage',
+                    'type'      => 'select',
+                    'options'   => [],
+                    'providers' => ['type' => 'homepage', 'slot' => 'provider'],
+                ]],
+            ],
+        ];
+
+        $app = $this->engine();
+        (new SettingsController($app))->general();
+
+        $fields = $this->fetches[0]['data']['tabs'][0]['fields'];
+        self::assertSame(['CMS.homepageType', 'CMS.homepagePageId'], array_column($fields, 'key'));
+        self::assertSame('stored', $fields[1]['value']);
+    }
+
+    private function engine(array $data = [], array $query = []): Engine
     {
         $test = $this;
         $app = $this->app([
@@ -144,17 +247,11 @@ final class SettingsControllerTest extends TestCase
                 /** @return array<string, mixed> */
                 public function get(string $type, string $slot, array $c = []): array
                 {
+                    if ($type === 'homepage') {
+                        return $this->t->providers;
+                    }
+
                     return ['core' => ['label' => 'General', 'fields' => $this->t->settings->tabsFields()]];
-                }
-            },
-            'pages' => static fn(): object => new class($pagesOptions) {
-                public function __construct(private array $opts)
-                {
-                }
-                /** @return array<string, string> */
-                public function publishedOptions(): array
-                {
-                    return $this->opts;
                 }
             },
             'session' => static fn(): object => new class($test) {

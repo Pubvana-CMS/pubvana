@@ -23,30 +23,7 @@ final class PagesPluginTest extends TestCase
     {
         $pdo = Sqlite::recreate();
         PagesSchema::create($pdo);
-        $app = new Engine();
-        $app->init();
-        $app->map('adext', static function () use ($app): ExtensionRegistry {
-            static $registry = null;
-            if ($registry === null) {
-                $registry = new ExtensionRegistry();
-            }
-
-            return $registry;
-        });
-        $app->map('pluginLoader', static fn(): object => new class {
-            public function routePrefix(string $id): string
-            {
-                return '/page';
-            }
-        });
-        $app->map('db', fn(): \PDO => $pdo);
-        $app->map('settings', static fn(): object => new class {
-            public function get(string $k, mixed $d = null): mixed
-            {
-                return $d;
-            }
-        });
-        \Flight::setEngine($app);
+        $app = $this->pluginEngine($pdo);
 
         (new Plugin())->register($app, new Router(), ['route_prefix' => '/page']);
 
@@ -91,6 +68,96 @@ final class PagesPluginTest extends TestCase
         // Broken-links source resolves (empty table -> empty list).
         $sources = $adext->get('brokenlinks', 'source');
         self::assertSame([], $sources['pubvana.pages']['callable']());
+
+        // Homepage provider: the token follows routePrepend, so Pages answers
+        // to 'page' in CMS.homepageType.
+        $providers = $adext->get('homepage', 'provider');
+        self::assertArrayHasKey('pubvana.pages', $providers);
+        self::assertSame('page', $providers['pubvana.pages']['token']);
+        self::assertSame('Static Page', $providers['pubvana.pages']['label']);
+        self::assertSame(30, $providers['pubvana.pages']['priority']);
+
+        // The page picker is a field the provider owns, so core carries no
+        // Pages setting. Its options load on demand from the pages service.
+        $page = $app->pages()->createPage(
+            ['title' => 'Home Only', 'content' => '', 'status' => 'published'],
+            1
+        );
+        $fields = $providers['pubvana.pages']['fields'];
+        self::assertCount(1, $fields);
+        self::assertSame('CMS.homepagePageId', $fields[0]['key']);
+        self::assertSame('select', $fields[0]['type']);
+        self::assertSame([(int) $page->id => 'Home Only'], $fields[0]['options_callable']());
+    }
+
+    public function testHomepageProviderDeclinesWithoutAChosenPage(): void
+    {
+        $pdo = Sqlite::recreate();
+        PagesSchema::create($pdo);
+        // The settings double returns the default, so no page is chosen.
+        $app = $this->pluginEngine($pdo);
+
+        (new Plugin())->register($app, new Router(), ['route_prefix' => '/page']);
+
+        $provider = $app->adext()->get('homepage', 'provider')['pubvana.pages'];
+
+        // Declining hands "/" to the next provider instead of erroring.
+        self::assertFalse($provider['callable']());
+    }
+
+    public function testHomepageProviderDeclinesWhenTheChosenPageIsUnpublished(): void
+    {
+        $pdo = Sqlite::recreate();
+        PagesSchema::create($pdo);
+        $app = $this->pluginEngine($pdo, ['CMS.homepagePageId' => '999']);
+
+        (new Plugin())->register($app, new Router(), ['route_prefix' => '/page']);
+
+        $provider = $app->adext()->get('homepage', 'provider')['pubvana.pages'];
+
+        self::assertFalse($provider['callable']());
+    }
+
+    /**
+     * Engine with the services Plugin::register() reads, over a test DB.
+     *
+     * @param array<string, mixed> $settings Values the settings double serves
+     *
+     * @return Engine<object>
+     */
+    private function pluginEngine(\PDO $pdo, array $settings = []): Engine
+    {
+        $app = new Engine();
+        $app->init();
+        $app->map('adext', static function (): ExtensionRegistry {
+            static $registry = null;
+            if ($registry === null) {
+                $registry = new ExtensionRegistry();
+            }
+
+            return $registry;
+        });
+        $app->map('pluginLoader', static fn(): object => new class {
+            public function routePrefix(string $id): string
+            {
+                return '/page';
+            }
+        });
+        $app->map('db', static fn(): \PDO => $pdo);
+        $app->map('settings', static fn(): object => new class($settings) {
+            /** @param array<string, mixed> $values */
+            public function __construct(private array $values)
+            {
+            }
+
+            public function get(string $k, mixed $d = null): mixed
+            {
+                return $this->values[$k] ?? $d;
+            }
+        });
+        \Flight::setEngine($app);
+
+        return $app;
     }
 
     public function testConfigShape(): void

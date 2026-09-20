@@ -65,6 +65,7 @@ plugins/Pages/
 - `nav.linkable`: published pages as label/url targets for the navigation manager (`Plugin.php:78-81`).
 - `search` provider: `content_type 'Page'` (case-sensitive), results from `Page::searchContent()` (`Plugin.php:84-88`).
 - `comments.host`: published pages as commentable content with per-page `allow_comments` (`Plugin.php:91-94`).
+- `homepage.provider`: Pages is a front page candidate under token `page` (from `routePrepend`), priority 30, and it declares `CMS.homepagePageId` as a field of its own, so core carries no Pages setting. The callable renders the chosen published page through `PagesPublicController::view($slug, true)`, which is what sets the `is_homepage` flag the SEO plugin reads. It returns `false`, declining `/`, when no page is chosen or the chosen page is missing or unpublished.
 
 **Revision pipeline.** Every create, update, and restore calls `createFromPage()`, which copies title/content/status/allow_comments (never slug) into a new row before pruning (`Models/PageRevision.php:56-86`). `max_revisions` defaults to 15 and is only overridable through config.
 
@@ -90,6 +91,8 @@ The plugin has no `composer.json` (it is in-tree), but it has a test suite under
   - [ ] Confirm the comments host lists `type 'page'` and flags `allow_comments`
   - [ ] Disable Media; confirm create/edit still render, just without Jodit
   - [ ] With `ai_generated` set and SEO disclosure enabled, confirm the public disclosure shows only then
+  - [ ] Set Settings > Site > Homepage to Static Page with a published page chosen; confirm `/` renders that page at 200 (no redirect) and its canonical tag points at the site root
+  - [ ] Unpublish that page; confirm `/` falls through to the blog index instead of 404ing, and the log records the decline
 
 Coverage: the suite covers the service (URLs, updates, title guard), both controllers, the models, migrations/seeds, and the plugin registration.
 
@@ -122,6 +125,8 @@ Coverage: the suite covers the service (URLs, updates, title guard), both contro
 | Add a public route | `Plugin.php` public `addRoutes` block and `PagesPublicController` |
 | Enforce permissions | Add a `PermissionMiddleware` keyed on `pages.manage` to the admin route middleware slots |
 | Add an admin field | Migration + `Page`/`PageRevision` typed props + `updatePage` + create/edit views |
+| Change the homepage token | `Plugin.php` homepage registration (`token`, derived from `routePrepend`) |
+| Change the homepage page picker | `Plugin.php` homepage `fields` (`CMS.homepagePageId`, `options_callable`) |
 
 ## PR / contribution checklist
 

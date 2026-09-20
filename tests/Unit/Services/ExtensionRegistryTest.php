@@ -179,6 +179,70 @@ final class ExtensionRegistryTest extends TestCase
         self::assertSame('X', $items['pubvana.x']['label']);
     }
 
+    public function testHomepageProviderRegistrationShape(): void
+    {
+        $registry = new ExtensionRegistry();
+        $registry->register('homepage', 'provider', 'pubvana.pages', [
+            'label'    => 'Static Page',
+            'token'    => 'page',
+            'priority' => 30,
+            'fields'   => [['key' => 'CMS.homepagePageId', 'label' => 'Page', 'type' => 'select']],
+            'callable' => static fn(): bool => false,
+        ]);
+
+        $providers = $registry->get('homepage', 'provider');
+        self::assertArrayHasKey('pubvana.pages', $providers);
+        self::assertSame('page', $providers['pubvana.pages']['token']);
+        self::assertSame('Static Page', $providers['pubvana.pages']['label']);
+        self::assertCount(1, $providers['pubvana.pages']['fields']);
+    }
+
+    public function testHomepageProviderRequiresLabelAndCallable(): void
+    {
+        $registry = new ExtensionRegistry();
+        $registry->register('homepage', 'provider', 'pubvana.blog', ['label' => 'Blog Feed']);
+
+        self::assertFalse($registry->has('homepage', 'provider'));
+    }
+
+    public function testHomepageProviderRejectsUnknownSlotAndKeys(): void
+    {
+        $registry = new ExtensionRegistry();
+
+        // 'default' is not a homepage slot.
+        $registry->register('homepage', 'default', 'pubvana.blog', [
+            'label'    => 'Blog Feed',
+            'callable' => static fn(): bool => true,
+        ]);
+        // 'template' belongs to the block type, not this one.
+        $registry->register('homepage', 'provider', 'pubvana.blog', [
+            'label'    => 'Blog Feed',
+            'callable' => static fn(): bool => true,
+            'template' => 'nope',
+        ]);
+
+        self::assertFalse($registry->has('homepage', 'provider'));
+    }
+
+    public function testReadingProvidersDoesNotInvokeTheirCallables(): void
+    {
+        $registry = new ExtensionRegistry();
+        $ran = 0;
+        $registry->register('homepage', 'provider', 'pubvana.blog', [
+            'label'    => 'Blog Feed',
+            'callable' => static function () use (&$ran): bool {
+                $ran++;
+
+                return true;
+            },
+        ]);
+
+        // dispatchHomepage reads every provider and invokes only the chosen
+        // one, so the read itself has to stay free of side effects.
+        self::assertCount(1, $registry->get('homepage', 'provider'));
+        self::assertSame(0, $ran);
+    }
+
     public function testPluginAssetUrlIsTransformed(): void
     {
         $registry = new ExtensionRegistry();

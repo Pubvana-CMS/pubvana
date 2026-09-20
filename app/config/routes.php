@@ -102,9 +102,10 @@ $app->route('POST /auth/reset-password/process', function () use ($app) {
 |--------------------------------------------------------------------------
 | Homepage
 |--------------------------------------------------------------------------
-| The homepage route dispatches to whatever plugin owns the front page.
-| By default this is the blog index, but it can be changed to a static
-| page or any other route via the FrontPage.route setting.
+| The homepage route dispatches to whichever plugin registered itself as a
+| front page provider (adext type 'homepage'). CMS.homepageType names the
+| chosen provider and the rest stay in line as fallbacks. A site with no
+| provider registered gets the themed 404 rather than a hardcoded page.
 */
 $app->route('GET /', function () use ($app) {
     $app->pluginLoader()->dispatchHomepage();

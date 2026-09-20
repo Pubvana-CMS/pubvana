@@ -91,9 +91,12 @@ class SettingsService
      * Normalized declaration cache, built once per request.
      * Format: key => normalized field definition
      *
-     * @var array<string, array<string, mixed>>|null
+     * Empty means "not scanned yet", not "nothing declared": declarations
+     * register across boot, so an empty scan runs again on the next read.
+     *
+     * @var array<string, array<string, mixed>>
      */
-    protected ?array $fieldDeclarations = null;
+    protected array $fieldDeclarations = [];
 
     /**
      * @param Engine<object> $app Flight application for db(), adext() and $app->get()
@@ -303,7 +306,7 @@ class SettingsService
      */
     public function declaredFields(): array
     {
-        if ($this->fieldDeclarations !== null && $this->fieldDeclarations !== []) {
+        if ($this->fieldDeclarations !== []) {
             return $this->fieldDeclarations;
         }
 
@@ -313,17 +316,17 @@ class SettingsService
         foreach ($slots as $slot) {
             foreach ($this->app->adext()->get('admin.settings', $slot) as $contributor => $tab) {
                 foreach ($tab['fields'] ?? [] as $index => $field) {
-                    $error = $this->validateField($field, "{$contributor}#{$index}");
-                    if ($error !== null) {
-                        error_log("SettingsService: skipping field - {$error}");
-                        continue;
+                    $source = "{$contributor}#{$index}";
+                    $this->declareField($field, $source);
+
+                    // A field can pull in declarations of its own: a provider
+                    // select ('providers') exposes the fields its contributors
+                    // own, such as the homepage page picker that belongs to
+                    // Pages. Providers register during plugin load, which runs
+                    // before core-admin declares the field that lists them.
+                    foreach ($this->providerDeclaredFields($field) as $providerIndex => $providerField) {
+                        $this->declareField($providerField, "{$source}.provider#{$providerIndex}");
                     }
-                    $key = $field['key'];
-                    if (isset($this->fieldDeclarations[$key])) {
-                        error_log("SettingsService: duplicate declaration for '{$key}' from '{$contributor}' - first wins");
-                        continue;
-                    }
-                    $this->fieldDeclarations[$key] = $field;
                 }
             }
         }
@@ -331,6 +334,71 @@ class SettingsService
         // An empty scan is not memoized (guard above skips empty), so the
         // rescan repeats until declarations register during boot.
         return $this->fieldDeclarations;
+    }
+
+    /**
+     * Declare one field, logging whatever is wrong with it.
+     *
+     * A duplicate keeps the first declaration and a malformed one is skipped,
+     * so a bad plugin field cannot break the whole settings page.
+     *
+     * @param array<string, mixed> $field  Raw field definition
+     * @param string               $source Contributor label for error messages
+     */
+    protected function declareField(array $field, string $source): void
+    {
+        $error = $this->validateField($field, $source);
+        if ($error !== null) {
+            error_log("SettingsService: skipping field - {$error}");
+            return;
+        }
+
+        $key = (string) $field['key'];
+        if (isset($this->fieldDeclarations[$key])) {
+            error_log("SettingsService: duplicate declaration for '{$key}' from '{$source}' - first wins");
+            return;
+        }
+
+        $this->fieldDeclarations[$key] = $field;
+    }
+
+    /**
+     * Fields declared by the contributors behind a provider select.
+     *
+     * A field declaring 'providers' (registry type + slot) lists that
+     * registry's contributors on the settings page, and each contributor may
+     * declare fields of its own. Those are ordinary settings, so they are
+     * declared here too: savable, defaulted, and autoloaded like the rest.
+     *
+     * Read without invoking anything, because this runs at boot. A provider's
+     * selector resolves later, when the admin form renders or saves.
+     *
+     * @param array<string, mixed> $field A declared setting field
+     * @return array<int, array<string, mixed>> Fields declared by its providers
+     */
+    protected function providerDeclaredFields(array $field): array
+    {
+        $source = $field['providers'] ?? null;
+        if (!is_array($source)) {
+            return [];
+        }
+
+        $type = (string) ($source['type'] ?? '');
+        $slot = (string) ($source['slot'] ?? '');
+        if ($type === '' || $slot === '') {
+            return [];
+        }
+
+        $out = [];
+        foreach ($this->app->adext()->get($type, $slot) as $provider) {
+            foreach ($provider['fields'] ?? [] as $declared) {
+                if (is_array($declared)) {
+                    $out[] = $declared;
+                }
+            }
+        }
+
+        return $out;
     }
 
     /**
@@ -359,11 +427,12 @@ class SettingsService
 
         if ($field['type'] === 'select') {
             // Select options may be declared empty and filled lazily by the
-            // consuming controller at render/save time (see
-            // SettingsController::resolveOptions for CMS.homepagePageId).
-            // Save-time validation still rejects any value not in the
-            // resolved options via SettingsController::coerce, so an empty
-            // declaration here is not a data-integrity hole.
+            // consuming controller at render/save time, either from a registry
+            // type and slot ('providers') or from a callable
+            // ('options_callable') - see SettingsController::resolveOptions.
+            // Save-time validation still rejects any value not in the resolved
+            // options via SettingsController::coerce, so an empty declaration
+            // here is not a data-integrity hole.
             $field['options'] = (array) ($field['options'] ?? []);
         }
 

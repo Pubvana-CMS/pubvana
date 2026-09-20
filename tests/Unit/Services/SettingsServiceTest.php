@@ -432,6 +432,63 @@ final class SettingsServiceTest extends TestCase
         self::assertSame([], $service->declaredFields()['CMS.layout']['options']);
     }
 
+    public function testDeclaredFieldsIncludesProviderDeclaredFields(): void
+    {
+        $app = $this->makeApp();
+        $registry = $this->adext($app);
+        $registry->register('homepage', 'provider', 'pubvana.pages', [
+            'label'    => 'Static Page',
+            'token'    => 'page',
+            'callable' => static fn(): bool => false,
+            'fields'   => [
+                ['key' => 'CMS.homepagePageId', 'label' => 'Homepage Page', 'type' => 'select'],
+            ],
+        ]);
+        $registry->register('admin.settings', 'general', 'core.tabs', [
+            'label'  => 'Site',
+            'fields' => [
+                [
+                    'key'       => 'CMS.homepageType',
+                    'label'     => 'Homepage',
+                    'type'      => 'select',
+                    'providers' => ['type' => 'homepage', 'slot' => 'provider'],
+                ],
+            ],
+        ]);
+
+        $service = new SettingsService($app);
+
+        // A provider's fields are declarations like any other, which is what
+        // makes them savable through the settings form and defaulted on read.
+        self::assertSame(
+            ['CMS.homepageType', 'CMS.homepagePageId'],
+            array_keys($service->declaredFields())
+        );
+        self::assertSame('Homepage Page', $service->declaredFields()['CMS.homepagePageId']['label']);
+    }
+
+    public function testDeclaredFieldsIgnoresAMalformedProvidersDeclaration(): void
+    {
+        $app = $this->makeApp();
+        $registry = $this->adext($app);
+        $registry->register('admin.settings', 'general', 'core.tabs', [
+            'label'  => 'Site',
+            'fields' => [
+                [
+                    'key'       => 'CMS.homepageType',
+                    'label'     => 'Homepage',
+                    'type'      => 'select',
+                    // No slot: nothing to resolve, and nothing extra declared.
+                    'providers' => ['type' => 'homepage'],
+                ],
+            ],
+        ]);
+
+        $service = new SettingsService($app);
+
+        self::assertSame(['CMS.homepageType'], array_keys($service->declaredFields()));
+    }
+
     // -----------------------------------------------------------------
     // Setup helpers
     // -----------------------------------------------------------------

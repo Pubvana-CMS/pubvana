@@ -7,8 +7,7 @@ namespace Pubvana\Services;
 use flight\Engine;
 use flight\net\Router;
 use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
-use Pubvana\Plugins\Blog\Controllers\BlogPublicController;
-use Pubvana\Plugins\Pages\Controllers\PagesPublicController;
+use Pubvana\Controllers\Public\ErrorController;
 
 /**
  * PluginLoader - Discovers, configures, and boots all plugins.
@@ -952,39 +951,92 @@ class PluginLoader
     }
 
     /**
-     * Dispatch the homepage based on CMS.homepageType setting.
+     * Dispatch the homepage to whichever registered provider owns "/".
      *
-     *   blog  → blog index (default)
-     *   pages → static page looked up from CMS.homepagePageId
+     * Providers come from the adext 'homepage' type (slot 'provider'), so
+     * this class holds no knowledge of which plugins can serve the front
+     * page. The token in CMS.homepageType picks one; every other provider
+     * stays in line as a fallback, which is what keeps a disabled plugin or
+     * a stale setting from taking the site root down.
      *
-     * Renders the chosen content directly on "/" (200) rather than
-     * redirecting, which search engines index more favorably than a
-     * forward from the site root.
+     * Served at 200 on "/" with no redirect, which search engines index more
+     * favorably than a forward from the site root.
      */
     public function dispatchHomepage(): void
     {
-        $type = $this->app->settings()->get('CMS.homepageType', 'blog');
+        foreach ($this->homepageCandidates() as $contributor => $provider) {
+            $callable = $provider['callable'] ?? null;
 
-        if ($type === 'pages') {
-            $pageId = $this->app->settings()->get('CMS.homepagePageId');
-            if ($pageId !== null) {
-                try {
-                    $stmt = $this->app->db()->prepare(
-                        "SELECT slug FROM pages WHERE id = :id AND status = 'published' AND deleted_at IS NULL LIMIT 1"
-                    );
-                    $stmt->execute([':id' => $pageId]);
-                    $slug = $stmt->fetchColumn();
-                    if ($slug !== false) {
-                        (new PagesPublicController($this->app))->view((string) $slug, true);
-                        return;
-                    }
-                } catch (\Throwable $e) {
-                    // pages table missing or query failed — fall through
+            // The registry rejects a registration with no callable, so this
+            // only guards a hand-built config array.
+            if (!is_callable($callable)) {
+                error_log("PluginLoader: homepage provider '{$contributor}' has no callable - skipped");
+                continue;
+            }
+
+            try {
+                // true means the provider rendered the page. false declines,
+                // handing "/" to the next provider in priority order.
+                if (call_user_func($callable) === true) {
+                    return;
                 }
+
+                error_log("PluginLoader: homepage provider '{$contributor}' declined - trying the next provider");
+            } catch (\Throwable $e) {
+                error_log("PluginLoader: homepage provider '{$contributor}' failed - " . $e->getMessage());
             }
         }
 
-        (new BlogPublicController($this->app))->index();
+        $this->homepageNotFound();
+    }
+
+    /**
+     * Hand "/" to the themed 404 when no provider served it.
+     *
+     * Split out so the dispatch order and its fallback stay testable without
+     * standing up a themed error page.
+     */
+    protected function homepageNotFound(): void
+    {
+        error_log('PluginLoader: no homepage provider served "/" - rendering 404');
+        (new ErrorController($this->app))->showNotFound();
+    }
+
+    /**
+     * Homepage providers in attempt order: the one named by CMS.homepageType
+     * first, then every other provider by priority.
+     *
+     * A token that matches nothing (its plugin was disabled, or the stored
+     * value is stale) is logged and the priority order still serves a
+     * homepage, which is why an unmatched token is not fatal.
+     *
+     * @return array<string, array<string, mixed>> Contributor key => registration
+     */
+    protected function homepageCandidates(): array
+    {
+        $providers = $this->app->adext()->get('homepage', 'provider');
+
+        $stored = $this->app->settings()->get('CMS.homepageType');
+        $token = $stored === null ? '' : (string) $stored;
+
+        $preferred = null;
+        foreach ($providers as $contributor => $provider) {
+            if ((string) ($provider['token'] ?? $contributor) === $token) {
+                $preferred = (string) $contributor;
+                break;
+            }
+        }
+
+        if ($preferred === null) {
+            if ($token !== '') {
+                error_log("PluginLoader: CMS.homepageType '{$token}' matches no registered homepage provider - falling back to priority order");
+            }
+            return $providers;
+        }
+
+        // Union keeps the left operand first and ignores the duplicate key,
+        // so the chosen provider leads and the rest hold their priority order.
+        return [$preferred => $providers[$preferred]] + $providers;
     }
 
     /**

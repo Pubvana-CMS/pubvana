@@ -404,11 +404,6 @@ $adext->addRoutes('admin', [
 // Timezone identifiers for the select field (label = value)
 $timezones = DateTimeZone::listIdentifiers();
 
-// Published pages for the homepage page selector are fetched lazily by
-// SettingsController (Page::getPublishedOptions()) when the admin Settings
-// form renders or saves. No query here: this is boot-time, and public
-// requests have no business reading the pages catalog.
-
 $adext->register('admin.settings', 'general', 'pubvana.cms.site', [
     'label'       => 'Site',
     'description' => 'Core site identity and locale.',
@@ -470,17 +465,13 @@ $adext->register('admin.settings', 'general', 'pubvana.cms.site', [
             'key'         => 'CMS.homepageType',
             'label'       => 'Homepage',
             'type'        => 'select',
-            'options'     => ['blog' => 'Blog Feed', 'pages' => 'Static Page'],
-            'default'     => 'blog',
-            'description' => 'What displays on the site root. Blog shows the latest posts; Pages lets you pick a static page.',
-        ],
-        [
-            'key'         => 'CMS.homepagePageId',
-            'label'       => 'Homepage Page',
-            'type'        => 'select',
+            // Options come from the adext 'homepage' registrations, so any
+            // plugin can offer itself as the front page. SettingsController
+            // fills them at render/save time, and splices each provider's own
+            // declared fields (Pages owns the page picker) under this select.
+            'providers'   => ['type' => 'homepage', 'slot' => 'provider'],
             'options'     => [],
-            'default'     => null,
-            'description' => 'Which published page to show when Homepage is set to Static Page.',
+            'description' => 'What displays on the site root. Each option is a plugin that can serve the front page.',
         ],
     ],
 ]);

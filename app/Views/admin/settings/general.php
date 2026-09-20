@@ -11,6 +11,8 @@
  *
  * @var string $pageTitle
  * @var array<int, array{label: string, description: string, fields: array<int, array>}> $tabs
+ *      A field carrying an 'unavailable' notice renders that notice in
+ *      place of its input (used when a provider select has no providers).
  * @var bool   $saved  Legacy query-flag banner (?saved=1)
  * @var string|null $flash One-shot flash message from the session
  */
@@ -106,7 +108,22 @@ $selectOptions = function (array $options): array {
                                             <?= htmlspecialchars($field['label']) ?>
                                         </label>
 
-                                        <?php if ($field['type'] === 'textarea'): ?>
+                                        <?php if (is_array($field['unavailable'] ?? null)): ?>
+                                            <?php $notice = $field['unavailable']; ?>
+                                            <div class="alert alert-danger" role="alert">
+                                                <div class="d-flex">
+                                                    <div>
+                                                        <i class="ti ti-alert-triangle icon alert-icon"></i>
+                                                    </div>
+                                                    <div>
+                                                        <?= htmlspecialchars((string) ($notice['message'] ?? '')) ?>
+                                                        <?php if (!empty($notice['link'])): ?>
+                                                            <a class="alert-link" href="<?= htmlspecialchars((string) $notice['link']) ?>"><?= htmlspecialchars((string) ($notice['label'] ?? 'Manage plugins')) ?></a>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        <?php elseif ($field['type'] === 'textarea'): ?>
                                             <textarea class="form-control" id="<?= $id ?>" rows="4"
                                                       name="settings[<?= htmlspecialchars($key) ?>]"><?= htmlspecialchars((string) $value) ?></textarea>
                                         <?php elseif ($field['type'] === 'select'): ?>

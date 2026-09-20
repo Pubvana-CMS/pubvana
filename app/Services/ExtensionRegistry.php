@@ -200,6 +200,44 @@ class ExtensionRegistry
 
         /*
         |------------------------------------------------------------------
+        | Homepage Provider Type
+        |------------------------------------------------------------------
+        | Content plugins register themselves as candidates for the site
+        | front page. The admin picks one in Settings > Site (the Homepage
+        | select) and its token is what lands in CMS.homepageType. Core knows
+        | nothing about which plugins can serve "/".
+        |
+        | Registration (from a plugin's Plugin.php register()):
+        |   $adext->register('homepage', 'provider', 'pubvana.blog', [
+        |       'label'    => 'Blog Feed',
+        |       'token'    => 'blog',
+        |       'callable' => fn(): bool => $this->serve(),
+        |   ]);
+        |
+        | The callable takes no arguments and returns true when it rendered
+        | the front page, or false to decline so the next provider in
+        | priority order gets its turn. PluginLoader::dispatchHomepage()
+        | walks them in that order and renders the themed 404 only when every
+        | one declines.
+        |
+        | token defaults to the contributor key. It is the value stored in
+        | CMS.homepageType, so keep it URL-safe and in step with the plugin's
+        | routePrepend ('blog' for Blog, 'page' for Pages). Deriving it from
+        | PluginLoader::routePrefix() is the convention.
+        |
+        | A provider may declare 'fields' for the settings it owns, using the
+        | same shape as admin.settings fields. SettingsController renders them
+        | directly under the Homepage select, so a provider can keep its own
+        | selector (Pages keeps the page picker) without core declaring it.
+        */
+        'homepage' => [
+            'slots'    => ['provider'],
+            'required' => ['label', 'callable'],
+            'optional' => ['token', 'description', 'fields', 'priority'],
+        ],
+
+        /*
+        |------------------------------------------------------------------
         | Content Render Type
         |------------------------------------------------------------------
         | Plugins register content-transform callables that run on rich

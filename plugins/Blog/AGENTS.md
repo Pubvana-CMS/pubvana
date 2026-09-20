@@ -80,6 +80,9 @@ plugins/Blog/
 - `comments.host` content items `['type' => 'blog', 'id', ...]` (`Plugin.php:175-178`, `Services/BlogService.php:486-506`).
 - `nav.linkable` default: published posts as navigation targets (`Plugin.php:182-197`).
 - `admin.css` stylesheet (`Plugin.php:201-204`).
+- `homepage.provider`: Blog is a front page candidate under token `blog` (from `routePrepend`), priority 20, so it is what serves `/` when `CMS.homepageType` is unset or names a provider that is not registered. The callable renders the blog index and returns `true`.
+
+**Homepage.** `/` belongs to whichever plugin registers itself as an adext `homepage` provider; core no longer knows about the blog index. `PluginLoader::dispatchHomepage()` tries the provider named by `CMS.homepageType` first, then the rest by priority, and renders the themed 404 only if every one declines. A provider returning `false` or throwing hands `/` to the next one (`docs/Plugin-Development.md` Serving the Homepage).
 
 **Write path.** `BlogAdminController` reads form data (`->_csrf_token` stripped, `Controllers/BlogAdminController.php:56, 123`), builds the slug, then `BlogService::createPost()` / `updatePost()` snapshots a revision, prunes, and writes via the model. Taxonomy is re-synced afterwards (`Controllers/BlogAdminController.php:88-89, 151-152`).
 
