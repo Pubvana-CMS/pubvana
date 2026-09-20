@@ -243,6 +243,107 @@ final class PluginsControllerTest extends TestCase
         self::assertFalse($this->readEnabled('pubvana/new'));
     }
 
+    /**
+     * A cached 'trusted' verdict is good enough: the enable proceeds and the
+     * live call is skipped entirely (the short-circuit).
+     */
+    public function testSaveAjaxCachedTrustedSkipsLiveCall(): void
+    {
+        $_SERVER['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest';
+        $this->loader->local = ['pubvana/blog' => ['name' => 'Blog', 'version' => '1.0']];
+        $this->seedState('pubvana/blog', false);
+        $this->trust->items = [
+            'pubvana/blog' => ['type' => 'plugin', 'slug' => 'blog', 'version' => '1.0', 'author' => 'a', 'origin' => 'o'],
+        ];
+        $this->trust->cached = ['status' => TrustCache::STATUS_TRUSTED, 'warning' => null, 'checked_at' => 'x'];
+        // If the gate asked live it would get 'unknown' and show the modal.
+        $this->trust->live = ['status' => TrustCache::STATUS_UNKNOWN, 'warning' => null, 'answered' => true];
+        $app = $this->engine(data: ['plugins' => ['pubvana/blog' => ['enabled' => '1']]]);
+        try {
+            (new PluginsController($app))->save();
+            self::fail('must halt');
+        } catch (PluginHaltProbe) {
+        }
+
+        self::assertSame(0, $this->trust->liveCalls, 'cached trusted must not hit the API');
+        self::assertSame(['ok' => true, 'message' => '1 plugin updated.'], $this->halts[0]['data']);
+        self::assertTrue($this->readEnabled('pubvana/blog'));
+    }
+
+    /**
+     * A live 'trusted' verdict proceeds without the confirmation modal.
+     */
+    public function testSaveAjaxLiveTrustedProceeds(): void
+    {
+        $_SERVER['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest';
+        $this->loader->local = ['pubvana/blog' => ['name' => 'Blog', 'version' => '1.0']];
+        $this->seedState('pubvana/blog', false);
+        $this->trust->items = [
+            'pubvana/blog' => ['type' => 'plugin', 'slug' => 'blog', 'version' => '1.0', 'author' => 'a', 'origin' => 'o'],
+        ];
+        $this->trust->live = ['status' => TrustCache::STATUS_TRUSTED, 'warning' => null, 'answered' => true];
+        $app = $this->engine(data: ['plugins' => ['pubvana/blog' => ['enabled' => '1']]]);
+        try {
+            (new PluginsController($app))->save();
+            self::fail('must halt');
+        } catch (PluginHaltProbe) {
+        }
+
+        self::assertSame(1, $this->trust->liveCalls);
+        self::assertSame(['ok' => true, 'message' => '1 plugin updated.'], $this->halts[0]['data']);
+        self::assertTrue($this->readEnabled('pubvana/blog'));
+    }
+
+    /**
+     * An unreachable trust service is not a verdict. It is also not a reason
+     * to skip the confirmation: 'not trusted' still warns.
+     */
+    public function testSaveAjaxTrustOutageStillNeedsConfirm(): void
+    {
+        $_SERVER['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest';
+        $this->loader->local = ['pubvana/blog' => ['name' => 'Blog', 'version' => '1.0']];
+        $this->seedState('pubvana/blog', false);
+        $this->trust->items = [
+            'pubvana/blog' => ['type' => 'plugin', 'slug' => 'blog', 'version' => '1.0', 'author' => 'a', 'origin' => 'o'],
+        ];
+        // checkAddon() answers the placeholder 'unknown' with answered=false.
+        $this->trust->live = ['status' => TrustCache::STATUS_UNKNOWN, 'warning' => null, 'answered' => false];
+        $app = $this->engine(data: ['plugins' => ['pubvana/blog' => ['enabled' => '1']]]);
+        try {
+            (new PluginsController($app))->save();
+            self::fail('must halt');
+        } catch (PluginHaltProbe) {
+        }
+
+        self::assertTrue($this->halts[0]['data']['needsConfirm']);
+        self::assertFalse($this->readEnabled('pubvana/blog'));
+    }
+
+    /**
+     * A cached 'trusted' verdict still loses to a live 'malicious' one when
+     * the cache is stale enough to miss: the live answer blocks.
+     */
+    public function testSaveAjaxLiveMaliciousBlocks(): void
+    {
+        $_SERVER['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest';
+        $this->loader->local = ['pubvana/evil' => ['name' => 'Evil', 'version' => '1.0']];
+        $this->seedState('pubvana/evil', false);
+        $this->trust->items = [
+            'pubvana/evil' => ['type' => 'plugin', 'slug' => 'evil', 'version' => '1.0', 'author' => 'a', 'origin' => 'o'],
+        ];
+        $this->trust->live = ['status' => TrustCache::STATUS_MALICIOUS, 'warning' => 'bad', 'answered' => true];
+        $app = $this->engine(data: ['plugins' => ['pubvana/evil' => ['enabled' => '1']]]);
+        try {
+            (new PluginsController($app))->save();
+            self::fail('must halt');
+        } catch (PluginHaltProbe) {
+        }
+
+        self::assertTrue($this->halts[0]['data']['blocked']);
+        self::assertSame('bad', $this->halts[0]['data']['warning']);
+        self::assertFalse($this->readEnabled('pubvana/evil'));
+    }
+
     public function testSavePluralMessage(): void
     {
         $this->loader->local = [
@@ -498,6 +599,8 @@ final class FakePluginTrust
     public ?array $live = null;
     public bool $throw = false;
     public bool $throwCheck = false;
+    /** Number of live checkAddon() calls, so tests can assert the cache short-circuited. */
+    public int $liveCalls = 0;
 
     public function ensureCacheForAll(): void
     {
@@ -539,6 +642,8 @@ final class FakePluginTrust
     /** @return array<string, mixed> */
     public function checkAddon(string $t, string $s, string $v, string $a, string $o): array
     {
+        $this->liveCalls++;
+
         if ($this->throwCheck) {
             throw new \RuntimeException('down');
         }

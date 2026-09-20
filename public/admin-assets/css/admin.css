@@ -8,3 +8,11 @@
     border-color: #334155 !important;
     color: #e2e8f0 !important;
 }
+
+/* Busy cursor while an admin control autosaves (the Plugins toggles, and any
+   other control that puts .pv-busy on <body> for the duration). `progress` is
+   the spinning busy cursor; use `wait` instead if a theme renders it flat. */
+.pv-busy,
+.pv-busy * {
+    cursor: progress !important;
+}

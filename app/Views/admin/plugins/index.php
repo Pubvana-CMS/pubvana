@@ -119,7 +119,7 @@
                                 <input class="form-check-input" type="checkbox" checked disabled>
                             </label>
                         <?php else: ?>
-                            <form method="post" action="/admin/plugins/save" class="d-inline-block js-trust-toggle" data-plugin-name="<?= htmlspecialchars($plugin['name'], ENT_QUOTES, 'UTF-8') ?>">
+                            <form method="post" action="/admin/plugins/save" class="d-inline-flex align-items-center justify-content-center gap-1 js-trust-toggle" data-plugin-name="<?= htmlspecialchars($plugin['name'], ENT_QUOTES, 'UTF-8') ?>">
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="plugins[<?= $pluginIdAttr ?>][enabled]" value="0">
                                 <label class="form-check form-switch mb-0 d-flex justify-content-center">
@@ -129,6 +129,7 @@
                                            <?= $plugin['enabled'] ? 'checked' : '' ?>
                                            title="<?= $plugin['enabled'] ? 'Disable this plugin' : 'Enable this plugin and run its migrations' ?>">
                                 </label>
+                                <span class="spinner-border spinner-border-sm text-secondary pv-toggle-spinner d-none" role="status" aria-hidden="true"></span>
                             </form>
                         <?php endif; ?>
                     </td>
@@ -259,23 +260,63 @@
         });
     });
 
+    // Busy state: the spinning cursor over the page plus this row's own
+    // spinner. Every saving path ends in a navigation, so busy is cleared
+    // only where the page stays put (a modal opens, or the request fails).
+    function setBusy(form, busy) {
+        document.body.classList.toggle('pv-busy', busy);
+        if (!form) {
+            return;
+        }
+        var spinner = form.querySelector('.pv-toggle-spinner');
+        if (spinner) {
+            spinner.classList.toggle('d-none', !busy);
+        }
+    }
+
     // Toggle forms: enables are gated by the trust service
     var pendingForm = null;
+    var inFlight = false;
+
     document.querySelectorAll('form.js-trust-toggle').forEach(function (form) {
+        // Flipping the switch is what saves the row. Nothing submits the form
+        // by itself, so ask for it here. requestSubmit() fires the submit
+        // event below (and keeps the trust gate on enables); form.submit()
+        // would bypass that listener entirely.
+        var toggleBox = form.querySelector('input[type="checkbox"]');
+        if (toggleBox) {
+            toggleBox.addEventListener('change', function () {
+                if (inFlight) {
+                    // Impatient second click while a save is still running. Put
+                    // the switch back; the in-flight request owns the row.
+                    // (Disabling the checkbox instead would drop it from
+                    // FormData and turn an enable into a disable.)
+                    toggleBox.checked = !toggleBox.checked;
+                    return;
+                }
+                form.requestSubmit();
+            });
+        }
+
         form.addEventListener('submit', function (e) {
             e.preventDefault();
             var box = form.querySelector('input[type="checkbox"]');
-            if (!box.checked) {
-                // Disables go straight through, no gate involved
-                form.submit();
-                return;
-            }
+
+            inFlight = true;
+            setBusy(form, true);
+
+            // Both directions go through the same AJAX path so the spinner,
+            // the busy cursor, and the reload behave identically. Disables
+            // never reach the gate (the controller only gates enable
+            // transitions), so this is purely about consistency.
             post('/admin/plugins/save', new FormData(form)).then(function (r) {
                 if (r && r.ok) {
                     window.location.reload();
                     return;
                 }
                 if (r && r.needsConfirm) {
+                    inFlight = false;
+                    setBusy(form, false);
                     pendingForm = form;
                     document.getElementById('trustConfirmName').textContent = (r.plugin && r.plugin.name) || '';
                     document.getElementById('trustConfirmVersion').textContent = (r.plugin && r.plugin.version) ? 'v' + r.plugin.version : '';
@@ -283,6 +324,8 @@
                     return;
                 }
                 if (r && r.blocked) {
+                    inFlight = false;
+                    setBusy(form, false);
                     box.checked = false;
                     document.getElementById('trustBlockedName').textContent = form.getAttribute('data-plugin-name') || '';
                     document.getElementById('trustBlockedWarning').textContent = r.warning || 'No reason provided.';
@@ -291,6 +334,8 @@
                 }
                 window.location.reload();
             }).catch(function () {
+                inFlight = false;
+                setBusy(form, false);
                 window.location.reload();
             });
         });
@@ -303,8 +348,10 @@
             if (box) {
                 box.checked = false;
             }
+            setBusy(pendingForm, false);
             pendingForm = null;
         }
+        inFlight = false;
     });
 
     // Confirm: resubmit with force=1, the gate already knows we saw the warning
@@ -318,9 +365,13 @@
             pendingForm = null;
             var data = new FormData(form);
             data.append('force', '1');
+            inFlight = true;
+            setBusy(form, true);
             post('/admin/plugins/save', data).then(function () {
                 window.location.reload();
             }).catch(function () {
+                inFlight = false;
+                setBusy(form, false);
                 window.location.reload();
             });
         });

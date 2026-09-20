@@ -390,10 +390,21 @@ class AdminController
     /**
      * The trust gate for enabling a plugin or activating a theme.
      *
+     * The rules, in order:
+     *   - malicious, cached or live, force or not: BLOCK. Never forceable.
+     *   - trusted, cached or live: proceed, no modal.
+     *   - anything else (unknown, known, no cache row, service unreachable):
+     *     warn with the confirmation modal.
+     *
      * Returns null to proceed with the transition. On refusal it either
      * answers the AJAX caller (needsConfirm for the confirmation modal, or
      * blocked for a malicious verdict) and halts, or returns a failure
      * reason for the non-AJAX flash message.
+     *
+     * A cached 'trusted' verdict short-circuits the live call, so a known-good
+     * plugin enables without a round trip. The trade-off: a plugin that turns
+     * malicious after being cached as trusted is not caught here until the
+     * cache entry expires or an admin hits recheck.
      *
      * A confirmed resubmit carries force=1: the live call is skipped, but a
      * cached malicious verdict still refuses. Malicious is never forceable.
@@ -409,38 +420,45 @@ class AdminController
             return null;
         }
 
-        if ($force) {
-            // The admin already confirmed the unknown case in the modal. The
-            // cached answer still rules: malicious is never forceable.
-            $cached = $this->trustCachedStatus($item);
-            if ($cached !== null && $cached['status'] === \Pubvana\Models\TrustCache::STATUS_MALICIOUS) {
-                if ($isAjax) {
-                    $this->app->jsonHalt(['blocked' => true, 'warning' => $cached['warning']]);
-                }
-                return 'has been found malicious by the Pubvana trust service';
+        $cached = $this->trustCachedStatus($item);
+
+        // Malicious rules over everything, including a forced resubmit.
+        if ($cached !== null && $cached['status'] === \Pubvana\Models\TrustCache::STATUS_MALICIOUS) {
+            if ($isAjax) {
+                $this->app->jsonHalt(['blocked' => true, 'warning' => $cached['warning']]);
             }
+            return 'has been found malicious by the Pubvana trust service';
+        }
+
+        if ($force) {
+            // The admin already confirmed the not-trusted case in the modal.
             return null;
         }
 
         if ($isAjax) {
+            // A cached 'trusted' answer is good enough; skip the round trip.
+            if ($cached !== null && $cached['status'] === \Pubvana\Models\TrustCache::STATUS_TRUSTED) {
+                return null;
+            }
+
             $result = $this->trustLiveStatus($item);
 
             if ($result['status'] === \Pubvana\Models\TrustCache::STATUS_MALICIOUS) {
                 $this->app->jsonHalt(['blocked' => true, 'warning' => $result['warning']]);
             }
-            if ($result['status'] === \Pubvana\Models\TrustCache::STATUS_UNKNOWN) {
-                $this->app->jsonHalt(['needsConfirm' => true, $payloadKey => $payload]);
+            if ($result['status'] === \Pubvana\Models\TrustCache::STATUS_TRUSTED) {
+                return null;
             }
-            return null;
+
+            // Not trusted, or the service could not be reached (answered=false
+            // answers the placeholder 'unknown'). Both warn: an outage is not
+            // a verdict, but it is also not a reason to skip the confirmation.
+            $this->app->jsonHalt(['needsConfirm' => true, $payloadKey => $payload]);
         }
 
         // Non-AJAX fallback: a cached malicious verdict is the only hard
-        // stop. Anything else proceeds; the badge already shows the status.
-        $cached = $this->trustCachedStatus($item);
-        if ($cached !== null && $cached['status'] === \Pubvana\Models\TrustCache::STATUS_MALICIOUS) {
-            return 'has been found malicious by the Pubvana trust service';
-        }
-
+        // stop (already handled above). Anything else proceeds; the badge
+        // already shows the status.
         return null;
     }
 }
