@@ -52,7 +52,7 @@ class Plugin implements PluginInterface
             'label'       => 'Social Links',
             'description' => 'Your social profile links, managed in Settings',
             'provider'    => fn (array $options) => $app->socialLinks()->socialLinksBlock($options),
-            'template'    => 'pubvana/social-links/public/blocks/social-links',
+            'template'    => 'social-links.tpl',
             'priority'    => 10,
             'options'     => [
                 'title' => ['type' => 'input', 'label' => 'Title', 'default' => 'Follow Us'],

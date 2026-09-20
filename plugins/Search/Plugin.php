@@ -54,7 +54,7 @@ class Plugin implements PluginInterface
         $adext->register('block', 'available', 'pubvana.search.form', [
             'label'       => 'Search Form',
             'description' => 'Site search form',
-            'template'    => 'pubvana/search/public/blocks/search',
+            'template'    => 'search.tpl',
             'priority'    => 10,
             'options'     => [
                 'action'      => ['type' => 'input', 'label' => 'Form Action URL', 'default' => '/search'],

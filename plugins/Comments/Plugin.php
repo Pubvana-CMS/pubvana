@@ -133,7 +133,7 @@ class Plugin implements PluginInterface
             'label'       => 'Recent Comments',
             'description' => 'Latest approved comments across the site',
             'provider'    => fn(array $options) => $app->comments()->recentCommentsBlock($options),
-            'template'    => 'pubvana/comments/public/blocks/recent-comments',
+            'template'    => 'recent-comments.tpl',
             'priority'    => 10,
             'options'     => [
                 'title' => ['type' => 'input', 'label' => 'Title', 'default' => 'Recent Comments'],

@@ -4,7 +4,7 @@ Guidance for AI agents contributing to this plugin, which is part of the main Pu
 
 ## Overview
 
-Core Blocks provides two generic blocks (Text and HTML) that do not belong to any specific content plugin. Both are registered declaratively, with no PHP registration logic.
+Core Blocks provides two generic blocks (Text and HTML) that do not belong to any specific content plugin. Both are registered in PHP via adext, the same way every other block plugin registers.
 
 - **Package:** `pubvana/core-blocks` (`pubvana.json:2`), semver `0.1.0`, category `blocks`
 - **License:** MIT, matching the main project (repo `composer.json` declares `"license": "MIT"`)
@@ -15,18 +15,19 @@ Core Blocks provides two generic blocks (Text and HTML) that do not belong to an
 
 ## Project guidelines
 
-1. **Register blocks in `pubvana.json`, never in `Plugin.php`.** `Plugin::register()` must stay a no-op (`Plugin.php:13-18`). Reason: RegionManager reads `provides.block.available` and does not need a PHP callable for static blocks.
-2. **Do not set a provider callable on a static block.** When no provider is set, RegionManager passes saved options directly as template data (`Plugin.php:15-17`). Reason: a provider would introduce a code path for data that already arrives in the template.
-3. **Keep the template key without a `/public/` segment.** The registered key is `pubvana/core-blocks/blocks/{name}` (`pubvana.json:13, 31`), while the file lives under `Views/public/blocks/{name}.tpl`. Reason: the plugin view path mapping resolves the suffix differently than the adext block key.
+1. **Register blocks in `Plugin.php` via adext.** Each block is registered with `$adext->register('block', 'available', ...)` inside `Plugin::register()` (`Plugin.php:21-41`). The manifest `pubvana.json` carries only package metadata with an empty `provides` (`pubvana.json:7`); it holds no block registration. Reason: one registration path across every block plugin.
+2. **Do not set a provider callable on a static block.** When no provider is set, RegionManager layers the saved options over the option defaults and passes the result as template data. Reason: a provider would introduce a code path for data that already arrives in the template.
+3. **Keep the block key, template value, and file location in lockstep.** The registered key is `pubvana.core-blocks.{name}` (`Plugin.php:21, 32`); author and package for template resolution come from that key (`pubvana` / `core-blocks`). The `template` value is the bare file name `{name}.tpl` and the file lives at `Views/public/blocks/{name}.tpl`. RegionManager resolves the plugin default against the package view path (`Views/public/blocks/`). Reason: a mismatch makes the block unresolvable and it silently renders nothing.
 4. **Keep the escaping boundary strict.** `text.tpl` renders `title` and `content` escaped (`{{ content }}`, `Views/public/blocks/text.tpl:3-7`); `html.tpl` renders `content` raw (`{! content !}`, `Views/public/blocks/html.tpl:3`). Never swap the two. Reason: the HTML block is explicitly the unescaped escape hatch for trusted admin markup; the Text block is not.
-5. **Keep options schema scalar and defaulted.** Text takes `title` (input) and `content` (textarea); HTML takes `title` (input) and `content` (textarea) (`pubvana.json:10-40`). Reason: saved options are handed to the template as-is, so every option the template reads must have a default in the schema.
+5. **The Text block's content editor is plain text, not a WYSIWYG editor.** `text` declares `content` as a textarea with `'wysiwyg' => false` (`Plugin.php:28`). The block modal only attaches Jodit to textareas that do not opt out. Reason: the Text block escapes its body, so markup produced by an editor would display as escaped source instead of rendered text. HTML (the editor-managed block) keeps Jodit attached.
+6. **Keep options schema scalar and defaulted.** Text takes `title` (input) and `content` (textarea); HTML takes `title` (input) and `content` (textarea) (`Plugin.php:21-41`). Reason: RegionManager falls back to the schema default for any option the template reads.
 
 ## Repository layout
 
 ```
 plugins/CoreBlocks/
-├── Plugin.php                 No-op entry point; block registration lives in pubvana.json
-├── pubvana.json               Manifest; provides.block.available (text, html)
+├── Plugin.php                 Registers both blocks via adext
+├── pubvana.json               Manifest only; provides is empty
 └── Views/public/blocks/
     ├── text.tpl               Escaped title + content block
     └── html.tpl               Unescaped HTML block
@@ -34,20 +35,22 @@ plugins/CoreBlocks/
 
 ## Core architecture
 
-**Entry point.** `Plugin::register()` is intentionally empty (`Plugin.php:13-18`). There is no service, config, database table, controller, model, or admin page.
+**Entry point.** `Plugin::register()` registers the two blocks with adext (`Plugin.php:13-42`). There is no service, config, database table, controller, model, or admin page.
 
-**Registration.** All behavior is declarative in `pubvana.json` under `provides.block.available`:
+**Registration.** Both blocks are registered in PHP:
 
-- `text` (`pubvana.json:10-27`): label Text, priority 100, options `title` (input, default `''`) and `content` (textarea, default `''`), template `pubvana/core-blocks/blocks/text`.
-- `html` (`pubvana.json:28-43`): label HTML, priority 110, options `title` (input, default `''`) and `content` (textarea, default `''`), template `pubvana/core-blocks/blocks/html`.
+- `pubvana.core-blocks.text` (`Plugin.php:21-30`): label Text, priority 100, template `text.tpl`, options `title` (input, default `''`) and `content` (textarea, default `''`, `wysiwyg: false`).
+- `pubvana.core-blocks.html` (`Plugin.php:32-41`): label HTML, priority 110, template `html.tpl`, options `title` (input, default `''`) and `content` (textarea, default `''`, WYSIWYG attached).
 
-**Data flow.** An admin places a block in a region via the core block picker. RegionManager stores the options chosen in the UI, then, because no provider callable exists, feeds those saved options directly to the Vision template as data (`title`/`content`).
+Template resolution derives author `pubvana` and package `core-blocks` from the block key and looks in `Views/public/blocks/` by default, with app and theme overrides available.
+
+**Data flow.** An admin places a block in a region via the core block picker. RegionManager stores the options chosen in the UI, then, because no provider callable exists, feeds those saved options over each schema default directly to the Vision template as data (`title`/`content`).
 
 **Templates.** Both `.tpl` files wrap output in `.block` wrappers. `text.tpl` conditionally prints an `<h6 class="block-title">` for `title` and escapes `content`; `html.tpl` prints an escaped `title` the same way and `content` with Vision's unescaped `{! ... !}` operator.
 
 ## Development and testing
 
-This plugin has no `composer.json` and no test suite. It is a declarative plugin with no runtime code paths to execute.
+This plugin has no `composer.json` and no test suite. Registration is two small adext calls with no additional runtime code paths to execute.
 
 - Lint/static analysis (app-wide, from the repo root; the plugin is in-tree):
   - `vendor/bin/phpstan analyse` (level 3); PHPStan does not analyze `plugins/`, so syntax is the main automated check
@@ -55,8 +58,8 @@ This plugin has no `composer.json` and no test suite. It is a declarative plugin
 - Manual verification checklist:
   - [ ] Drop a Text block into a region: options render raw text and HTML entities properly escaped
   - [ ] Drop an HTML block into a region: markup renders unescaped and unstyled beyond `.block-html`
+  - [ ] The Text block's content field in the block modal is a plain textarea (no toolbar); the HTML block's field keeps the Jodit editor
   - [ ] The block appears in the block picker under both registered labels, in priority order
-  - [ ] `Plugin.php` remains a no-op with no service, routes, or assets added
 
 No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->`
 
@@ -64,7 +67,7 @@ No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->
 - **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
 
 1. **`declare(strict_types=1);` at the top of the class file** (`Plugin.php:3`).
-2. **Prefer declarative registration over PHP registration.** Static blocks with static options belong in `pubvana.json`, not in `register()`.
+2. **Register blocks through `$adext->register('block', 'available', ...)` in `register()`.** The block key is `pubvana.core-blocks.{name}` and `template` is the bare file name; no registration may be added to `pubvana.json`.
 3. **Templates stay output-only.** No logic beyond the Vision tags already used (`{% if %}`, `{{ }}`, `{! !}`); keep the escaping boundary from the guidelines.
 
 ## Documentation sources
@@ -72,24 +75,24 @@ No coverage is configured for this plugin. `<!-- TODO: add [coverage target] -->
 | Source | Purpose |
 |--------|---------|
 | `README.md` | User-facing features and usage |
-| `pubvana.json` | Single source of truth for block keys, labels, options, and priorities |
+| `Plugin.php` | Single source of truth for block keys, labels, options, and priorities |
 
 ## Common tasks
 
 | Goal | Where to look |
 |------|---------------|
-| Add a new generic block | New entry under `provides.block.available` in `pubvana.json` plus a `.tpl` under `Views/public/blocks/` |
-| Change block labels, priorities, or option schema | `pubvana.json` (block entries) |
+| Add a new generic block | New `$adext->register('block', 'available', ...)` block in `Plugin.php` plus a `.tpl` under `Views/public/blocks/` |
+| Change block labels, priorities, or option schema | `Plugin.php` (block entries) |
 | Change block markup | `Views/public/blocks/{text,html}.tpl` |
 
 ## PR / contribution checklist
 
 - [ ] Every claim in changed code is grounded in the actual plugin code; no guessing at behavior
 - [ ] `declare(strict_types=1)` present where PHP is edited; no em dashes in new prose; one-line reasons preserved on any edited guideline
-- [ ] `php -l` passes on the class file; template keys, option defaults, and template data names match exactly
-- [ ] New blocks are registered in `pubvana.json` with a `priority` and option defaults, and the matching `.tpl` under `Views/public/blocks/`
+- [ ] `php -l` passes on the class file; block keys, template values, option defaults, and template data names match exactly
+- [ ] New blocks are registered in `Plugin.php` with a `priority` and option defaults, and the matching `.tpl` under `Views/public/blocks/`
 - [ ] Escaping boundary preserved: no escaping change without a deliberate reason, documented in the guideline
-- [ ] `Plugin::register()` remains a no-op; README updated only if user-facing behavior changed
+- [ ] `pubvana.json` stays registration-free; README updated only if user-facing behavior changed
 
 ## Out of scope / non-goals
 

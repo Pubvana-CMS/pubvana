@@ -103,6 +103,9 @@ class BlogPublicController extends PublicController
 
         $this->app->blog()->recordView((int) $post->id);
 
+        // Give region blocks the current post id (e.g. Related Posts).
+        $this->app->regions()->setContext(['post_id' => (int) $post->id]);
+
         $categories = $this->getPostCategories((int) $post->id);
         $tags = $this->getPostTags((int) $post->id);
 
@@ -197,6 +200,9 @@ class BlogPublicController extends PublicController
             $this->app->halt(404, 'Preview not found');
             return;
         }
+
+        // Give region blocks the current post id (e.g. Related Posts).
+        $this->app->regions()->setContext(['post_id' => (int) $post->id]);
 
         $categories = $this->getPostCategories((int) $post->id);
         $tags = $this->getPostTags((int) $post->id);

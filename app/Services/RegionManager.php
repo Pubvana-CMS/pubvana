@@ -26,7 +26,8 @@ use flight\Engine;
  * Blocks are registered via adext with type 'block' and provide:
  *   - label: display name
  *   - provider: callable that returns template data
- *   - template: Vision .tpl template file
+ *   - template: bare Vision .tpl file name (the author and package come
+ *     from the registration key; the file lives under public/blocks/)
  *   - options: configurable settings with defaults
  *
  * @package Pubvana\Services
@@ -52,12 +53,29 @@ class RegionManager
     /** @var array<string, BlockPlacement[]> Placements keyed by region_id, lazy-loaded once per request */
     private array $placementsByRegion = [];
 
+    /** @var array<string, mixed> Current page context handed to every block provider */
+    private array $context = [];
+
     /**
      * @param Engine<object> $app Flight application for accessing db(), adext(), view()
      */
     public function __construct(Engine $app)
     {
         $this->app = $app;
+    }
+
+    /**
+     * Set the page context available to block providers for this request.
+     *
+     * Content controllers set this before rendering so that context-aware
+     * blocks (e.g. the blog's Related Posts, which needs the current
+     * post_id) can build their data.
+     *
+     * @param array<string, mixed> $context Per-request context values
+     */
+    public function setContext(array $context): void
+    {
+        $this->context = $context;
     }
 
     // -----------------------------------------------------------------
@@ -422,7 +440,7 @@ class RegionManager
             }
 
             $options = $placement->getOptions();
-            $rendered = $this->renderBlock($block, $options, $vision, $view);
+            $rendered = $this->renderBlock($block, $options, $vision, $view, $placement->block_key);
             if ($rendered !== '') {
                 $html .= $rendered;
             }
@@ -434,19 +452,21 @@ class RegionManager
     /**
      * Render a single block: call provider with saved values, resolve template, render with Vision.
      *
-     * @param array<string, mixed> $block   Block definition from adext
-     * @param array<string, mixed> $options Saved placement options (JSON-decoded)
+     * @param array<string, mixed> $block    Block definition from adext
+     * @param array<string, mixed> $options  Saved placement options (JSON-decoded)
      * @param \Enlivenapp\Vision\Engine $vision Vision template engine instance
-     * @param PluginView                $view   PluginView instance for template resolution
+     * @param PluginView                $view    PluginView instance for template resolution
+     * @param string                    $blockKey Block registration key ('{author}.{package}.{name}')
      * @return string Rendered HTML, or empty string on failure
      */
-    protected function renderBlock(array $block, array $options, object $vision, PluginView $view): string
+    protected function renderBlock(array $block, array $options, object $vision, PluginView $view, string $blockKey): string
     {
-        // Call the data provider with saved placement values
+        // Call the data provider with saved placement values and the
+        // current page context.
         $data = [];
         if (isset($block['provider']) && is_callable($block['provider'])) {
             try {
-                $data = $block['provider']($options);
+                $data = $block['provider']($options, $this->context);
                 if (!is_array($data)) {
                     $data = [];
                 }
@@ -454,12 +474,13 @@ class RegionManager
                 return '';
             }
         } else {
-            // No provider — pass saved options directly as template data
-            $data = $options;
+            // No provider — layer the saved options over the option schema
+            // defaults so every template variable carries a value.
+            $data = $this->defaultOptions($block, $options);
         }
 
         // Resolve template path through the override chain
-        $templatePath = $this->resolveBlockTemplate($block['template'] ?? '', $view);
+        $templatePath = $this->resolveBlockTemplate((string) ($block['template'] ?? ''), $blockKey, $view);
 
         if ($templatePath === '' || !is_file($templatePath)) {
             return '';
@@ -473,32 +494,59 @@ class RegionManager
     }
 
     /**
+     * Merge a block's saved option values over its schema defaults.
+     *
+     * A block without a provider hands its options straight to the
+     * template, so every option the template reads must carry a value
+     * even when the placement was saved with an empty options object.
+     *
+     * @param array<string, mixed> $block   Block definition from adext
+     * @param array<string, mixed> $options Saved placement values
+     * @return array<string, mixed> Defaults overlaid with saved values
+     */
+    protected function defaultOptions(array $block, array $options): array
+    {
+        $defaults = [];
+        foreach (($block['options'] ?? []) as $key => $def) {
+            if (is_array($def) && array_key_exists('default', $def)) {
+                $defaults[$key] = $def['default'];
+            }
+        }
+        return array_replace($defaults, $options);
+    }
+
+    /**
      * Resolve a block template path through the three-tier override chain.
      *
-     * Template format: 'pubvana/blog/public/blocks/recent-posts'
-     * Resolution:
-     *   1. app/Views/pubvana/blog/public/blocks/recent-posts.tpl  (owner override)
-     *   2. themes/{active}/Views/pubvana/blog/public/blocks/recent-posts.tpl  (theme override)
-     *   3. plugins/{plugin}/Views/pubvana/blog/public/blocks/recent-posts.tpl  (plugin default)
+     * A block registration declares only the bare template file name
+     * (e.g. 'author-card.tpl'); the owning plugin's author and package
+     * come from the block registration key (e.g. 'pubvana.profiles.author-card'
+     * -> author 'pubvana', package 'profiles'). The file always lives under
+     * public/blocks/. Resolution:
+     *   1. app/Views/{author}/{package}/public/blocks/{name}.tpl  (app override)
+     *   2. themes/{active}/Views/{author}/{package}/public/blocks/{name}.tpl  (theme override)
+     *   3. plugins/{Plugin}/Views/public/blocks/{name}.tpl  (plugin default, via the registered plugin view path)
      *
-     * @param string     $template Template path (without .tpl extension)
+     * @param string     $template Bare template file name (may carry a trailing .tpl)
+     * @param string     $blockKey Block registration key ('{author}.{package}.{name}')
      * @param PluginView $view     PluginView for theme/plugin path lookups
      * @return string Resolved absolute path, or empty string if not found
      */
-    protected function resolveBlockTemplate(string $template, PluginView $view): string
+    protected function resolveBlockTemplate(string $template, string $blockKey, PluginView $view): string
     {
-        if ($template === '') {
+        $name = $this->templateName($template);
+
+        if ($name === '') {
             return '';
         }
 
-        // Parse package name from template path (first two segments)
-        $parts = explode('/', $template);
-        if (count($parts) < 3) {
+        $key = explode('.', $blockKey);
+        if (count($key) < 2 || $key[0] === '' || $key[1] === '') {
             return '';
         }
 
-        $packageName = $parts[0] . '/' . $parts[1];
-        $prefixedPath = $template . '.tpl';
+        $package = $key[0] . '/' . $key[1];
+        $prefixedPath = $package . '/public/blocks/' . $name . '.tpl';
 
         // 1. App-level override
         $appViewsPath = $this->app->get('flight.views.path') ?? PROJECT_ROOT . '/app/Views';
@@ -516,17 +564,35 @@ class RegionManager
             }
         }
 
-        // 3. Plugin default (same prefixed path; plugin views are REQUIRED
-        // to live under Views/{pluginId}/{template})
-        $pluginViewPath = $view->getPluginPath($packageName);
+        // 3. Plugin default. The package-prefix stripped path under the
+        // plugin's Views/ dir: {author}/{package} -> Views/public/blocks/.
+        $pluginViewPath = $view->getPluginPath($package);
         if ($pluginViewPath !== null) {
-            $pluginFile = $pluginViewPath . DIRECTORY_SEPARATOR . $prefixedPath;
+            $pluginFile = $pluginViewPath . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'blocks' . DIRECTORY_SEPARATOR . $name . '.tpl';
             if (is_file($pluginFile)) {
                 return $pluginFile;
             }
         }
 
         return '';
+    }
+
+    /**
+     * Normalize the registered template value into a bare template file name.
+     *
+     * Only a bare file name is accepted; the value may carry a trailing
+     * .tpl which is stripped before the tiers append their own extension.
+     *
+     * @param string $template Registered template value
+     * @return string Bare name without .tpl, or '' when not a bare file name
+     */
+    protected function templateName(string $template): string
+    {
+        $template = trim($template, '/');
+        if ($template === '' || str_contains($template, '/')) {
+            return '';
+        }
+        return str_ends_with($template, '.tpl') ? substr($template, 0, -4) : $template;
     }
 
     // -----------------------------------------------------------------

@@ -44,6 +44,7 @@ plugins/Profiles/
 ├── Plugin.php                         Entry point; profiles facade, routes, public CSS
 ├── pubvana.json                       Manifest; declares admin.dashboard (see gap below)
 ├── Views/admin/profile/index.php      Shared profile edit form (own or other user)
+├── Views/public/blocks/author-card.tpl  Author Card block template (plugin default layout)
 ├── assets/css/profiles.css            Public .pv-profile-* styles for the theme templates
 └── README.md
 ```
@@ -122,7 +123,7 @@ Coverage: the suite covers the model, both controllers (URLs, website validation
 ## Out of scope / non-goals
 
 - This is an in-tree application plugin, not a Composer package; no `composer.json` and nothing for Packagist.
-- Public display templates live in the active theme, not in this plugin; there is no `Views/public/` here.
+- Public display templates (profile pages) live in the active theme, not in this plugin. The only `Views/public/` asset here is the Author Card block template, which follows the plugin default block layout.
 - No hard profile delete; profiles disappear only through the `users` cascade delete.
 - No external avatar sources (Gravatar, Uploadcare, etc.); the avatar is a stored image path picked via the Media plugin.
 - No pagination, search, or discovery of profiles; a profile is reached by a known username.

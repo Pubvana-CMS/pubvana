@@ -245,7 +245,9 @@ $wysiwygSelectors = [];
 
                                 <?php elseif ($fieldType === 'textarea'): ?>
                                     <?php $textareaId = 'block-option-' . (int) $placement->id . '-' . preg_replace('/[^a-z0-9_-]/i', '-', $fieldKey); ?>
+                                    <?php if (($fieldDef['wysiwyg'] ?? true) !== false): ?>
                                     <?php $wysiwygSelectors[] = '#' . $textareaId; ?>
+                                    <?php endif; ?>
                                     <div class="mb-3">
                                         <label class="form-label"><?= htmlspecialchars($fieldDef['label'] ?? $fieldKey) ?></label>
                                         <textarea id="<?= htmlspecialchars($textareaId) ?>" class="form-control" rows="5"

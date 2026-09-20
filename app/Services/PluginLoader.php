@@ -640,14 +640,6 @@ class PluginLoader
                 $adext->register('public.js', 'default', $pluginId . '.' . $key, $js);
             }
         }
-
-        if (!empty($provides['block'])) {
-            foreach ($provides['block'] as $slot => $blocks) {
-                foreach ($blocks as $key => $block) {
-                    $adext->register('block', $slot, $pluginId . '.' . $key, $block);
-                }
-            }
-        }
     }
 
     /*

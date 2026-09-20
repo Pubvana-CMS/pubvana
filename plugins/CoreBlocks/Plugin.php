@@ -12,8 +12,32 @@ class Plugin implements PluginInterface
 {
     public function register(Engine $app, Router $router, array $config = []): void
     {
-        // Blocks are registered via pubvana.json.
-        // Provider callables are not needed — RegionManager passes saved
-        // options directly as template data when no provider is set.
+        $adext = $app->adext();
+
+        // Blocks follow the shared convention: key '{author}.{package}.{name}',
+        // template a bare file name under Views/public/blocks/. Provider
+        // callables are not needed — RegionManager passes saved options
+        // directly as template data when no provider is set.
+        $adext->register('block', 'available', 'pubvana.core-blocks.text', [
+            'label'       => 'Text',
+            'description' => 'Free-form text content',
+            'template'    => 'text.tpl',
+            'priority'    => 100,
+            'options'     => [
+                'title'   => ['type' => 'input', 'label' => 'Title', 'default' => ''],
+                'content' => ['type' => 'textarea', 'label' => 'Content', 'default' => '', 'wysiwyg' => false],
+            ],
+        ]);
+
+        $adext->register('block', 'available', 'pubvana.core-blocks.html', [
+            'label'       => 'HTML',
+            'description' => 'Free-form HTML content (unescaped)',
+            'template'    => 'html.tpl',
+            'priority'    => 110,
+            'options'     => [
+                'title'   => ['type' => 'input', 'label' => 'Title', 'default' => ''],
+                'content' => ['type' => 'textarea', 'label' => 'Content', 'default' => ''],
+            ],
+        ]);
     }
 }

@@ -112,7 +112,7 @@ class Plugin implements PluginInterface
             'label'       => 'Recent Posts',
             'description' => 'List of recent blog posts',
             'provider'    => fn(array $options) => $app->blog()->recentPostsBlock($options, $prefix),
-            'template'    => 'pubvana/blog/public/blocks/recent-posts',
+            'template'    => 'recent-posts.tpl',
             'priority'    => 10,
             'options'     => [
                 'title' => ['type' => 'input', 'label' => 'Title', 'default' => 'Recent Posts'],
@@ -124,7 +124,7 @@ class Plugin implements PluginInterface
             'label'       => 'Categories',
             'description' => 'List of blog categories',
             'provider'    => fn(array $options) => $app->blog()->categoriesBlock($options, $prefix),
-            'template'    => 'pubvana/blog/public/blocks/categories',
+            'template'    => 'categories.tpl',
             'priority'    => 20,
             'options'     => [
                 'title' => ['type' => 'input', 'label' => 'Title', 'default' => 'Categories'],
@@ -135,7 +135,7 @@ class Plugin implements PluginInterface
             'label'       => 'Tags',
             'description' => 'List of blog tags',
             'provider'    => fn(array $options) => $app->blog()->tagsBlock($options, $prefix),
-            'template'    => 'pubvana/blog/public/blocks/tags',
+            'template'    => 'tags.tpl',
             'priority'    => 30,
             'options'     => [
                 'title' => ['type' => 'input', 'label' => 'Title', 'default' => 'Tags'],
@@ -146,7 +146,7 @@ class Plugin implements PluginInterface
             'label'       => 'Archive List',
             'description' => 'Posts grouped by month',
             'provider'    => fn(array $options) => $app->blog()->archiveBlock($options, $prefix),
-            'template'    => 'pubvana/blog/public/blocks/archive',
+            'template'    => 'archive.tpl',
             'priority'    => 40,
             'options'     => [
                 'title' => ['type' => 'input', 'label' => 'Title', 'default' => 'Archives'],
@@ -157,7 +157,7 @@ class Plugin implements PluginInterface
             'label'       => 'Related Posts',
             'description' => 'Posts sharing tags or categories with the current post',
             'provider'    => fn(array $options, array $context = []) => $app->blog()->relatedPostsBlock($options, $context, $prefix),
-            'template'    => 'pubvana/blog/public/blocks/related-posts',
+            'template'    => 'related-posts.tpl',
             'priority'    => 50,
             'options'     => [
                 'title' => ['type' => 'input', 'label' => 'Title', 'default' => 'Related Posts'],

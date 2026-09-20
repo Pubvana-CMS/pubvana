@@ -292,9 +292,6 @@ final class PluginLoaderTest extends TestCase
                 'public.css' => [
                     'main' => ['url' => '/plugins/alpha/assets/x.css'],
                 ],
-                'block' => [
-                    'available' => ['card' => ['label' => 'Card', 'template' => 'pubvana/alpha/blocks/card']],
-                ],
             ],
         ], [
             'config'      => "return ['routePrepend' => 'alpha', 'in_config' => 'yes'];",
@@ -337,8 +334,11 @@ final class PluginLoaderTest extends TestCase
         self::assertSame('Alpha', $menu['pubvana/alpha.0']['label']);
         $css = $app->adext()->get('public.css', 'default');
         self::assertArrayHasKey('pubvana/alpha.main', $css);
+
+        // Blocks are registered in PHP only; a manifest 'block' provides
+        // entry is no longer honored, so the registry stays empty.
         $blocks = $app->adext()->get('block', 'available');
-        self::assertSame('Card', $blocks['pubvana/alpha.card']['label']);
+        self::assertSame([], $blocks);
 
         // Routes: public group uses the configured routePrepend, the admin
         // group is always /admin, and every route carries the view context

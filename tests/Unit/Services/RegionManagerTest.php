@@ -146,12 +146,12 @@ final class RegionManagerTest extends TestCase
         $registry = $this->app->adext();
         $registry->register('block', 'available', 'late.plugin', [
             'label'    => 'Late',
-            'template' => 'pubvana/late/blocks/card',
+            'template' => 'card.tpl',
             'priority' => 90,
         ]);
         $registry->register('block', 'available', 'early.plugin', [
             'label'    => 'Early',
-            'template' => 'pubvana/early/blocks/card',
+            'template' => 'card.tpl',
             'priority' => 10,
         ]);
 
@@ -348,7 +348,8 @@ final class RegionManagerTest extends TestCase
             'adext' => $this->adextProvider(),
             'view' => fn(): object => new stdClass(),
         ]);
-        $this->registerCardBlock($this->registerCardTemplate(), $app);
+        $this->registerCardTemplate();
+        $this->registerCardBlock($app);
 
         self::assertSame('', (new RegionManager($app))->buildRegion('footer'));
     }
@@ -367,8 +368,8 @@ final class RegionManagerTest extends TestCase
         ]);
         $service = new RegionManager($app);
 
-        $template = $this->registerCardTemplate();
-        $this->registerCardBlock($template, $app);
+        $this->registerCardTemplate();
+        $this->registerCardBlock($app);
 
         $calls = [];
         $this->insertPlacement('footer', 'pubvana.card', 0, ['title' => 'First']);
@@ -378,7 +379,7 @@ final class RegionManagerTest extends TestCase
         $registry = $app->adext();
         $registry->register('block', 'available', 'pubvana.probe', [
             'label'    => 'Probe',
-            'template' => $template,
+            'template' => 'card.tpl',
             'provider' => function (array $options) use (&$calls): array {
                 $calls[] = $options;
                 return $options;
@@ -415,43 +416,104 @@ final class RegionManagerTest extends TestCase
 
     public function testRenderBlockCatchesProviderThrowables(): void
     {
+        $this->registerCardTemplate();
+
         $block = [
-            'template' => $this->registerCardTemplate(),
+            'template' => 'card.tpl',
             'provider' => function (): array {
                 throw new \RuntimeException('boom');
             },
         ];
 
-        self::assertSame('', $this->invoke($this->service, 'renderBlock', [$block, [], $this->vision(), $this->pluginView()]));
+        self::assertSame('', $this->invoke($this->service, 'renderBlock', [$block, [], $this->vision(), $this->pluginView(), 'pubvana.card']));
     }
 
     public function testRenderBlockForcesProviderDataToAnArray(): void
     {
+        $this->registerCardTemplate('{{ payload }}');
+
         $block = [
-            'template' => $this->registerCardTemplate('{{ payload }}'),
+            'template' => 'card.tpl',
             'provider' => fn(): string => 'not-an-array',
         ];
 
-        self::assertSame('', $this->invoke($this->service, 'renderBlock', [$block, [], $this->vision(), $this->pluginView()]));
+        self::assertSame('', $this->invoke($this->service, 'renderBlock', [$block, [], $this->vision(), $this->pluginView(), 'pubvana.card']));
     }
 
     public function testRenderBlockWithoutProviderPassesOptionsAsData(): void
     {
-        $block = ['template' => $this->registerCardTemplate('{{ title }}')];
+        $this->registerCardTemplate('{{ title }}');
+
+        $block = ['template' => 'card.tpl'];
 
         self::assertSame(
             'Options',
-            $this->invoke($this->service, 'renderBlock', [$block, ['title' => 'Options'], $this->vision(), $this->pluginView()])
+            $this->invoke($this->service, 'renderBlock', [$block, ['title' => 'Options'], $this->vision(), $this->pluginView(), 'pubvana.card'])
         );
+    }
+
+    public function testRenderBlockWithoutProviderMergesOptionDefaults(): void
+    {
+        $this->registerCardTemplate('{{ title }}|{{ placeholder }}|{{ button_text }}');
+
+        $block = [
+            'template' => 'card.tpl',
+            'options'  => [
+                'title'       => ['type' => 'input', 'label' => 'Title', 'default' => 'Search'],
+                'placeholder' => ['type' => 'input', 'label' => 'Placeholder', 'default' => 'Search...'],
+                'button_text' => ['type' => 'input', 'label' => 'Button', 'default' => 'Go'],
+            ],
+        ];
+
+        // A placement saved with empty options still carries the schema
+        // defaults into the template.
+        self::assertSame(
+            'Search|Search...|Go',
+            $this->invoke($this->service, 'renderBlock', [$block, [], $this->vision(), $this->pluginView(), 'pubvana.card'])
+        );
+
+        // Saved values win over defaults.
+        self::assertSame(
+            'Find|Type here|Submit',
+            $this->invoke($this->service, 'renderBlock', [
+                $block,
+                ['title' => 'Find', 'placeholder' => 'Type here', 'button_text' => 'Submit'],
+                $this->vision(),
+                $this->pluginView(),
+                'pubvana.card',
+            ])
+        );
+    }
+
+    public function testRenderBlockPassesPageContextToProviders(): void
+    {
+        $this->registerCardTemplate('{{ posts }}');
+
+        $received = null;
+        $block = [
+            'template' => 'card.tpl',
+            'provider' => function (array $options, array $context) use (&$received): array {
+                $received = $context;
+                return ['posts' => (string) ($context['post_id'] ?? 0)];
+            },
+        ];
+
+        $this->service->setContext(['post_id' => 42, 'slug' => 'hello-world']);
+
+        self::assertSame(
+            '42',
+            $this->invoke($this->service, 'renderBlock', [$block, [], $this->vision(), $this->pluginView(), 'pubvana.card'])
+        );
+        self::assertSame(['post_id' => 42, 'slug' => 'hello-world'], $received);
     }
 
     public function testRenderBlockFailsQuietlyWhenTemplateIsMissing(): void
     {
-        $block = ['template' => 'pubvana/missing/blocks/nothing'];
+        $block = ['template' => 'missing.tpl'];
 
         self::assertSame(
             '',
-            $this->invoke($this->service, 'renderBlock', [$block, [], $this->vision(), $this->pluginView()])
+            $this->invoke($this->service, 'renderBlock', [$block, [], $this->vision(), $this->pluginView(), 'pubvana.card'])
         );
     }
 
@@ -459,55 +521,90 @@ final class RegionManagerTest extends TestCase
     // resolveBlockTemplate() three-tier chain (invoked directly)
     // -----------------------------------------------------------------
 
-    public function testResolveBlockTemplateRejectsShortAndEmptyPaths(): void
+    public function testResolveBlockTemplateRejectsInvalidValues(): void
     {
         $view = $this->pluginView();
 
-        self::assertSame('', $this->invoke($this->service, 'resolveBlockTemplate', ['', $view]));
-        self::assertSame('', $this->invoke($this->service, 'resolveBlockTemplate', ['only/one', $view]));
-        self::assertSame('', $this->invoke($this->service, 'resolveBlockTemplate', ['a/b', $view]));
+        // Bad template values: empty or a directory-ish path.
+        self::assertSame('', $this->invoke($this->service, 'resolveBlockTemplate', ['', 'pubvana.card', $view]));
+        self::assertSame('', $this->invoke($this->service, 'resolveBlockTemplate', ['pubvana/card/blocks/card.tpl', 'pubvana.card', $view]));
+
+        // Bad block keys: fewer than two segments, or an empty author/package.
+        self::assertSame('', $this->invoke($this->service, 'resolveBlockTemplate', ['card.tpl', 'card', $view]));
+        self::assertSame('', $this->invoke($this->service, 'resolveBlockTemplate', ['card.tpl', '.card', $view]));
+        self::assertSame('', $this->invoke($this->service, 'resolveBlockTemplate', ['card.tpl', 'pubvana.', $view]));
     }
 
     public function testResolveBlockTemplatePrefersTheAppOverride(): void
     {
-        $template = $this->registerCardTemplate();
+        $this->registerCardTemplate();
         $this->app->set('flight.views.path', $this->tmpRoot . '/app-views');
 
-        $resolved = $this->invoke($this->service, 'resolveBlockTemplate', [$template, $this->pluginView()]);
+        $resolved = $this->invoke($this->service, 'resolveBlockTemplate', ['card.tpl', 'pubvana.card', $this->pluginView()]);
 
-        self::assertSame($this->tmpRoot . '/app-views/' . $template . '.tpl', $resolved);
+        self::assertSame($this->tmpRoot . '/app-views/pubvana/card/public/blocks/card.tpl', $resolved);
     }
 
     public function testResolveBlockTemplateFallsBackToThemeThenPlugin(): void
     {
-        $template = $this->registerCardTemplate();
+        $this->registerCardTemplate();
         $view = $this->pluginView();
         $view->setThemePath($this->tmpRoot . '/theme-views');
-        $view->addPluginPath('pubvana/card', $this->tmpRoot . '/plugin-views');
 
         // The app override tier is skipped: flight.views.path points at a
         // dir without the template.
         $this->app->set('flight.views.path', $this->tmpRoot . '/empty-app-views');
 
-        $themeResolved = $this->invoke($this->service, 'resolveBlockTemplate', [$template, $view]);
-        self::assertSame($this->tmpRoot . '/theme-views/' . $template . '.tpl', $themeResolved);
+        $themeResolved = $this->invoke($this->service, 'resolveBlockTemplate', ['card.tpl', 'pubvana.card', $view]);
+        self::assertSame($this->tmpRoot . '/theme-views/pubvana/card/public/blocks/card.tpl', $themeResolved);
 
-        // Remove the theme override: the plugin tier answers.
-        unlink($this->tmpRoot . '/theme-views/' . $template . '.tpl');
-        $pluginResolved = $this->invoke($this->service, 'resolveBlockTemplate', [$template, $view]);
-        self::assertSame($this->tmpRoot . '/plugin-views/' . $template . '.tpl', $pluginResolved);
+        // Remove the theme override: the plugin tier answers, with the
+        // package-prefixed path stripped to Views/public/blocks/.
+        unlink($this->tmpRoot . '/theme-views/pubvana/card/public/blocks/card.tpl');
+        $pluginResolved = $this->invoke($this->service, 'resolveBlockTemplate', ['card.tpl', 'pubvana.card', $view]);
+        self::assertSame($this->tmpRoot . '/plugin-views/public/blocks/card.tpl', $pluginResolved);
 
         // Remove the plugin file too: nothing resolves.
-        unlink($this->tmpRoot . '/plugin-views/' . $template . '.tpl');
-        self::assertSame('', $this->invoke($this->service, 'resolveBlockTemplate', [$template, $view]));
+        unlink($this->tmpRoot . '/plugin-views/public/blocks/card.tpl');
+        self::assertSame('', $this->invoke($this->service, 'resolveBlockTemplate', ['card.tpl', 'pubvana.card', $view]));
+    }
+
+    public function testResolveBlockTemplateAcceptsTemplateWithOrWithoutExtension(): void
+    {
+        $this->registerCardTemplate();
+        $view = $this->pluginView();
+        $this->app->set('flight.views.path', $this->tmpRoot . '/empty-app-views');
+
+        $withExtension = $this->invoke($this->service, 'resolveBlockTemplate', ['card.tpl', 'pubvana.card', $view]);
+        $withoutExtension = $this->invoke($this->service, 'resolveBlockTemplate', ['card', 'pubvana.card', $view]);
+
+        self::assertSame($this->tmpRoot . '/plugin-views/public/blocks/card.tpl', $withExtension);
+        self::assertSame($this->tmpRoot . '/plugin-views/public/blocks/card.tpl', $withoutExtension);
+    }
+
+    public function testResolveBlockTemplateIgnoresFullPrefixPluginLayout(): void
+    {
+        // The plugin tier accepts exactly one layout: Views/public/blocks/.
+        // A template stored under the package-prefixed path
+        // (Views/pubvana/card/...) must not resolve.
+        $view = $this->pluginView();
+        $this->app->set('flight.views.path', $this->tmpRoot . '/empty-app-views');
+
+        $dir = $this->tmpRoot . '/plugin-views/pubvana/card/public/blocks';
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+        file_put_contents($dir . '/card.tpl', '{{ title }}|');
+
+        self::assertSame('', $this->invoke($this->service, 'resolveBlockTemplate', ['card.tpl', 'pubvana.card', $view]));
     }
 
     public function testResolveBlockTemplateSkipsUnregisteredPlugins(): void
     {
-        $template = $this->registerCardTemplate();
+        $this->registerCardTemplate();
         $view = new PluginView(); // no theme path, no plugin path registered
 
-        self::assertSame('', $this->invoke($this->service, 'resolveBlockTemplate', [$template, $view]));
+        self::assertSame('', $this->invoke($this->service, 'resolveBlockTemplate', ['card.tpl', 'pubvana.card', $view]));
     }
 
     // -----------------------------------------------------------------
@@ -559,6 +656,7 @@ final class RegionManagerTest extends TestCase
         $view = new PluginView();
         $view->setThemePath(null);
         $view->addPluginPath('pubvana/card', $this->tmpRoot . '/plugin-views');
+        $view->addPluginPath('pubvana/probe', $this->tmpRoot . '/plugin-views');
 
         return $view;
     }
@@ -605,33 +703,43 @@ final class RegionManagerTest extends TestCase
     }
 
     /**
-     * Write a block template fixture into every tier dir and return
-     * its template path. Tests delete the tiers they want skipped.
+     * Write the card template fixture into every tier dir.
+     *
+     * App and theme tiers use the '{author}/{package}/public/blocks/' path
+     * derived from the 'pubvana.card' block key; the plugin tier stores the
+     * file under Views/public/blocks/, matching RegionManager's key-derived
+     * resolution. Tests delete the tiers they want skipped.
      *
      * @param string $body Template body (default renders {{ title }})
      */
-    private function registerCardTemplate(string $body = '{{ title }}|'): string
+    private function registerCardTemplate(string $body = '{{ title }}|'): void
     {
-        $template = 'pubvana/card/blocks/card';
-        foreach (['app-views', 'theme-views', 'plugin-views'] as $tier) {
-            $dir = $this->tmpRoot . '/' . $tier . '/pubvana/card/blocks';
+        foreach (['app-views', 'theme-views'] as $tier) {
+            $dir = $this->tmpRoot . '/' . $tier . '/pubvana/card/public/blocks';
             if (!is_dir($dir)) {
                 mkdir($dir, 0777, true);
             }
             file_put_contents($dir . '/card.tpl', $body);
         }
 
-        return $template;
+        $pluginDir = $this->tmpRoot . '/plugin-views/public/blocks';
+        if (!is_dir($pluginDir)) {
+            mkdir($pluginDir, 0777, true);
+        }
+        file_put_contents($pluginDir . '/card.tpl', $body);
     }
 
     /**
      * Register the card block in adext with a provider echoing the title.
+     *
+     * The block key 'pubvana.card' derives the package 'pubvana/card',
+     * matching the registered plugin view path.
      */
-    private function registerCardBlock(string $template, ?Engine $engine = null): void
+    private function registerCardBlock(?Engine $engine = null): void
     {
         ($engine ?? $this->app)->adext()->register('block', 'available', 'pubvana.card', [
             'label'    => 'Card',
-            'template' => $template,
+            'template' => 'card.tpl',
             'provider' => fn(array $options): array => ['title' => (string) ($options['title'] ?? '')],
         ]);
     }

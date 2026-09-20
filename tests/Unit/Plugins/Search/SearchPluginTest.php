@@ -47,7 +47,7 @@ final class SearchPluginTest extends TestCase
         $blocks = $adext->get('block', 'available');
         self::assertArrayHasKey('pubvana.search.form', $blocks);
         self::assertSame('Search Form', $blocks['pubvana.search.form']['label']);
-        self::assertSame('pubvana/search/public/blocks/search', $blocks['pubvana.search.form']['template']);
+        self::assertSame('search.tpl', $blocks['pubvana.search.form']['template']);
     }
 
     public function testConfigShape(): void

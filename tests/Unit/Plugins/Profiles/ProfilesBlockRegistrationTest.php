@@ -33,7 +33,7 @@ final class ProfilesBlockRegistrationTest extends TestCase
 
         self::assertStringContainsString("'block', 'available', 'pubvana.profiles.author-card'", $src);
         self::assertStringContainsString("'Author Card'", $src);
-        self::assertStringContainsString("'template'    => 'pubvana/profiles/blocks/author-card'", $src);
+        self::assertStringContainsString("'template'    => 'author-card.tpl'", $src);
     }
 
     public function testBlockRegistrationHasAllToggles(): void
@@ -69,14 +69,14 @@ final class ProfilesBlockRegistrationTest extends TestCase
 
     public function testTemplateGatesOnAuthor(): void
     {
-        $src = file_get_contents(self::projectRoot() . '/plugins/Profiles/Views/pubvana/profiles/blocks/author-card.tpl');
+        $src = file_get_contents(self::projectRoot() . '/plugins/Profiles/Views/public/blocks/author-card.tpl');
 
         self::assertStringContainsString('{% if author %}', $src);
     }
 
     public function testTemplateRespectsShowAvatarToggle(): void
     {
-        $src = file_get_contents(self::projectRoot() . '/plugins/Profiles/Views/pubvana/profiles/blocks/author-card.tpl');
+        $src = file_get_contents(self::projectRoot() . '/plugins/Profiles/Views/public/blocks/author-card.tpl');
 
         self::assertStringContainsString('show_avatar', $src);
         self::assertStringContainsString('author.avatar_url', $src);
@@ -84,7 +84,7 @@ final class ProfilesBlockRegistrationTest extends TestCase
 
     public function testTemplateRespectsShowSocialsToggle(): void
     {
-        $src = file_get_contents(self::projectRoot() . '/plugins/Profiles/Views/pubvana/profiles/blocks/author-card.tpl');
+        $src = file_get_contents(self::projectRoot() . '/plugins/Profiles/Views/public/blocks/author-card.tpl');
 
         self::assertStringContainsString('show_socials', $src);
         self::assertStringContainsString('author.safe_website', $src);
@@ -92,7 +92,7 @@ final class ProfilesBlockRegistrationTest extends TestCase
 
     public function testTemplateLinksSocialHandlesWithNofollow(): void
     {
-        $src = file_get_contents(self::projectRoot() . '/plugins/Profiles/Views/pubvana/profiles/blocks/author-card.tpl');
+        $src = file_get_contents(self::projectRoot() . '/plugins/Profiles/Views/public/blocks/author-card.tpl');
 
         self::assertStringContainsString('rel="nofollow noopener"', $src);
         self::assertStringContainsString('author.twitter_url', $src);
@@ -102,7 +102,7 @@ final class ProfilesBlockRegistrationTest extends TestCase
 
     public function testTemplateSocialLinksHaveCssHooks(): void
     {
-        $src = file_get_contents(self::projectRoot() . '/plugins/Profiles/Views/pubvana/profiles/blocks/author-card.tpl');
+        $src = file_get_contents(self::projectRoot() . '/plugins/Profiles/Views/public/blocks/author-card.tpl');
 
         self::assertStringContainsString('class="pv-profile-link-item"', $src);
         self::assertStringContainsString('class="pv-profile-link-website"', $src);

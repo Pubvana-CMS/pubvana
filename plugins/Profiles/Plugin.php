@@ -62,7 +62,7 @@ class Plugin implements PluginInterface
             'label'       => 'Author Card',
             'description' => 'Profile card for the current post or page author',
             'provider'    => fn(array $options) => $app->profileBlock()->provide($options),
-            'template'    => 'pubvana/profiles/blocks/author-card',
+            'template'    => 'author-card.tpl',
             'priority'    => 50,
             'options'     => [
                 'show_on_blog'  => ['type' => 'toggle', 'label' => 'Show on blog posts', 'default' => 1],

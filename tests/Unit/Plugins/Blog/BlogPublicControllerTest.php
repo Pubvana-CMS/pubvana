@@ -35,6 +35,9 @@ final class BlogPublicControllerTest extends TestCase
     public array $settingsRows = [];
     public ?object $profileResult = null;
 
+    /** @var list<array<string, mixed>> Contexts passed to regions()->setContext() */
+    public array $regionsContexts = [];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -45,6 +48,7 @@ final class BlogPublicControllerTest extends TestCase
         $this->halts = [];
         $this->settingsRows = [];
         $this->profileResult = null;
+        $this->regionsContexts = [];
     }
 
     public function testIndexRendersListingWithPagination(): void
@@ -126,6 +130,9 @@ final class BlogPublicControllerTest extends TestCase
         $fresh = $this->blog->findPost((int) $post->id);
         self::assertNotNull($fresh);
         self::assertSame(1, (int) $fresh->views);
+
+        // Region context carries the post id for blocks like Related Posts.
+        self::assertSame([['post_id' => (int) $post->id]], $this->regionsContexts);
     }
 
     public function testShowHaltsOnMissingOrDraft(): void
@@ -196,6 +203,7 @@ final class BlogPublicControllerTest extends TestCase
         self::assertSame('pubvana/blog/post', $this->renders[0]['template']);
         self::assertSame('Draft (Preview)', $this->renders[0]['data']['title']);
         self::assertFalse($this->renders[0]['data']['allow_comments']);
+        self::assertSame([['post_id' => (int) $post->id]], $this->regionsContexts);
 
         $this->renders = [];
         $this->halts = [];
@@ -320,6 +328,16 @@ final class BlogPublicControllerTest extends TestCase
                 public function findByUserId(int $id): ?object
                 {
                     return $this->t->profileResult;
+                }
+            },
+            'regions' => static fn(): object => new class($test) {
+                public function __construct(private BlogPublicControllerTest $t)
+                {
+                }
+
+                public function setContext(array $context): void
+                {
+                    $this->t->regionsContexts[] = $context;
                 }
             },
             'adext' => static fn(): object => new class {

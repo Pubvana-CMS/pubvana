@@ -4,46 +4,5 @@
     "description": "Generic blocks that don't belong to a specific content plugin",
     "category": "blocks",
     "semver": "0.1.0",
-    "provides": {
-        "block": {
-            "available": {
-                "text": {
-                    "label": "Text",
-                    "description": "Free-form text content",
-                    "template": "pubvana/core-blocks/blocks/text",
-                    "priority": 100,
-                    "options": {
-                        "title": {
-                            "type": "input",
-                            "label": "Title",
-                            "default": ""
-                        },
-                        "content": {
-                            "type": "textarea",
-                            "label": "Content",
-                            "default": ""
-                        }
-                    }
-                },
-                "html": {
-                    "label": "HTML",
-                    "description": "Free-form HTML content (unescaped)",
-                    "template": "pubvana/core-blocks/blocks/html",
-                    "priority": 110,
-                    "options": {
-                        "title": {
-                            "type": "input",
-                            "label": "Title",
-                            "default": ""
-                        },
-                        "content": {
-                            "type": "textarea",
-                            "label": "Content",
-                            "default": ""
-                        }
-                    }
-                }
-            }
-        }
-    }
+    "provides": {}
 }

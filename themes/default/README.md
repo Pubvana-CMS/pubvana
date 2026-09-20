@@ -8,7 +8,7 @@ The default Pubvana theme. A clean Bootstrap 5 site theme built on the Bootswatc
 - Provides a full set of page templates for the blog, static pages, search, categories, tags, and user profiles.
 - Exposes a configurable **sidebar** region and three **footer column** regions so site owners place blocks where they want.
 - Supplies its own Bootstrap 5 assets (CSS and JS), served automatically at `/assets/theme/default/...`.
-- Provides block template overrides for the blog blocks (Recent Posts, Categories, Tags) and the CoreBlocks HTML block, used in the region system.
+- Provides block template overrides for the blog blocks (Recent Posts, Categories, Tags) and the CoreBlocks Text and HTML blocks, used in the region system.
 
 ## Theme Options
 
@@ -64,7 +64,7 @@ The theme includes a template for every public view. Templates are Vision `.tpl`
 | `pubvana/profiles/profile_edit.tpl` | Profile editing form |
 | `partials/` | Reusable fragments: navbar, footer, hero, breadcrumbs, pagination, post list |
 | `pubvana/blog/public/blocks/` | Block template overrides: Recent Posts, Categories, Tags |
-| `pubvana/core-blocks/blocks/` | Block template override: HTML content block |
+| `pubvana/core-blocks/public/blocks/` | Block template overrides: Text, HTML content blocks |
 | `enlivenapp/flight-shield/` | Auth screen overrides: Shield login/register/2FA/activation/magic-link pages, auth email bodies, and the forgot/reset password pages (`auth/`) |
 
 ## Assets

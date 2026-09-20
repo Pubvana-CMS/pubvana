@@ -166,7 +166,7 @@ class Plugin implements PluginInterface
             'label'       => 'Fact Check Summary',
             'description' => 'Shows the fact-check findings and verdict for the post or page being viewed. Renders nothing where no report exists.',
             'provider'    => fn (array $options) => $app->aiFactCheck()->blockData($options),
-            'template'    => 'pubvana/ai/public/blocks/fact-check-summary',
+            'template'    => 'fact-check-summary.tpl',
             'priority'    => 60,
             'options'     => [
                 'title' => ['type' => 'input', 'label' => 'Title', 'default' => 'Fact Check'],

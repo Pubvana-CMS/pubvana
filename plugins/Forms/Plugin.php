@@ -100,7 +100,7 @@ class Plugin implements PluginInterface
                     ),
                 ];
             },
-            'template'    => 'pubvana/forms/public/blocks/form',
+            'template'    => 'form.tpl',
             'priority'    => 40,
             'options'     => [
                 'title'     => ['type' => 'input', 'label' => 'Title Override', 'default' => ''],
