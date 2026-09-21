@@ -26,13 +26,13 @@ return [
                                                 extensions, faster internals, and more included "free" features than you\'d expect in a free CMS.
                                             </p>
                                             <p>
-                                                This is your first page. You can delete from the admin panel under <b>Content</b> --> <b>Pages</b>. 
-                                                From there you can create new pages, create and organize them with parent pages, and build out your site structure. 
+                                                This is your first page. You can delete or edit it from the admin panel under <b>Content</b> --> <b>Pages</b>. 
+                                                From there you can create new pages, organize them, and build your site to suit your needs. 
                                                 Take a look around the admin dashboard to see all the great things Pubvana v3 has to offer.
                                             </p> 
                                             <p>
                                                 Happy publishing!<br>
-                                                <a href="https://pubvana-cms.com" target="_blank">Pubvana CMS</a>
+                                                <a href="https://pubvanacms.com" target="_blank">Pubvana CMS</a>
                                                 </p>',
                     'status'            => 'published',
                     'allow_comments'    => 0,
