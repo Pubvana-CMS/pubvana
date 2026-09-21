@@ -136,6 +136,47 @@ final class PublicControllerTest extends TestCase
     }
 
     // -----------------------------------------------------------------
+    // buildGlobalData(): is_homepage
+    // -----------------------------------------------------------------
+
+    public function testGlobalDataDefaultsIsHomepageToTheLoaderDispatchFlag(): void
+    {
+        // A front-page provider reaches its controller without a route
+        // parameter that says "this is the homepage", so the loader answers.
+        // Both the layout's sidebar rule and the hero depend on this value.
+        $app = $this->engine(['CMS.siteName' => 'Pubvana']);
+        $app->map('pluginLoader', fn(): object => new class {
+            public function routePrefix(string $pluginId): string
+            {
+                return '/' . explode('/', $pluginId)[1];
+            }
+
+            public function isDispatchingHomepage(): bool
+            {
+                return true;
+            }
+        });
+
+        $controller = new class($app) extends PublicController {};
+
+        self::assertTrue($this->invoke($controller, 'buildGlobalData', [[]])['is_homepage']);
+        self::assertFalse(
+            $this->invoke($controller, 'buildGlobalData', [['is_homepage' => false]])['is_homepage'],
+            'route data wins over the dispatch flag'
+        );
+    }
+
+    public function testGlobalDataIsNotHomepageWhenTheLoaderCannotAnswer(): void
+    {
+        // The engine() loader stand-in only implements routePrefix: asking it
+        // for the homepage flag must not break a page render.
+        $app = $this->engine(['CMS.siteName' => 'Pubvana']);
+        $controller = new class($app) extends PublicController {};
+
+        self::assertFalse($this->invoke($controller, 'buildGlobalData', [[]])['is_homepage']);
+    }
+
+    // -----------------------------------------------------------------
     // buildBreadcrumbs()
     // -----------------------------------------------------------------
 

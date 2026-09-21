@@ -128,6 +128,32 @@ final class PluginLoaderHomepageTest extends TestCase
         self::assertSame(1, $loader->notFound);
     }
 
+    public function testProvidersSeeTheHomepageFlagOnlyWhileServingTheRoot(): void
+    {
+        // A front-page provider renders through its plugin's public controller,
+        // which cannot tell from the route that it is serving "/". The flag is
+        // what it reads to fill `is_homepage`, so it has to be set for the
+        // provider call and clear on an ordinary route request.
+        $loader = $this->loader(['CMS.homepageType' => 'blog']);
+        $observed = [];
+
+        $this->adext->register('homepage', 'provider', 'pubvana.blog', [
+            'label'    => 'Blog Feed',
+            'token'    => 'blog',
+            'priority' => 20,
+            'callable' => function () use ($loader, &$observed): bool {
+                $observed[] = $loader->isDispatchingHomepage();
+
+                return true;
+            },
+        ]);
+
+        self::assertFalse($loader->isDispatchingHomepage(), 'an ordinary route request is not the homepage');
+        $loader->dispatchHomepage();
+        self::assertSame([true], $observed);
+        self::assertTrue($loader->isDispatchingHomepage(), 'the root request stays the homepage for the whole render');
+    }
+
     /**
      * Register a homepage provider whose callable records that it ran.
      *

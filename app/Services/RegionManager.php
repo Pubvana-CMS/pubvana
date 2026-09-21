@@ -19,8 +19,11 @@ use flight\Engine;
  *   - Rendering regions by executing all placed blocks in order via Vision
  *
  * Regions come from two sources:
- *   1. Platform regions (always available): header, footer, navbar,
- *      before-content, after-content
+ *   1. Platform regions (always available): footer, before-content,
+ *      after-content. header and navbar are deliberately not platform
+ *      regions: a block placed in either printed outside the layout's
+ *      content flow and broke the page. A theme may still render its own
+ *      tag for one, but it has to declare that region in its manifest.
  *   2. Theme regions: declared in themes/{name}/pubvana.json
  *
  * Blocks are registered via adext with type 'block' and provide:

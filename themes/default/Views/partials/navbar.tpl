@@ -32,6 +32,3 @@
         </div>
     </div>
 </nav>
-
-{# Region: content blocks the site owner placed in the navbar region. Prints nothing when empty. #}
-{% region 'navbar' %}

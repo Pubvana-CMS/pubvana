@@ -415,7 +415,29 @@ abstract class PublicController
             'breadcrumbs'    => $this->buildBreadcrumbs($routeData),
             'flash'          => $this->buildFlash(),
             'scripts_footer' => $this->buildFooterScripts(),
+            // A route can state this itself (Pages passes true/false when it
+            // serves "/"); otherwise it is true only for the request that
+            // PluginLoader handed "/" to a front-page provider. Theme layouts
+            // gate the sidebar, hero, and breadcrumbs on this value.
+            'is_homepage'    => array_key_exists('is_homepage', $routeData)
+                ? (bool) $routeData['is_homepage']
+                : $this->isHomepageRequest(),
         ];
+    }
+
+    /**
+     * Whether this request is the one serving the site root.
+     *
+     * Only the front-page dispatch can answer this, so the loader is asked and
+     * a missing/unloaded one means "not the homepage" rather than an error.
+     */
+    protected function isHomepageRequest(): bool
+    {
+        try {
+            return $this->app->pluginLoader()->isDispatchingHomepage();
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     // -----------------------------------------------------------------

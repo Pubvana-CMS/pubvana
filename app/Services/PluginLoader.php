@@ -82,6 +82,9 @@ class PluginLoader
     /** @var array<string, array<string, mixed>> Discovered plugin info keyed by plugin ID (local + vendor) */
     protected array $discoveredById = [];
 
+    /** @var bool True while dispatchHomepage() is serving "/" for this request */
+    protected bool $dispatchingHomepage = false;
+
     /**
      * @param Engine<object>       $app            The FlightPHP app instance
      * @param Router               $router         The FlightPHP router
@@ -964,6 +967,11 @@ class PluginLoader
      */
     public function dispatchHomepage(): void
     {
+        // Front-page providers render through their plugin's public
+        // controller, which reads this flag to mark the page as the homepage
+        // (the layout's sidebar, hero, and breadcrumb rules key off it).
+        $this->dispatchingHomepage = true;
+
         foreach ($this->homepageCandidates() as $contributor => $provider) {
             $callable = $provider['callable'] ?? null;
 
@@ -988,6 +996,19 @@ class PluginLoader
         }
 
         $this->homepageNotFound();
+    }
+
+    /**
+     * Whether the request being rendered is the one that owns "/".
+     *
+     * A front-page provider reaches its plugin's public controller without a
+     * route parameter that says "this is the homepage", so the controller asks
+     * here instead. PublicController reads it to fill the `is_homepage` view
+     * variable that theme layouts gate the sidebar, hero, and breadcrumbs on.
+     */
+    public function isDispatchingHomepage(): bool
+    {
+        return $this->dispatchingHomepage;
     }
 
     /**
