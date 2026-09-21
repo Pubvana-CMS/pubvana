@@ -2,6 +2,7 @@
     "name": "pubvana/blog",
     "display_name": "Blog",
     "description": "Blog module for Pubvana CMS",
+    "type": "plugin",
     "category": "content",
     "semver": "0.1.0",
     "provides": {

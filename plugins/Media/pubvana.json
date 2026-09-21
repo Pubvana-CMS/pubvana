@@ -2,6 +2,7 @@
     "name": "pubvana/media",
     "display_name": "Media",
     "description": "Media management module — images, video, embeds",
+    "type": "plugin",
     "category": "content",
     "semver": "0.1.0",
     "provides": {

@@ -2,6 +2,7 @@
     "name": "pubvana/search",
     "display_name": "Search",
     "description": "Full site search with configurable content sources",
+    "type": "plugin",
     "category": "content",
     "semver": "0.1.0",
     "provides": {

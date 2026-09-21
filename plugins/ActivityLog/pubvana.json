@@ -2,6 +2,7 @@
     "name": "pubvana/activity-log",
     "display_name": "Activity Log",
     "description": "Audit trail of admin actions",
+    "type": "plugin",
     "semver": "0.1.0",
     "category": "tools",
     "provides": {

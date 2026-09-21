@@ -2,6 +2,7 @@
     "name": "pubvana/core-blocks",
     "display_name": "Core Blocks",
     "description": "Generic blocks that don't belong to a specific content plugin",
+    "type": "plugin",
     "category": "blocks",
     "semver": "0.1.0",
     "provides": {}

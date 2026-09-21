@@ -2,6 +2,7 @@
     "name": "pubvana/social-links",
     "display_name": "Social Links",
     "description": "Central management of social profile links, rendered anywhere via a public block",
+    "type": "plugin",
     "category": "tools",
     "semver": "0.1.0",
     "provides": {

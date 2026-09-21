@@ -2,6 +2,7 @@
     "name": "pubvana/profiles",
     "display_name": "Profiles",
     "description": "User profile management for Pubvana CMS",
+    "type": "plugin",
     "category": "admin",
     "semver": "0.1.0"
 }

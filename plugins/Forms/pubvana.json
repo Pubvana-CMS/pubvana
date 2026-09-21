@@ -2,6 +2,7 @@
     "name": "pubvana/forms",
     "display_name": "Forms",
     "description": "Form builder for Pubvana CMS: create forms in admin, embed them on the public site, collect and review submissions.",
+    "type": "plugin",
     "category": "content",
     "semver": "0.1.1",
     "provides": {

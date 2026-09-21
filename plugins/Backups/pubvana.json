@@ -2,6 +2,7 @@
     "name": "pubvana/backups",
     "display_name": "Backups",
     "description": "Full-site backup and restore for Pubvana CMS",
+    "type": "plugin",
     "category": "tools",
     "semver": "0.1.0",
     "provides": {
