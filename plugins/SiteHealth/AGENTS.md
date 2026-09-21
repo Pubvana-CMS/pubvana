@@ -126,7 +126,7 @@ Coverage: the suite covers the built-in checks, the service and controller, and 
 
 - [ ] Every claim in changed code is grounded in actual code; no guesses about behavior
 - [ ] `declare(strict_types=1)` present; no em dashes in new prose; one-line reasons preserved on any edited guideline
-- [ ] PHP syntax verified (`php -l`); PHPStan level 3 clean on the app; only `CheckResult` consts used for status/category
+- [ ] PHP syntax verified (`php -l`); PHPStan level 8 clean on the app (`composer phpstan`); only `CheckResult` consts used for status/category
 - [ ] New checks stay read-only, self-contained, exception-safe, and below the critical-or-warning severity bar
 - [ ] Messages leak no credentials or config values; view output fully escaped
 - [ ] Cache behavior intact (serializable results, TTL respected, rerun clears + forces)

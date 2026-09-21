@@ -38,6 +38,8 @@ final class SearchServiceTest extends TestCase
         self::assertSame('Please enter at least 3 characters.', $result['error']);
         self::assertSame('', $result['from']);
         self::assertSame(10, $result['per_page']);
+        // Nothing was scored, so there is no ceiling to report.
+        self::assertSame(0.0, $result['max_score']);
     }
 
     public function testSearchErrorsWithNoEnabledSources(): void
@@ -47,6 +49,72 @@ final class SearchServiceTest extends TestCase
         $result = $service->search('hello world');
         self::assertSame([], $result['items']);
         self::assertStringContainsString('No search sources', (string) $result['error']);
+        self::assertSame(0.0, $result['max_score']);
+    }
+
+    /**
+     * The ceiling moves with the tokenized query. A word token can reach title
+     * prefix 12 + excerpt 5 + content 3; a phrase token can reach title 20 +
+     * excerpt 12 + content 8. Recency adds its maximum once, not per token.
+     */
+    public function testMaxScoreMovesWithTheQuery(): void
+    {
+        $service = $this->service();
+
+        self::assertSame(24.0, $this->invoke($service, 'maxScore', [['pubvana']]));
+        self::assertSame(44.0, $this->invoke($service, 'maxScore', [['alpha bravo']]));
+        self::assertSame(44.0, $this->invoke($service, 'maxScore', [['one', 'two']]));
+        self::assertSame(64.0, $this->invoke($service, 'maxScore', [['alpha bravo', 'three']]));
+        self::assertSame(64.0, $this->invoke($service, 'maxScore', [['one', 'two', 'three']]));
+    }
+
+    /**
+     * The ceiling must be a real upper bound, or the ratio it produces is
+     * meaningless. This is the invariant that makes score/max readable.
+     */
+    public function testMaxScoreIsAnUpperBoundForEveryItem(): void
+    {
+        $this->providers = [
+            'pages' => [
+                'label' => 'Pages',
+                'callable' => static fn(): array => [
+                    ['title' => 'alpha bravo', 'url' => '/1', 'excerpt' => 'alpha bravo', 'content' => 'alpha bravo', 'published_at' => date('Y-m-d H:i:s')],
+                    ['title' => 'my alpha bravo', 'url' => '/2', 'excerpt' => 'alpha', 'content' => 'bravo', 'published_at' => date('Y-m-d H:i:s')],
+                    ['title' => 'other', 'url' => '/3', 'excerpt' => '', 'content' => 'alpha', 'published_at' => ''],
+                ],
+            ],
+        ];
+        $service = $this->service();
+
+        $result = $service->search('alpha bravo');
+
+        self::assertSame(44.0, $result['max_score']);
+        self::assertSame(3, $result['total']);
+        foreach ($result['items'] as $item) {
+            self::assertLessThanOrEqual($result['max_score'], $item['_score']);
+        }
+    }
+
+    /**
+     * A perfect hit is the ceiling minus only what recency did not pay, so an
+     * item on today's date at a title prefix hit reaches the ceiling exactly.
+     */
+    public function testMaxScoreIsReachableByAPerfectHit(): void
+    {
+        $this->providers = [
+            'pages' => [
+                'label' => 'Pages',
+                'callable' => static fn(): array => [
+                    ['title' => 'alpha bravo', 'url' => '/1', 'excerpt' => 'alpha', 'content' => 'alpha', 'published_at' => date('Y-m-d H:i:s')],
+                ],
+            ],
+        ];
+        $service = $this->service();
+
+        $result = $service->search('alpha');
+
+        self::assertSame(24.0, $result['max_score']);
+        self::assertSame(24.0, $result['items'][0]['_score']);
     }
 
     public function testSearchAggregatesAndSortsByScore(): void
@@ -93,6 +161,82 @@ final class SearchServiceTest extends TestCase
         $result = $service->search('good match');
         self::assertSame(1, $result['total']);
         self::assertStringContainsString('Good', strip_tags((string) $result['items'][0]['title']));
+    }
+
+    /**
+     * A provider that throws must reach the log. It contributes no items, so
+     * without the log line a broken source is indistinguishable from a term
+     * that genuinely matched nothing.
+     */
+    public function testThrowingProviderIsLogged(): void
+    {
+        $this->providers = [
+            'pubvana.blog' => [
+                'label' => 'Blog Posts',
+                'callable' => static function (): array {
+                    throw new \RuntimeException('SQLSTATE[42000]: syntax error near ESCAPE');
+                },
+            ],
+        ];
+        $service = $this->service();
+
+        $log = tempnam(sys_get_temp_dir(), 'pubvana-search-log-');
+        if ($log === false) {
+            self::fail('Could not create a scratch log file.');
+        }
+
+        $previous = ini_get('error_log');
+        ini_set('error_log', $log);
+
+        try {
+            $result = $service->search('pubvana');
+        } finally {
+            ini_set('error_log', is_string($previous) ? $previous : '');
+        }
+
+        $written = (string) file_get_contents($log);
+        @unlink($log);
+
+        // The visitor still sees a plain empty result set.
+        self::assertSame(0, $result['total']);
+        self::assertNull($result['error']);
+
+        self::assertStringContainsString("source 'pubvana.blog' failed for term 'pubvana'", $written);
+        self::assertStringContainsString('SQLSTATE[42000]', $written);
+    }
+
+    /**
+     * A source with no callable, and one returning a non-array, are both
+     * skipped and reported rather than silently dropped.
+     */
+    public function testSkippedSourceShapesAreLogged(): void
+    {
+        $this->providers = [
+            'no-callable' => ['label' => 'No Callable'],
+            'wrong-type' => ['label' => 'Wrong Type', 'callable' => static fn(): string => 'nope'],
+        ];
+        $service = $this->service();
+
+        $log = tempnam(sys_get_temp_dir(), 'pubvana-search-log-');
+        if ($log === false) {
+            self::fail('Could not create a scratch log file.');
+        }
+
+        $previous = ini_get('error_log');
+        ini_set('error_log', $log);
+
+        try {
+            $result = $service->search('anything here');
+        } finally {
+            ini_set('error_log', is_string($previous) ? $previous : '');
+        }
+
+        $written = (string) file_get_contents($log);
+        @unlink($log);
+
+        self::assertSame(0, $result['total']);
+        self::assertStringContainsString("source 'no-callable' has no callable", $written);
+        self::assertStringContainsString("source 'wrong-type' returned string", $written);
     }
 
     public function testSearchPaginates(): void
@@ -157,6 +301,55 @@ final class SearchServiceTest extends TestCase
         $freshScore = $this->invoke($service, 'scoreItem', [$fresh, ['same']]);
         $oldScore = $this->invoke($service, 'scoreItem', [$old, ['same']]);
         self::assertGreaterThan($oldScore, $freshScore);
+    }
+
+    /**
+     * The title tiers must stay reachable: prefix beats whole word beats inner
+     * substring. Ordering the checks the other way round made the 10-point
+     * whole-word tier dead, because a word-boundary hit always implies a
+     * substring hit.
+     */
+    public function testTitleTiersPayPrefixThenWholeWordThenSubstring(): void
+    {
+        $service = $this->service();
+
+        $subject = static fn(string $title): array => [
+            'title' => $title, 'url' => '/x', 'excerpt' => '', 'content' => '', 'published_at' => '',
+        ];
+
+        self::assertSame(12.0, $this->invoke($service, 'scoreItem', [$subject('alpha bravo'), ['alpha']]));
+        self::assertSame(10.0, $this->invoke($service, 'scoreItem', [$subject('my alpha bravo'), ['alpha']]));
+        self::assertSame(8.0, $this->invoke($service, 'scoreItem', [$subject('myalphabet bravo'), ['alpha']]));
+    }
+
+    /**
+     * A provider that ships the stripped body earns the content tier; one that
+     * omits it forfeits that tier and scores only on title and excerpt.
+     */
+    public function testContentTierScoresBodyOnlyMatches(): void
+    {
+        $service = $this->service();
+
+        $withBody = $this->invoke($service, 'scoreItem', [[
+            'title' => 'Unrelated heading', 'url' => '/x', 'excerpt' => '', 'content' => 'alpha in the body', 'published_at' => '',
+        ], ['alpha']]);
+        $withoutBody = $this->invoke($service, 'scoreItem', [[
+            'title' => 'Unrelated heading', 'url' => '/x', 'excerpt' => '', 'published_at' => '',
+        ], ['alpha']]);
+
+        self::assertSame(3.0, $withBody);
+        self::assertSame(0.0, $withoutBody);
+    }
+
+    public function testPhraseScoresInSuppliedContent(): void
+    {
+        $service = $this->service();
+
+        $score = $this->invoke($service, 'scoreItem', [[
+            'title' => 'Heading', 'url' => '/x', 'excerpt' => '', 'content' => 'the alpha bravo sequence', 'published_at' => '',
+        ], ['alpha bravo']]);
+
+        self::assertSame(8.0, $score);
     }
 
     public function testTokenizeHandlesPhrasesDuplicatesAndCase(): void

@@ -81,7 +81,7 @@ plugins/Forms/
 The unit suite is in `tests/Unit/Plugins/Forms/` and covers the service (captcha, coverage), the models, and the IP rate limit.
 
 - Lint/static analysis (app-wide, from the repo root; the plugin is in-tree):
-  - `vendor/bin/phpstan analyse` (level 3, sees `app/` plus `scanDirectories: vendor/`; ignored-error baseline covers the migration/activerecord internals)
+  - `composer phpstan` (level 8, sees `app/` plus `plugins/`; ignored-error baseline covers the migration/activerecord internals)
   - `find plugins/Forms -name '*.php' -exec php -l {} \;`
 - Manual verification checklist:
   - [ ] Create and publish a form; confirm it renders via shortcode, block, and `renderPublicForm()`, and that a draft form renders nothing
@@ -130,7 +130,7 @@ The unit suite is in `tests/Unit/Plugins/Forms/` and covers the service (captcha
 
 - [ ] Every claim in changed code is grounded in the actual plugin code; no guessing at behavior
 - [ ] `declare(strict_types=1)` present; no em dashes in new prose; one-line reasons preserved on any edited guideline
-- [ ] PHP syntax verified (`php -l`) and PHPStan level 3 is clean on the app
+- [ ] PHP syntax verified (`php -l`) and PHPStan level 8 is clean on the app (`composer phpstan`)
 - [ ] New write paths go through `FormsService`; field sync stays delete-then-reinsert
 - [ ] Public renders/submits gate on `published`; slug immutable; escaping intact in the inline builder
 - [ ] Honeypot, rate limit, per-type validation, and sanitization order preserved on any submission-path change

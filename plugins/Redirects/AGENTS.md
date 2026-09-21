@@ -130,7 +130,7 @@ Coverage: the suite covers both services, the admin controllers, target URL safe
 
 - [ ] Every claim in changed code is grounded in the actual plugin code; no guessing at behavior
 - [ ] `declare(strict_types=1)` present; no em dashes in new prose; one-line reasons preserved on any edited guideline
-- [ ] PHP syntax verified (`php -l`) and PHPStan level 3 is clean on the app
+- [ ] PHP syntax verified (`php -l`) and PHPStan level 8 is clean on the app (`composer phpstan`)
 - [ ] Matching still gated to enabled redirects, `GET`/`HEAD`, non-CLI, and non-skipped prefixes; self-redirect guard intact
 - [ ] Query-string forwarding preserved; status codes still coerced to 301/302; 404 entries still reset on log
 - [ ] Seed rows stay on the anti-scan 301 pattern; the create-from-404 association still links entries

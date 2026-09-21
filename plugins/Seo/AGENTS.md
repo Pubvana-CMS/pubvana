@@ -131,7 +131,7 @@ Coverage: the suite covers the service, the meta model, the content analysis ser
 
 - [ ] Every claim in changed code is grounded in the actual plugin code; no guessing at behavior
 - [ ] `declare(strict_types=1)` present; no em dashes in new prose; one-line reasons preserved on any edited guideline
-- [ ] PHP syntax verified (`php -l`) and PHPStan level 3 is clean on the app
+- [ ] PHP syntax verified (`php -l`) and PHPStan level 8 is clean on the app (`composer phpstan`)
 - [ ] Single `<title>` rule intact; all emitted values escaped; `addTag()` still the only raw path
 - [ ] `noindex` filtering, `*_enabled` gating, and the connected `@id` graph preserved
 - [ ] `saveMeta()` whitelist and migration stay in lockstep; author stays human; AI disclosure stays setting-gated

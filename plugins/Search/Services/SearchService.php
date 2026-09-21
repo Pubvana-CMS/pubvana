@@ -19,6 +19,19 @@ use flight\Engine;
  *   - applies a small recency boost
  *   - merges, sorts, paginates, and highlights matched terms
  *
+ * The weights are fixed and deliberately simple, so a result order can be
+ * explained. Per token: a quoted phrase pays 20/12/8 for title/excerpt/
+ * content; a single word pays 12/10/8 in the title for a prefix, whole-word,
+ * or inner-substring hit, then 5 in the excerpt and 3 in the content. Recency
+ * adds up to +4, losing a point per 30 days of age.
+ *
+ * A provider that wants body scoring must return the stripped body as
+ * `content`; a provider that omits it simply forfeits that tier.
+ *
+ * `maxScore()` derives the ceiling the weights allow for a given query, and
+ * the envelope carries it as `max_score`, so a result can be read against the
+ * best it could have scored instead of as a bare number.
+ *
  * Admins can enable/disable sources in the admin UI; disabled sources are
  * excluded from aggregation.
  */
@@ -26,6 +39,24 @@ class SearchService
 {
     /** @var Engine<object> */
     protected Engine $app;
+
+    /**
+     * Score weights. maxScore() derives the per-query ceiling from these, so a
+     * change here moves the reported maximum with it.
+     *
+     * The title tiers are mutually exclusive, so only TITLE_PREFIX counts
+     * toward the ceiling: an item cannot collect a prefix and a whole-word hit
+     * from the same token.
+     */
+    private const PHRASE_TITLE    = 20;
+    private const PHRASE_EXCERPT  = 12;
+    private const PHRASE_CONTENT  = 8;
+    private const TITLE_PREFIX    = 12;
+    private const TITLE_WORD      = 10;
+    private const TITLE_SUBSTRING = 8;
+    private const EXCERPT_WORD    = 5;
+    private const CONTENT_WORD    = 3;
+    private const RECENCY_MAX     = 4;
 
     /**
      * @param Engine<object> $app
@@ -40,7 +71,7 @@ class SearchService
      *
      * @param string $term Raw query
      * @param int    $page 1-based page
-     * @return array{items: array<int, array<string, mixed>>, total: int, page: int, per_page: int, query: string, error: ?string, from: string}
+     * @return array{items: array<int, array<string, mixed>>, total: int, page: int, per_page: int, query: string, error: ?string, from: string, max_score: float}
      */
     public function search(string $term, int $page = 1): array
     {
@@ -50,13 +81,15 @@ class SearchService
 
         if (mb_strlen($term) < $minLength) {
             return [
-                'items'    => [],
-                'total'    => 0,
-                'page'     => $page,
-                'per_page' => $perPage,
-                'query'    => $term,
-                'error'    => 'Please enter at least ' . $minLength . ' characters.',
-                'from'     => '',
+                'items'     => [],
+                'total'     => 0,
+                'page'      => $page,
+                'per_page'  => $perPage,
+                'query'     => $term,
+                'error'     => 'Please enter at least ' . $minLength . ' characters.',
+                'from'      => '',
+                // Nothing was scored, so there is no ceiling to report.
+                'max_score' => 0.0,
             ];
         }
 
@@ -64,13 +97,14 @@ class SearchService
 
         if (empty($sources)) {
             return [
-                'items'    => [],
-                'total'    => 0,
-                'page'     => $page,
-                'per_page' => $perPage,
-                'query'    => $term,
-                'error'    => 'No search sources are enabled. An administrator needs to enable at least one.',
-                'from'     => '',
+                'items'     => [],
+                'total'     => 0,
+                'page'      => $page,
+                'per_page'  => $perPage,
+                'query'     => $term,
+                'error'     => 'No search sources are enabled. An administrator needs to enable at least one.',
+                'from'      => '',
+                'max_score' => 0.0,
             ];
         }
 
@@ -80,16 +114,25 @@ class SearchService
         foreach ($sources as $key => $source) {
             $callable = $source['callable'] ?? null;
             if (!is_callable($callable)) {
+                error_log("SearchService: source '{$key}' has no callable - skipped");
                 continue;
             }
 
             try {
                 $results = $callable($term);
             } catch (\Throwable $e) {
+                // A provider that throws contributes nothing, which renders as
+                // an ordinary empty result set. Log it, or a broken source is
+                // indistinguishable from a term that genuinely matched nothing.
+                error_log("SearchService: source '{$key}' failed for term '{$term}' - " . $e->getMessage());
                 continue;
             }
 
             if (!is_array($results)) {
+                error_log(
+                    "SearchService: source '{$key}' returned " . get_debug_type($results)
+                    . ' instead of an array - skipped'
+                );
                 continue;
             }
 
@@ -121,13 +164,14 @@ class SearchService
         $items = array_map(fn(array $item) => $this->highlight($item, $words), $items);
 
         return [
-            'items'    => $items,
-            'total'    => $total,
-            'page'     => $page,
-            'per_page' => $perPage,
-            'query'    => $term,
-            'error'    => null,
-            'from'     => $this->sourceLabel($allItems),
+            'items'     => $items,
+            'total'     => $total,
+            'page'      => $page,
+            'per_page'  => $perPage,
+            'query'     => $term,
+            'error'     => null,
+            'from'      => $this->sourceLabel($allItems),
+            'max_score' => $this->maxScore($words),
         ];
     }
 
@@ -245,13 +289,13 @@ class SearchService
             if (str_contains($w, ' ')) {
                 // Phrase: strong match on title/excerpt
                 if ($title !== '' && str_contains($title, $w)) {
-                    $score += 20;
+                    $score += self::PHRASE_TITLE;
                 }
                 if ($excerpt !== '' && str_contains($excerpt, $w)) {
-                    $score += 12;
+                    $score += self::PHRASE_EXCERPT;
                 }
                 if ($content !== '' && str_contains($content, $w)) {
-                    $score += 8;
+                    $score += self::PHRASE_CONTENT;
                 }
             } else {
                 $single[] = $w;
@@ -259,30 +303,58 @@ class SearchService
         }
 
         foreach ($single as $w) {
-            // Title
+            // Title, most specific match first. A word-boundary match always
+            // implies a substring match, so checking the substring first (as
+            // this once did) made the whole-word tier unreachable.
             if ($title !== '' && str_starts_with($title, $w)) {
-                $score += 12;
+                $score += self::TITLE_PREFIX;
+            } elseif (preg_match('/\b' . preg_quote($w, '/') . '\b/u', $title) === 1) {
+                $score += self::TITLE_WORD;
             } elseif ($title !== '' && str_contains($title, $w)) {
-                $score += 8;
-            } elseif (preg_match('/\b' . preg_quote($w, '/') . '\b/u', $title)) {
-                $score += 10;
+                $score += self::TITLE_SUBSTRING;
             }
 
             // Excerpt
             if ($excerpt !== '' && str_contains($excerpt, $w)) {
-                $score += 5;
+                $score += self::EXCERPT_WORD;
             }
 
             // Content
             if ($content !== '' && str_contains($content, $w)) {
-                $score += 3;
+                $score += self::CONTENT_WORD;
             }
         }
 
-        // Recency boost: up to +4 for recent items
+        // Recency boost: up to the maximum for recent items
         $ageDays = $this->ageDays((string) ($item['published_at'] ?? ''));
         if ($ageDays !== null) {
-            $score += max(0, 4 - (int) floor($ageDays / 30));
+            $score += max(0, self::RECENCY_MAX - (int) floor($ageDays / 30));
+        }
+
+        return round($score, 2);
+    }
+
+    /**
+     * Highest score any single item could reach for this query, so a result can
+     * be read against the ceiling the weights allow rather than as a bare
+     * number. Derived from the same consts as scoreItem(), never hand-summed.
+     *
+     * Recency counts at full value here, which means an item old enough to have
+     * lost that boost cannot reach the ceiling. A query matching only part of an
+     * item cannot either. Both are intended: this is the best case, not the
+     * typical case.
+     *
+     * @param string[] $words Tokenized (phrases + words) query
+     * @return float
+     */
+    protected function maxScore(array $words): float
+    {
+        $score = (float) self::RECENCY_MAX;
+
+        foreach ($words as $w) {
+            $score += str_contains($w, ' ')
+                ? self::PHRASE_TITLE + self::PHRASE_EXCERPT + self::PHRASE_CONTENT
+                : self::TITLE_PREFIX + self::EXCERPT_WORD + self::CONTENT_WORD;
         }
 
         return round($score, 2);

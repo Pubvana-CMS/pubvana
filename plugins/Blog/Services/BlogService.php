@@ -673,6 +673,13 @@ class BlogService
     // ─── Search ───────────────────────────────────────────────────────────
 
     /**
+     * Normalized content matches for the Search plugin: published posts whose
+     * title, excerpt, or body match the term.
+     *
+     * Finds content only. Ranking belongs to SearchService::scoreItem(), so
+     * this computes no score. The stripped body rides along as `content` so
+     * the service can score a body hit.
+     *
      * @return array<int, array<string, mixed>>
     */
     public function searchProvider(string $term, string $urlPrefix): array
@@ -680,40 +687,8 @@ class BlogService
         $posts = $this->postModel->searchByPattern('%' . $this->escapeLikePattern($term) . '%');
 
         $results = [];
-        $words = array_filter(preg_split('/\s+/', $term) ?: []);
 
         foreach ($posts as $post) {
-            $relevance = 0;
-            $titleLower = mb_strtolower((string) $post->title);
-            $excerptLower = mb_strtolower((string) ($post->excerpt ?? ''));
-            $contentLower = mb_strtolower((string) ($post->content ?? ''));
-            $termLower = mb_strtolower($term);
-
-            if (mb_strpos($titleLower, $termLower) !== false) {
-                $relevance += 10;
-            }
-            if (mb_strpos($excerptLower, $termLower) !== false) {
-                $relevance += 5;
-            }
-            if (mb_strpos($contentLower, $termLower) !== false) {
-                $relevance += 3;
-            }
-
-            if (count($words) > 1) {
-                foreach ($words as $word) {
-                    $wordLower = mb_strtolower($word);
-                    if (mb_strpos($titleLower, $wordLower) !== false) {
-                        $relevance += 3;
-                    }
-                    if (mb_strpos($excerptLower, $wordLower) !== false) {
-                        $relevance += 2;
-                    }
-                    if (mb_strpos($contentLower, $wordLower) !== false) {
-                        $relevance += 1;
-                    }
-                }
-            }
-
             $stripped = html_entity_decode(strip_tags((string) ($post->content ?? '')), ENT_QUOTES, 'UTF-8');
             $len = mb_strlen($stripped);
             $pos = mb_stripos($stripped, $term);
@@ -727,12 +702,13 @@ class BlogService
             }
 
             $results[] = [
+                'id'           => (int) $post->id,
                 'title'        => $post->title,
                 'url'          => $urlPrefix . '/' . $post->slug,
                 'excerpt'      => $excerpt,
+                'content'      => $stripped,
                 'content_type' => 'Post',
                 'published_at' => $post->published_at,
-                'relevance'    => $relevance,
             ];
         }
 
@@ -904,12 +880,18 @@ class BlogService
     }
 
     /**
-     * Neutralize % and _ so a user-supplied search term matches them
-     * literally in a SQL LIKE pattern. Post::searchByPattern() carries the
-     * matching ESCAPE clause.
+     * Neutralize the LIKE wildcards % and _ so a user-supplied search term
+     * matches them literally. Post::searchByPattern() carries the matching
+     * ESCAPE clause.
+     *
+     * The escape character there is '!', so '!' is doubled first. strtr()
+     * replaces without rescanning what it already emitted, but an escape
+     * character must still be escaped by itself to keep the resulting pattern
+     * well formed. A backslash needs no handling: it is not the escape
+     * character, so it is already literal in the pattern.
      */
     private function escapeLikePattern(string $term): string
     {
-        return strtr($term, ['\\' => '\\\\', '%' => '\%', '_' => '\_']);
+        return strtr($term, ['!' => '!!', '%' => '!%', '_' => '!_']);
     }
 }

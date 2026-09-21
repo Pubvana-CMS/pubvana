@@ -114,7 +114,7 @@ Coverage: the suite covers the model, both controllers (URLs, website validation
 
 - [ ] Every claim in changed code is grounded in the actual plugin code; no guessing at behavior
 - [ ] `declare(strict_types=1)` present; no em dashes in new prose; one-line reasons preserved on any edited guideline
-- [ ] PHP syntax verified (`php -l`) and PHPStan level 3 is clean on the app
+- [ ] PHP syntax verified (`php -l`) and PHPStan level 8 is clean on the app (`composer phpstan`)
 - [ ] Whitelist, migration, and view stay in lockstep; no raw request data reaches the model
 - [ ] `findOrCreate` still the only row-creation path; owner and `profile.edit.any` guards unchanged
 - [ ] Public CSS path on disk matches the registered URL; `.pv-profile-*` classes untouched without a theme change

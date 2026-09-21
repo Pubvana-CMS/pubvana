@@ -18,6 +18,13 @@ use Pubvana\Tests\Support\TestCase;
  * wildcard. Post::searchByPattern() runs the LIKE pre-filter with an
  * explicit ESCAPE clause, and BlogService::escapeLikePattern() neutralizes
  * the wildcard characters before the pattern is built.
+ *
+ * The escape character is '!', not a backslash. MySQL reads a backslash
+ * inside a string literal as an escaped quote, so ESCAPE '\' is a syntax
+ * error there while SQLite accepts it. These tests run on SQLite, so they
+ * cannot prove the clause is portable: the escape character must stay a
+ * plain literal, and it must be escaped in the term by escapeLikePattern(),
+ * which testBangInTermMatchesOnlyLiteralBang pins.
  */
 #[CoversClass(Post::class)]
 #[CoversClass(BlogService::class)]
@@ -127,6 +134,22 @@ final class BlogSearchWildcardTest extends TestCase
         self::assertSame(['foo\\bar'], $titles);
     }
 
+    /**
+     * '!' is the escape character, so a search for it must still be literal.
+     * Without the self-escaping in escapeLikePattern() the pattern would go
+     * malformed and either match nothing or match the wrong rows.
+     */
+    public function testBangInTermMatchesOnlyLiteralBang(): void
+    {
+        $this->insertPost(1, 'foo!bar');
+        $this->insertPost(2, 'fooxbar');
+        $this->insertPost(3, 'foo_bar');
+
+        $titles = $this->titles($this->service->searchProvider('foo!', ''));
+
+        self::assertSame(['foo!bar'], $titles);
+    }
+
     public function testPlainTermStillFindsAllVariants(): void
     {
         $this->insertPost(1, 'foo%bar');
@@ -162,8 +185,10 @@ final class BlogSearchWildcardTest extends TestCase
         self::assertSame('/post-1', $item['url']);
         self::assertSame('Post', $item['content_type']);
         self::assertNotEmpty($item['published_at']);
-        self::assertGreaterThan(0, $item['relevance']);
+        self::assertSame('Body of Target title', $item['content']);
         self::assertStringContainsString('target', strtolower((string) $item['excerpt']));
+        // Ranking is SearchService's job; the provider returns content only.
+        self::assertArrayNotHasKey('relevance', $item);
     }
 
     public function testNonAsciiTermIsEscapedSinceExactMatch(): void

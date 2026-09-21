@@ -122,6 +122,16 @@ final class SearchControllersTest extends TestCase
         self::assertSame(1, $this->fetches[0]['data']['total']);
         self::assertNull($this->fetches[0]['data']['error']);
         self::assertNull($this->fetches[0]['data']['pagination']);
+        // The view needs the query's ceiling to render score/max.
+        self::assertSame(24.0, $this->fetches[0]['data']['max_score']);
+    }
+
+    public function testPublicSearchDefaultsCeilingWithoutAQuery(): void
+    {
+        $this->controller($this->engine())->search();
+
+        self::assertSame('', $this->fetches[0]['data']['query']);
+        self::assertSame(0.0, $this->fetches[0]['data']['max_score']);
     }
 
     public function testPublicSearchPaginationLinks(): void
@@ -152,6 +162,24 @@ final class SearchControllersTest extends TestCase
 
         $this->controller($this->engine())->search();
         self::assertSame(0, $this->fetches[0]['data']['total']);
+    }
+
+    /**
+     * The readout is unconditional: no environment or session gate, so the view
+     * always receives the ceiling to divide against.
+     */
+    public function testPublicSearchAlwaysExposesTheCeiling(): void
+    {
+        $this->providers = ['pages' => ['label' => 'Pages', 'callable' => static fn(): array => []]];
+        $this->query = ['q' => 'hello world'];
+
+        $app = $this->engine();
+        $app->set('environment', 'production');
+
+        $this->controller($app)->search();
+
+        self::assertSame(44.0, $this->fetches[0]['data']['max_score']);
+        self::assertArrayNotHasKey('show_scores', $this->fetches[0]['data']);
     }
 
     private function controller(Engine $app): SearchPublicController

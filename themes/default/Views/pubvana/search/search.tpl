@@ -39,6 +39,11 @@
         {% if result.excerpt %}
         <p class="mb-0">{! result.excerpt !}</p>
         {% endif %}
+        {# This item's score against the best the query's weights allow, so a #}
+        {# surprising order can be traced instead of guessed at. #}
+        <div class="small mt-2">
+            <p class="small text-body">score {{ result._score }} / {{ max_score }}</p>
+        </div>
     </div>
 </article>
 {% endfor %}

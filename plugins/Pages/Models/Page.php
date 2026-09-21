@@ -215,7 +215,8 @@ class Page extends \Pubvana\Models\AbstractModel
      * Find published pages matching a search term in title, slug, or content.
      *
      * Supplies normalized content matches for the Search plugin. Ranking is
-     * owned by SearchService — this method only finds matching content.
+     * owned by SearchService, so this only finds matching content; the
+     * stripped body rides along as `content` for the service to score.
      *
      * @param string $term       Raw search term
      * @param string $urlPrefix  Public route prefix for result URLs
@@ -250,6 +251,7 @@ class Page extends \Pubvana\Models\AbstractModel
                 'title'        => (string) $page->title,
                 'url'          => $urlPrefix . '/' . $page->slug,
                 'excerpt'      => $excerpt,
+                'content'      => $stripped,
                 'content_type' => 'Page',
                 'published_at' => $page->created_at,
             ];

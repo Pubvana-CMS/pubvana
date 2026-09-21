@@ -151,7 +151,7 @@ Coverage: the suite covers the model, the GD processor, the service facade, admi
 
 - [ ] Every claim in changed code is grounded in the actual plugin code; no guessing at behavior
 - [ ] `declare(strict_types=1)` present; no em dashes in new prose; one-line reasons preserved on any edited guideline
-- [ ] PHP syntax verified (`php -l`) and PHPStan level 3 is clean on the app
+- [ ] PHP syntax verified (`php -l`) and PHPStan level 8 is clean on the app (`composer phpstan`)
 - [ ] Uploads validated by extension, size, and finfo MIME; storage layout unchanged; originals preserved
 - [ ] Both GD and Imagick paths updated together; no concrete-processor branches in business logic
 - [ ] `delete()` removes all artifacts; URLs stay leading-slash; snippet output escaped; no external assets added

@@ -76,7 +76,7 @@ plugins/Comments/
 The unit suite is in `tests/Unit/Plugins/Comments/` and covers the service (captcha enforcement, rate limiting, coverage), the model, and both controllers.
 
 - Lint/static analysis (app-wide, from the repo root; the plugin is in-tree):
-  - `vendor/bin/phpstan analyse` (level 3, sees `app/` plus `scanDirectories: vendor/`; ignored-error baseline covers the migration/activerecord internals)
+  - `composer phpstan` (level 8, sees `app/` plus `plugins/`; ignored-error baseline covers the migration/activerecord internals)
   - `find plugins/Comments -name '*.php' -exec php -l {} \;`
 - Manual verification checklist:
   - [ ] Post a comment as a guest and as a logged-in user; confirm the guest form fields appear only for guests
@@ -124,7 +124,7 @@ The unit suite is in `tests/Unit/Plugins/Comments/` and covers the service (capt
 
 - [ ] Every claim in changed code is grounded in the actual plugin code; no guessing at behavior
 - [ ] `declare(strict_types=1)` present; no em dashes in new prose; one-line reasons preserved on any edited guideline
-- [ ] PHP syntax verified (`php -l`) and PHPStan level 3 is clean on the app
+- [ ] PHP syntax verified (`php -l`) and PHPStan level 8 is clean on the app (`composer phpstan`)
 - [ ] New write paths purify `body`, enforce nesting depth, and surface errors via `comment_error`
 - [ ] Host gating (enabled system, enabled type, item opt-in, guest policy) honored for any new render/form path
 - [ ] Settings read only via `CommentService::setting()`; nothing hardcoded outside the `Comments.*` prefix

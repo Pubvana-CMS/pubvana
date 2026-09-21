@@ -295,7 +295,7 @@ final class BlogServiceTest extends TestCase
         self::assertSame(2, $related['posts'][0]['score']);
     }
 
-    public function testSearchProviderScoringAndExcerpt(): void
+    public function testSearchProviderReturnsMatchesWithoutScoring(): void
     {
         $this->service->createPost(['title' => 'PHP Guide', 'slug' => 'php-guide', 'content' => 'Learn PHP here', 'excerpt' => 'intro', 'status' => 'published'], 1);
         $this->service->createPost(['title' => 'Other', 'slug' => 'other', 'content' => 'nothing relevant at all in this body text', 'status' => 'published'], 1);
@@ -305,7 +305,27 @@ final class BlogServiceTest extends TestCase
         self::assertSame('PHP Guide', $results[0]['title']);
         self::assertSame('/blog/php-guide', $results[0]['url']);
         self::assertSame('Post', $results[0]['content_type']);
-        self::assertGreaterThan(10, $results[0]['relevance']);
+        self::assertSame('Learn PHP here', $results[0]['content']);
+        // Ranking belongs to SearchService; the provider must not ship a score.
+        self::assertArrayNotHasKey('relevance', $results[0]);
+    }
+
+    public function testSearchProviderShipsStrippedBodyForScoring(): void
+    {
+        $this->service->createPost([
+            'title'   => 'Markup Post',
+            'slug'    => 'markup-post',
+            'content' => '<p>Body <strong>keyword</strong> here</p>',
+            'status'  => 'published',
+        ], 1);
+
+        $results = $this->service->searchProvider('keyword', '/blog');
+
+        self::assertCount(1, $results);
+        $content = (string) $results[0]['content'];
+        self::assertStringContainsString('Body keyword here', $content);
+        self::assertStringNotContainsString('<p>', $content);
+        self::assertStringNotContainsString('<strong>', $content);
     }
 
     public function testCommentHostItems(): void

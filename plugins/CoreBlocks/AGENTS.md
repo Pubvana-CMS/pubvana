@@ -53,7 +53,7 @@ Template resolution derives author `pubvana` and package `core-blocks` from the 
 This plugin has no `composer.json` and no test suite. Registration is two small adext calls with no additional runtime code paths to execute.
 
 - Lint/static analysis (app-wide, from the repo root; the plugin is in-tree):
-  - `vendor/bin/phpstan analyse` (level 3); PHPStan does not analyze `plugins/`, so syntax is the main automated check
+  - `composer phpstan` (level 8, sees `app/` plus `plugins/`; ignored-error baseline covers the migration/activerecord internals)
   - `find plugins/CoreBlocks -name '*.php' -exec php -l {} \;`
 - Manual verification checklist:
   - [ ] Drop a Text block into a region: options render raw text and HTML entities properly escaped

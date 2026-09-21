@@ -274,6 +274,12 @@ class Post extends \Pubvana\Models\AbstractModel
      * explicit ESCAPE clause so caller-supplied % and _ stay literal; the
      * fluent like() operator cannot carry one.
      *
+     * The escape character is '!' and not a backslash. MySQL reads a backslash
+     * inside a string literal as an escaped quote, so ESCAPE '\' is a syntax
+     * error there; SQLite accepts it, which is why the SQLite test suite never
+     * caught it. '!' is a plain literal on MySQL, SQLite and Postgres alike.
+     * BlogService::escapeLikePattern() escapes '!' in the term to match.
+     *
      * @return array<int, static>
      */
     public function searchByPattern(string $pattern): array
@@ -282,7 +288,7 @@ class Post extends \Pubvana\Models\AbstractModel
         /** @var array<int, static> $posts */
         $posts = $post->query(
             "SELECT * FROM posts
-             WHERE (title LIKE :q ESCAPE '\\' OR content LIKE :q ESCAPE '\\' OR excerpt LIKE :q ESCAPE '\\')
+             WHERE (title LIKE :q ESCAPE '!' OR content LIKE :q ESCAPE '!' OR excerpt LIKE :q ESCAPE '!')
                AND status = :status
                AND deleted_at IS NULL",
             [':q' => $pattern, ':status' => 'published']

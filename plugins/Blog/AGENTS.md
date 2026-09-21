@@ -76,7 +76,7 @@ plugins/Blog/
 - `public.head` feed auto-discovery link tags, priority 10 (`Plugin.php:87-91`).
 - `admin.dashboard` cards and sections (`Plugin.php:95-105`), backed by `dashboardCards()` / `dashboardSections()`.
 - `block.available`: recent-posts, categories, tags, archive, related-posts (`Plugin.php:109-164`), each with options schema and a block template under `Views/public/blocks/`.
-- `search.provider` for posts (`Plugin.php:168-171`) with weighted title/excerpt/body relevance scoring (`Services/BlogService.php:407-477`).
+- `search.provider` for posts (`Plugin.php:168-171`). Supplies normalized content matches only: `title`, `url`, `excerpt`, stripped `content`, `content_type`, `published_at` and `id`, with no score of its own (`Services/BlogService.php:685-722`). Ranking belongs to the Search plugin's `SearchService::scoreItem()`, so do not reintroduce local relevance scoring here; a returning `relevance` field was removed precisely because the service ignored it.
 - `comments.host` content items `['type' => 'blog', 'id', ...]` (`Plugin.php:175-178`, `Services/BlogService.php:486-506`).
 - `nav.linkable` default: published posts as navigation targets (`Plugin.php:182-197`).
 - `admin.css` stylesheet (`Plugin.php:201-204`).
@@ -105,7 +105,7 @@ Categories and tags are many-to-many through `posts_to_categories` and `tags_to_
 The unit suite is in `tests/Unit/Plugins/Blog/` and covers the service (CRUD, revisions, taxonomy sync, blocks, search, dashboard), the models, both controllers, plugin registration, the status allowlist guard, taxonomy pagination, migrations and seed, and search wildcards.
 
 - Lint/static analysis (app-wide, from the repo root; note the app is scanned, this plugin is in-tree):
-  - `vendor/bin/phpstan analyse` (level 3, sees `app/` plus `scanDirectories: vendor/`; the `enlivenapp` migration/activerecord internals are covered by the ignored-error baseline in `phpstan.neon`)
+  - `composer phpstan` (level 8, sees `app/` plus `plugins/`; the `enlivenapp` migration/activerecord internals are covered by the ignored-error baseline in `phpstan.neon`)
   - `php -l plugins/Blog/{**/*.php,*.php}` for syntax: `find plugins/Blog -name '*.php' -exec php -l {} \;`
 - Manual verification checklist:
   - [ ] Create, edit, delete a post through `/admin/blog`; slug auto-suffixed on collision; slug never editable afterwards
@@ -115,7 +115,7 @@ The unit suite is in `tests/Unit/Plugins/Blog/` and covers the service (CRUD, re
   - [ ] Load `/feed`, `/rss`, `/atom.xml` and validate XML; feeds omit drafts and tombstones
   - [ ] Preview a draft via `/admin/blog/{id}/edit` preview link and the `/preview/@token` route
   - [ ] Confirm the five blocks render and that related-posts scores shared tags/categories highest
-  - [ ] Search a post by title word, excerpt word, and body word; check the weighted ordering
+  - [ ] Search from `/{prefix}` for a title word, an excerpt word, and a body word; all three match, and the ordering is the Search plugin's to decide (this plugin only supplies the matches)
 
 - Coverage: the unit suite covers `BlogService` (CRUD, revisions, taxonomy sync, blocks, search, dashboard), the models, both controllers, plugin registration, the status allowlist guard, taxonomy pagination, migrations and seed, and search wildcards. `<!-- TODO: add [coverage target] -->`
 
@@ -124,7 +124,7 @@ The unit suite is in `tests/Unit/Plugins/Blog/` and covers the service (CRUD, re
 
 1. **`declare(strict_types=1);` at the top of every class file** (`Plugin.php:3`). No exceptions.
 2. **Models extend `Pubvana\Models\AbstractModel` and declare their table string in the constructor** (`Models/Post.php:27-32`). Do not hardcode table names in business logic.
-3. **Prefer the ActiveRecord fluent query (eq, in, notEq, like, isNull, order, limit, offset) over raw SQL.** Raw PDO prepared statements are allowed only for cross-row mutations that the fluent API cannot express, and must carry a comment explaining why (see the `incrementViewsDirect()` rationale, `Models/Post.php:146-163`).
+3. **Prefer the ActiveRecord fluent query (eq, in, notEq, like, isNull, order, limit, offset) over raw SQL.** Raw PDO prepared statements are allowed only where the fluent API cannot express the query, and must carry a comment explaining why (see the `incrementViewsDirect()` rationale, `Models/Post.php:146-163`, and the ESCAPE-clause pre-filter in `searchByPattern()`, `Models/Post.php:285`).
 4. **`updateRecord()` must stay whitelisted.** Only fields listed in the `$allowed` array may be written (`Models/Post.php:119-122`, `Models/Category.php:75`). Never pass raw request arrays into model writes; controllers unset `_csrf_token` first (`Controllers/BlogAdminController.php:56`).
 5. **Views render through Vision paths.** Admin views use `pubvana/blog/admin/{view}` and public pages render core templates (`post`, `archive`, `categories`, `tags`, `home`). Block templates are `.tpl` files registered as bare names (`recent-posts.tpl`, etc.) under `Views/public/blocks/`; RegionManager derives the package (`pubvana/blog`) from the block key for app and theme overrides.
 6. **Keep block providers returning plain template-ready arrays** (`title` + items) so block templates stay dumb; compute URLs using the passed `$prefix`, never hardcoded `/blog`.
@@ -152,7 +152,7 @@ The unit suite is in `tests/Unit/Plugins/Blog/` and covers the service (CRUD, re
 
 - [ ] Every claim in changed code is grounded in the actual plugin code; no guessing at behavior
 - [ ] `declare(strict_types=1)` present, no em dashes in new prose, one-line reasons preserved on any edited guideline
-- [ ] PHP syntax verified (`php -l`) and PHPStan level 3 is clean on the app
+- [ ] PHP syntax verified (`php -l`) and PHPStan level 8 is clean on the app (`composer phpstan`)
 - [ ] Writes go through `BlogService`; slugs immutable; `ai_generated` untouched on edit
 - [ ] Revision snapshot + prune added to any new state-changing write path
 - [ ] Public queries filter `status='published'` and `deleted_at IS NULL`; feeds exclude drafts and tombstones
@@ -164,5 +164,5 @@ The unit suite is in `tests/Unit/Plugins/Blog/` and covers the service (CRUD, re
 
 - This is an in-tree application plugin, not a Composer package; no `composer.json` and nothing for Packagist.
 - No locale/i18n support; labels and media strings are hardcoded English.
-- No raw SQL beyond the documented `incrementViewsDirect()`; search relevance stays in-process (no full-text engine).
+- No raw SQL beyond the documented `incrementViewsDirect()` and the `searchByPattern()` LIKE pre-filter; search ran[Reasoning loop detected — thinking output suppressed]king stays in-process in the Search plugin (no full-text engine).
 - No front-end asset pipeline; the single admin stylesheet is loaded via `admin.css` registration.

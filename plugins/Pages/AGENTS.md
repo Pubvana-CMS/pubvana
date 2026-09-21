@@ -22,7 +22,7 @@ Pages is the static pages module of Pubvana: About, Contact, Terms, and similar 
 4. **Public routes only ever serve published, non-deleted pages.** `findBySlug()` requires `status = published` and `deleted_at IS NULL` (`Models/Page.php:70-78`). Reason: a leaked draft or archived page breaks the admin's draft workflow.
 5. **Delete is always a soft delete.** `deletePage()` only stamps `deleted_at` (`Services/PagesService.php:113-121`). Reason: early boot is not destructive; the schema plus indexes on `status` and `deleted_at` support later cleanup.
 6. **Never branch on a concrete migration style.** The plugin includes both a `change()` migration and an `up()`/`down()` migration (`Database/Migrations/2026-09-17-104827_CreatePagesTable.php:18`, `Database/Migrations/2026-09-17-104828_CreatePagesRevisionsTable.php:16`). Keep the style each file already uses.
-7. **Own the excerpt logic only as finding content.** `searchContent()` supplies normalized matches; ranking and scoring belong to the Search plugin (`Models/Page.php:174-218`). Use `strip_tags` + `html_entity_decode` and `mb_*` string functions so excerpts never leak markup and never split multi-byte characters.
+7. **Own the excerpt logic only as finding content.** `searchContent()` supplies normalized matches, including the stripped body as `content` so the Search plugin can score a body hit; ranking, scoring and the term-centered excerpt's weight belong to the Search plugin (`Models/Page.php:225`). Use `strip_tags` + `html_entity_decode` and `mb_*` string functions so excerpts never leak markup and never split multi-byte characters.
 8. **Keep the comments host key `page`.** `commentHostItems()` emits `type => 'page'` (`Services/PagesService.php:203-219`), matching the `commentable` payload the public view renders (`Controllers/PagesPublicController.php:58`). Reason: the Comments plugin keys threads by this type.
 9. **Keep the Jodit dependency optional.** Create/edit views guard on `!empty($joditHtml)` because `joditInit()` comes from the Media plugin (`Views/admin/edit.php:89-90`). Reason: Pages must stay usable if Media is disabled.
 10. **Do not expose the AI flag to the public except through the disclosure.** The `ai_generated` origin flag is set once at creation and later edits never change it (`Controllers/PagesAdminController.php:56-57`); the public view only emits an AI disclosure when the SEO `ai_disclosure_enabled` setting is on (`Controllers/PagesPublicController.php:67-74`). Reason: the flag is editorial metadata, the disclosure is a policy decision.
@@ -69,7 +69,7 @@ plugins/Pages/
 
 **Revision pipeline.** Every create, update, and restore calls `createFromPage()`, which copies title/content/status/allow_comments (never slug) into a new row before pruning (`Models/PageRevision.php:56-86`). `max_revisions` defaults to 15 and is only overridable through config.
 
-**Data flow (search).** `Page::searchContent()` OR-matches title/slug/content on published, non-deleted pages, then builds a term-centered excerpt from de-tagged, entity-decoded content, returning `id/title/url/excerpt/content_type/published_at` for the Search plugin to rank.
+**Data flow (search).** `Page::searchContent()` OR-matches title/slug/content on published, non-deleted pages, then builds a term-centered excerpt from de-tagged, entity-decoded content, returning `id/title/url/excerpt/content/content_type/published_at` for the Search plugin to rank.
 
 ## Development and testing
 
@@ -121,7 +121,7 @@ Coverage: the suite covers the service (URLs, updates, title guard), both contro
 |------|---------------|
 | Change revision cap | `Config/Config.php` (`max_revisions`) |
 | Adjust slug generation | `Page::generateSlug()` (`Models/Page.php:295-313`) |
-| Add a searchable field | `Page::searchContent()` (`Models/Page.php:183-218`) |
+| Add a searchable field | `Page::searchContent()` (`Models/Page.php:225`) |
 | Add a public route | `Plugin.php` public `addRoutes` block and `PagesPublicController` |
 | Enforce permissions | Add a `PermissionMiddleware` keyed on `pages.manage` to the admin route middleware slots |
 | Add an admin field | Migration + `Page`/`PageRevision` typed props + `updatePage` + create/edit views |
@@ -134,7 +134,7 @@ Coverage: the suite covers the service (URLs, updates, title guard), both contro
 - [ ] No slug writes outside `generateSlug()`; no hard deletes; no skipped snapshots or prunes
 - [ ] Public queries still filter `status = published` and `deleted_at IS NULL`
 - [ ] `declare(strict_types=1)` present; no em dashes in new prose; one-line reasons preserved on any edited guideline
-- [ ] PHP syntax verified (`php -l`) and PHPStan level 3 is clean on the app
+- [ ] PHP syntax verified (`php -l`) and PHPStan level 8 is clean on the app (`composer phpstan`)
 - [ ] Both migration styles kept as-is; revision cap still applied after any new write path
 - [ ] Media (Jodit) stays optional in views; README updated only if user-facing behavior changed
 

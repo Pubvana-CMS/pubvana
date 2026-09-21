@@ -25,12 +25,13 @@ class SearchPublicController extends PublicController
         $page  = max(1, (int) ($this->app->request()->query->page ?? 1));
 
         $data = [
-            'title'   => 'Search',
-            'query'   => $query,
-            'results' => [],
-            'total'   => 0,
-            'error'   => null,
-            'from'    => '',
+            'title'     => 'Search',
+            'query'     => $query,
+            'results'   => [],
+            'total'     => 0,
+            'error'     => null,
+            'from'      => '',
+            'max_score' => 0.0,
         ];
 
         if ($query !== '') {
@@ -40,6 +41,7 @@ class SearchPublicController extends PublicController
             $data['total']      = $result['total'];
             $data['error']      = $result['error'];
             $data['from']       = $result['from'];
+            $data['max_score']  = $result['max_score'];
             $data['pagination'] = $this->buildPagination($result);
         }
 
