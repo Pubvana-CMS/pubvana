@@ -65,6 +65,21 @@ final class CommentModelTest extends TestCase
         self::assertSame('find me', (string) $found->body);
     }
 
+    public function testFindByIdRunsOnFreshInstance(): void
+    {
+        $a = $this->make(['body' => 'a']);
+        $b = $this->make(['body' => 'b']);
+
+        $model = new Comment($this->pdo);
+        $first = $model->findById((int) $a->id);
+        $second = $model->findById((int) $b->id);
+        self::assertNotNull($first);
+        self::assertNotNull($second);
+        self::assertNotSame($first, $second);
+        self::assertSame('a', (string) $first->body);
+        self::assertNull($model->findById(99999));
+    }
+
     public function testFindByContentApprovedOnlyAndOrdered(): void
     {
         $a = $this->make(['body' => 'a', 'status' => 'approved']);

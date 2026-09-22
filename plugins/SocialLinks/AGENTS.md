@@ -88,8 +88,8 @@ Coverage: the suite covers the service, the admin controller, migrations/seeds, 
 - **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
 
 1. **`declare(strict_types=1);` at the top of every class file** (`Plugin.php:3`). No exceptions.
-2. **Models extend `Pubvana\Models\AbstractModel` and declare their table string in the constructor** (`Models/SocialLink.php:15-20`).
-3. **Keep the `@property` column docblocks in sync with the migrations** (`Models/SocialLink.php:7-17`).
+2. **Models extend `Pubvana\Models\AbstractModel` and declare their table string in the constructor** (`Models/SocialLink.php:28-31`).
+3. **Keep the `@property` column docblocks in sync with the migrations** (`Models/SocialLink.php:8-16`).
 4. **Pull fresh model instances through a private `model()` helper** (`Services/SocialLinksService.php:269-272`). Reason: a shared instance would hold query state across calls.
 5. **Use `DateTimeImmutable` for every timestamp write** (`Services/SocialLinksService.php:190, 223, 277`).
 6. **Controllers strip `_csrf_token` before forwarding POST data** (`Controllers/SocialLinksAdminController.php:30-31`).

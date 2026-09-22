@@ -16,7 +16,7 @@ Redirects manages 301/302 URL redirects and aggregates incoming 404 traffic. It 
 
 ## Project guidelines
 
-1. **Only match enabled redirects, and only for `GET`/`HEAD` outside the CLI.** Matching runs through `findActiveBySourcePath()` (`enabled = 1`, `Models/Redirect.php:55-63`), gated by method and `php_sapi_name()` (`Services/RedirectsService.php:181-193`). Reason: POST redirects break forms, and CLI routes have no request path.
+1. **Only match enabled redirects, and only for `GET`/`HEAD` outside the CLI.** Matching runs through `findActiveBySourcePath()` (`enabled = 1`, `Models/Redirect.php:63-72`), gated by method and `php_sapi_name()` (`Services/RedirectsService.php:181-193`). Reason: POST redirects break forms, and CLI routes have no request path.
 2. **Restrict status codes to 301 and 302.** `preparePayload()` coerces anything else back to 301 (`Services/RedirectsService.php:217-220`). Reason: any other code would mislead clients and search engines.
 3. **Never drop the query string when redirecting.** `buildRedirectLocation()` forwards the original query, joining with `&` when the target already has one (`Services/RedirectsService.php:288-297`). Reason: pages reached via redirects routinely rely on query parameters.
 4. **Keep the self-redirect guard in place.** A redirect whose target path matches the current path (same host) is never issued (`Services/RedirectsService.php:203-205, 311-324`). Reason: otherwise an accidental duplicate-path rule loops forever.
@@ -99,8 +99,8 @@ Coverage: the suite covers both services, the admin controllers, target URL safe
 - **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
 
 1. **`declare(strict_types=1);` at the top of every class file** (`Plugin.php:3`). No exceptions.
-2. **Models extend `Pubvana\Models\AbstractModel` and declare their table string in the constructor** (`Models/Redirect.php:21-24`, `Models/RedirectLink.php:22-25`).
-3. **Keep the `@property` column docblocks in sync with the migrations** (`Models/Redirect.php:7-18`, `Models/RedirectLink.php:7-19`).
+2. **Models extend `Pubvana\Models\AbstractModel` and declare their table string in the constructor** (`Models/Redirect.php:28-31`, `Models/RedirectLink.php:29-32`).
+3. **Keep the `@property` column docblocks in sync with the migrations** (`Models/Redirect.php:8-17`, `Models/RedirectLink.php:8-18`).
 4. **Pull fresh model instances through a private `model()` helper** (`Services/RedirectsService.php:337-340`, `Services/RedirectLinksService.php:236-239`). Reason: a shared instance would hold query state across calls.
 5. **Use `DateTimeImmutable` for every timestamp write** (`Services/RedirectsService.php:332-335`, `Services/RedirectLinksService.php:231-234`).
 6. **Controllers strip `_csrf_token` before forwarding POST data** (`Controllers/RedirectsAdminController.php:45-46, 81-82`).
@@ -122,7 +122,7 @@ Coverage: the suite covers both services, the admin controllers, target URL safe
 | Add a redirect field | Migration `2026-09-17-105235` + `preparePayload()` + views |
 | Change skip prefixes | `Config/Config.php` (both `skip_prefixes` sets) |
 | Add a target-suggestion group | `getTargetSuggestions()` (`Services/RedirectsService.php:139-174`) |
-| Change 404 status filtering | `RedirectLink::allByStatus()` (`Models/RedirectLink.php:30-45`) and the `?status=` switch in `RedirectLinksAdminController::index()` |
+| Change 404 status filtering | `RedirectLink::allByStatus()` (`Models/RedirectLink.php:37-52`) and the `?status=` switch in `RedirectLinksAdminController::index()` |
 | Add a 404 manager action | New controller method + route (`Plugin.php:53-64`) + view button |
 | Change matching behavior (e.g. regex) | `findActiveBySourcePath()` and `handleCurrentRequest()` |
 

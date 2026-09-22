@@ -57,16 +57,18 @@ class AiKey extends \Pubvana\Models\AbstractModel
 
     public function findById(int $id): ?self
     {
-        $this->reset();
-        $this->eq('id', $id)->find();
-        return $this->isHydrated() ? $this : null;
+        // Fresh instance: a reused $this would alias every find to the same object.
+        $query = new self($this->getDatabaseConnection());
+        $query->eq('id', $id)->find();
+        return $query->isHydrated() ? $query : null;
     }
 
     public function findByHash(string $hash): ?self
     {
-        $this->reset();
-        $this->eq('key_hash', $hash)->find();
-        return $this->isHydrated() ? $this : null;
+        // Fresh instance: see findById() for why $this cannot be reused.
+        $query = new self($this->getDatabaseConnection());
+        $query->eq('key_hash', $hash)->find();
+        return $query->isHydrated() ? $query : null;
     }
 
     /**

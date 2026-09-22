@@ -36,9 +36,10 @@ class PostRevision extends \Pubvana\Models\AbstractModel
 
     public function findById(int $id): ?self
     {
-        $this->reset();
-        $this->eq('id', $id)->find();
-        return $this->isHydrated() ? $this : null;
+        // Fresh instance: a reused $this would alias every find to the same object.
+        $query = new self($this->getDatabaseConnection());
+        $query->eq('id', $id)->find();
+        return $query->isHydrated() ? $query : null;
     }
 
     /**

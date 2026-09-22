@@ -76,6 +76,21 @@ final class MediaModelTest extends TestCase
         self::assertSame('find-me.png', (string) $found->filename);
     }
 
+    public function testFindByIdRunsOnFreshInstance(): void
+    {
+        $a = $this->make(['filename' => 'a.jpg']);
+        $b = $this->make(['filename' => 'b.jpg']);
+
+        $model = new Media($this->pdo);
+        $first = $model->findById((int) $a->id);
+        $second = $model->findById((int) $b->id);
+        self::assertNotNull($first);
+        self::assertNotNull($second);
+        self::assertNotSame($first, $second);
+        self::assertSame('a.jpg', (string) $first->filename);
+        self::assertNull($model->findById(99999));
+    }
+
     public function testPaginateAndCountWithTypeFilter(): void
     {
         $this->make(['filename' => 'a.jpg', 'type' => 'image']);

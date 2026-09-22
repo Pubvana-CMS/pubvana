@@ -164,6 +164,48 @@ final class RedirectLinksServiceTest extends TestCase
         self::assertFalse($this->invoke($bare, 'shouldSkipPath', ['/admin']));
     }
 
+    public function testRedirectFindersRunOnFreshInstances(): void
+    {
+        $this->insertRedirect('/b', '/x');
+        $this->insertRedirect('/a', '/y');
+
+        $model = new Redirect($this->pdo);
+        $first = $model->findById(1);
+        $second = $model->findById(2);
+        self::assertNotNull($first);
+        self::assertNotNull($second);
+        self::assertNotSame($first, $second);
+        self::assertSame('/b', (string) $first->source_path);
+
+        $activeA = $model->findActiveBySourcePath('/a');
+        $activeB = $model->findActiveBySourcePath('/b');
+        self::assertNotNull($activeA);
+        self::assertNotNull($activeB);
+        self::assertNotSame($activeA, $activeB);
+        self::assertNull($model->findById(99999));
+    }
+
+    public function testRedirectLinkFindersRunOnFreshInstances(): void
+    {
+        $this->insertLink('/a');
+        $this->insertLink('/b');
+
+        $model = new RedirectLink($this->pdo);
+        $first = $model->findById(1);
+        $second = $model->findById(2);
+        self::assertNotNull($first);
+        self::assertNotNull($second);
+        self::assertNotSame($first, $second);
+        self::assertSame('/a', (string) $first->source_path);
+
+        $pathA = $model->findBySourcePath('/a');
+        $pathB = $model->findBySourcePath('/b');
+        self::assertNotNull($pathA);
+        self::assertNotNull($pathB);
+        self::assertNotSame($pathA, $pathB);
+        self::assertNull($model->findById(99999));
+    }
+
     private function insertRedirect(string $source, string $target, int $enabled = 1): void
     {
         $stmt = $this->pdo->prepare(

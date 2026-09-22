@@ -423,6 +423,40 @@ final class BrokenLinksServiceCoverageTest extends TestCase
         self::assertSame('Two', $sources[1]['title']);
     }
 
+    public function testBrokenLinkFindersRunOnFreshInstances(): void
+    {
+        $first = new BrokenLink($this->pdo);
+        $first->source_type = 'post';
+        $first->source_id = 1;
+        $first->source_title = 'A';
+        $first->url = 'https://a.test/1';
+        $first->url_hash = sha1('https://a.test/1');
+        $first->dismissed = 0;
+        $first->insert();
+
+        $second = new BrokenLink($this->pdo);
+        $second->source_type = 'post';
+        $second->source_id = 1;
+        $second->source_title = 'A';
+        $second->url = 'https://a.test/2';
+        $second->url_hash = sha1('https://a.test/2');
+        $second->dismissed = 0;
+        $second->insert();
+
+        $model = new BrokenLink($this->pdo);
+        $a = $model->findById((int) $first->id);
+        $b = $model->findById((int) $second->id);
+        self::assertNotNull($a);
+        self::assertNotNull($b);
+        self::assertNotSame($a, $b);
+        self::assertSame('https://a.test/1', (string) $a->url);
+
+        $byHash = $model->findBySourceAndHash('post', 1, sha1('https://a.test/2'));
+        self::assertNotNull($byHash);
+        self::assertSame('https://a.test/2', (string) $byHash->url);
+        self::assertNull($model->findById(99999));
+    }
+
     private function firstIdForUrl(string $url): int
     {
         $stmt = $this->pdo->prepare('SELECT id FROM broken_links WHERE url = ? ORDER BY id ASC LIMIT 1');

@@ -43,9 +43,10 @@ class BrokenLink extends \Pubvana\Models\AbstractModel
      */
     public function findById(int $id): ?self
     {
-        $this->reset();
-        $this->eq('id', $id)->find();
-        return $this->isHydrated() ? $this : null;
+        // Fresh instance: a reused $this would alias every find to the same object.
+        $query = new self($this->getDatabaseConnection());
+        $query->eq('id', $id)->find();
+        return $query->isHydrated() ? $query : null;
     }
 
     /**
@@ -58,13 +59,14 @@ class BrokenLink extends \Pubvana\Models\AbstractModel
      */
     public function findBySourceAndHash(string $sourceType, int $sourceId, string $urlHash): ?self
     {
-        $this->reset();
-        $this->eq('source_type', $sourceType)
+        // Fresh instance: see findById() for why $this cannot be reused.
+        $query = new self($this->getDatabaseConnection());
+        $query->eq('source_type', $sourceType)
             ->eq('source_id', $sourceId)
             ->eq('url_hash', $urlHash)
             ->find();
 
-        return $this->isHydrated() ? $this : null;
+        return $query->isHydrated() ? $query : null;
     }
 
     /**

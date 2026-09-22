@@ -244,4 +244,65 @@ final class AiModelTest extends TestCase
         $mixed->claims = $mixedJson;
         self::assertSame([['text' => 'ok']], $mixed->claimsArray());
     }
+
+    public function testFindersRunOnFreshInstances(): void
+    {
+        $a = $this->insertKey('ha');
+        $b = $this->insertKey('hb');
+
+        $model = new AiKey($this->pdo);
+        $first = $model->findById((int) $a->id);
+        $second = $model->findById((int) $b->id);
+        self::assertNotNull($first);
+        self::assertNotNull($second);
+        self::assertNotSame($first, $second);
+        self::assertSame((int) $a->id, (int) $first->id);
+
+        $hashA = $model->findByHash('ha');
+        $hashB = $model->findByHash('hb');
+        self::assertNotNull($hashA);
+        self::assertNotNull($hashB);
+        self::assertNotSame($hashA, $hashB);
+        self::assertSame('ha', (string) $hashA->key_hash);
+        self::assertNull($model->findByHash('missing'));
+    }
+
+    public function testFactCheckFindByIdRunsOnFreshInstance(): void
+    {
+        $a = $this->insertFactCheck('supported');
+        $b = $this->insertFactCheck('refuted');
+
+        $model = new AiFactCheck($this->pdo);
+        $first = $model->findById((int) $a->id);
+        $second = $model->findById((int) $b->id);
+        self::assertNotNull($first);
+        self::assertNotNull($second);
+        self::assertNotSame($first, $second);
+        self::assertSame('supported', (string) $first->overall_verdict);
+        self::assertNull($model->findById(99999));
+    }
+
+    private function insertFactCheck(string $verdict): AiFactCheck
+    {
+        $record = new AiFactCheck($this->pdo);
+        $record->content_type = 'post';
+        $record->content_id = 1;
+        $record->content_title = 'T';
+        $record->content_slug = 't';
+        $record->content_updated_at = null;
+        $record->summary = 's';
+        $record->overall_verdict = $verdict;
+        $record->claim_count = 0;
+        $record->claims = '[]';
+        $record->prompt_version = '1.0.0';
+        $record->prompt_interference = 0;
+        $record->interference_note = null;
+        $record->key_id = null;
+        $record->key_name = null;
+        $record->created_at = '2026-01-01 00:00:00';
+        $record->updated_at = '2026-01-01 00:00:00';
+        $record->insert();
+
+        return $record;
+    }
 }

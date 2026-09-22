@@ -121,10 +121,10 @@ Coverage: the suite covers the model, the GD processor, the service facade, admi
 - **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
 
 1. **`declare(strict_types=1);` at the top of every class file** (`Plugin.php:3`). No exceptions.
-2. **Models extend `Pubvana\Models\AbstractModel` and declare their table string in the constructor** (`Models/Media.php:7-12`).
+2. **Models extend `Pubvana\Models\AbstractModel` and declare their table string in the constructor** (`Models/Media.php:37-40`).
 3. **Keep the two processors symmetric.** Both implement the interface fully; when changing one, change both, and confirm identical `capabilities()` where possible.
-4. **`updateMeta()` must stay whitelisted.** Only `alt_text`, `title`, `poster_path` are writable, and values are trimmed to `null` when empty (`Models/Media.php:67-79`). Never pass raw request data.
-5. **Use `DateTimeImmutable` for all timestamp writes** (`Models/Media.php:52, 77`).
+4. **`updateMeta()` must stay whitelisted.** Only `alt_text`, `title`, `poster_path` are writable, and values are trimmed to `null` when empty (`Models/Media.php:105-117`). Never pass raw request data.
+5. **Use `DateTimeImmutable` for all timestamp writes** (`Models/Media.php:87, 115`).
 6. **Escape every interpolated value in snippet partials** (`Views/admin/picker.php` uses `htmlspecialchars` on all echoed values). Never concatenate a path or name into markup raw.
 7. **Respect the no-external-assets rule.** New widgets embed their own inline `<style>`/`<script>` blocks; nothing is registered via `admin.css`/`admin.js`.
 

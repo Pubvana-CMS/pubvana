@@ -163,4 +163,42 @@ final class FormsModelTest extends TestCase
         $filtered = $model->paginate(1, 10, $id);
         self::assertCount(2, $filtered);
     }
+
+    public function testFormFindersRunOnFreshInstances(): void
+    {
+        $a = $this->makeForm(['slug' => 'one', 'status' => 'published']);
+        $b = $this->makeForm(['slug' => 'two', 'status' => 'published']);
+
+        $model = new Form($this->pdo);
+        $first = $model->findById((int) $a->id);
+        $second = $model->findById((int) $b->id);
+        self::assertNotNull($first);
+        self::assertNotNull($second);
+        self::assertNotSame($first, $second);
+        self::assertSame((int) $a->id, (int) $first->id);
+
+        $byOne = $model->findPublishedBySlug('one');
+        $byTwo = $model->findPublishedBySlug('two');
+        self::assertNotNull($byOne);
+        self::assertNotNull($byTwo);
+        self::assertNotSame($byOne, $byTwo);
+        self::assertNull($model->findById(99999));
+    }
+
+    public function testSubmissionFindByIdRunsOnFreshInstance(): void
+    {
+        $form = $this->makeForm();
+        $id = (int) $form->id;
+        $model = new FormSubmission($this->pdo);
+        $a = $model->createRecord(['form_id' => $id, 'status' => 'received', 'payload_json' => '{"a":1}']);
+        $b = $model->createRecord(['form_id' => $id, 'status' => 'received', 'payload_json' => '{"b":2}']);
+
+        $first = $model->findById((int) $a->id);
+        $second = $model->findById((int) $b->id);
+        self::assertNotNull($first);
+        self::assertNotNull($second);
+        self::assertNotSame($first, $second);
+        self::assertSame((int) $a->id, (int) $first->id);
+        self::assertNull($model->findById(99999));
+    }
 }

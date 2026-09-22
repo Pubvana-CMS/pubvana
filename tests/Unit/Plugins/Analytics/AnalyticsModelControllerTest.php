@@ -121,6 +121,27 @@ final class AnalyticsModelControllerTest extends TestCase
         self::assertSame(['success' => 'Page tracking disabled.'], $this->flashes);
     }
 
+    public function testFindByIdRunsOnFreshInstance(): void
+    {
+        $model = new PageView($this->pdo);
+        foreach (['/a' => 'a', '/b' => 'b'] as $path => $group) {
+            $view = new PageView($this->pdo);
+            $view->page_path = $path;
+            $view->page_group = $group;
+            $view->referrer_domain = null;
+            $view->viewed_at = '2026-01-01 00:00:00';
+            $view->insert();
+        }
+
+        $first = $model->findById(1);
+        $second = $model->findById(2);
+        self::assertNotNull($first);
+        self::assertNotNull($second);
+        self::assertNotSame($first, $second);
+        self::assertSame('/a', (string) $first->page_path);
+        self::assertNull($model->findById(99999));
+    }
+
     /**
      * @param array<string, mixed> $query
      * @param array<string, mixed> $data

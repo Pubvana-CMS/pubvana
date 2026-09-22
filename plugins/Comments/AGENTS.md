@@ -24,7 +24,7 @@ Comments provides nested, moderated site comments. Captcha on the comment form i
 6. **Do not bypass the public gating chain in `dataFor()`.** A thread must render nothing when the system is disabled, the host type is not enabled, or the item disallows comments (`Services/CommentService.php:356-399`). Reason: an empty string is the signal hosts rely on to decide whether to inject anything.
 7. **Delegate captcha to the core CaptchaService.** `create()` checks `CaptchaService::enforcedFor('comments')` (provider configured plus the "Comment form" switch on in Settings > Captcha) and calls `verify()`; the service itself fails closed on a missing secret or an unreachable provider. Templates render the captcha with the `captcha` Vision tag, never with hardcoded provider markup. Reason: captcha config is site-wide (shared with forms and the sign-in form); duplicating provider logic here would drift.
 8. **Keep guest attribution split from user attribution.** Comments store either `user_id` or `guest_name`/`guest_email`/`guest_website`, never both (`Controllers/CommentsPublicController.php:87-98`). Reason: the display and admin tooling branch on this split.
-9. **Do not add soft deletes to comments.** `delete()` is a hard delete (`Models/Comment.php:164-174`). Descendants are not cascaded; `buildTree()` promotes orphaned children to the thread root (`Services/CommentService.php:769-777`). Reason: moderation is explicit and a visitor comment must actually disappear, not linger as a tombstone.
+9. **Do not add soft deletes to comments.** `delete()` is a hard delete (`Models/Comment.php:186-196`). Descendants are not cascaded; `buildTree()` promotes orphaned children to the thread root (`Services/CommentService.php:769-777`). Reason: moderation is explicit and a visitor comment must actually disappear, not linger as a tombstone.
 10. **Keep the 3-tier template resolution intact.** `resolveTemplate()` resolves `pubvana/comments/comments.tpl` as app/Views override, then theme, then plugin (`Services/CommentService.php`). Reason: it matches `RegionManager::resolveBlockTemplate` and appends `.tpl` explicitly because `PluginView`'s mutable extension may still be `.php` on early render.
 
 ## Repository layout
@@ -69,7 +69,7 @@ plugins/Comments/
 
 **Submission path.** `CommentsPublicController::store()` gates on system enabled, host type enabled, guest policy, empty body, and guest name, then delegates to `CommentService::create()` which additionally enforces nesting depth, captcha, and purification (`Controllers/CommentsPublicController.php:41-108`). Errors bounce back to the referrer with a `comment_error` query flag; `dataFor()` re-reads it and the template renders it as `comments_error`.
 
-**Display path.** `findByContent()` only returns approved comments (`Models/Comment.php:48-60`); they are threaded by `buildTree()` and flattened with depth one level at a time by `flattenComments()` (`Services/CommentService.php:757-814`).
+**Display path.** `findByContent()` only returns approved comments (`Models/Comment.php:62-74`); they are threaded by `buildTree()` and flattened with depth one level at a time by `flattenComments()` (`Services/CommentService.php:757-814`).
 
 ## Development and testing
 
@@ -94,9 +94,9 @@ The unit suite is in `tests/Unit/Plugins/Comments/` and covers the service (capt
 - **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
 
 1. **`declare(strict_types=1);` at the top of every class file** (`Plugin.php:3`). No exceptions.
-2. **Models extend `Pubvana\Models\AbstractModel` and declare their table string in the constructor** (`Models/Comment.php:28-33`).
-3. **Prefer the ActiveRecord fluent query; raw SQL only for `GROUP BY` aggregates.** `countByType()` is the single raw query and uses named placeholders for status (`Models/Comment.php:100-122`).
-4. **Use `DateTimeImmutable` for all timestamp writes** (`Models/Comment.php:129, 155`). Do not call `date()` for stored values.
+2. **Models extend `Pubvana\Models\AbstractModel` and declare their table string in the constructor** (`Models/Comment.php:42-45`).
+3. **Prefer the ActiveRecord fluent query; raw SQL only for `GROUP BY` aggregates.** `countByType()` is the single raw query and uses named placeholders for status (`Models/Comment.php:116-143`).
+4. **Use `DateTimeImmutable` for all timestamp writes** (`Models/Comment.php:151, 177`). Do not call `date()` for stored values.
 5. **Keep views dumb and dependency-free.** The injectable partial consumes the `dataFor()` array verbatim (`Views/public/comments.tpl`); do not call services from templates.
 6. **Catch `\Throwable` only at trust boundaries.** Host callables and template rendering already fail soft to empty output (`Services/CommentService.php:293-297, 422-426, 632-635`); do not add blanket try/catch inside business logic.
 

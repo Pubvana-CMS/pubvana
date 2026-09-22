@@ -41,6 +41,21 @@ final class ProfileModelTest extends TestCase
         self::assertSame(7, (int) $found->user_id);
     }
 
+    public function testFindByUserIdRunsOnFreshInstance(): void
+    {
+        $a = (new Profile($this->pdo))->findOrCreate(7);
+        $b = (new Profile($this->pdo))->findOrCreate(8);
+
+        $model = new Profile($this->pdo);
+        $first = $model->findByUserId((int) $a->user_id);
+        $second = $model->findByUserId((int) $b->user_id);
+        self::assertNotNull($first);
+        self::assertNotNull($second);
+        self::assertNotSame($first, $second);
+        self::assertSame(7, (int) $first->user_id);
+        self::assertNull($model->findByUserId(99999));
+    }
+
     public function testFindOrCreateReturnsExisting(): void
     {
         $model = new Profile($this->pdo);

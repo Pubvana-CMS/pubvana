@@ -242,6 +242,23 @@ final class SocialLinksServiceTest extends TestCase
         self::assertNull((new SocialLink($this->pdo))->findById(99999));
     }
 
+    public function testFindByIdRunsOnFreshInstance(): void
+    {
+        $a = $this->service->create(['platform' => 'x', 'url' => 'https://a.test']);
+        $b = $this->service->create(['platform' => 'github', 'url' => 'https://b.test']);
+        self::assertNotNull($a);
+        self::assertNotNull($b);
+
+        $model = new SocialLink($this->pdo);
+        $first = $model->findById((int) $a->id);
+        $second = $model->findById((int) $b->id);
+        self::assertNotNull($first);
+        self::assertNotNull($second);
+        self::assertNotSame($first, $second);
+        self::assertSame('x', (string) $first->platform);
+        self::assertNull($model->findById(99999));
+    }
+
     /** @param list<object> $links */
     private function ids(array $links): array
     {

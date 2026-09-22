@@ -46,9 +46,10 @@ class Profile extends \Pubvana\Models\AbstractModel
 
     public function findByUserId(int $userId): ?self
     {
-        $this->reset();
-        $this->eq('user_id', $userId)->find();
-        return $this->isHydrated() ? $this : null;
+        // Fresh instance: a reused $this would alias every find to the same object.
+        $query = new self($this->getDatabaseConnection());
+        $query->eq('user_id', $userId)->find();
+        return $query->isHydrated() ? $query : null;
     }
 
     public function findOrCreate(int $userId): self

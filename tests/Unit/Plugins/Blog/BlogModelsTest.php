@@ -285,6 +285,49 @@ final class BlogModelsTest extends TestCase
         self::assertNull($model->findBySlug('does-not-exist'));
     }
 
+    public function testCategoryTagAndRevisionFindersRunOnFreshInstances(): void
+    {
+        $category = new Category($this->pdo);
+        $first = $category->createRecord(['name' => 'One', 'slug' => 'one']);
+        $second = $category->createRecord(['name' => 'Two', 'slug' => 'two']);
+
+        $a = $category->findById((int) $first->id);
+        $b = $category->findById((int) $second->id);
+        self::assertNotNull($a);
+        self::assertNotNull($b);
+        self::assertNotSame($a, $b);
+        self::assertNotSame($category, $a);
+        self::assertSame('One', $a->name);
+        self::assertNull($category->findById(999));
+
+        self::assertNotSame($category->findBySlug('one'), $category->findBySlug('two'));
+
+        $tag = new Tag($this->pdo);
+        $t1 = $tag->findOrCreate('A', 'a');
+        $t2 = $tag->findOrCreate('B', 'b');
+        $ta = $tag->findById((int) $t1->id);
+        $tb = $tag->findById((int) $t2->id);
+        self::assertNotNull($ta);
+        self::assertNotNull($tb);
+        self::assertNotSame($ta, $tb);
+        self::assertSame('A', $ta->name);
+        self::assertNull($tag->findById(999));
+
+        $postId = $this->insertPost('Rev', 'rev', 'draft');
+        $post = (new Post($this->pdo))->findById($postId);
+        self::assertNotNull($post);
+        $revisions = new PostRevision($this->pdo);
+        $revisions->createFromPost($post, 1);
+        $revisions->createFromPost($post, 1);
+        $all = $revisions->getForPost($postId);
+        $r1 = $revisions->findById((int) $all[0]->id);
+        $r2 = $revisions->findById((int) $all[1]->id);
+        self::assertNotNull($r1);
+        self::assertNotNull($r2);
+        self::assertNotSame($r1, $r2);
+        self::assertNull($revisions->findById(999));
+    }
+
     private function insertPost(string $title, string $slug, string $status): int
     {
         $now = date('Y-m-d H:i:s');

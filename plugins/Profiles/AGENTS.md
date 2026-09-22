@@ -17,7 +17,7 @@ Profiles gives each user a browsable public profile and a self-service edit page
 ## Project guidelines
 
 1. **Treat `$app->profiles()` as the model facade.** The `profiles` map returns a `Profile` ActiveRecord instance directly, not a service (`Plugin.php:17-23`). Reason: consumers call model methods (`findOrCreate`, `updateProfile`), so wrapping the result in another layer would break every call site.
-2. **Always go through `findOrCreate()` before reading or writing a profile.** It is the only path that guarantees a row exists (`Models/Profile.php:21-36`), and `updateProfile()` depends on it. Reason: the `user_id` column is unique, so a bare select-then-insert is racy.
+2. **Always go through `findOrCreate()` before reading or writing a profile.** It is the only path that guarantees a row exists (`Models/Profile.php:55-70`), and `updateProfile()` depends on it. Reason: the `user_id` column is unique, so a bare select-then-insert is racy.
 3. **Keep `updateFromArray()` whitelisted.** Only `display_name`, `bio`, `avatar`, `website`, `twitter`, `facebook`, `linkedin`, `job_title`, `works_for` are writable, each trimmed to `null` when empty. `website` must be a full `http://` or `https://` URL; anything else (bare domains, `javascript:`, `data:`, scheme-relative) fails `UrlService::isSafeExternalUrl()` and the write is rejected with nothing saved (`Models/Profile.php`, `updateProfile()` then returns null for the controller to flash an error). `twitter`/`facebook`/`linkedin` are handles: tags and whitespace stripped on write. Never widen the whitelist without a migration for the new column. Reason: raw request data must never reach the model, and `website` is rendered as a navigable href.
    - **Never render `profile.website` raw in an href.** `ProfilesPublicController::show()` passes `safe_website` (the value only when it passes `isSafeExternalUrl()`), and the theme template uses it (`themes/default/Views/pubvana/profiles/profile.tpl`). The render guard covers rows stored before the write-side rule existed.
 4. **Public edit is owner-only.** Both `edit()` and `update()` compare the authenticated user id against the target user id and refuse otherwise (`Controllers/ProfilesPublicController.php:51-55, 73-77`). Reason: only the account holder edits their own public profile.
@@ -53,7 +53,7 @@ plugins/Profiles/
 
 **Entry point.** `Plugin::register()` (`Plugin.php:15-48`). Maps the `profiles` facade (`Plugin.php:17-23`), registers three admin routes (`Plugin.php:29-33`) and three public routes under the resolved route prefix (`Plugin.php:37-41`), and registers the public stylesheet (`Plugin.php:43-47`).
 
-**Data flow.** Any profile page first calls `findOrCreate($userId)`, which lazily inserts a bare row (timestamps only) when none exists (`Models/Profile.php:21-36`). Saves flow through `updateProfile()` → `findOrCreate()` → `updateFromArray()` with the whitelist (`Models/Profile.php:38-55`).
+**Data flow.** Any profile page first calls `findOrCreate($userId)`, which lazily inserts a bare row (timestamps only) when none exists (`Models/Profile.php:55-70`). Saves flow through `updateProfile()` → `findOrCreate()` → `updateFromArray()` with the whitelist (`Models/Profile.php:79-86, 99-122`).
 
 **Public tenant**. `show()` resolves the user via FlightShield's `findByCredentials(['username' => ...])`, 404s on miss, renders the theme `profile` template with `isOwner` and a normalized `avatar_url` (`Controllers/ProfilesPublicController.php:17-42`). `edit()` and `update()` render/redirect to the theme `profile_edit`.
 
@@ -86,8 +86,8 @@ Coverage: the suite covers the model, both controllers (URLs, website validation
 - **PHPStan (level 8):** every model carries `@property`/`@method` annotations for its columns and the ActiveRecord magic it uses, and every service facade has a `@phpstan-method` entry in `phpstan-stubs.php`. Run `composer phpstan` before committing.
 
 1. **`declare(strict_types=1);` at the top of every class file** (`Plugin.php:3`). No exceptions.
-2. **Models extend `Pubvana\Models\AbstractModel` and declare their table string in the constructor** (`Models/Profile.php:7-12`).
-3. **Use `DateTimeImmutable` for all model timestamps** (`Models/Profile.php:28, 53`).
+2. **Models extend `Pubvana\Models\AbstractModel` and declare their table string in the constructor** (`Models/Profile.php:42-45`).
+3. **Use `DateTimeImmutable` for all model timestamps** (`Models/Profile.php:62, 118`).
 4. **Controllers strip `_csrf_token` (and `return_url`, where consumed) before calling the facade** (`Controllers/ProfilesAdminController.php:63-65`, `Controllers/ProfilesPublicController.php:79-80`).
 5. **Views render the CSRF field with `csrf_field()` and escape every echoed value with `htmlspecialchars`** (`Views/admin/profile/index.php:17-18, 22-23`).
 6. **User lookups go through the FlightShield `User` model, not raw queries** (`Controllers/ProfilesPublicController.php:87-91`).

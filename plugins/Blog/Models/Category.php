@@ -37,16 +37,18 @@ class Category extends \Pubvana\Models\AbstractModel
 
     public function findById(int $id): ?self
     {
-        $this->reset();
-        $this->eq('id', $id)->find();
-        return $this->isHydrated() ? $this : null;
+        // Fresh instance: a reused $this would alias every find to the same object.
+        $query = new self($this->getDatabaseConnection());
+        $query->eq('id', $id)->find();
+        return $query->isHydrated() ? $query : null;
     }
 
     public function findBySlug(string $slug): ?self
     {
-        $this->reset();
-        $this->eq('slug', $slug)->find();
-        return $this->isHydrated() ? $this : null;
+        // Fresh instance: see findById() for why $this cannot be reused.
+        $query = new self($this->getDatabaseConnection());
+        $query->eq('slug', $slug)->find();
+        return $query->isHydrated() ? $query : null;
     }
 
     public function slugExists(string $slug, ?int $excludeId = null): bool
