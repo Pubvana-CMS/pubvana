@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b9ad83a2d286f84ee0f390f3a8e43b67",
+    "content-hash": "512ad308d3ca7fcb11e836986c96283e",
     "packages": [
         {
             "name": "adhocore/cli",
@@ -233,16 +233,16 @@
         },
         {
             "name": "enlivenapp/flight-csrf",
-            "version": "0.2.4",
+            "version": "1.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/enlivenapp/FlightPHP-CSRF.git",
-                "reference": "16b7fce0c16632097657b08fd568f3573fa52a8c"
+                "reference": "7a5ff9599ccdfa55f6a2aaa3e97d48d87f1739da"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/enlivenapp/FlightPHP-CSRF/zipball/16b7fce0c16632097657b08fd568f3573fa52a8c",
-                "reference": "16b7fce0c16632097657b08fd568f3573fa52a8c",
+                "url": "https://api.github.com/repos/enlivenapp/FlightPHP-CSRF/zipball/7a5ff9599ccdfa55f6a2aaa3e97d48d87f1739da",
+                "reference": "7a5ff9599ccdfa55f6a2aaa3e97d48d87f1739da",
                 "shasum": ""
             },
             "require": {
@@ -267,9 +267,9 @@
             "description": "CSRF protection middleware and helpers for FlightPHP",
             "support": {
                 "issues": "https://github.com/enlivenapp/FlightPHP-CSRF/issues",
-                "source": "https://github.com/enlivenapp/FlightPHP-CSRF/tree/0.2.4"
+                "source": "https://github.com/enlivenapp/FlightPHP-CSRF/tree/1.0.0"
             },
-            "time": "2026-08-28T04:07:57+00:00"
+            "time": "2026-09-01T16:17:10+00:00"
         },
         {
             "name": "enlivenapp/flight-sessions",
@@ -322,20 +322,20 @@
         },
         {
             "name": "enlivenapp/flight-shield",
-            "version": "0.4.2",
+            "version": "0.4.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/enlivenapp/FlightPHP-Shield.git",
-                "reference": "8f9322d4b006484d82f7f465b89892f049227695"
+                "reference": "0d3496d3c712c17550b4cba2722b1bc2aa8adf6e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/enlivenapp/FlightPHP-Shield/zipball/8f9322d4b006484d82f7f465b89892f049227695",
-                "reference": "8f9322d4b006484d82f7f465b89892f049227695",
+                "url": "https://api.github.com/repos/enlivenapp/FlightPHP-Shield/zipball/0d3496d3c712c17550b4cba2722b1bc2aa8adf6e",
+                "reference": "0d3496d3c712c17550b4cba2722b1bc2aa8adf6e",
                 "shasum": ""
             },
             "require": {
-                "enlivenapp/flight-csrf": "^0.2",
+                "enlivenapp/flight-csrf": "^1.0",
                 "enlivenapp/flight-sessions": "^0.1",
                 "ext-openssl": "*",
                 "ext-pdo": "*",
@@ -371,9 +371,9 @@
             "description": "Authentication and authorization for FlightPHP, ported from CodeIgniter Shield",
             "support": {
                 "issues": "https://github.com/enlivenapp/FlightPHP-Shield/issues",
-                "source": "https://github.com/enlivenapp/FlightPHP-Shield/tree/0.4.2"
+                "source": "https://github.com/enlivenapp/FlightPHP-Shield/tree/0.4.3"
             },
-            "time": "2026-09-18T18:28:48+00:00"
+            "time": "2026-09-22T02:13:07+00:00"
         },
         {
             "name": "enlivenapp/migrations",
@@ -424,16 +424,16 @@
         },
         {
             "name": "enlivenapp/vision",
-            "version": "1.0.4",
+            "version": "1.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/enlivenapp/Vision.git",
-                "reference": "d4e54839f7041f6203523f86b1788887acc88fdb"
+                "reference": "b3b5740e0079efe380aebd178dbb0d9dde4fbe39"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/enlivenapp/Vision/zipball/d4e54839f7041f6203523f86b1788887acc88fdb",
-                "reference": "d4e54839f7041f6203523f86b1788887acc88fdb",
+                "url": "https://api.github.com/repos/enlivenapp/Vision/zipball/b3b5740e0079efe380aebd178dbb0d9dde4fbe39",
+                "reference": "b3b5740e0079efe380aebd178dbb0d9dde4fbe39",
                 "shasum": ""
             },
             "require": {
@@ -458,22 +458,22 @@
             "description": "Lightweight template engine with auto-escaping, extends, includes, filters, and custom tags",
             "support": {
                 "issues": "https://github.com/enlivenapp/Vision/issues",
-                "source": "https://github.com/enlivenapp/Vision/tree/1.0.4"
+                "source": "https://github.com/enlivenapp/Vision/tree/1.1.0"
             },
-            "time": "2026-09-08T02:04:26+00:00"
+            "time": "2026-09-22T01:53:27+00:00"
         },
         {
             "name": "ezyang/htmlpurifier",
-            "version": "v4.19.0",
+            "version": "v4.19.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ezyang/htmlpurifier.git",
-                "reference": "b287d2a16aceffbf6e0295559b39662612b77fcf"
+                "reference": "5e0539132d934f936fbae2c88b55d58f9438623f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ezyang/htmlpurifier/zipball/b287d2a16aceffbf6e0295559b39662612b77fcf",
-                "reference": "b287d2a16aceffbf6e0295559b39662612b77fcf",
+                "url": "https://api.github.com/repos/ezyang/htmlpurifier/zipball/5e0539132d934f936fbae2c88b55d58f9438623f",
+                "reference": "5e0539132d934f936fbae2c88b55d58f9438623f",
                 "shasum": ""
             },
             "require": {
@@ -519,9 +519,9 @@
             ],
             "support": {
                 "issues": "https://github.com/ezyang/htmlpurifier/issues",
-                "source": "https://github.com/ezyang/htmlpurifier/tree/v4.19.0"
+                "source": "https://github.com/ezyang/htmlpurifier/tree/v4.19.1"
             },
-            "time": "2025-10-17T16:34:55+00:00"
+            "time": "2026-09-15T15:42:51+00:00"
         },
         {
             "name": "flightphp/active-record",
@@ -790,16 +790,16 @@
         },
         {
             "name": "league/commonmark",
-            "version": "2.10.0",
+            "version": "2.10.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/thephpleague/commonmark.git",
-                "reference": "d2d1aa8b35e072966c89bc0c66cf926e56767dc4"
+                "reference": "6efbd9c472b91db0a3350fcd601c8332c2382e1f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/thephpleague/commonmark/zipball/d2d1aa8b35e072966c89bc0c66cf926e56767dc4",
-                "reference": "d2d1aa8b35e072966c89bc0c66cf926e56767dc4",
+                "url": "https://api.github.com/repos/thephpleague/commonmark/zipball/6efbd9c472b91db0a3350fcd601c8332c2382e1f",
+                "reference": "6efbd9c472b91db0a3350fcd601c8332c2382e1f",
                 "shasum": ""
             },
             "require": {
@@ -893,7 +893,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-08-11T16:06:25+00:00"
+            "time": "2026-09-21T13:07:34+00:00"
         },
         {
             "name": "league/config",
@@ -979,16 +979,16 @@
         },
         {
             "name": "league/html-to-markdown",
-            "version": "5.1.1",
+            "version": "5.1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/thephpleague/html-to-markdown.git",
-                "reference": "0b4066eede55c48f38bcee4fb8f0aa85654390fd"
+                "reference": "db234ecdb160b9d2b422c1c130db4b01eb3e9e24"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/thephpleague/html-to-markdown/zipball/0b4066eede55c48f38bcee4fb8f0aa85654390fd",
-                "reference": "0b4066eede55c48f38bcee4fb8f0aa85654390fd",
+                "url": "https://api.github.com/repos/thephpleague/html-to-markdown/zipball/db234ecdb160b9d2b422c1c130db4b01eb3e9e24",
+                "reference": "db234ecdb160b9d2b422c1c130db4b01eb3e9e24",
                 "shasum": ""
             },
             "require": {
@@ -998,11 +998,11 @@
             },
             "require-dev": {
                 "mikehaertl/php-shellcommand": "^1.1.0",
-                "phpstan/phpstan": "^1.8.8",
-                "phpunit/phpunit": "^8.5 || ^9.2",
+                "phpstan/phpstan": "^1.8.8 || ^2.0",
+                "phpunit/phpunit": "^8.5 || ^9.2 || ^10.5 || ^11.0 || ^12.0 || ^13.0",
                 "scrutinizer/ocular": "^1.6",
                 "unleashedtech/php-coding-standard": "^2.7 || ^3.0",
-                "vimeo/psalm": "^4.22 || ^5.0"
+                "vimeo/psalm": "^4.22 || ^5.0 || ^6.0"
             },
             "bin": [
                 "bin/html-to-markdown"
@@ -1044,7 +1044,7 @@
             ],
             "support": {
                 "issues": "https://github.com/thephpleague/html-to-markdown/issues",
-                "source": "https://github.com/thephpleague/html-to-markdown/tree/5.1.1"
+                "source": "https://github.com/thephpleague/html-to-markdown/tree/5.1.2"
             },
             "funding": [
                 {
@@ -1064,7 +1064,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2023-07-12T21:21:09+00:00"
+            "time": "2026-09-07T13:53:32+00:00"
         },
         {
             "name": "nette/php-generator",
@@ -3965,11 +3965,11 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "2.2.13",
+            "version": "2.2.14",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/9ba9ac76ee9c5cf5b56d58eb5deec6315b7a0260",
-                "reference": "9ba9ac76ee9c5cf5b56d58eb5deec6315b7a0260",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/9c672e7a8e791dfc3d30e55f683e73fc0b63a3ac",
+                "reference": "9c672e7a8e791dfc3d30e55f683e73fc0b63a3ac",
                 "shasum": ""
             },
             "require": {
@@ -4025,7 +4025,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-09-03T20:38:19+00:00"
+            "time": "2026-09-12T21:39:33+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",
