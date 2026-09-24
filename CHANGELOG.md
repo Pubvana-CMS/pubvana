@@ -5,6 +5,15 @@ All notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [3.0.0-beta.4] - 2026-09-24
+
+### Changed
+- The Updates page, the dashboard card, and the Site Health check report a newest release that an installed addon holds back, and name the addon
+
+### Fixed
+- The Updates page served the pre-update version after an update applied, and offered the same update again, until the next release check
+- Addon compatibility bounds compare the base version: a `pubver_min` of `3.0.0` accepts a `3.0.0-beta` release
+
 ## [3.0.0-beta.3] - 2026-09-24
 
 ### Added
