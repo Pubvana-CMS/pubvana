@@ -4,6 +4,7 @@
 /.vscode
 /build_docs
 /runway-report.md
+/release-prep.md
 # Composer
 /vendor/
 

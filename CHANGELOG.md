@@ -5,6 +5,35 @@ All notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [3.0.0-beta.3] - 2026-09-24
+
+### Added
+- Any plugin can offer itself as the homepage through adext
+- New migration `2026-09-20-133834_MigrateHomepageTypeToken.php` changes an existing homepage setting from `pages` to `page` (Don't write migrations like this)
+- New `ErrorController` and error views; 404 pages render in the site theme
+- Block templates load from `public/blocks/`, in this order: app override, theme override, plugin default
+- Plugins and themes state `type`, `pubver_min`, and `pubver_max`
+- Default theme shows the search score and the best score possible
+- New `text.tpl` block in CoreBlocks
+
+### Changed
+- Blog and Pages follow MVC, and register their menus and homepage options with adext
+- All 17 plugin models return a new object from their finders
+- Search ranking lives in `SearchService`: constant weights, `maxScore()` per search
+- Blog and Pages send their text with the markup stripped
+- `enlivenapp/flight-csrf` to `^1.0`, plus updates to `enlivenapp/flight-shield` and `enlivenapp/vision`
+- `ThemeService` reads a theme's required Pubvana versions from its `pubvana.json`
+- PHPStan level 8 documented in 11 plugin `AGENTS.md` files
+- Rewrote the admin email setting descriptions
+
+### Fixed
+- Blog search returned nothing for any term: `LIKE` used `ESCAPE '\'`, which MySQL rejects. Escape character is `!`; `escapeLikePattern()` handles `!`, `%`, and `_`
+- Search logs provider failures
+- Sidebar showed on the homepage no matter the setting
+- The plugin manager enable/disable toggle
+- Runway failed on `config.config.php`
+- `pages` vs `page` in the Pages seed, plus its URLs and spelling
+
 ## [3.0.0-beta.2] - 2026-09-18
 
 ### Added

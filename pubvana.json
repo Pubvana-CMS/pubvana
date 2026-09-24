@@ -2,7 +2,7 @@
     "name": "pubvana/pubvana",
     "display_name": "Pubvana CMS",
     "description": "Publishing Nirvana, full-featured CMS built on the FlightPHP micro framework with plugins, Vision template engine, and shared-host friendly setup for personal blogs and small to medium businesses.",
-    "semver": "3.0.0-beta.2",
+    "semver": "3.0.0-beta.3",
     "includes": {
         "plugins": [
             "pubvana/activity-log",

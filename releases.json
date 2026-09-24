@@ -1,6 +1,17 @@
 {
     "releases": [
         {
+            "version": "3.0.0-beta.3",
+            "release_date": "2026-09-24",
+            "min_php_version": "8.2",
+            "breaking_changes": [],
+            "migration_notes": [
+                "The homepage setting is no longer limited to Blog or Pages. An existing homepage value of `pages` is rewritten to `page` by migration 2026-09-20-133834, which runs during the update."
+            ],
+            "notices": [],
+            "download_url": "https://github.com/Pubvana-CMS/pubvana/releases/download/3.0.0-beta.3/release.zip"
+        },
+        {
             "version": "3.0.0-beta.2",
             "release_date": "2026-09-18",
             "min_php_version": "8.2",

@@ -24,7 +24,7 @@ bundles `vendor/`, so no Composer step happens on the server.
 
 ```bash
 curl -L -o pubvana.zip \
-  https://github.com/Pubvana-CMS/pubvana/releases/download/3.0.0-beta.1/release.zip
+  https://github.com/Pubvana-CMS/pubvana/releases/download/3.0.0-beta.3/release.zip
 ```
 
 The folder it unzips to must match the top level entries in `fileindex.php`.
@@ -53,8 +53,8 @@ The package lives under `/var/softaculous/pubvana/` on the Softaculous server:
 
 - Category: Blogs (the v1 listing lives under `/apps/blogs/`).
 - The `<space>` value in `info.xml` is the byte size of the current
-  `pubvana.zip` (7,468,561 for the beta.1 release). Update it every time you
-  rebuild the zip.
+  `pubvana.zip` (`stat -c%s pubvana.zip`). Update it every time you rebuild
+  the zip.
 - The `<version>` value in `info.xml` must track `pubvana.json`. Softaculous
   uses it to decide when an upgrade is available for existing installs.
 - The install uses `ssh` realm CLI: `php runway migrate:all`, then
