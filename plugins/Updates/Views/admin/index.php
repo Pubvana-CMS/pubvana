@@ -48,15 +48,15 @@ foreach ($preflight as $preflightCheck) {
 
 $phpBinary = PHP_BINARY ?: (PHP_BINDIR . '/php');
 
-/** Renders the compatibility table for plugins/themes that cap the latest release. */
+/** Renders the installed addons holding back the newest release. */
 $renderConstraints = static function () use ($constraints, $latest): void {
     ?>
-    <div class="alert alert-secondary" role="alert">
+    <div class="alert alert-warning" role="alert">
         <div class="d-flex">
             <div><i class="ti ti-info-circle icon alert-icon"></i></div>
             <div class="flex-grow-1">
-                <strong>Version <?= htmlspecialchars($latest) ?> is also available.</strong>
-                It requires the following plugins or themes to be updated or removed first:
+                <strong>Version <?= htmlspecialchars($latest) ?> can't be installed yet.</strong>
+                These installed addons don't support it:
                 <table class="table table-sm mb-2 mt-2">
                     <thead>
                         <tr><th>Name</th><th>Compatibility</th></tr>
@@ -79,10 +79,34 @@ $renderConstraints = static function () use ($constraints, $latest): void {
                     </tbody>
                 </table>
                 <p class="small text-muted mb-0">
-                    You can remove incompatible plugins or themes if issues occur.
+                    Update those addons through the Marketplace, or remove them, then check for updates again.
                     A backup is created before every update.
                 </p>
             </div>
+        </div>
+    </div>
+    <?php
+};
+
+/** Renders the skipped-version list with its unskip buttons. */
+$renderSkipped = static function () use ($skipped, $adminBase): void {
+    if ($skipped === []) {
+        return;
+    }
+    ?>
+    <div class="card mb-4">
+        <div class="card-body">
+            <strong>Skipped versions</strong>
+            <p class="text-muted small mb-2">Skipped releases are never offered. Remove one to offer it again.</p>
+            <?php foreach ($skipped as $skippedVersion): ?>
+            <form method="POST" action="<?= $adminBase ?>/unskip" class="d-inline me-2 mb-1">
+                <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
+                <input type="hidden" name="version" value="<?= htmlspecialchars($skippedVersion) ?>">
+                <button type="submit" class="btn btn-sm btn-outline-secondary">
+                    <?= htmlspecialchars($skippedVersion) ?> <i class="ti ti-x ms-1"></i>
+                </button>
+            </form>
+            <?php endforeach; ?>
         </div>
     </div>
     <?php
@@ -277,6 +301,21 @@ $renderConstraints = static function () use ($constraints, $latest): void {
     </button>
 </form>
 
+<?php elseif ($status === 'up_to_date' && $cappedBy !== null): ?>
+<div class="alert alert-warning" role="alert">
+    <div class="d-flex">
+        <div><i class="ti ti-alert-triangle icon alert-icon"></i></div>
+        <div>
+            Pubvana <?= htmlspecialchars($latest) ?> is available, but it is held back by an installed addon.
+            Currently running version <?= htmlspecialchars($current) ?>.
+            <small class="text-muted d-block">Last checked: <?= htmlspecialchars($checked) ?></small>
+        </div>
+    </div>
+</div>
+
+<?= $renderConstraints() ?>
+
+<?= $renderSkipped() ?>
 <?php elseif ($status === 'up_to_date'): ?>
 <div class="alert alert-success" role="alert">
     <div class="d-flex">
@@ -288,27 +327,7 @@ $renderConstraints = static function () use ($constraints, $latest): void {
     </div>
 </div>
 
-<?php if ($cappedBy !== null): ?>
-<?= $renderConstraints() ?>
-<?php endif; ?>
-
-<?php if ($skipped !== []): ?>
-<div class="card mb-4">
-    <div class="card-body">
-        <strong>Skipped versions</strong>
-        <p class="text-muted small mb-2">Skipped releases are never offered. Remove one to offer it again.</p>
-        <?php foreach ($skipped as $skippedVersion): ?>
-        <form method="POST" action="<?= $adminBase ?>/unskip" class="d-inline me-2 mb-1">
-            <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
-            <input type="hidden" name="version" value="<?= htmlspecialchars($skippedVersion) ?>">
-            <button type="submit" class="btn btn-sm btn-outline-secondary">
-                <?= htmlspecialchars($skippedVersion) ?> <i class="ti ti-x ms-1"></i>
-            </button>
-        </form>
-        <?php endforeach; ?>
-    </div>
-</div>
-<?php endif; ?>
+<?= $renderSkipped() ?>
 <?php endif; ?>
 
 <!-- Addons -->

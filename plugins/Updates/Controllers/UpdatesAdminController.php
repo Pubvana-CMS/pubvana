@@ -244,6 +244,8 @@ final class UpdatesAdminController extends AdminController
 
             if ($state['status'] === 'available') {
                 $this->app->session()->flash('info', 'Version ' . $state['target_version'] . ' is available.');
+            } elseif (!empty($state['capped_by'])) {
+                $this->app->session()->flash('info', 'Version ' . (string) ($state['latest_version'] ?? '') . ' is available but held back by an installed addon.');
             } elseif ($state['status'] === 'up_to_date') {
                 $this->app->session()->flash('success', 'You are running the latest version.');
             } else {

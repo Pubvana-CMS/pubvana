@@ -116,6 +116,9 @@ class Plugin implements PluginInterface
         if (($state['status'] ?? '') === 'available' && isset($state['target_version'])) {
             $card['tone']        = 'warning';
             $card['description'] = 'Version ' . $state['target_version'] . ' is available. Visit Tools > Maintenance > Updates.';
+        } elseif (($state['status'] ?? '') === 'up_to_date' && !empty($state['capped_by'])) {
+            $card['tone']        = 'warning';
+            $card['description'] = 'Version ' . ($state['latest_version'] ?? 'newer') . ' is available but held back by an installed addon. Visit Tools > Maintenance > Updates.';
         } elseif (($state['status'] ?? '') === 'error') {
             $card['tone']        = 'secondary';
             $card['description'] = 'Last update check failed. Visit Tools > Maintenance > Updates.';
@@ -133,8 +136,23 @@ class Plugin implements PluginInterface
     {
         $state = $app->updates()->lastCheck();
         $version = (string) ($state['current_version'] ?? 'unknown');
+        $status = (string) ($state['status'] ?? 'unknown');
 
-        return match ((string) ($state['status'] ?? 'unknown')) {
+        // A held-back newest release is not "up to date": the cached state
+        // carries capped_by only for that case.
+        if ($status === 'up_to_date' && !empty($state['capped_by'])) {
+            return new CheckResult(
+                id: 'pubvana-update',
+                name: 'Pubvana Updates',
+                category: CheckResult::CAT_PLUGINS,
+                status: CheckResult::WARNING,
+                message: 'Pubvana ' . $version . ' is current, but version '
+                    . (string) ($state['latest_version'] ?? 'newer') . ' is held back by an installed addon.',
+                remediation: 'Update or remove the addon that does not support it from Tools > Maintenance > Updates.'
+            );
+        }
+
+        return match ($status) {
             'up_to_date' => new CheckResult(
                 id: 'pubvana-update',
                 name: 'Pubvana Updates',
