@@ -740,13 +740,15 @@ class UpdateService
     // ------------------------------------------------------------------
 
     /**
-     * Scan plugin and theme manifests for Pubvana version constraints.
+     * Scan plugin and theme pubvana.json files for Pubvana version constraints.
      *
-     * Only manifests that declare min_pubvana_version or
-     * max_pubvana_version produce entries; absence means no constraint.
+     * Only addons that declare pubver_min or pubver_max produce entries;
+     * absence means no constraint. These are the same two keys the store reads
+     * from an uploaded package, so an addon bounds a core update exactly the
+     * way it bounds its own release.
      *
      * @param list<string> $dirs Directory names under the project root to scan
-     * @return array<string, array{min: ?string, max: ?string}> Keyed by manifest name
+     * @return array<string, array{min: ?string, max: ?string}> Keyed by addon name
      */
     public static function scanManifests(string $projectRoot, array $dirs = ['plugins', 'themes']): array
     {
@@ -763,8 +765,8 @@ class UpdateService
                     continue;
                 }
 
-                $min = $data['min_pubvana_version'] ?? null;
-                $max = $data['max_pubvana_version'] ?? null;
+                $min = $data['pubver_min'] ?? null;
+                $max = $data['pubver_max'] ?? null;
 
                 if (!is_string($min) && !is_string($max)) {
                     continue;

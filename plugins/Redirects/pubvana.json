@@ -3,6 +3,8 @@
     "display_name": "Redirects",
     "description": "Redirection Manager for Pubvana CMS: 301/302 redirects and redirect-link (404) tracking",
     "type": "plugin",
+    "pubver_min": "3.0.0",
+    "pubver_max": "",
     "category": "tools",
     "semver": "0.2.1",
     "provides": {

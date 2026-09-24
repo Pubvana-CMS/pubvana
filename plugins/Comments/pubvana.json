@@ -3,6 +3,8 @@
     "display_name": "Comments",
     "description": "Nested, moderated comments for Pubvana, with optional captcha through the site-wide CaptchaService",
     "type": "plugin",
+    "pubver_min": "3.0.0",
+    "pubver_max": "",
     "category": "content",
     "semver": "0.1.0",
     "provides": {

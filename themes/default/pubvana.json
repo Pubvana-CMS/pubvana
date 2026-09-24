@@ -4,6 +4,8 @@
     "category": "presentation",
     "author": "pubvana",
     "type": "theme",
+    "pubver_min": "3.0.0",
+    "pubver_max": "",
     "slug": "default",
     "icon": "icon.svg",
     "semver": "1.4.12",

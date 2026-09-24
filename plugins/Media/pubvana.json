@@ -3,6 +3,8 @@
     "display_name": "Media",
     "description": "Media management module — images, video, embeds",
     "type": "plugin",
+    "pubver_min": "3.0.0",
+    "pubver_max": "",
     "category": "content",
     "semver": "0.1.0",
     "provides": {

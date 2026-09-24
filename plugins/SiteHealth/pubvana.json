@@ -3,6 +3,8 @@
     "display_name": "Site Health",
     "description": "Site health and diagnostics: configuration, security, environment and plugin checks",
     "type": "plugin",
+    "pubver_min": "3.0.0",
+    "pubver_max": "",
     "category": "tools",
     "semver": "0.1.0",
     "provides": {

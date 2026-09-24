@@ -63,7 +63,7 @@ Repo-level companions owned by this feature: root `releases.json` (machine feed,
 
 ### Check flow
 
-`UpdateService::check()` fetches and sorts the feed (newest first), reads the installed version from `pubvana.json`, then `pickTarget()` chooses the highest release above current that is not skipped and not rejected by any plugin/theme manifest constraint (`min_pubvana_version` / `max_pubvana_version`; absent = no constraint). The state (status, target, breaking changes, notices, migration notes, capped_by, error) is persisted to `Updates.lastCheckAt` + `Updates.lastCheckResult` and reused for 24h.
+`UpdateService::check()` fetches and sorts the feed (newest first), reads the installed version from `pubvana.json`, then `pickTarget()` chooses the highest release above current that is not skipped and not rejected by any plugin/theme pubvana.json constraint (`pubver_min` / `pubver_max`; absent = no constraint). The state (status, target, breaking changes, notices, migration notes, capped_by, error) is persisted to `Updates.lastCheckAt` + `Updates.lastCheckResult` and reused for 24h.
 
 ### Apply flow (8 phases, `UpdateApplyService::apply()`)
 

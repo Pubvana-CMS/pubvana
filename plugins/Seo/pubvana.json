@@ -3,6 +3,8 @@
     "display_name": "SEO",
     "description": "SEO management: meta tags, structured data, sitemaps, Open Graph, AI/GEO optimization",
     "type": "plugin",
+    "pubver_min": "3.0.0",
+    "pubver_max": "",
     "category": "tools",
     "semver": "0.1.0",
     "provides": {

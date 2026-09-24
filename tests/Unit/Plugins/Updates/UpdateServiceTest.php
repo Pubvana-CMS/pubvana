@@ -153,14 +153,14 @@ final class UpdateServiceTest extends TestCase
 
         file_put_contents($root . '/plugins/One/pubvana.json', json_encode([
             'name' => 'pubvana/one',
-            'max_pubvana_version' => '3.1.0',
+            'pubver_max' => '3.1.0',
         ]));
         file_put_contents($root . '/plugins/Two/pubvana.json', json_encode([
             'name' => 'pubvana/two',
         ]));
         file_put_contents($root . '/themes/ThemeA/pubvana.json', json_encode([
             'name' => 'pubvana/theme-a',
-            'min_pubvana_version' => '3.0.2',
+            'pubver_min' => '3.0.2',
         ]));
 
         $constraints = UpdateService::scanManifests($root, ['plugins', 'themes']);
@@ -312,7 +312,7 @@ final class UpdateServiceTest extends TestCase
         @mkdir($scanRoot . '/plugins/Blocker', 0775, true);
         file_put_contents($scanRoot . '/plugins/Blocker/pubvana.json', json_encode([
             'name'                => 'pubvana/blocker',
-            'max_pubvana_version' => '3.0.9',
+            'pubver_max' => '3.0.9',
         ]));
 
         $service = $this->chainService(
@@ -339,7 +339,7 @@ final class UpdateServiceTest extends TestCase
         @mkdir($scanRoot . '/plugins/Blocker', 0775, true);
         file_put_contents($scanRoot . '/plugins/Blocker/pubvana.json', json_encode([
             'name'                => 'pubvana/blocker',
-            'max_pubvana_version' => '3.0.5',
+            'pubver_max' => '3.0.5',
         ]));
 
         $feed = (string) json_encode(['releases' => [

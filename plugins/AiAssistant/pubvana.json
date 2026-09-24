@@ -3,6 +3,8 @@
     "display_name": "AI Assistant",
     "description": "AI Assistant for Pubvana CMS: API-key ingestion endpoints and per-key grants",
     "type": "plugin",
+    "pubver_min": "3.0.0",
+    "pubver_max": "",
     "category": "tools",
     "semver": "0.1.0",
     "provides": {

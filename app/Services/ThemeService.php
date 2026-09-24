@@ -98,7 +98,9 @@ class ThemeService
 
             $name = $info['display_name'] ?? $folder;
             $description = $info['description'] ?? '';
-            $version = $info['version'] ?? null;
+            // v3 theme files declare `semver`. There is no `version` key to
+            // fall back to; nothing writes one.
+            $version = $info['semver'] ?? null;
             $author = $info['author'] ?? null;
             $screenshot = $info['screenshot'] ?? null;
 

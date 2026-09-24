@@ -114,7 +114,7 @@ final class ThemeServiceTest extends TestCase
 
     public function testSyncUpdatesChangedMetadataAndReEnablesDisabledThemes(): void
     {
-        $this->makeThemeDir('alpha', ['display_name' => 'Alpha', 'version' => '1.0.0']);
+        $this->makeThemeDir('alpha', ['display_name' => 'Alpha', 'semver' => '1.0.0']);
         $service = $this->service();
         $service->sync();
 
@@ -125,7 +125,7 @@ final class ThemeServiceTest extends TestCase
         $row->save();
 
         // Manifest changed on disk, theme is fixed up.
-        $this->makeThemeDir('alpha', ['display_name' => 'Alpha Two', 'version' => '2.0.0']);
+        $this->makeThemeDir('alpha', ['display_name' => 'Alpha Two', 'semver' => '2.0.0']);
         $service->sync();
 
         $row = (new Theme($this->pdo))->findByFolder('alpha');

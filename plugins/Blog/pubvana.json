@@ -3,6 +3,8 @@
     "display_name": "Blog",
     "description": "Blog module for Pubvana CMS",
     "type": "plugin",
+    "pubver_min": "3.0.0",
+    "pubver_max": "",
     "category": "content",
     "semver": "0.1.0",
     "provides": {

@@ -3,6 +3,8 @@
     "display_name": "Social Links",
     "description": "Central management of social profile links, rendered anywhere via a public block",
     "type": "plugin",
+    "pubver_min": "3.0.0",
+    "pubver_max": "",
     "category": "tools",
     "semver": "0.1.0",
     "provides": {

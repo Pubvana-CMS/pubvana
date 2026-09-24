@@ -3,6 +3,8 @@
     "display_name": "Marketplace",
     "description": "Companion app for the Pubvana Digital Store: browse the catalog on pubvanacms.com, push to your account-bound cart, pay there, then verify and install what you bought straight from this site.",
     "type": "plugin",
+    "pubver_min": "3.0.0",
+    "pubver_max": "",
     "category": "commerce",
     "semver": "0.1.0",
     "provides": {
