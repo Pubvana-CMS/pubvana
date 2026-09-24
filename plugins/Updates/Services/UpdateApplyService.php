@@ -82,6 +82,17 @@ final class UpdateApplyService
             $zipPath         = $this->runDownload($reporter, $targetVersion);
             $source          = $this->runExtract($reporter, $zipPath);
             $this->runCopy($reporter, $source);
+
+            // The installed version changed on disk, so the cached check is
+            // stale from here on. Dropped at the copy rather than at the end
+            // because a later phase can fail and leave the copied files in
+            // place, stale check and all.
+            try {
+                $this->updates->invalidateCheckCache();
+            } catch (Throwable) {
+                // A cache that will not clear must not fail a copy already done.
+            }
+
             $migrationsError = $this->runMigrations($reporter);
             $newVersion      = $this->runCleanup($reporter, $zipPath);
 

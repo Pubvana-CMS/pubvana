@@ -435,4 +435,55 @@ final class UpdateApplyServiceTest extends TestCase
             UpdateApplyService::removeDirectory($dir);
         }
     }
+
+    // ------------------------------------------------------------------
+    // Check cache bust on apply
+    // ------------------------------------------------------------------
+
+    public function testFailedRunLeavesTheCheckCacheAlone(): void
+    {
+        $dir      = $this->gateDir();
+        $settings = new ApplySettingsStub();
+
+        try {
+            $app = $this->app([
+                'trustClient' => fn (): StubTrustClient => new StubTrustClient(null),
+                'settings'    => fn (): ApplySettingsStub => $settings,
+            ]);
+
+            $service = new UpdateApplyService($app, ['updates_path' => $dir]);
+            $result  = $service->apply('9.9.9', 'cli', true);
+
+            // Dies in preflight (no Backups plugin in the stand-in app), so
+            // no file was copied and the check that reported the old
+            // version was never made wrong.
+            self::assertFalse($result);
+            self::assertSame([], $settings->forgotten);
+        } finally {
+            UpdateApplyService::removeDirectory($dir);
+        }
+    }
+}
+
+/**
+ * Settings stand-in that records which keys were dropped.
+ */
+final class ApplySettingsStub
+{
+    /** @var list<string> */
+    public array $forgotten = [];
+
+    public function get(string $key, mixed $default = null): mixed
+    {
+        return $default;
+    }
+
+    public function set(string $key, mixed $value): void
+    {
+    }
+
+    public function forget(string $key): void
+    {
+        $this->forgotten[] = $key;
+    }
 }

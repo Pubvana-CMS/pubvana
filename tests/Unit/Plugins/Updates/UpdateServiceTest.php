@@ -140,6 +140,58 @@ final class UpdateServiceTest extends TestCase
         self::assertNull($picked['capped_by']);
     }
 
+    public function testPickTargetAcceptsPrereleaseOfExtensionFloor(): void
+    {
+        $constraints = [
+            'pubvana/some-plugin' => ['min' => '3.0.0', 'max' => null],
+        ];
+
+        $releases = [
+            ['version' => '3.0.0-beta.3', 'min_php_version' => '8.2'],
+            ['version' => '3.0.0-beta.2', 'min_php_version' => '8.2'],
+        ];
+
+        // A prerelease of the floor version counts as that version. Without
+        // this every addon shipping "pubver_min": "3.0.0" would cap a beta
+        // of 3.0.0, since 3.0.0-beta.3 sorts below 3.0.0.
+        $picked = UpdateService::pickTarget('3.0.0-beta.2', $releases, $constraints, []);
+
+        self::assertSame('3.0.0-beta.3', $picked['target']['version'] ?? null);
+        self::assertNull($picked['capped_by']);
+    }
+
+    public function testPickTargetStillCapsPrereleaseAboveExtensionMax(): void
+    {
+        $constraints = [
+            'pubvana/some-plugin' => ['min' => null, 'max' => '3.0.0'],
+        ];
+
+        $releases = [
+            ['version' => '3.1.0-beta.1', 'min_php_version' => '8.2'],
+            ['version' => '3.0.0', 'min_php_version' => '8.2'],
+        ];
+
+        // The next line up is still out of bounds: capping is unchanged.
+        $picked = UpdateService::pickTarget('2.9.0', $releases, $constraints, []);
+
+        self::assertSame('3.0.0', $picked['target']['version'] ?? null);
+        self::assertSame('pubvana/some-plugin', $picked['capped_by']);
+    }
+
+    public function testRejectingConstraintsIgnoresPrereleaseWithinBounds(): void
+    {
+        $constraints = [
+            'pubvana/floor'   => ['min' => '3.0.0', 'max' => null],
+            'pubvana/ceiling' => ['min' => null, 'max' => '3.0.0'],
+            'pubvana/blocker' => ['min' => null, 'max' => '2.9.0'],
+        ];
+
+        self::assertSame(
+            [['name' => 'pubvana/blocker', 'min' => null, 'max' => '2.9.0']],
+            UpdateService::rejectingConstraints('3.0.0-beta.3', $constraints)
+        );
+    }
+
     // ------------------------------------------------------------------
     // scanManifests
     // ------------------------------------------------------------------
@@ -426,6 +478,57 @@ final class UpdateServiceTest extends TestCase
     }
 
     // ------------------------------------------------------------------
+    // Check cache invalidation
+    // ------------------------------------------------------------------
+
+    public function testInvalidateCheckCacheDropsTheTimestampAndKeepsTheResult(): void
+    {
+        $settings = new UpdatesSettingsStub();
+        $service  = $this->chainService($this->feedBody('3.0.0'), [
+            'Updates.lastCheckAt'     => date('c'),
+            'Updates.lastCheckResult' => [
+                'status'          => 'available',
+                'current_version' => '3.0.0-beta.2',
+                'target_version'  => '3.0.0-beta.3',
+            ],
+        ], null, $settings);
+
+        self::assertFalse($service->isDue(), 'a check that just ran is not due');
+
+        $service->invalidateCheckCache();
+
+        self::assertTrue($service->isDue(), 'the next read must re-fetch the feed');
+        self::assertArrayNotHasKey('Updates.lastCheckAt', $settings->store);
+        self::assertArrayHasKey('Updates.lastCheckResult', $settings->store);
+    }
+
+    public function testCheckAfterInvalidationFetchesInsteadOfServingTheStaleState(): void
+    {
+        $presetAt = date('c', time() - 60);
+        $settings = new UpdatesSettingsStub();
+        $service  = $this->chainService($this->feedBody('3.0.0'), [
+            'Updates.lastCheckAt'     => $presetAt,
+            'Updates.lastCheckResult' => [
+                'status'          => 'available',
+                'current_version' => '3.0.0-beta.2',
+                'target_version'  => '3.0.0-beta.3',
+            ],
+        ], null, $settings);
+
+        // Inside the cache window the stored state is served as-is.
+        $cached = $service->check(false);
+        self::assertSame('3.0.0-beta.3', $cached['target_version']);
+        self::assertSame($presetAt, $settings->store['Updates.lastCheckAt']);
+
+        $service->invalidateCheckCache();
+
+        $fresh = $service->check(false);
+
+        self::assertNotSame($presetAt, $settings->store['Updates.lastCheckAt'], 'the feed was read again');
+        self::assertSame('3.0.0', $fresh['target_version'], 'the stale target is gone');
+    }
+
+    // ------------------------------------------------------------------
     // Helpers
     // ------------------------------------------------------------------
 
@@ -440,26 +543,18 @@ final class UpdateServiceTest extends TestCase
     /**
      * A chain-ready service with the release feed stubbed and a settings
      * stand-in. $preset seeds the settings store (e.g. Updates.autoUpdate);
-     * $scanRoot points manifest constraint scanning at a fixture directory.
+     * $scanRoot points manifest constraint scanning at a fixture directory;
+     * $settings hands the test the store it preseeded, for assertions.
      *
      * @param array<string, mixed> $preset
      */
-    private function chainService(?string $feedBody, array $preset = [], ?string $scanRoot = null): UpdateService
-    {
-        $settings = new class {
-            /** @var array<string, mixed> */
-            public array $store = [];
-
-            public function get(string $key, mixed $default = null): mixed
-            {
-                return $this->store[$key] ?? $default;
-            }
-
-            public function set(string $key, mixed $value): void
-            {
-                $this->store[$key] = $value;
-            }
-        };
+    private function chainService(
+        ?string $feedBody,
+        array $preset = [],
+        ?string $scanRoot = null,
+        ?UpdatesSettingsStub $settings = null
+    ): UpdateService {
+        $settings ??= new UpdatesSettingsStub();
 
         foreach ($preset as $key => $value) {
             $settings->set($key, $value);
@@ -506,5 +601,30 @@ final class UpdateServiceTest extends TestCase
         ], $extra);
 
         return (string) json_encode(['releases' => [$release]]);
+    }
+}
+
+/**
+ * Settings stand-in for the update service: an array store with the three
+ * methods the service calls.
+ */
+final class UpdatesSettingsStub
+{
+    /** @var array<string, mixed> */
+    public array $store = [];
+
+    public function get(string $key, mixed $default = null): mixed
+    {
+        return $this->store[$key] ?? $default;
+    }
+
+    public function set(string $key, mixed $value): void
+    {
+        $this->store[$key] = $value;
+    }
+
+    public function forget(string $key): void
+    {
+        unset($this->store[$key]);
     }
 }

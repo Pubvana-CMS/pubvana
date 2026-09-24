@@ -336,6 +336,21 @@ class UpdateService
         return $state;
     }
 
+    /**
+     * Drop the cached check so the next read asks the feed again.
+     *
+     * An applied release changes what this site runs, which makes a cached
+     * check wrong about the installed version and about whether an update
+     * is still offered. Clearing the timestamp makes isDue() true, so the
+     * next Updates page render (or cron check) fetches a fresh answer. The
+     * last result stays behind as the fallback for surfaces that never
+     * touch the network.
+     */
+    public function invalidateCheckCache(): void
+    {
+        $this->app->settings()->forget(self::SETTING_LAST_CHECK_AT);
+    }
+
     // ------------------------------------------------------------------
     // Automatic update chain
     // ------------------------------------------------------------------
@@ -829,18 +844,36 @@ class UpdateService
     }
 
     /**
+     * A version with any prerelease/build suffix stripped ("3.0.0-beta.3"
+     * -> "3.0.0").
+     *
+     * A prerelease of a version counts as that version when testing addon
+     * compatibility bounds, so a beta of the floor version is not rejected
+     * by it ("3.0.0-beta.3" satisfies a "3.0.0" bound). The store applies
+     * the same rule to the bounds it checks a site against.
+     */
+    private static function baseVersion(string $version): string
+    {
+        $core = preg_replace('/[-+].*$/', '', trim($version));
+
+        return is_string($core) && $core !== '' ? $core : $version;
+    }
+
+    /**
      * The first constraint that rejects a version, or null when allowed.
      *
      * @param array<string, array{min: ?string, max: ?string}> $constraints
      */
     private static function firstRejectingConstraint(string $version, array $constraints): ?string
     {
+        $base = self::baseVersion($version);
+
         foreach ($constraints as $name => $constraint) {
-            if ($constraint['min'] !== null && version_compare($version, $constraint['min']) < 0) {
+            if ($constraint['min'] !== null && version_compare($base, self::baseVersion($constraint['min'])) < 0) {
                 return $name;
             }
 
-            if ($constraint['max'] !== null && version_compare($version, $constraint['max']) > 0) {
+            if ($constraint['max'] !== null && version_compare($base, self::baseVersion($constraint['max'])) > 0) {
                 return $name;
             }
         }
@@ -857,10 +890,11 @@ class UpdateService
     public static function rejectingConstraints(string $version, array $constraints): array
     {
         $list = [];
+        $base = self::baseVersion($version);
 
         foreach ($constraints as $name => $constraint) {
-            $rejects = ($constraint['min'] !== null && version_compare($version, $constraint['min']) < 0)
-                || ($constraint['max'] !== null && version_compare($version, $constraint['max']) > 0);
+            $rejects = ($constraint['min'] !== null && version_compare($base, self::baseVersion($constraint['min'])) < 0)
+                || ($constraint['max'] !== null && version_compare($base, self::baseVersion($constraint['max'])) > 0);
 
             if ($rejects) {
                 $list[] = ['name' => $name, 'min' => $constraint['min'], 'max' => $constraint['max']];
