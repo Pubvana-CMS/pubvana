@@ -632,10 +632,54 @@ class BackupService
             return -1;
         }
 
-        $stdout = (string) stream_get_contents($pipes[1]);
-        $stderr = (string) stream_get_contents($pipes[2]);
-        fclose($pipes[1]);
-        fclose($pipes[2]);
+        // Read both pipes as they fill. Draining stdout to EOF first
+        // deadlocks: a child that fills stderr's 64KB buffer blocks on its
+        // write while this side blocks on a read that will never return.
+        $buffers = [1 => '', 2 => ''];
+
+        while (true) {
+            $read = [];
+            foreach ([1, 2] as $index) {
+                $pipe = $pipes[$index] ?? null;
+                if (is_resource($pipe)) {
+                    $read[$index] = $pipe;
+                }
+            }
+
+            if ($read === []) {
+                break;
+            }
+
+            $write  = null;
+            $except = null;
+
+            if (@stream_select($read, $write, $except, null) === false) {
+                break;
+            }
+
+            foreach ($read as $pipe) {
+                $index = ($pipes[1] ?? null) === $pipe ? 1 : 2;
+                $chunk = fread($pipe, 8192);
+
+                if ($chunk === false || $chunk === '') {
+                    fclose($pipe);
+                    unset($pipes[$index]);
+                    continue;
+                }
+
+                $buffers[$index] .= $chunk;
+            }
+        }
+
+        foreach ([1, 2] as $index) {
+            $pipe = $pipes[$index] ?? null;
+            if (is_resource($pipe)) {
+                fclose($pipe);
+            }
+        }
+
+        $stdout = $buffers[1];
+        $stderr = $buffers[2];
 
         return proc_close($process);
     }

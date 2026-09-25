@@ -94,7 +94,17 @@ class BackupsAdminController extends AdminController
                 escapeshellarg(PROJECT_ROOT . '/runway'),
                 escapeshellarg($triggeredBy)
             );
+            $launchedAt = time();
             exec($cmd);
+
+            if (!$this->waitForChildStart('backup', $launchedAt)) {
+                $this->app->json([
+                    'status'  => 'error',
+                    'message' => 'The backup process did not start. Check the server logs.',
+                ]);
+                return;
+            }
+
             $this->app->json(['status' => 'started', 'method' => 'exec']);
             return;
         }
@@ -195,7 +205,17 @@ class BackupsAdminController extends AdminController
                 escapeshellarg($filename),
                 escapeshellarg($triggeredBy)
             );
+            $launchedAt = time();
             exec($cmd);
+
+            if (!$this->waitForChildStart('rollback', $launchedAt)) {
+                $this->app->json([
+                    'status'  => 'error',
+                    'message' => 'The restore process did not start. Check the server logs.',
+                ]);
+                return;
+            }
+
             $this->app->json(['status' => 'started', 'method' => 'exec']);
             return;
         }
@@ -255,5 +275,39 @@ class BackupsAdminController extends AdminController
         }
         $disabled = ini_get('disable_functions') ?: '';
         return !in_array('exec', array_map('trim', explode(',', $disabled)), true);
+    }
+
+    /**
+     * Wait for a backgrounded runway process to leave a trace of itself.
+     *
+     * A child that dies on startup writes nothing, so the admin would poll
+     * forever at "Starting...". The child takes the operation lock and
+     * writes its progress file in its first moments; both are checked by
+     * mtime so a leftover file from an earlier run does not count. The
+     * files are inspected rather than flock-probed: a probe briefly takes
+     * the very lock the child is trying to acquire.
+     *
+     * @param string $operation  Progress file stem: 'backup' or 'rollback'
+     * @param int    $launchedAt Unix time the child was launched; files
+     *                           written at or after it belong to this run
+     */
+    private function waitForChildStart(string $operation, int $launchedAt): bool
+    {
+        $dir      = rtrim($this->storageDir(), '/');
+        $deadline = microtime(true) + 2.0;
+
+        do {
+            foreach ([$dir . '/operation.lock', $dir . '/' . $operation . '_progress.json'] as $file) {
+                clearstatcache(true, $file);
+
+                if (is_file($file) && (int) filemtime($file) >= $launchedAt) {
+                    return true;
+                }
+            }
+
+            usleep(50_000);
+        } while (microtime(true) < $deadline);
+
+        return false;
     }
 }
