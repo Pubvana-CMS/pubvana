@@ -327,13 +327,7 @@ class CommentService
     private function resolveTemplate(\Pubvana\Services\PluginView $view): string
     {
         $file = 'pubvana/comments/comments';
-
-        $parts = explode('/', $file);
-        if (count($parts) < 3) {
-            return '';
-        }
-
-        $packageName = $parts[0] . '/' . $parts[1];
+        $packageName = 'pubvana/comments';
         $prefixedPath = $file . '.tpl';
 
         $appViewsPath = $this->app->get('flight.views.path') ?? PROJECT_ROOT . '/app/Views';
@@ -389,23 +383,12 @@ class CommentService
         $commentsOpen = $allowComments && ($userId !== null || $this->allowsGuestComments());
         $commentsClosed = !$allowComments;
 
-        $error = '';
-        try {
-            $query = $this->app->request()->query->comment_error ?? null;
-            if (is_string($query) && $query !== '') {
-                $error = $query;
-            }
-        } catch (\Throwable $e) {
-            $error = '';
-        }
-
         return [
             'comments'             => $comments,
             'comments_enabled'     => true,
             'comments_open'        => $commentsOpen,
             'comments_closed'      => $commentsClosed,
             'comments_is_guest'    => $isGuest,
-            'comments_error'       => $error,
             'commentable_type'     => $type,
             'commentable_id'       => $id,
             'comment_post_url'     => $this->app->pluginLoader()->routePrefix('pubvana/comments') . '/' . $type . '/' . $id,

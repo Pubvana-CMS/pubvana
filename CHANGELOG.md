@@ -5,6 +5,19 @@ All notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## Unreleased - 2026-09-
+
+### Fixed
+- cron broken on lsphp because the shebang wasn't removed. so we did.
+- updates trying to be too clever and display which php to use (was wrong), now just a static "try here, this is where it usually is" sort of thing.
+- PHPStan 2.2.14 --> 2.2.15 'broken' code in Comments. fix to pass again. 
+- Comment submission errors are shown as a flash message.
+- removed Comments using a special flash message key
+
+
+
+
+
 ## [3.0.0-beta.4] - 2026-09-24
 
 ### Changed

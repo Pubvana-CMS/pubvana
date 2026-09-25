@@ -67,7 +67,7 @@ plugins/Comments/
 
 **Render pipeline (inbound).** A host calls `CommentService::render($type, $id, $allowComments)` or `dataFor()`; `render()` builds the view data, resolves the `.tpl` through the 3-tier override chain, and renders it (`Services/CommentService.php:267-344`). The result is injected into the host's template as `comments_html`.
 
-**Submission path.** `CommentsPublicController::store()` gates on system enabled, host type enabled, guest policy, empty body, and guest name, then delegates to `CommentService::create()` which additionally enforces nesting depth, captcha, and purification (`Controllers/CommentsPublicController.php:41-108`). Errors bounce back to the referrer with a `comment_error` query flag; `dataFor()` re-reads it and the template renders it as `comments_error`.
+**Submission path.** `CommentsPublicController::store()` gates on system enabled, host type enabled, guest policy, empty body, and guest name, then delegates to `CommentService::create()` which additionally enforces nesting depth, captcha, and purification (`Controllers/CommentsPublicController.php:41-108`). Errors bounce back to the referrer as a standard `error` flash, rendered by the layout alert area.
 
 **Display path.** `findByContent()` only returns approved comments (`Models/Comment.php:62-74`); they are threaded by `buildTree()` and flattened with depth one level at a time by `flattenComments()` (`Services/CommentService.php:757-814`).
 
@@ -82,7 +82,7 @@ The unit suite is in `tests/Unit/Plugins/Comments/` and covers the service (capt
   - [ ] Post a comment as a guest and as a logged-in user; confirm the guest form fields appear only for guests
   - [ ] Reply below the nesting limit works; replying at depth >= `max_nesting_depth` fails with the nesting message
   - [ ] With a host enabled, the thread renders; toggle the host off in settings and confirm the thread disappears
-  - [ ] With guest comments off, logged-out visitors see existing comments but no form; the store endpoint redirects with `comment_error`
+  - [ ] With guest comments off, logged-out visitors see existing comments but no form; the store endpoint redirects and the layout shows the error flash
   - [ ] Approve, reject, and delete a comment from the moderation queue; only approved items show publicly
   - [ ] Turn on the "Comment form" switch under Settings > Captcha with a configured provider and confirm the captcha block renders in the form and unverified submissions are rejected; turn the switch off and confirm submissions pass without a token
   - [ ] Delete a comment with replies and confirm orphaned replies still render at the top level

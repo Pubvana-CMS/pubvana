@@ -21,6 +21,19 @@ use Pubvana\Tests\Support\TestCase;
 #[CoversClass(CommentsPublicController::class)]
 final class CommentsPublicControllerReferrerTest extends TestCase
 {
+    /** @var array<string, list<mixed>> */
+    public array $flashes = [];
+
+    /** @var list<string> */
+    public array $redirects = [];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->flashes = [];
+        $this->redirects = [];
+    }
+
     public function testStoreRoutesTheReferrerThroughUrlService(): void
     {
         $src = (string) file_get_contents(
@@ -31,5 +44,32 @@ final class CommentsPublicControllerReferrerTest extends TestCase
             '$referrer = $this->app->url()->sameSite($this->app->request()->referrer ?: \'/\')',
             $src
         );
+    }
+
+    public function testErrorRedirectFlashesAndDropsTheQueryFlag(): void
+    {
+        $app = $this->app([
+            'session' => fn (): object => new class ($this) {
+                public function __construct(private CommentsPublicControllerReferrerTest $t)
+                {
+                }
+
+                public function flash(string $key, mixed $value): void
+                {
+                    $this->t->flashes[$key][] = $value;
+                }
+            },
+        ]);
+        $app->map('redirect', function (string $url): void {
+            $this->redirects[] = $url;
+        });
+
+        $controller = new class ($app) extends CommentsPublicController {
+        };
+
+        $this->invoke($controller, 'redirectWithError', ['/blog/post', 'Nope.']);
+
+        self::assertSame(['error' => ['Nope.']], $this->flashes);
+        self::assertSame(['/blog/post'], $this->redirects);
     }
 }

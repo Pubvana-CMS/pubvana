@@ -300,18 +300,6 @@ final class CommentServiceCoverageTest extends TestCase
         self::assertTrue($data['comments_open']);
     }
 
-    public function testDataForSurfacesCommentError(): void
-    {
-        $app = $this->buildApp(['comment_error' => 'oops']);
-        $service = $this->service($app);
-        $this->registerHost($app, 'pubvana.blog', 'blog');
-        $service->setHostEnabled('pubvana.blog', true);
-        $service = $this->service($app);
-
-        $data = $service->dataFor('blog', 1);
-        self::assertSame('oops', $data['comments_error']);
-    }
-
     public function testRenderGating(): void
     {
         $app = $this->buildApp();
@@ -440,7 +428,7 @@ final class CommentServiceCoverageTest extends TestCase
 
     public function testFlattenIncludesDepthAndCounts(): void
     {
-        $app = $this->buildApp(['comment_error' => '']);
+        $app = $this->buildApp();
         $service = $this->service($app);
         $this->registerHost($app, 'pubvana.blog', 'blog');
         $service->setHostEnabled('pubvana.blog', true);

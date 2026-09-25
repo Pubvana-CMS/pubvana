@@ -4,10 +4,6 @@
         <div class="pv-comments">
             <h2>Comments</h2>
 
-            {% if comments_error %}
-            <div class="pv-comments-error">{{ comments_error }}</div>
-            {% endif %}
-
             {% if comments %}
             <ul class="pv-comments-list">
                 {% for comment in comments %}

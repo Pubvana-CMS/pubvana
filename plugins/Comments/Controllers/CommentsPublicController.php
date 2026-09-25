@@ -108,11 +108,14 @@ class CommentsPublicController extends PublicController
     }
 
     /**
-     * Redirect back to the referrer with a comment_error query flag.
+     * Redirect back to the referrer with a standard error flash.
+     *
+     * The message rides the session flash and the layout renders it in the
+     * alert area, the same as every other public error.
      */
     private function redirectWithError(string $referrer, string $message): void
     {
-        $separator = str_contains($referrer, '?') ? '&' : '?';
-        $this->app->redirect($referrer . $separator . 'comment_error=' . urlencode($message));
+        $this->app->session()->flash('error', $message);
+        $this->app->redirect($referrer);
     }
 }
