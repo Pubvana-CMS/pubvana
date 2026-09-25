@@ -45,7 +45,7 @@ Updates/
 ├── Services/
 │   ├── UpdateService.php                 Feed fetch, 24h check cache, safe-target capping, preflight, skip list
 │   ├── UpdateApplyService.php            8-phase apply: preflight, backup, download, validate, extract, copy, migrate, cleanup
-│   └── UpdateProgress.php                Phase checklist + detail line JSON, operation lock (30-min stale)
+│   └── UpdateProgress.php                Phase checklist + detail line JSON, flock operation lock
 ├── commands/
 │   ├── UpdatesCheckCommand.php           runway updates:check [--force]
 │   ├── UpdatesApplyCommand.php           runway updates:apply [--release X --user Y]
@@ -133,7 +133,7 @@ Scratch end-to-end (done once for v1; repeat when changing the apply flow): copy
 - [ ] Backup still aborts the update on failure; protected paths still skipped
 - [ ] Automatic updates still refuse breaking changes; manual still requires confirmation
 - [ ] Progress JSON phases/detail render in the admin UI; no external JS added
-- [ ] Lock is acquired/released in `try/finally`; stale recovery intact
+- [ ] Lock is acquired/released in `try/finally`; a dead holder never blocks the next run
 - [ ] README updated if user-facing behavior or config changed
 
 ## Out of scope / non-goals

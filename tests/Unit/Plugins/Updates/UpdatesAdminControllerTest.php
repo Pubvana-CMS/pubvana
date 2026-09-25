@@ -44,6 +44,8 @@ final class UpdatesAdminControllerTest extends TestCase
     public ?FakeMarketplace $marketplace = null;
     public bool $canManage = false;
     public ?string $lockedDir = null;
+    /** Live lock holder, so the flock stays held for the whole test. */
+    private ?UpdateProgress $lockHolder = null;
     /** @var list<string> */
     public array $tempDirs = [];
 
@@ -61,6 +63,10 @@ final class UpdatesAdminControllerTest extends TestCase
 
     protected function tearDown(): void
     {
+        if ($this->lockHolder !== null) {
+            $this->lockHolder->releaseLock();
+            $this->lockHolder = null;
+        }
         if ($this->lockedDir !== null && is_file($this->lockedDir . '/operation.lock')) {
             @unlink($this->lockedDir . '/operation.lock');
         }
@@ -330,9 +336,12 @@ final class UpdatesAdminControllerTest extends TestCase
 
     private function lock(): void
     {
-        $dir = $this->tempDir();
-        file_put_contents($dir . '/operation.lock', '{"operation":"update"}');
-        $this->lockedDir = $dir;
+        $dir    = $this->tempDir();
+        $holder = new UpdateProgress($dir);
+        $holder->acquireLock();
+
+        $this->lockHolder = $holder;
+        $this->lockedDir  = $dir;
         $this->updates()->config['updates_path'] = $dir;
     }
 

@@ -12,7 +12,6 @@ use function sys_get_temp_dir;
 use function uniqid;
 use function file_put_contents;
 use function json_encode;
-use function time;
 
 #[CoversClass(UpdateProgress::class)]
 final class UpdateProgressTest extends TestCase
@@ -117,19 +116,46 @@ final class UpdateProgressTest extends TestCase
         $second->releaseLock();
     }
 
-    public function testStaleLockIsRecovered(): void
+    public function testLeftoverLockFromADeadHolderIsFree(): void
     {
         $dir = sys_get_temp_dir() . '/pv-updates-' . uniqid();
         @mkdir($dir, 0775, true);
 
+        // What a crashed run leaves behind: the payload is on disk and no
+        // process holds the flock.
         file_put_contents($dir . '/operation.lock', json_encode([
             'operation'  => 'update',
             'started_at' => date('c', time() - 3600),
             'pid'        => 1,
         ]));
 
-        $reporter = new UpdateProgress($dir);
+        self::assertFalse(UpdateProgress::isLockedInDir($dir), 'a free flock is not a live lock');
 
+        $reporter = new UpdateProgress($dir);
+        self::assertTrue($reporter->acquireLock());
+        $reporter->releaseLock();
+    }
+
+    public function testLockIsHeldOnTheDescriptorNotOnFileExistence(): void
+    {
+        $reporter = $this->reporter();
+        $dir      = $this->dir;
+
+        file_put_contents($dir . '/operation.lock', '{"operation":"update"}');
+
+        // An independent descriptor holds the flock, so the reporter is
+        // refused even though the file existed before it asked.
+        $handle = fopen($dir . '/operation.lock', 'r+');
+        self::assertIsResource($handle);
+        self::assertTrue(flock($handle, LOCK_EX | LOCK_NB));
+
+        self::assertTrue(UpdateProgress::isLockedInDir($dir));
+        self::assertFalse($reporter->acquireLock());
+
+        flock($handle, LOCK_UN);
+        fclose($handle);
+
+        self::assertFalse(UpdateProgress::isLockedInDir($dir));
         self::assertTrue($reporter->acquireLock());
         $reporter->releaseLock();
     }

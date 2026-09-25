@@ -12,8 +12,11 @@ namespace Pubvana\Plugins\Updates\Services;
  * detail line underneath the active phase for granular sub-status, such
  * as download bytes or per-directory copy counts.
  *
- * The lock lives in the same directory as the progress file and uses the
- * same 30-minute stale recovery as the Backups plugin.
+ * The lock lives in the same directory as the progress file. It is an
+ * advisory flock held on the open file descriptor, the same mechanism the
+ * Backups plugin's ProgressReporter uses: the OS releases it when the
+ * holder exits, so a crashed update cannot block the next one and no
+ * time-based expiry is needed. The JSON payload is informational.
  *
  * @package  Pubvana\Plugins\Updates
  * @copyright 2026 enlivenapp
@@ -21,14 +24,19 @@ namespace Pubvana\Plugins\Updates\Services;
  */
 final class UpdateProgress
 {
-    private const STALE_SECONDS = 1800;
-
     private const STATUS_PENDING = 'pending';
     private const STATUS_ACTIVE  = 'active';
     private const STATUS_DONE    = 'done';
 
     private string $lockFile;
     private string $progressFile;
+
+    /**
+     * Open file descriptor holding the flock, null when unlocked.
+     *
+     * @var resource|null
+     */
+    private $lockHandle = null;
 
     /** @var callable|null fn(string $label, string $detail): void */
     private $echo = null;
@@ -64,37 +72,52 @@ final class UpdateProgress
     }
 
     /**
-     * Is an update operation currently locked in the given directory?
+     * Is an update lock currently held by a live process?
+     *
+     * File existence alone would report a crashed run forever; a leftover
+     * file whose flock is free (dead holder) counts as unlocked.
      */
     public static function isLockedInDir(string $storageDir): bool
     {
-        return is_file(rtrim($storageDir, '/') . '/operation.lock');
+        $file = rtrim($storageDir, '/') . '/operation.lock';
+        if (!is_file($file)) {
+            return false;
+        }
+
+        $handle = @fopen($file, 'r+');
+        if ($handle === false) {
+            return true;
+        }
+
+        $held = !flock($handle, LOCK_EX | LOCK_NB);
+        flock($handle, LOCK_UN);
+        fclose($handle);
+
+        return $held;
     }
 
     /**
      * Acquire the exclusive lock. False when another operation holds it.
+     *
+     * The flock is the authority, so two callers cannot both win: the lock
+     * is taken on the open file descriptor, not on file existence. A
+     * crashed holder's OS lock is gone, so its leftover payload on disk is
+     * simply overwritten.
      */
     public function acquireLock(): bool
     {
-        if (is_file($this->lockFile)) {
-            $raw  = file_get_contents($this->lockFile);
-            $lock = is_string($raw) ? json_decode($raw, true) : null;
+        if ($this->lockHandle !== null) {
+            return false; // this reporter already holds the lock
+        }
 
-            if (is_array($lock) && isset($lock['started_at']) && is_string($lock['started_at'])) {
-                $started = strtotime($lock['started_at']);
-                if ($started !== false && (time() - $started) > self::STALE_SECONDS) {
-                    @unlink($this->lockFile);
-                } else {
-                    return false;
-                }
-            } else {
-                // Unreadable lock file: treat as stale.
-                @unlink($this->lockFile);
-            }
+        $handle = @fopen($this->lockFile, 'c+');
+        if ($handle === false) {
+            return false;
+        }
 
-            if (is_file($this->lockFile)) {
-                return false;
-            }
+        if (!flock($handle, LOCK_EX | LOCK_NB)) {
+            fclose($handle);
+            return false;
         }
 
         $payload = [
@@ -103,7 +126,14 @@ final class UpdateProgress
             'pid'        => getmypid() ?: null,
         ];
 
-        return file_put_contents($this->lockFile, json_encode($payload)) !== false;
+        ftruncate($handle, 0);
+        rewind($handle);
+        fwrite($handle, (string) json_encode($payload));
+        fflush($handle);
+
+        $this->lockHandle = $handle;
+
+        return true;
     }
 
     /**
@@ -111,7 +141,22 @@ final class UpdateProgress
      */
     public function releaseLock(): void
     {
+        if ($this->lockHandle !== null) {
+            flock($this->lockHandle, LOCK_UN);
+            fclose($this->lockHandle);
+            $this->lockHandle = null;
+        }
+
         @unlink($this->lockFile);
+    }
+
+    public function __destruct()
+    {
+        if ($this->lockHandle !== null) {
+            flock($this->lockHandle, LOCK_UN);
+            fclose($this->lockHandle);
+            $this->lockHandle = null;
+        }
     }
 
     /**
