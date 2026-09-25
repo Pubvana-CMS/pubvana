@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @package   Pubvana\Plugins\Backups\Commands
+ * @package   Pubvana\Plugins\Backups\commands
  * @copyright 2026 enlivenapp
  * @license   MIT
  */

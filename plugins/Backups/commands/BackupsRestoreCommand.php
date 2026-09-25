@@ -1,14 +1,14 @@
 <?php
 
 /**
- * @package   Pubvana\Plugins\Backups\Commands
+ * @package   Pubvana\Plugins\Backups\commands
  * @copyright 2026 enlivenapp
  * @license   MIT
  */
 
 declare(strict_types=1);
 
-namespace Pubvana\Plugins\Backups\Commands;
+namespace Pubvana\Plugins\Backups\commands;
 
 use flight\commands\AbstractBaseCommand;
 use Pubvana\Plugins\Backups\Services\BackupService;
