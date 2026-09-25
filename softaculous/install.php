@@ -1,38 +1,5 @@
 <?php
 
-function __findPhp(): string
-{
-    $bins = [
-        '/usr/local/bin/php',
-        '/usr/bin/php',
-        '/opt/cpanel/ea-php84/root/usr/bin/php',
-        '/opt/cpanel/ea-php83/root/usr/bin/php',
-        '/opt/cpanel/ea-php82/root/usr/bin/php',
-        '/usr/bin/php8.4',
-        '/usr/bin/php8.3',
-        '/usr/bin/php8.2',
-    ];
-
-    if (defined('PHP_BINARY') && is_string(PHP_BINARY) && PHP_BINARY !== '' && is_executable(PHP_BINARY)) {
-        $bins[] = PHP_BINARY;
-    }
-
-    foreach ($bins as $bin) {
-        if (is_executable($bin) && __isModernPhp($bin)) {
-            return $bin;
-        }
-    }
-
-    return 'php';
-}
-
-function __isModernPhp(string $bin): bool
-{
-    $out = @shell_exec($bin . ' -r "echo PHP_VERSION;" 2>/dev/null');
-
-    return is_string($out) && version_compare(trim($out), '8.2.0', '>=');
-}
-
 function __runCmd(string $cmd, string $cwd): string
 {
     $full = 'cd ' . escapeshellarg($cwd) . ' && ' . $cmd . ' 2>&1';
@@ -93,15 +60,16 @@ if (!function_exists('__install')) {
         }
         @chmod($path . '/.env', 0644);
 
-        $php = __findPhp();
+        $php = '/usr/local/bin/php';
+        $migrateCmd = $php . ' ' . escapeshellarg($path . '/runway') . ' migrate:all';
 
         if (!__runCmd($migrateCmd, $path)) {
             exit(1);
         }
 
         $passInput = escapeshellarg($adminPass . "\n" . $adminPass);
-        $userCmd = 'printf ' . $passInput . ' | '
-            . $php . ' ' . escapeshellarg($path . '/runway') . ' shield:user create'
+        $userCmd = 'printf ' . $passInput . ' | ' . $php . ' '
+            . escapeshellarg($path . '/runway') . ' shield:user create'
             . ' -n ' . escapeshellarg($adminUser)
             . ' -e ' . escapeshellarg($adminEmail)
             . ' -g superadmin';

@@ -46,8 +46,6 @@ foreach ($preflight as $preflightCheck) {
     }
 }
 
-$phpBinary = PHP_BINARY ?: (PHP_BINDIR . '/php');
-
 /** Renders the installed addons holding back the newest release. */
 $renderConstraints = static function () use ($constraints, $latest): void {
     ?>
@@ -149,9 +147,9 @@ $renderSkipped = static function () use ($skipped, $adminBase): void {
             </div>
             <div class="col-md-4">
                 <label class="d-block fw-bold small mb-1">Cron</label>
-                <code class="d-block bg-secondary-lt p-2 rounded small user-select-all mb-1">* * * * *    <?= htmlspecialchars($phpBinary) ?> <?= htmlspecialchars(PROJECT_ROOT) ?>/cron 1m</code>
-                <code class="d-block bg-secondary-lt p-2 rounded small user-select-all mb-1">7 */4 * * *  <?= htmlspecialchars($phpBinary) ?> <?= htmlspecialchars(PROJECT_ROOT) ?>/cron 4h</code>
-                <code class="d-block bg-secondary-lt p-2 rounded small user-select-all">15 3 * * *   <?= htmlspecialchars($phpBinary) ?> <?= htmlspecialchars(PROJECT_ROOT) ?>/cron 24h</code>
+                <code class="d-block bg-secondary-lt p-2 rounded small user-select-all mb-1">* * * * *    /usr/local/bin/php <?= htmlspecialchars(PROJECT_ROOT) ?>/cron 1m</code>
+                <code class="d-block bg-secondary-lt p-2 rounded small user-select-all mb-1">7 */4 * * *  /usr/local/bin/php <?= htmlspecialchars(PROJECT_ROOT) ?>/cron 4h</code>
+                <code class="d-block bg-secondary-lt p-2 rounded small user-select-all">15 3 * * *   /usr/local/bin/php <?= htmlspecialchars(PROJECT_ROOT) ?>/cron 24h</code>
                 <small class="form-text text-muted d-block">
                     Add these lines to your server's crontab to run Pubvana's cron tasks. <b>Highly Recommended</b>
                 </small>
