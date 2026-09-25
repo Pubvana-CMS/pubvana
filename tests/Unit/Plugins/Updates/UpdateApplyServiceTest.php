@@ -242,6 +242,71 @@ final class UpdateApplyServiceTest extends TestCase
         self::assertDirectoryDoesNotExist($dest);
     }
 
+    public function testCopyDirectorySkipsAProtectedFileInsideARecursion(): void
+    {
+        $root   = sys_get_temp_dir() . '/pv-prot-' . uniqid();
+        $source = $root . '/release/app';
+        $dest   = $root . '/live/app';
+
+        @mkdir($source . '/config', 0775, true);
+        @mkdir($source . '/Services', 0775, true);
+        @mkdir($dest . '/config', 0775, true);
+        file_put_contents($source . '/config/shield.php', 'release shield');
+        file_put_contents($source . '/config/services.php', 'release services');
+        file_put_contents($source . '/Services/Foo.php', 'release foo');
+        file_put_contents($dest . '/config/shield.php', 'live shield');
+
+        $skipped = [];
+        $count   = UpdateApplyService::copyDirectory(
+            $source,
+            $dest,
+            null,
+            ['.env', 'app/config/shield.php', 'writable'],
+            'app',
+            static function (string $relative) use (&$skipped): void {
+                $skipped[] = $relative;
+            }
+        );
+
+        // The two unprotected files land; the protected one is left as found.
+        self::assertSame(2, $count);
+        self::assertSame(['app/config/shield.php'], $skipped);
+        self::assertSame('live shield', (string) file_get_contents($dest . '/config/shield.php'));
+        self::assertSame('release services', (string) file_get_contents($dest . '/config/services.php'));
+        self::assertSame('release foo', (string) file_get_contents($dest . '/Services/Foo.php'));
+
+        UpdateApplyService::removeDirectory($root);
+    }
+
+    public function testCopyDirectorySkipsAProtectedDirectoryWhole(): void
+    {
+        $root   = sys_get_temp_dir() . '/pv-protdir-' . uniqid();
+        $source = $root . '/release/app';
+        $dest   = $root . '/live/app';
+
+        @mkdir($source . '/config/secrets/deep', 0775, true);
+        @mkdir($source . '/Services', 0775, true);
+        file_put_contents($source . '/config/secrets/key.pem', 'release key');
+        file_put_contents($source . '/config/secrets/deep/more.pem', 'release more');
+        file_put_contents($source . '/config/services.php', 'release services');
+        file_put_contents($source . '/Services/Foo.php', 'release foo');
+
+        $count = UpdateApplyService::copyDirectory(
+            $source,
+            $dest,
+            null,
+            ['.env', 'app/config/shield.php', 'writable', 'app/config/secrets'],
+            'app'
+        );
+
+        self::assertSame(2, $count);
+        self::assertDirectoryDoesNotExist($dest . '/config/secrets');
+        self::assertFileExists($dest . '/config/services.php');
+        self::assertFileExists($dest . '/Services/Foo.php');
+
+        UpdateApplyService::removeDirectory($root);
+    }
+
     public function testCopyDirectoryNeverFollowsSymlinks(): void
     {
         $root    = sys_get_temp_dir() . '/pv-copy-' . uniqid();

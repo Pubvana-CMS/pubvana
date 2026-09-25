@@ -343,7 +343,7 @@ final class UpdateApplyService
     {
         $reporter->beginPhase(6);
 
-        $protected = (array) ($this->config['protected_paths'] ?? self::defaultProtectedPaths());
+        $protected = array_values((array) ($this->config['protected_paths'] ?? self::defaultProtectedPaths()));
         $items     = scandir($source);
 
         if ($items === false) {
@@ -355,7 +355,7 @@ final class UpdateApplyService
                 continue;
             }
 
-            if (self::isProtected($item, array_values($protected))) {
+            if (self::isProtected($item, $protected)) {
                 $reporter->detail('Skipping protected: ' . $item);
                 continue;
             }
@@ -373,9 +373,23 @@ final class UpdateApplyService
                 }
                 $reporter->detail('Copied ' . $item . ' (link)');
             } elseif (is_dir($from)) {
-                $count = self::copyDirectory($from, $to, function (int $files) use ($reporter, $item): void {
-                    $reporter->detail('Copying ' . $item . '/ (' . number_format($files) . ' files)');
-                });
+                // Protected paths are measured from the release root, so the
+                // top-level item name is the prefix for everything below it.
+                // Without this, only whole top-level entries could ever match
+                // and a nested entry like app/config/shield.php would be
+                // overwritten with the release copy.
+                $count = self::copyDirectory(
+                    $from,
+                    $to,
+                    function (int $files) use ($reporter, $item): void {
+                        $reporter->detail('Copying ' . $item . '/ (' . number_format($files) . ' files)');
+                    },
+                    $protected,
+                    $item,
+                    function (string $relative) use ($reporter): void {
+                        $reporter->detail('Skipping protected: ' . $relative);
+                    }
+                );
                 $reporter->detail('Copied ' . $item . '/ (' . number_format($count) . ' files)');
             } else {
                 if (!copy($from, $to)) {
@@ -674,10 +688,24 @@ final class UpdateApplyService
      *
      * Directories are created 0755; new directories inherit no odd modes.
      *
-     * @param callable|null $onProgress fn(int $fileCount)
+     * $protectedPaths holds release-relative paths (see isProtected()). A
+     * match is left alone and is not counted. The walk still descends into a
+     * skipped directory, so every child matches on its own by the directory
+     * prefix rule and the subtree is skipped entry by entry.
+     *
+     * @param callable|null            $onProgress     fn(int $fileCount)
+     * @param array<int|string, mixed> $protectedPaths Release-relative paths never written
+     * @param string                   $relativePrefix Path of $source from the release root, no slashes
+     * @param callable|null            $onSkip         fn(string $relativePath)
      */
-    public static function copyDirectory(string $source, string $destination, ?callable $onProgress = null): int
-    {
+    public static function copyDirectory(
+        string $source,
+        string $destination,
+        ?callable $onProgress = null,
+        array $protectedPaths = [],
+        string $relativePrefix = '',
+        ?callable $onSkip = null
+    ): int {
         if (!is_dir($destination) && !mkdir($destination, 0755, true)) {
             throw new RuntimeException('Could not create directory: ' . $destination);
         }
@@ -690,8 +718,17 @@ final class UpdateApplyService
         $files = 0;
 
         foreach ($iterator as $item) {
-            $path   = $item->getPathname();
-            $target = $destination . '/' . $iterator->getSubPathName();
+            $subPath  = $iterator->getSubPathName();
+            $path     = $item->getPathname();
+            $target   = $destination . '/' . $subPath;
+            $relative = $relativePrefix === '' ? $subPath : $relativePrefix . '/' . $subPath;
+
+            if ($protectedPaths !== [] && self::isProtected($relative, $protectedPaths)) {
+                if ($onSkip !== null) {
+                    $onSkip($relative);
+                }
+                continue;
+            }
 
             if ($item->isLink()) {
                 // Naive copy: replicate the link, never traverse it. A link
