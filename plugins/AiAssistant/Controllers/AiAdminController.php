@@ -37,6 +37,31 @@ class AiAdminController extends AdminController
      */
     public function manage(): void
     {
+        $this->renderManage();
+    }
+
+    /**
+     * Create a key and reveal the plaintext token once.
+     *
+     * The token is handed to the view from this POST response. It never
+     * touches session storage (AGENTS.md: never log, store, or cache a
+     * plaintext token), so it cannot ride along on later requests.
+     */
+    public function createKey(): void
+    {
+        $name = (string) ($this->app->request()->data->name ?? '');
+
+        $result = $this->app->ai()->createKey($name);
+
+        $this->renderManage($result['plain']);
+    }
+
+    /**
+     * Render the manage page, revealing a freshly created plaintext token
+     * when one is supplied.
+     */
+    private function renderManage(?string $plainToken = null): void
+    {
         $logLimit = max(1, (int) $this->getConfig('log_limit', 200));
 
         $siteUrl = trim((string) ($this->app->settings()->get('CMS.siteUrl') ?? ''));
@@ -54,21 +79,8 @@ class AiAdminController extends AdminController
             'defaultAuthorId' => $this->app->ai()->defaultAuthorId(),
             'activeUsers'     => (new User($this->app->db()))->findActive(),
             'siteUrl'         => rtrim($siteUrl, '/'),
+            'plainToken'      => $plainToken,
         ]);
-    }
-
-    /**
-     * Create a key and reveal the plaintext token once.
-     */
-    public function createKey(): void
-    {
-        $name = (string) ($this->app->request()->data->name ?? '');
-
-        $result = $this->app->ai()->createKey($name);
-
-        $this->app->session()->flash('success', 'API key created. Copy it now; it is shown only once:');
-        $this->app->session()->flash('plain_token', $result['plain']);
-        $this->app->redirect($this->adminBase() . '/manage');
     }
 
     /**

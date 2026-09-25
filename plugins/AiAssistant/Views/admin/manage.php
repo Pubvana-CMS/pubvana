@@ -10,10 +10,12 @@
  * @var array  $logs            recentLogs() rows
  * @var int    $defaultAuthorId
  * @var \Enlivenapp\FlightShield\Models\User[] $activeUsers
+ * @var string|null $plainToken    one-time plaintext token, only after a key creation
  */
 
-$session = \Flight::app()->session();
-$plainToken = $session->pullFlash('plain_token');
+// Handed down by the controller for the create-key response only. It is
+// deliberately not read from a session flash; see AI AGENTS.md rule 1.
+$plainToken = $plainToken ?? null;
 $apiBase = rtrim((string) \Flight::app()->pluginLoader()->apiPrefix('pubvana/ai'), '/');
 ?>
 
