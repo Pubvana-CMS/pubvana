@@ -128,10 +128,28 @@ final class MarketplaceAdminControllerTest extends TestCase
 
     public function testVerify(): void
     {
+        $this->marketplace->verifyResult = ['ok' => true, 'reason' => '', 'purchases' => [['product_id' => 1]]];
+
         (new MarketplaceAdminController($this->engine()))->verify();
 
         self::assertTrue($this->marketplace->verified);
         self::assertSame('Purchases verified against pubvanacms.com.', $this->flashes['success'][0]);
+        self::assertSame(['/admin/marketplace/purchases'], $this->redirects);
+    }
+
+    public function testVerifyReportsStoreFailure(): void
+    {
+        $this->marketplace->verifyResult = [
+            'ok'        => false,
+            'reason'    => 'The store could not be reached. Try again in a moment.',
+            'purchases' => [],
+        ];
+
+        (new MarketplaceAdminController($this->engine()))->verify();
+
+        self::assertTrue($this->marketplace->verified);
+        self::assertSame('The store could not be reached. Try again in a moment.', $this->flashes['danger'][0]);
+        self::assertArrayNotHasKey('success', $this->flashes);
         self::assertSame(['/admin/marketplace/purchases'], $this->redirects);
     }
 
@@ -346,6 +364,8 @@ final class FakeMarketplace
     public bool $disconnected = false;
     public bool $verified = false;
     /** @var array<string, mixed> */
+    public array $verifyResult = ['ok' => true, 'reason' => '', 'purchases' => []];
+    /** @var array<string, mixed> */
     public array $cartResult = ['ok' => true];
     /** @var list<mixed> */
     public array $cartArgs = [];
@@ -407,11 +427,11 @@ final class FakeMarketplace
     }
 
     /** @return array<string, mixed> */
-    public function purchases(): array
+    public function verifyPurchases(): array
     {
         $this->verified = true;
 
-        return ['ok' => true];
+        return $this->verifyResult;
     }
 
     /** @return array<string, mixed> */

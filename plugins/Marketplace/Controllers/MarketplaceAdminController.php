@@ -104,8 +104,12 @@ class MarketplaceAdminController extends AdminController
 
     public function verify(): void
     {
-        $result = $this->app->marketplace()->purchases();
-        $this->app->session()->flash('success', 'Purchases verified against pubvanacms.com.');
+        $result = $this->app->marketplace()->verifyPurchases();
+        if (!empty($result['ok'])) {
+            $this->app->session()->flash('success', 'Purchases verified against pubvanacms.com.');
+        } else {
+            $this->app->session()->flash('danger', (string) $result['reason']);
+        }
         $this->app->redirect($this->adminBase() . '/purchases');
     }
 

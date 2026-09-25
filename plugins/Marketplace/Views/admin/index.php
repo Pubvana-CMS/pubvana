@@ -92,7 +92,12 @@
             <?php foreach ($groupItems as $item):
                 $id = (int) ($item['id'] ?? 0);
                 $package = (string) ($item['package'] ?? '');
-                $isFree = !empty($item['is_free']);
+                // Free to install anywhere: fully free, any free tier, or a
+                // package with no license scope. Mirrors the check the
+                // install-free path makes.
+                $isFree = !empty($item['is_free'])
+                    || !empty($item['free_tier'])
+                    || (($item['license_scope'] ?? '') === 'none');
                 // Addons physically on this site, from the local manifest
                 // scan: covers Marketplace installs, core-shipped, and
                 // manual uploads alike.

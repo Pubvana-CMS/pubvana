@@ -269,22 +269,38 @@ class MarketplaceService
      * Verify which owned products license this domain and reconcile the local
      * marketplace_installs against the store's answer.
      *
-     * @return array<int, array<string, mixed>> Serialized purchase records.
+     * @return array{ok: bool, reason: string, purchases: array<int, array<string, mixed>>}
      */
-    public function purchases(): array
+    public function verifyPurchases(): array
     {
         if (!$this->withToken()) {
-            return [];
+            return ['ok' => false, 'reason' => 'Not connected to a Pubvana account.', 'purchases' => []];
         }
         $domain = $this->siteDomain();
         $url = $this->apiUrl('purchases') . '?domain=' . urlencode($domain);
         $data = $this->decode($this->httpGet($url));
         if (!is_array($data) || empty($data['ok']) || !is_array($data['purchases'])) {
-            return [];
+            return ['ok' => false, 'reason' => 'The store could not be reached. Try again in a moment.', 'purchases' => []];
         }
 
-        $this->reconcileInstalls($data['purchases']);
-        return $data['purchases'];
+        /** @var array<int, array<string, mixed>> $purchases */
+        $purchases = $data['purchases'];
+        $this->reconcileInstalls($purchases);
+
+        return ['ok' => true, 'reason' => '', 'purchases' => $purchases];
+    }
+
+    /**
+     * Serialized purchase records the store confirms for this domain.
+     *
+     * An empty array covers both "nothing owned" and "store unreachable".
+     * Callers that must tell those apart use verifyPurchases().
+     *
+     * @return array<int, array<string, mixed>> Serialized purchase records.
+     */
+    public function purchases(): array
+    {
+        return $this->verifyPurchases()['purchases'];
     }
 
     /**
@@ -875,7 +891,7 @@ class MarketplaceService
         }
 
         $extractPath = $tmpDir . \DIRECTORY_SEPARATOR . 'extract';
-        if (!is_dir($extractPath) && !mkdir($extractPath, 0755, true) && !is_dir($extractPath)) {
+        if (!$this->prepareExtractDir($extractPath)) {
             $archive->close();
             @unlink($zipPath);
             return $fail('Could not extract the package.');
@@ -1036,6 +1052,20 @@ class MarketplaceService
     {
         $entries = scandir($path);
         return $entries === false ? [] : $entries;
+    }
+
+    /**
+     * An empty extraction directory. Anything an earlier run left behind is
+     * removed first, so a package can never pick up stale files from the
+     * previous extraction.
+     */
+    protected function prepareExtractDir(string $dir): bool
+    {
+        if (is_dir($dir) && !$this->rmdir($dir)) {
+            return false;
+        }
+
+        return mkdir($dir, 0755, true) || is_dir($dir);
     }
 
     protected function rmdir(string $dir): bool
@@ -1487,12 +1517,36 @@ class MarketplaceService
         return 'Pubvana-Marketplace/3.0';
     }
 
+    /**
+     * This site's bare domain, as sent to the store for license lookup.
+     *
+     * Built on the DB-backed CMS.siteUrl setting the admin UI writes (the
+     * same value UrlService::siteOrigin() reads), never the request Host
+     * header. Port and path are dropped, leaving the host a purchase is
+     * bound to.
+     *
+     * @return non-empty-string
+     */
     protected function siteDomain(): string
     {
-        $domain = (string) ($this->app->get('CMS.siteUrl') ?? $this->app->request()->host ?? '');
-        $domain = strtolower(trim($domain));
-        $domain = preg_replace('#^https?://#', '', (string) $domain);
-        $domain = preg_replace('#^www\.#', '', (string) $domain);
-        return (string) preg_replace('#[/\s]#', '', (string) $domain);
+        try {
+            $siteUrl = trim((string) ($this->app->settings()->get('CMS.siteUrl', '') ?? ''));
+        } catch (\Throwable) {
+            $siteUrl = '';
+        }
+        if ($siteUrl === '') {
+            $siteUrl = 'http://localhost';
+        }
+        if (!preg_match('#^[a-z][a-z0-9+.\-]*://#i', $siteUrl)) {
+            $siteUrl = 'http://' . $siteUrl;
+        }
+
+        $host = strtolower(trim((string) (parse_url($siteUrl, PHP_URL_HOST) ?? '')));
+        $host = (string) preg_replace('#^www\.#', '', $host);
+        if ($host === '') {
+            $host = 'localhost';
+        }
+
+        return $host;
     }
 }

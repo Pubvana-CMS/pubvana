@@ -80,7 +80,7 @@ Auth is a `Marketplace.account_token` setting sent as an `Authorization: Bearer`
 
 `reinstallAll()` iterates purchases and reinstalls every licensed, non-`file` item already installed locally, reporting ok/skipped/failed counts.
 
-`verifyIfDue()` / `purchases()` reconcile `marketplace_installs` from the store's answer for this domain, updating license validity, scope, expiry/renewal, and registered domain; `package_id` is backfilled from the local manifest when missing. `localInstallRecords()` serializes the table for the Purchases view.
+`verifyIfDue()` / `verifyPurchases()` reconcile `marketplace_installs` from the store's answer for this domain, updating license validity, scope, expiry/renewal, and registered domain; `package_id` is backfilled from the local manifest when missing. `verifyPurchases()` returns `ok`, `reason`, and the purchase list, so the Verify button can tell a store failure from an account with no purchases; `purchases()` returns the list alone. `localInstallRecords()` serializes the table for the Purchases view.
 
 ### Connect / account
 
@@ -112,19 +112,19 @@ php runway cron 24h                    # exercise the cron task (graceful when n
 |----------|---------|
 | [README.md](./README.md) | User-facing features and usage |
 | [Config/Config.php](./Config/Config.php) | store_url, verify_days, revalidate_days, timeouts, size caps |
-| [Services/MarketplaceService.php](./Services/MarketplaceService.php) | installFromPackage() at line 609, install() at line 755, checkAddonUpdates() at line 476, verifyIfDue() at line 1135 |
+| [Services/MarketplaceService.php](./Services/MarketplaceService.php) | installFromPackage() at line 625, install() at line 771, checkAddonUpdates() at line 492, verifyIfDue() at line 1165 |
 
 ## Common tasks
 
 | Goal | Where to look |
 |------|---------------|
 | Change the store URL | `store_url` in `Config/Config.php` |
-| Change the verification cadence | `verify_days` in `Config/Config.php`; enforced by `verifyIfDue()` at `Services/MarketplaceService.php:1135` |
+| Change the verification cadence | `verify_days` in `Config/Config.php`; enforced by `verifyIfDue()` at `Services/MarketplaceService.php:1165` |
 | Change catalog cache lifetime | `catalog_cache_ttl` in `Config/Config.php` |
 | Add an admin route | Admin route block in `Plugin.php` |
-| Change the install flow | `install()` at `Services/MarketplaceService.php:755` |
-| Change the cross-plugin install entry | `installFromPackage()` at `Services/MarketplaceService.php:609` |
-| Change addon update checks | `checkAddonUpdates()` at `Services/MarketplaceService.php:476` |
+| Change the install flow | `install()` at `Services/MarketplaceService.php:771` |
+| Change the cross-plugin install entry | `installFromPackage()` at `Services/MarketplaceService.php:625` |
+| Change addon update checks | `checkAddonUpdates()` at `Services/MarketplaceService.php:492` |
 | Change the dashboard card | `dashboardCards()` in `Plugin.php` |
 | Change the Site Health check | `healthCheck()` in `Plugin.php` |
 
