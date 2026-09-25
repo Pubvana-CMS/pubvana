@@ -180,6 +180,27 @@ final class UpdatesAdminControllerTest extends TestCase
         self::assertSame([['status' => 'error', 'message' => 'Update has been found malicious by the Pubvana trust service']], $this->jsons);
     }
 
+    public function testApplySurvivesTrustClientOutage(): void
+    {
+        $this->updates()->lastCheckResult = [
+            'target_version'   => '3.1.0',
+            'breaking_changes' => ['thing changed'],
+        ];
+
+        $app = $this->engine();
+        $app->map('trustClient', static function (): object {
+            throw new \RuntimeException('trust down');
+        });
+
+        (new UpdatesAdminController($app))->apply();
+
+        // No throw: the request reaches the next gate and keeps its JSON shape.
+        self::assertSame([[
+            'status' => 'confirm_breaking',
+            'message' => 'This update path contains breaking changes. Review them and confirm to apply.',
+        ]], $this->jsons);
+    }
+
     // ------------------------------------------------------------------
     // status() / settings()
     // ------------------------------------------------------------------

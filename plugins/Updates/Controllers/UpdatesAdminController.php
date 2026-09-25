@@ -292,8 +292,18 @@ final class UpdatesAdminController extends AdminController
         // proceeds, unknown needs the admin's modal confirmation (force_trust
         // on the confirmed resubmit), malicious is refused outright.
         $isAjax = ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest';
+
+        try {
+            $item = $this->app->trustClient()->coreItem($target);
+        } catch (Throwable) {
+            // Nothing could be asked, so there is no identity to gate on.
+            // trustGate() reads null as nothing to check and lets the run
+            // proceed; the apply service re-checks what it can.
+            $item = null;
+        }
+
         $refusal = $this->trustGate(
-            $this->app->trustClient()->coreItem($target),
+            $item,
             'core',
             ['name' => 'Pubvana', 'version' => $target],
             isset($data['force_trust']),
