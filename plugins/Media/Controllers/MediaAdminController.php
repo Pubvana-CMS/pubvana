@@ -111,8 +111,13 @@ class MediaAdminController extends AdminController
             return;
         }
 
-        $user = $this->app->auth()->user();
-        $media = $this->service()->storeEmbed($url, (int) ($user->id ?? 0));
+        try {
+            $user = $this->app->auth()->user();
+            $media = $this->service()->storeEmbed($url, (int) ($user->id ?? 0));
+        } catch (\InvalidArgumentException $e) {
+            $this->app->json(['error' => $e->getMessage()], 422);
+            return;
+        }
 
         $this->app->json($this->mediaToArray($media), 201);
     }

@@ -73,7 +73,7 @@ final class SocialLinksServiceTest extends TestCase
     {
         $link = $this->service->create([
             'platform' => 'myspace',
-            'url' => 'example.com/profile',
+            'url' => 'https://example.com/profile',
             'label' => 'My Page',
             'icon' => 'fa-brands fa-custom',
         ]);
@@ -82,9 +82,17 @@ final class SocialLinksServiceTest extends TestCase
         self::assertSame('custom', $link->platform);
         self::assertSame('My Page', $link->label);
         self::assertSame('fa-brands fa-custom', $link->icon);
-        // Scheme prepended.
         self::assertSame('https://example.com/profile', $link->url);
         self::assertSame(0, (int) $link->sort_order);
+    }
+
+    public function testCreateRejectsBareHostWithoutAScheme(): void
+    {
+        // The law: a full URL or nothing. No scheme is assumed for the admin.
+        self::assertNull($this->service->create([
+            'platform' => 'custom',
+            'url' => 'example.com/profile',
+        ]));
     }
 
     public function testCreateCustomFallsBackOnBlankLabelAndBadIcon(): void

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Pubvana\Plugins\Media\Services;
 
 use Pubvana\Plugins\Media\Models\Media;
+use Pubvana\Services\UrlService;
 
 class MediaService
 {
@@ -125,8 +126,21 @@ class MediaService
         ]);
     }
 
+    /**
+     * Store a provider or direct embed URL.
+     *
+     * The URL is a navigable href in the admin media list, so it must
+     * already be a full http(s) URL: no scheme is assumed.
+     *
+     * @throws \InvalidArgumentException When the URL is not a full http(s) URL.
+     */
     public function storeEmbed(string $url, int $uploadedBy): Media
     {
+        $url = trim($url);
+        if (!UrlService::isSafeExternalUrl($url)) {
+            throw new \InvalidArgumentException('Embed URL must be a full URL, starting with https://.');
+        }
+
         $provider = $this->detectProvider($url);
 
         return $this->model->createRecord([

@@ -101,21 +101,22 @@ final class ProfileWebsiteValidationTest extends TestCase
         self::assertSame('https://example.com', $this->profileRow(7)['website'], 'a failed write must not clobber the stored value');
     }
 
-    public function testSocialHandlesAreStrippedOfTagsAndWhitespace(): void
+    public function testSocialFieldsRejectNonFullUrlsAndPreserveStoredValue(): void
     {
         $model = new Profile($this->pdo);
+        $model->updateProfile(7, ['twitter' => 'https://x.com/ada']);
 
         $result = $model->updateProfile(7, [
-            'twitter'   => "  <b>Ada</b> Lovelace\n\t ",
+            'twitter'   => '  <b>Ada</b> Lovelace\n\t ',
             'facebook'  => ' Ada.Pages ',
-            'linkedin'  => 'in/ ada',
+            'linkedin'  => 'in/ada',
         ]);
 
-        self::assertNotNull($result);
+        self::assertNull($result);
         $row = $this->profileRow(7);
-        self::assertSame('AdaLovelace', $row['twitter']);
-        self::assertSame('Ada.Pages', $row['facebook']);
-        self::assertSame('in/ada', $row['linkedin']);
+        self::assertSame('https://x.com/ada', $row['twitter']);
+        self::assertNull($row['facebook']);
+        self::assertNull($row['linkedin']);
     }
 
     public function testBlankSocialHandleBecomesNull(): void

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Pubvana\Plugins\Seo\Services;
 
 use Pubvana\Plugins\Seo\Models\SeoMeta;
+use Pubvana\Services\UrlService;
 use flight\Engine;
 
 /**
@@ -571,16 +572,12 @@ class SeoService
 
         $sameAs = [];
         if ($profile) {
+            // The law: these columns hold full http(s) URLs or nothing, so a
+            // bare handle never renders and nothing is prefixed here.
             foreach (['website', 'twitter', 'facebook', 'linkedin'] as $field) {
-                if (!empty($profile->$field)) {
-                    // website is a full URL and must pass the scheme
-                    // allowlist before it lands in structured data; the
-                    // social fields are handles that get the fixed
-                    // https:// prefix from SchemaService.
-                    if ($field === 'website' && !\Pubvana\Services\UrlService::isSafeExternalUrl($profile->$field)) {
-                        continue;
-                    }
-                    $sameAs[] = (string) $profile->$field;
+                $value = trim((string) ($profile->$field ?? ''));
+                if ($value !== '' && UrlService::isSafeExternalUrl($value)) {
+                    $sameAs[] = $value;
                 }
             }
         }

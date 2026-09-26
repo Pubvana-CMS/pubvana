@@ -47,10 +47,20 @@ class ProfilesPublicController extends PublicController
             'isOwner'       => $isOwner,
             'avatar_url'    => $avatarUrl,
             'safe_website'  => $safeWebsite,
-            'twitter_url'   => UrlService::normalizeExternalUrl(ltrim((string) $profile->twitter, '@'), 'https://twitter.com/'),
-            'facebook_url'  => UrlService::normalizeExternalUrl(ltrim((string) $profile->facebook, '@'), 'https://facebook.com/'),
-            'linkedin_url'  => UrlService::normalizeExternalUrl(ltrim((string) $profile->linkedin, '@'), 'https://linkedin.com/in/'),
+            'twitter_url'   => $this->safeUrl($profile->twitter ?? null),
+            'facebook_url'  => $this->safeUrl($profile->facebook ?? null),
+            'linkedin_url'  => $this->safeUrl($profile->linkedin ?? null),
         ]);
+    }
+
+    /**
+     * A stored social URL renders only when it is a full safe http(s) URL.
+     */
+    private function safeUrl(?string $value): ?string
+    {
+        return UrlService::isSafeExternalUrl($value) && trim((string) $value) !== ''
+            ? trim((string) $value)
+            : null;
     }
 
     public function edit(string $username): void

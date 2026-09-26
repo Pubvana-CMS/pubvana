@@ -19,7 +19,7 @@ Social Links is the port of the v2 SocialLinks feature. It stores site-wide soci
 1. **Route all reads and writes through the `$app->socialLinks()` service facade** (`Plugin.php:32-39`). Controllers must not touch models directly. Reason: the service owns the platform catalog, URL validation, icon normalization, and sequential ordering.
 2. **Known platforms derive their label and icon from the catalog; "custom" takes posted values.** `platformLabel()` and `platformIcon()` fall back to config defaults (`Services/SocialLinksService.php:151-165`). Reason: one canonical map keeps the admin dropdown, stored rows, and rendered icons in lockstep.
 3. **Never widen the platform catalog without a published Font Awesome class.** Every icon in `PLATFORMS` is verified against the staged `assets/css/brands.min.css` (`Services/SocialLinksService.php:33-70`). Reason: FA7 splits brand marks into brands.min.css, so an unverified class renders a broken box. Known missing brands in FA7 Free (do not rely on them): `stackoverflow`, `nextdoor`, `buffers`.
-4. **Validate and normalize URLs on write, never on render.** Bare domains get `https://` prepended, non-http(s) or hostless values are rejected (`Services/SocialLinksService.php:289-301`). Reason: the public template renders stored URLs unmodified and the link must be safe to emit.
+4. **Validate URLs on write, never normalize on render.** A value must already be a full `http://` or `https://` URL; a bare domain, a handle, or any non-http(s) scheme is rejected and nothing is stored (`Services/SocialLinksService.php:289-301`). No scheme is assumed. Reason: the public template renders stored URLs unmodified, so the stored value must be exactly what gets emitted.
 5. **Keep the icon regex strict.** Custom icons must match `^fa-[a-z0-9]+( [a-z0-9-]+)*$` or be replaced with the fallback (`Services/SocialLinksService.php:315-320`). Reason: the class is echoed unescaped-safe but still must not allow arbitrary markup.
 6. **Treat `sort_order` as authoritative and sequential.** New links get `count(all())`, and `move()` swaps then re-normalizes 0..n via `persistOrder()` (`Services/SocialLinksService.php:238-251, 274-282`). Reason: re-normalizing absorbs any column drift so display order matches admin order.
 7. **Seed only the permission alias, do not gate in-controller.** `auth_permissions` seeds `social.manage` (`Database/Seeds/Seed.php:6-9`); admin routes are gated on `admin.access` automatically by the core and no per-route `can()` check is added. Reason: this matches the Redirects plugin; per-action gating is future middleware work.
@@ -74,7 +74,7 @@ The plugin has no `composer.json` (it is in-tree), but it has a test suite under
 - Manual verification checklist:
   - [ ] Add every catalog platform; each row stores the matching label and `.fa-brands` class
   - [ ] Add a custom link; label and icon class are honored; empty fields fall back to `Website` / `fa-solid fa-link`
-  - [ ] Submit a bare domain (`x.com/user`); it stores as `https://x.com/user`; submit `javascript:...` or garbage; it is rejected with the flash error
+  - [ ] Submit a bare domain (`x.com/user`); it is rejected with the flash error and nothing is stored; a full `https://x.com/user` is accepted
   - [ ] Toggle a link off; it disappears from the block but remains in the admin list
   - [ ] Reorder up/down; first/last controls are disabled at the ends, and reordering survives a page reload
   - [ ] Place the Social Links block in a region; the rendered anchor carries `target="_blank" rel="noopener noreferrer"` and the FA icon renders
@@ -131,7 +131,7 @@ Coverage: the suite covers the service, the admin controller, migrations/seeds, 
 
 - This is an in-tree application plugin, not a Composer package; no `composer.json` and nothing for Packagist.
 - Not social auth (OAuth flows) and not auto-sharing on publish; this plugin only stores and displays links.
-- No per-user social links; profiles already handle user-scoped handles via Profiles.
+- No per-user social links; user-scoped social URLs are stored on the Profiles profile row.
 - No icon upload or custom SVG sources; icons are Font Awesome 7 Free class names.
 - No translations; labels are hardcoded English.
 - Auth middleware is disabled for development (`Plugin.php:40`); enforcement against `social.manage` is future work.

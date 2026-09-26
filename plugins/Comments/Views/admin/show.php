@@ -65,9 +65,21 @@
                     <?php if ($comment->guest_website): ?>
                         <dt class="col-5">Website</dt>
                         <dd class="col-7">
-                            <a href="<?= htmlspecialchars((string) $comment->guest_website) ?>" target="_blank" rel="noopener noreferrer">
+                            <?php
+                            // Only a full http(s) URL becomes a navigable href.
+                            // Rows stored before the write-side rule existed may
+                            // still hold junk; those render as plain text.
+                            $safeGuestWebsite = \Pubvana\Services\UrlService::isSafeExternalUrl($comment->guest_website ?? null)
+                                ? trim((string) $comment->guest_website)
+                                : null;
+                            ?>
+                            <?php if ($safeGuestWebsite !== null): ?>
+                                <a href="<?= htmlspecialchars($safeGuestWebsite) ?>" target="_blank" rel="noopener noreferrer">
+                                    <?= htmlspecialchars($safeGuestWebsite) ?>
+                                </a>
+                            <?php else: ?>
                                 <?= htmlspecialchars((string) $comment->guest_website) ?>
-                            </a>
+                            <?php endif; ?>
                         </dd>
                     <?php endif; ?>
 

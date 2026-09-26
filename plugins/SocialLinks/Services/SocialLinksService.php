@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Pubvana\Plugins\SocialLinks\Services;
 
 use Pubvana\Plugins\SocialLinks\Models\SocialLink;
+use Pubvana\Services\UrlService;
 
 /**
  * Social Links Service
@@ -154,7 +155,8 @@ class SocialLinksService
      *
      * Known platforms resolve their own label and icon; "custom" takes
      * the posted label and Font Awesome class. Returns null when the
-     * posted URL is missing or not a valid http(s) address.
+     * posted URL is missing or is not already a full http(s) URL: the law
+     * is store-what-you-emit, so no scheme is assumed or prepended.
      *
      * @param array<string, mixed> $data
      */
@@ -300,19 +302,10 @@ class SocialLinksService
     private function normalizeUrl(string $url): ?string
     {
         $url = trim($url);
-        if ($url === '') {
+        if ($url === '' || !UrlService::isSafeExternalUrl($url)) {
             return null;
         }
-        if (preg_match('#^https?://#i', $url) !== 1) {
-            $url = 'https://' . $url;
-        }
-        if (filter_var($url, FILTER_VALIDATE_URL) === false) {
-            return null;
-        }
-        $host = parse_url($url, PHP_URL_HOST);
-        if (!is_string($host) || $host === '') {
-            return null;
-        }
+
         return mb_substr($url, 0, 500);
     }
 

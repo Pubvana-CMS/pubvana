@@ -132,24 +132,44 @@ final class SeoServiceTest extends TestCase
                     return $this->stubs['page'] ?? null;
                 }
             },
+            'profiles' => static fn (): object => new class ($mergedStubs) {
+                /** @param array<string, mixed> $stubs */
+                public function __construct(private array $stubs)
+                {
+                }
+
+                public function findByUserId(int $userId): ?object
+                {
+                    return $this->stubs['profile'] ?? null;
+                }
+            },
             'seoSchema' => static fn (): SchemaService => new SchemaService($test->schemaApp()),
         ]);
 
         return $app;
     }
 
-    /** @return \flight\Engine<object> */
-    private function schemaApp(): \flight\Engine
+    /**
+     * @param array<string, mixed> $settings
+     * @return \flight\Engine<object>
+     */
+    private function schemaApp(array $settings = []): \flight\Engine
     {
+        $merged = array_merge([
+            'CMS.siteName'            => 'Test Site',
+            'Seo.organization_name'   => '',
+        ], $settings);
+
         return $this->app([
-            'settings' => static fn (): object => new class {
+            'settings' => static fn (): object => new class ($merged) {
+                /** @param array<string, mixed> $data */
+                public function __construct(private array $data)
+                {
+                }
+
                 public function get(string $key, mixed $default = null): mixed
                 {
-                    return match ($key) {
-                        'CMS.siteName' => 'Test Site',
-                        'Seo.organization_name' => '',
-                        default => $default,
-                    };
+                    return $this->data[$key] ?? $default;
                 }
             },
             'url' => static fn (): object => new class {
@@ -311,6 +331,76 @@ final class SeoServiceTest extends TestCase
         self::assertSame('https://cdn.test/x.png', $service->resolveImageUrl('https://cdn.test/x.png'));
         self::assertSame('https://example.com/uploads/x.png', $service->resolveImageUrl('uploads/x.png'));
         self::assertSame('https://example.com/uploads/x.png', $service->resolveImageUrl('/uploads/x.png'));
+    }
+
+    /**
+     * @param array<string, mixed> $profile
+     * @return array<int, string>
+     */
+    private function authorSameAs(array $profile): array
+    {
+        $post = (object) [
+            'id' => 5, 'title' => 'Hello', 'status' => 'published', 'author_id' => 7,
+            'excerpt' => 'Ex', 'ai_generated' => 0, 'published_at' => '2026-01-01',
+            'updated_at' => '2026-01-02', 'featured_image' => '',
+        ];
+
+        $this->requestUrl = '/blog/hello';
+        $service = $this->service([], ['post' => $post, 'profile' => (object) $profile]);
+        $service->detectContent();
+
+        /** @var array{name: string, sameAs: string[]}|null $author */
+        $author = $service->getContext()['author'] ?? null;
+
+        return $author['sameAs'] ?? [];
+    }
+
+    public function testAuthorHandlesAreRejectedWithoutAFullUrl(): void
+    {
+        // The law: the columns hold full URLs or nothing. A bare handle is
+        // not guessed at, so only the full URL renders.
+        $sameAs = $this->authorSameAs([
+            'display_name' => 'Ada',
+            'website'      => 'https://ada.test',
+            'twitter'      => '@ada',
+            'facebook'     => 'ada.pages',
+            'linkedin'     => 'https://linkedin.com/in/ada',
+        ]);
+
+        self::assertSame([
+            'https://ada.test',
+            'https://linkedin.com/in/ada',
+        ], $sameAs);
+    }
+
+    public function testAuthorWebsiteWithUnsafeSchemeIsDropped(): void
+    {
+        $sameAs = $this->authorSameAs([
+            'display_name' => 'Ada',
+            'website'      => 'javascript:alert(1)',
+            'twitter'      => 'https://x.com/ada',
+        ]);
+
+        self::assertSame(['https://x.com/ada'], $sameAs);
+    }
+
+    public function testSchemaSocialProfilesKeepOnlyFullUrls(): void
+    {
+        $app = $this->schemaApp(['Seo.social_profiles' => [
+            'twitter.com/rob',
+            '@rob',
+            'https://github.com/rob',
+            'javascript:alert(1)',
+            '//evil.test',
+            '',
+        ]]);
+
+        $output = (new SchemaService($app))->render(['content_type' => 'home', 'url' => 'https://example.com/']);
+
+        self::assertStringContainsString('https://github.com/rob', $output);
+        self::assertStringNotContainsString('twitter.com/rob', $output);
+        self::assertStringNotContainsString('javascript:', $output);
+        self::assertStringNotContainsString('evil.test', $output);
     }
 
     public function testDetectContentBranches(): void

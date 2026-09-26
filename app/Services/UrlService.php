@@ -114,15 +114,22 @@ class UrlService
     }
 
     /**
-     * Scheme allowlist for user-supplied external URLs stored on entities
-     * (profile website and similar fields) that the application later
-     * renders inside href attributes or emits into structured data.
+     * The external URL law: an admin-supplied external URL is stored as a
+     * full URL or it is not stored at all.
      *
-     * A value with no scheme ("example.com") is rejected: assuming a scheme
-     * would silently accept half-entered input, and the caller is expected
-     * to ask the user for a full http:// or https:// URL. Anything not
-     * http/https (javascript:, data:, //host, etc.) is rejected because the
-     * value ends up in a navigable attribute context.
+     * One field, one form. A value must already carry an http or https
+     * scheme ("https://twitter.com/ada"); it is trimmed and written
+     * verbatim. Nothing assumes, prepends, or infers a scheme or a
+     * platform, so no reader ever has to guess how a value was entered.
+     *
+     * Rejected: a bare host or handle ("example.com", "@ada"), and every
+     * scheme that is not http/https (javascript:, data:, and the
+     * scheme-relative "//host"), because the value ends up in a navigable
+     * attribute or in structured data.
+     *
+     * Call it on the way in (reject the write) and on the way out (drop a
+     * legacy row that predates the law). Emptiness is the caller's call:
+     * an empty value passes, so optional fields can clear themselves.
      *
      * Pure static so models (which have no Engine reference) can use it too.
      */
@@ -139,39 +146,6 @@ class UrlService
 
         $scheme = (string) (parse_url($candidate, PHP_URL_SCHEME) ?? '');
         return preg_match('#^https?$#i', $scheme) === 1;
-    }
-
-    /**
-     * Normalize a value into a full, safe http(s) URL.
-     *
-     * Accepts either a full URL ("https://example.com/user") or a bare
-     * value ("user") that gets the given base prepended. Full URLs pass
-     * through unchanged when they are safe external URLs; anything else
-     * returns null so callers render no link.
-     *
-     * Generic by design: the base is caller-supplied, so plugins can
-     * normalize handles for their own platforms (e.g. a profile plugin
-     * passing 'https://twitter.com/' for a Twitter handle).
-     *
-     * Pure static so models (which have no Engine reference) can use it too.
-     *
-     * @param string|null $value Raw stored value
-     * @param string      $base  Base URL to prepend to a bare value
-     */
-    public static function normalizeExternalUrl(?string $value, string $base): ?string
-    {
-        $candidate = trim((string) ($value ?? ''));
-        if ($candidate === '') {
-            return null;
-        }
-
-        // Full URL: pass through only when it is a safe external URL.
-        if (preg_match('#^https?://#i', $candidate)) {
-            return self::isSafeExternalUrl($candidate) ? $candidate : null;
-        }
-
-        $base = rtrim($base, '/') . '/';
-        return $base . $candidate;
     }
 
     /**

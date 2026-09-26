@@ -31,7 +31,7 @@ class SocialLinksAdminController extends AdminController
         unset($post['_csrf_token']);
 
         if ($this->app->socialLinks()->create($post) === null) {
-            $this->app->session()->flash('error', 'A URL is required and must be a valid http(s) address.');
+            $this->app->session()->flash('error', 'A URL is required and must be a full http:// or https:// address.');
             $this->app->redirect('/admin/social-links');
             return;
         }

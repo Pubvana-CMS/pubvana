@@ -65,7 +65,7 @@ final class SocialLinksAdminControllerTest extends TestCase
         $bad = $this->engine(data: ['platform' => 'github', 'url' => '']);
         (new SocialLinksAdminController($bad))->store();
 
-        self::assertStringContainsString('valid http(s)', $this->flashes['error'][0]);
+        self::assertStringContainsString('full http:// or https://', $this->flashes['error'][0]);
         self::assertSame(['/admin/social-links'], $this->redirects);
     }
 

@@ -89,28 +89,25 @@ class Profile extends \Pubvana\Models\AbstractModel
      * Whitelisted field write. Returns false and saves nothing when a value
      * fails validation; the controller surfaces the reason to the user.
      *
-     * website is a navigable href on the public profile page, so only full
-     * http:// or https:// URLs pass (a bare domain is rejected, no scheme
-     * is assumed). twitter/facebook/linkedin are handles rendered behind a
-     * fixed https:// prefix; tags and whitespace are stripped on write.
+     * website, twitter, facebook and linkedin are all navigable hrefs on
+     * the public profile page, so each one must be a full http:// or
+     * https:// URL. A bare host or handle is rejected, no scheme is
+     * assumed, and nothing is prefixed on read.
      *
      * @param array<string, mixed> $data
      */
     public function updateFromArray(array $data): bool
     {
         $allowed = ['display_name', 'bio', 'avatar', 'website', 'twitter', 'facebook', 'linkedin', 'job_title', 'works_for'];
+        $urlFields = ['website', 'twitter', 'facebook', 'linkedin'];
+
         foreach ($allowed as $field) {
             if (!array_key_exists($field, $data)) {
                 continue;
             }
 
-            if ($field === 'website' && !UrlService::isSafeExternalUrl(trim((string) $data[$field]))) {
+            if (in_array($field, $urlFields, true) && !UrlService::isSafeExternalUrl((string) $data[$field])) {
                 return false;
-            }
-
-            if ($field === 'twitter' || $field === 'facebook' || $field === 'linkedin') {
-                $this->$field = $this->sanitizeHandle((string) $data[$field]);
-                continue;
             }
 
             $this->$field = trim((string) $data[$field]) ?: null;
@@ -119,14 +116,5 @@ class Profile extends \Pubvana\Models\AbstractModel
         $this->save();
 
         return true;
-    }
-
-    /**
-     * A social handle is plain text: no tags, no whitespace.
-     */
-    private function sanitizeHandle(string $value): ?string
-    {
-        $value = trim(preg_replace('/\s+/u', '', strip_tags($value)) ?? '');
-        return $value !== '' ? $value : null;
     }
 }

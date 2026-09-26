@@ -120,21 +120,37 @@ final class ProfileModelTest extends TestCase
         self::assertNull($row['avatar']);
     }
 
-    public function testUpdateFromArraySocialBranches(): void
+    public function testUpdateFromArraySocialFieldsRequireFullUrls(): void
     {
         $model = new Profile($this->pdo);
         $profile = $model->findOrCreate(7);
 
         self::assertTrue($profile->updateFromArray([
-            'twitter' => '@ada ',
+            'twitter' => ' https://x.com/ada ',
             'facebook' => '',
-            'linkedin' => '  in/ada  ',
+            'linkedin' => 'https://linkedin.com/in/ada',
         ]));
 
         $row = $this->row(7);
-        self::assertSame('@ada', $row['twitter']);
+        self::assertSame('https://x.com/ada', $row['twitter']);
         self::assertNull($row['facebook']);
-        self::assertSame('in/ada', $row['linkedin']);
+        self::assertSame('https://linkedin.com/in/ada', $row['linkedin']);
+    }
+
+    public function testUpdateFromArrayRejectsBareHandleAndWritesNothing(): void
+    {
+        $model = new Profile($this->pdo);
+        $profile = $model->findOrCreate(7);
+        $profile->updateFromArray(['twitter' => 'https://x.com/ada']);
+
+        self::assertFalse($profile->updateFromArray([
+            'display_name' => 'Changed',
+            'twitter' => '@ada',
+        ]));
+
+        $row = $this->row(7);
+        self::assertSame('https://x.com/ada', $row['twitter'], 'a failed write must not clobber the stored value');
+        self::assertNotSame('Changed', $row['display_name'], 'a failed write must save nothing at all');
     }
 
     public function testUpdateFromArrayEmptyWebsiteClears(): void

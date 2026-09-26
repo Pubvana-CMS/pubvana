@@ -6,6 +6,7 @@ namespace Pubvana\Plugins\Comments\Services;
 
 use Pubvana\Plugins\Comments\Models\Comment;
 use Pubvana\Services\RateLimiter;
+use Pubvana\Services\UrlService;
 use flight\Engine;
 
 /**
@@ -216,6 +217,17 @@ class CommentService
             if ($token === '' || !$this->app->captcha()->verify($token, $ip)) {
                 throw new \InvalidArgumentException('Captcha verification failed.');
             }
+        }
+
+        // guest_website renders as a navigable href in the admin, so it
+        // holds a full http(s) URL or nothing. A bare host is rejected.
+        if (!empty($data['guest_website'])) {
+            if (!UrlService::isSafeExternalUrl((string) $data['guest_website'])) {
+                throw new \InvalidArgumentException('Website must be a full URL, starting with https://.');
+            }
+            $data['guest_website'] = trim((string) $data['guest_website']);
+        } else {
+            unset($data['guest_website']);
         }
 
         // Remove non-column fields before insert

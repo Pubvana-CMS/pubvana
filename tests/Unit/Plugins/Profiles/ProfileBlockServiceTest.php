@@ -285,21 +285,40 @@ final class ProfileBlockServiceTest extends TestCase
         self::assertSame('https://linkedin.com/in/ada', $payload['author']['linkedin_url']);
     }
 
-    public function testSocialHandlesGetBasePrepended(): void
+    public function testSocialUrlsRenderOnlyWhenTheyAreFullUrls(): void
     {
         $this->insertUser(7, 'ada');
         $this->insertProfile(7, [
-            'twitter'  => '@ada',
-            'facebook' => 'ada.pages',
-            'linkedin' => 'ada',
+            'twitter'  => 'https://x.com/ada',
+            'facebook' => 'https://facebook.com/ada.pages',
+            'linkedin' => 'https://linkedin.com/in/ada',
         ]);
         $this->insertPost(1, 'hello-world', 7, 'published');
 
         $payload = $this->service('/blog/hello-world')->provide(['show_on_blog' => 1]);
 
-        self::assertSame('https://twitter.com/ada', $payload['author']['twitter_url']);
+        self::assertSame('https://x.com/ada', $payload['author']['twitter_url']);
         self::assertSame('https://facebook.com/ada.pages', $payload['author']['facebook_url']);
         self::assertSame('https://linkedin.com/in/ada', $payload['author']['linkedin_url']);
+    }
+
+    public function testBareHandleRendersNoSocialUrl(): void
+    {
+        // A row stored before the law holds a bare handle. It is not
+        // guessed at or prefixed, so it renders as no link at all.
+        $this->insertUser(7, 'ada');
+        $this->insertProfile(7, [
+            'twitter'  => '@ada',
+            'facebook' => 'ada.pages',
+            'linkedin' => 'in/ada',
+        ]);
+        $this->insertPost(1, 'hello-world', 7, 'published');
+
+        $payload = $this->service('/blog/hello-world')->provide(['show_on_blog' => 1]);
+
+        self::assertNull($payload['author']['twitter_url']);
+        self::assertNull($payload['author']['facebook_url']);
+        self::assertNull($payload['author']['linkedin_url']);
     }
 
     public function testEmptySocialFieldsYieldNullUrls(): void

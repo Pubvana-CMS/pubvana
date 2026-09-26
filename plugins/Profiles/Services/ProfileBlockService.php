@@ -110,14 +110,24 @@ class ProfileBlockService
                 'bio'           => $profile->bio,
                 'avatar_url'    => $avatarUrl,
                 'safe_website'  => $safeWebsite,
-                'twitter_url'   => UrlService::normalizeExternalUrl(ltrim((string) $profile->twitter, '@'), 'https://twitter.com/'),
-                'facebook_url'  => UrlService::normalizeExternalUrl(ltrim((string) $profile->facebook, '@'), 'https://facebook.com/'),
-                'linkedin_url'  => UrlService::normalizeExternalUrl(ltrim((string) $profile->linkedin, '@'), 'https://linkedin.com/in/'),
+                'twitter_url'   => $this->safeUrl($profile->twitter ?? null),
+                'facebook_url'  => $this->safeUrl($profile->facebook ?? null),
+                'linkedin_url'  => $this->safeUrl($profile->linkedin ?? null),
             ],
             'title'        => (string) ($options['title'] ?? 'About the Author'),
             'show_avatar'  => !empty($options['show_avatar']),
             'show_socials' => !empty($options['show_socials']),
         ];
+    }
+
+    /**
+     * A stored social URL renders only when it is a full safe http(s) URL.
+     */
+    protected function safeUrl(?string $value): ?string
+    {
+        return UrlService::isSafeExternalUrl($value) && trim((string) $value) !== ''
+            ? trim((string) $value)
+            : null;
     }
 
     /**

@@ -50,7 +50,7 @@ final class ProfilesPublicControllerTest extends TestCase
             'display_name' => 'Ada Lovelace',
             'bio' => 'Mathematician',
             'website' => 'https://example.com',
-            'twitter' => 'ada',
+            'twitter' => 'https://x.com/ada',
         ]);
 
         $this->controller($this->engine())->show('ada');
@@ -61,7 +61,7 @@ final class ProfilesPublicControllerTest extends TestCase
         self::assertFalse($data['isOwner']);
         self::assertSame('', $data['avatar_url']);
         self::assertSame('https://example.com', $data['safe_website']);
-        self::assertSame('https://twitter.com/ada', $data['twitter_url']);
+        self::assertSame('https://x.com/ada', $data['twitter_url']);
     }
 
     public function testShowHaltsOnMissingUser(): void

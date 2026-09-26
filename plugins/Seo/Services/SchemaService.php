@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pubvana\Plugins\Seo\Services;
 
+use Pubvana\Services\UrlService;
 use flight\Engine;
 
 /**
@@ -141,12 +142,44 @@ class SchemaService
         $socialProfiles = $settings->get('Seo.social_profiles');
         if (!empty($socialProfiles)) {
             $profiles = is_array($socialProfiles) ? $socialProfiles : json_decode($socialProfiles, true);
-            if (is_array($profiles) && !empty($profiles)) {
-                $node['sameAs'] = array_values(array_filter($profiles));
+            $safe = $this->safeSameAs($profiles);
+            if ($safe !== []) {
+                $node['sameAs'] = $safe;
             }
         }
 
         return $node;
+    }
+
+    /**
+     * Keep only full safe http(s) URLs for a schema.org sameAs array.
+     *
+     * Seo.social_profiles is an admin textarea, so a bare host can be typed
+     * in. The law is store-what-you-emit: no scheme is assumed here, the
+     * value is dropped, and the admin is expected to enter a full URL.
+     *
+     * @param mixed $values
+     * @return list<string>
+     */
+    protected function safeSameAs(mixed $values): array
+    {
+        if (!is_array($values)) {
+            return [];
+        }
+
+        $safe = [];
+        foreach ($values as $value) {
+            if (!is_string($value)) {
+                continue;
+            }
+
+            $candidate = trim($value);
+            if ($candidate !== '' && UrlService::isSafeExternalUrl($candidate)) {
+                $safe[] = $candidate;
+            }
+        }
+
+        return $safe;
     }
 
     /**
@@ -194,8 +227,9 @@ class SchemaService
                 'name'  => $author['worksFor'],
             ];
         }
-        if (!empty($author['sameAs'])) {
-            $node['sameAs'] = $author['sameAs'];
+        $sameAs = $this->safeSameAs($author['sameAs'] ?? []);
+        if ($sameAs !== []) {
+            $node['sameAs'] = $sameAs;
         }
 
         return $node;
