@@ -21,7 +21,7 @@ Media is the media library for Pubvana: image and video uploads, DVD-style deriv
 3. **Keep the storage layout fixed.** Images land at `uploads/Y/m/{hex}.{ext}` with `originals/{hex}.{ext}`, `{hex}.webp` (working w) and `medium/` + `thumbs/` derivatives (`Services/MediaService.php:46-60`). Videos land with a `thumbs/{hex}_poster.jpg` poster when ffmpeg is available. Reason: `delete()`, `revert()`, `applyEdit()`, and the dashboard all derive file paths from this scheme.
 4. **Never touch the original except to write it once and to restore from it.** Uploads write `originals/`, edits and reverts regenerate the working file from it (`Services/MediaService.php:197-222`). Reason: edits are destructive to the working copy, so the pristine original is the only way `revert` stays trustworthy.
 5. **`delete()` must remove every artifact before the row.** It unlinks working, original, medium, thumb, and poster files when they exist, then deletes the DB record (`Services/MediaService.php:295-336`). Reason: orphaned files on disk would accumulate forever, and the dashboard checks disk state by path.
-6. **Never introduce non-inline JS/CSS for admin views.** `plugins/` is blocked by `.htaccess` (documented in `README.md` "Inline JS rule"), so widgets embed a `<script>` tag directly in the returned HTML (`Services/MediaService.php:367-401`). Reason: an external asset under `plugins/` returns 403.
+6. **Never introduce non-inline JS/CSS for admin views.** `plugins/` is blocked by `.htaccess` (documented in `README.md` "Inline JS rule"), so blocks embed a `<script>` tag directly in the returned HTML (`Services/MediaService.php:367-401`). Reason: an external asset under `plugins/` returns 403.
 7. **Treat media URLs as already leading-slash.** `mediaToArray()` emits `/uploads/...` paths (`Controllers/MediaAdminController.php:262-268`). Reason: prepending another `/` yields `//uploads/...`, which browsers may resolve as a protocol-relative URL.
 8. **Serialize API responses through `mediaToArray()`.** All JSON endpoints route through it, and client code depends on keys like `thumb_url`, `medium_url`, `poster_url`, and `info` (`Controllers/MediaAdminController.php:239-276`). Reason: views and pickers consume this stable shape, not raw ActiveRecord rows.
 9. **Make video poster extraction best-effort.** `VideoThumbnailService::extract()` calls ffmpeg via `exec` with escaped args and returns a boolean; a poster is simply omitted on failure (`Services/MediaService.php:87-105`). Reason: uploads must succeed on hosts without ffmpeg.
@@ -126,7 +126,7 @@ Coverage: the suite covers the model, the GD processor, the service facade, admi
 4. **`updateMeta()` must stay whitelisted.** Only `alt_text`, `title`, `poster_path` are writable, and values are trimmed to `null` when empty (`Models/Media.php:105-117`). Never pass raw request data.
 5. **Use `DateTimeImmutable` for all timestamp writes** (`Models/Media.php:87, 115`).
 6. **Escape every interpolated value in snippet partials** (`Views/admin/picker.php` uses `htmlspecialchars` on all echoed values). Never concatenate a path or name into markup raw.
-7. **Respect the no-external-assets rule.** New widgets embed their own inline `<style>`/`<script>` blocks; nothing is registered via `admin.css`/`admin.js`.
+7. **Respect the no-external-assets rule.** New blocks embed their own inline `<style>`/`<script>` blocks; nothing is registered via `admin.css`/`admin.js`.
 
 ## Documentation sources
 
