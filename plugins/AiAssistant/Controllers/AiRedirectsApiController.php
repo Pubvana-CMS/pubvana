@@ -79,7 +79,11 @@ class AiRedirectsApiController extends AiApiController
             'target_url'  => (string) ($payload['target_url'] ?? $redirect->target_url),
             'status_code' => (int) ($payload['status_code'] ?? $redirect->status_code),
             'enabled'     => array_key_exists('enabled', $payload) ? !empty($payload['enabled']) : ((int) $redirect->enabled === 1),
-            'notes'       => $this->app->ai()->nullableString($payload['notes'] ?? $redirect->notes),
+            // array_key_exists, not ??, so an explicit null clears the notes
+            // instead of falling back to what is already stored.
+            'notes'       => $this->app->ai()->nullableString(
+                array_key_exists('notes', $payload) ? $payload['notes'] : $redirect->notes
+            ),
         ];
 
         $saved = $this->svc('redirects')->update((int) $id, $update);
