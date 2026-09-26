@@ -419,7 +419,7 @@ class CommentService
         }
 
         $tree = $this->findForContent($type, $id);
-        $comments = $this->flattenComments($tree);
+        $comments = $this->flattenComments($tree, 0, $this->authorNames($tree));
 
         $userId = function_exists('user_id') ? user_id() : null;
         $isGuest = ($userId === null);
@@ -714,14 +714,13 @@ class CommentService
         }
 
         $rows = $this->list(1, $count, 'approved');
+        $authors = $this->authorNames($rows);
         $comments = [];
 
         foreach ($rows as $comment) {
             $authorName = $comment->guest_name ?: 'Anonymous';
             if ($comment->user_id !== null) {
-                $user = (new \Enlivenapp\FlightShield\Models\User($this->pdo))
-                    ->findById((int) $comment->user_id);
-                $authorName = $user->username ?? 'Unknown';
+                $authorName = $authors[(int) $comment->user_id] ?? 'Unknown';
             }
 
             $host = $this->hostItem((string) $comment->commentable_type, (int) $comment->commentable_id);
@@ -798,18 +797,17 @@ class CommentService
      */
     /**
      * @param array<int, Comment> $tree
+     * @param array<int, string>  $authors id => username, from authorNames()
      * @return list<array<string, mixed>>
      */
-    private function flattenComments(array $tree, int $depth = 0): array
+    private function flattenComments(array $tree, int $depth = 0, array $authors = []): array
     {
         $flat = [];
 
         foreach ($tree as $comment) {
             $authorName = $comment->guest_name ?: 'Anonymous';
             if ($comment->user_id !== null) {
-                $user = (new \Enlivenapp\FlightShield\Models\User($this->pdo))
-                    ->findById((int) $comment->user_id);
-                $authorName = $user->username ?? 'Unknown';
+                $authorName = $authors[(int) $comment->user_id] ?? 'Unknown';
             }
 
             $flat[] = [
@@ -823,10 +821,70 @@ class CommentService
             ];
 
             if (!empty($comment->children)) {
-                $flat = array_merge($flat, $this->flattenComments($comment->children, $depth + 1));
+                $flat = array_merge($flat, $this->flattenComments($comment->children, $depth + 1, $authors));
             }
         }
 
         return $flat;
+    }
+
+    /**
+     * Resolve usernames for every distinct user_id in a comment set.
+     *
+     * One SELECT for the whole batch instead of one per comment. Returns
+     * id => username; a missing row is simply absent, so the caller keeps
+     * its 'Unknown' fallback. Deleted users are excluded, matching the
+     * User::findById() behaviour this replaces.
+     *
+     * Accepts either a flat list or a nested tree: child comments are
+     * walked so their users join the same single query.
+     *
+     * @param array<int, Comment> $comments
+     * @return array<int, string>
+     */
+    private function authorNames(array $comments): array
+    {
+        $ids = [];
+        $this->collectUserIds($comments, $ids);
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $idList = array_keys($ids);
+        $placeholders = implode(',', array_fill(0, count($idList), '?'));
+
+        $stmt = $this->pdo->prepare(
+            "SELECT id, username FROM users WHERE deleted_at IS NULL AND id IN ({$placeholders})"
+        );
+        if ($stmt === false) {
+            return [];
+        }
+        $stmt->execute($idList);
+
+        $names = [];
+        foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $row) {
+            $names[(int) $row['id']] = (string) $row['username'];
+        }
+
+        return $names;
+    }
+
+    /**
+     * Gather distinct user ids from a comment list or nested tree.
+     *
+     * @param array<int, Comment> $comments
+     * @param array<int, true>    $ids      Accumulator, keyed by user id
+     */
+    private function collectUserIds(array $comments, array &$ids): void
+    {
+        foreach ($comments as $comment) {
+            if ($comment->user_id !== null) {
+                $ids[(int) $comment->user_id] = true;
+            }
+            if (!empty($comment->children)) {
+                $this->collectUserIds($comment->children, $ids);
+            }
+        }
     }
 }

@@ -450,6 +450,62 @@ final class CommentServiceCoverageTest extends TestCase
         self::assertSame('', $service->render('blog', 1, false));
     }
 
+    public function testUserAuthorsResolveInOneBatch(): void
+    {
+        $app = $this->buildApp();
+        $service = $this->service($app);
+
+        $this->insertUser(1, 'ada');
+        $this->insertUser(2, 'bob');
+
+        $root = $service->create($this->payload([
+            'status' => 'approved', 'user_id' => 1, 'guest_name' => null, 'body' => 'from ada',
+        ]));
+        $service->create($this->payload([
+            'status' => 'approved', 'user_id' => 2, 'guest_name' => null, 'body' => 'from bob',
+            'parent_id' => (int) $root->id,
+        ]));
+        // A comment whose user row is gone: falls back, does not error.
+        $service->create($this->payload([
+            'status' => 'approved', 'user_id' => 999, 'guest_name' => null, 'body' => 'from nobody',
+        ]));
+
+        $tree = $service->findForContent('blog', 1);
+        $flat = $this->invoke($service, 'flattenComments', [$tree, 0, $this->invoke($service, 'authorNames', [$tree])]);
+
+        $byBody = [];
+        foreach ($flat as $row) {
+            $byBody[(string) $row['body']] = (string) $row['author'];
+        }
+
+        self::assertSame('ada', $byBody['from ada']);
+        self::assertSame('bob', $byBody['from bob']);
+        self::assertSame('Unknown', $byBody['from nobody']);
+    }
+
+    public function testRecentCommentsBlockResolvesUserAuthors(): void
+    {
+        $app = $this->buildApp();
+        $service = $this->service($app);
+        $this->insertUser(7, 'carol');
+
+        $service->create($this->payload([
+            'status' => 'approved', 'user_id' => 7, 'guest_name' => null,
+        ]));
+
+        $block = $service->recentCommentsBlock([]);
+        self::assertSame('carol', $block['comments'][0]['author']);
+    }
+
+    private function insertUser(int $id, string $username): void
+    {
+        $stmt = $this->pdo->prepare(
+            'INSERT INTO users (id, username, active, created_at) VALUES (?, ?, 1, ?)'
+        );
+        self::assertNotFalse($stmt);
+        $stmt->execute([$id, $username, (new \DateTimeImmutable())->format('Y-m-d H:i:s')]);
+    }
+
     public function testHostRegistry(): void
     {
         $app = $this->buildApp();
