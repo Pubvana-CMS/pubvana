@@ -225,7 +225,7 @@ final class PagesServiceTest extends TestCase
         $cards = $this->service->dashboardCards();
         self::assertSame('total-pages', $cards[0]['id']);
         self::assertSame(0, $cards[0]['value']);
-        self::assertSame('/page', $cards[0]['href']);
+        self::assertSame('/admin/page', $cards[0]['href']);
 
         $sections = $this->service->dashboardSections();
         self::assertSame('recent-pages', $sections[0]['id']);
@@ -244,7 +244,7 @@ final class PagesServiceTest extends TestCase
         self::assertContains('success', $emphases);
         self::assertContains('secondary', $emphases);
         foreach ($sections[0]['items'] as $item) {
-            self::assertStringContainsString('/page/', $item['href']);
+            self::assertStringContainsString('/admin/page/', $item['href']);
             self::assertStringContainsString('·', $item['meta']);
         }
     }
@@ -253,10 +253,10 @@ final class PagesServiceTest extends TestCase
     {
         $service = new PagesService($this->pdo, ['route_prefix' => '/page/']);
         $cards = $service->dashboardCards();
-        self::assertSame('/page', $cards[0]['href']);
+        self::assertSame('/admin/page', $cards[0]['href']);
 
         $missing = new PagesService($this->pdo, []);
-        self::assertSame('', $missing->dashboardCards()[0]['href']);
+        self::assertSame('/admin', $missing->dashboardCards()[0]['href']);
     }
 
     public function testPruneDefaultsToFifteenWithoutConfig(): void

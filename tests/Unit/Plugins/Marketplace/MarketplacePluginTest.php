@@ -121,16 +121,27 @@ final class MarketplacePluginTest extends TestCase
         self::assertStringContainsString('0 installed', $rows[0]['description']);
     }
 
-    public function testCronCallsVerifyIfDue(): void
+    public function testCronVerifyIfDueHonorsItsGates(): void
     {
-        // verify_days gates the call; first call with no last_verify_at runs.
         $cron = $this->adext->get('cron', '24h');
-        $cron['pubvana.marketplace']['callable']();
+        $callable = $cron['pubvana.marketplace']['callable'];
 
-        // Nothing throws: verifyIfDue() hits the (unreachable) store only
-        // when due, and swallows the failure. Settings was never given a
-        // token, so connected() is false and the call is a no-op.
-        self::assertTrue(true);
+        // Disconnected: the call returns before any store hit and stamps nothing.
+        $callable();
+        self::assertArrayNotHasKey(
+            'Marketplace.last_verify_at',
+            $this->settings,
+            'a disconnected account must not stamp last_verify_at'
+        );
+
+        // Connected and recently verified: the cadence gate skips the store
+        // and leaves the previous stamp untouched.
+        $this->settings['Marketplace.account_token'] = 'tok';
+        $this->settings['Marketplace.last_verify_at'] = date('c');
+        $before = $this->settings['Marketplace.last_verify_at'];
+        $callable();
+        self::assertSame($before, $this->settings['Marketplace.last_verify_at'], 'a not-yet-due cron tick must not change the stamp');
+        self::assertSame('tok', $this->settings['Marketplace.account_token']);
     }
 
     public function testConfigShape(): void

@@ -50,7 +50,7 @@ Tests use PHPUnit 11. `composer test` runs them.
 composer test            # phpunit  (phpunit.xml, tests/)
 ```
 
-Two suites, `tests/Unit` and `tests/Feature`, under the `Pubvana\Tests\`
+A single suite, `tests/Unit`, under the `Pubvana\Tests\`
 namespace. The base test case in `tests/Support/TestCase.php` provides
 `invoke()` for calling private/protected methods and `app()` for a fresh
 Flight engine with services mapped. DB-backed tests use an in-memory SQLite

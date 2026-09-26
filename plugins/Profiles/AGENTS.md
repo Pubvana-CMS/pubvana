@@ -63,7 +63,7 @@ plugins/Profiles/
 
 ## Development and testing
 
-The plugin has no `composer.json` (it is in-tree), but it has a test suite under `tests/Unit/Plugins/Profiles/` (12 files: `ProfilesPluginTest`, `ProfilesBlockRegistrationTest`, `ProfileWebsiteValidationTest`, `ProfilesAdminReturnUrlTest`, `ProfilesPublicControllerTest`, `ProfilesPublicWebsiteGuardTest`, `ProfilesAdminControllerUrlTest`, `ProfilesAdminWebsiteRejectionTest`, `ProfilesAdminControllerTest`, `ProfileModelTest`, `ProfileBlockServiceTest`, `ProfilesMigrationsSeedTest`). It is also exercised through the full app.
+The plugin has no `composer.json` (it is in-tree), but it has a test suite under `tests/Unit/Plugins/Profiles/` (11 files: `ProfilesPluginTest`, `ProfilesBlockRegistrationTest`, `ProfileWebsiteValidationTest`, `ProfilesAdminReturnUrlTest`, `ProfilesPublicControllerTest`, `ProfilesPublicWebsiteGuardTest`, `ProfilesAdminControllerUrlTest`, `ProfilesAdminControllerTest`, `ProfileModelTest`, `ProfileBlockServiceTest`, `ProfilesMigrationsSeedTest`). It is also exercised through the full app.
 
 - Lint/static analysis (app-wide, from the repo root; the plugin is in-tree):
   - `composer phpstan` (level 8, sees `app/` plus `plugins/`; ignored-error baseline covers the migration/activerecord internals)

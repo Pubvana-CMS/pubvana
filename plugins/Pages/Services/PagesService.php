@@ -264,25 +264,25 @@ class PagesService
             'icon'        => 'ti-file',
             'tone'        => 'primary',
             'group'       => 'content',
-            'href'        => $this->routePrefix(),
+            'href'        => $this->adminBase(),
             'description' => 'Static pages on the site.',
         ]];
     }
 
     /**
      * @return array<int, array<string, mixed>>
-    */
+     */
     public function dashboardSections(): array
     {
         $recent = $this->pageModel->findAllPaginated(1, 5);
-        $prefix = $this->routePrefix();
+        $adminBase = $this->adminBase();
         $items = [];
 
         foreach ($recent as $page) {
             $items[] = [
                 'label'    => $page->title,
                 'meta'     => ucfirst((string) $page->status) . ' · ' . (($ts = strtotime((string) $page->created_at)) === false ? '' : date('M j, Y g:ia', $ts)),
-                'href'     => $prefix . '/' . (int) $page->id . '/edit',
+                'href'     => $adminBase . '/' . (int) $page->id . '/edit',
                 'emphasis' => $page->status === 'published' ? 'success' : 'secondary',
             ];
         }
@@ -293,10 +293,26 @@ class PagesService
             'type'        => 'list',
             'icon'        => 'ti-file-text',
             'group'       => 'content',
-            'href'        => $prefix,
+            'href'        => $adminBase,
             'empty_state' => 'No pages have been created yet.',
             'items'       => $items,
         ]];
+    }
+
+    /**
+     * The admin list base for this plugin: /admin plus the plugin route prefix.
+     *
+     * Dashboard links are admin destinations, not the public route prefix, so
+     * they must carry the /admin segment like PagesAdminController::adminBase().
+     */
+    private function adminBase(): string
+    {
+        $prefix = $this->routePrefix();
+        if ($prefix === '') {
+            return '/admin';
+        }
+
+        return '/admin' . $prefix;
     }
 
     /**

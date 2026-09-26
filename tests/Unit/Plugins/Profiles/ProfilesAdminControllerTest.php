@@ -140,11 +140,20 @@ final class ProfilesAdminControllerTest extends TestCase
 
     public function testUpdateRejectsBadWebsite(): void
     {
-        $app = $this->engine(data: ['website' => 'javascript:alert(1)']);
+        // A rejected write flashes the error, bounces to the form, and saves
+        // nothing: findOrCreate() may create the row, but the bad website is
+        // never persisted (updateFromArray returns false before save()).
+        $app = $this->engine(data: ['display_name' => 'Ada', 'website' => 'javascript:alert(1)']);
         (new ProfilesAdminController($app))->update('7');
 
         self::assertSame('Website must be a full http:// or https:// URL.', $this->flashes['error'][0]);
         self::assertSame(['/admin/profile'], $this->redirects);
+        self::assertArrayNotHasKey('success', $this->flashes);
+
+        $profile = (new Profile($this->pdo))->findByUserId(7);
+        self::assertNotNull($profile);
+        self::assertNull($profile->website, 'the rejected website must not be stored');
+        self::assertNull($profile->display_name, 'nothing from a rejected write is saved');
     }
 
     public function testUpdateHonorsPostedReturnUrl(): void

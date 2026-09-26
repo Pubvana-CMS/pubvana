@@ -847,7 +847,7 @@ final class PluginLoaderTest extends TestCase
     {
         foreach ($this->registerLog() as $entry) {
             if ($entry['id'] === $pluginId) {
-                self::assertTrue(true);
+                self::addToAssertionCount(1);
                 return;
             }
         }
@@ -861,7 +861,7 @@ final class PluginLoaderTest extends TestCase
                 self::fail("Plugin '{$pluginId}' registered but must not have run");
             }
         }
-        self::assertTrue(true);
+        self::addToAssertionCount(1);
     }
 
     /**

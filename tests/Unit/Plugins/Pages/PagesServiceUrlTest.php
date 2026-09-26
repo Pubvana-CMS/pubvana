@@ -97,21 +97,21 @@ final class PagesServiceUrlTest extends TestCase
         self::assertSame('Page', $results[0]['content_type']);
     }
 
-    public function testDashboardCardHrefIsBarePrefix(): void
+    public function testDashboardCardHrefIsAdminBase(): void
     {
         $cards = $this->service()->dashboardCards();
 
-        self::assertSame('/page', $cards[0]['href']);
+        self::assertSame('/admin/page', $cards[0]['href']);
     }
 
-    public function testDashboardSectionHrefsUseRoutePrefix(): void
+    public function testDashboardSectionHrefsUseAdminBase(): void
     {
         $id = $this->insertPage('About', 'about');
 
         $sections = $this->service()->dashboardSections();
 
-        self::assertSame('/page', $sections[0]['href']);
-        self::assertSame('/page/' . $id . '/edit', $sections[0]['items'][0]['href']);
+        self::assertSame('/admin/page', $sections[0]['href']);
+        self::assertSame('/admin/page/' . $id . '/edit', $sections[0]['items'][0]['href']);
     }
 
     public function testCustomPrependChangesEveryUrl(): void
@@ -123,8 +123,9 @@ final class PagesServiceUrlTest extends TestCase
         self::assertSame('/static/about', $service->navLinkableItems()[0]['url']);
         self::assertSame('/static/about', $service->commentHostItems()[0]['url']);
         self::assertSame('/static/about', $service->searchProvider('About')[0]['url']);
-        self::assertSame('/static', $service->dashboardCards()[0]['href']);
-        self::assertSame('/static', $service->dashboardSections()[0]['href']);
+        // Dashboard links are admin destinations; only the prefix after /admin follows.
+        self::assertSame('/admin/static', $service->dashboardCards()[0]['href']);
+        self::assertSame('/admin/static', $service->dashboardSections()[0]['href']);
     }
 
     public function testSearchContentBuildsUrlFromPrefixArgument(): void
