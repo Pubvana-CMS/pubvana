@@ -11,7 +11,13 @@ class ProfilesAdminController extends AdminController
     public function index(): void
     {
         $user    = $this->app->auth()->user();
-        $profile = $this->app->profiles()->findOrCreate((int) ($user?->id));
+        if ($user === null) {
+            $this->app->session()->flash('error', 'You must be signed in to view your profile.');
+            $this->app->redirect('/login');
+            return;
+        }
+
+        $profile = $this->app->profiles()->findOrCreate((int) $user->id);
         $avatarPicker = $this->app->media()->avatarPicker('avatar', $profile->avatar ?? '');
 
         $this->render('pubvana/profiles/admin/profile/index', [
@@ -33,8 +39,18 @@ class ProfilesAdminController extends AdminController
             return;
         }
 
-        $userModel = new \Enlivenapp\FlightShield\Models\User($this->app->db());
-        $user = $userModel->find((int) $userId);
+        // Resolve the target through the model's findById (null on a miss),
+        // never find(). A bare find() returns an unhydrated instance, which
+        // would send a bogus id into findOrCreate() and trip the user_id
+        // foreign key. Null here means the user does not exist.
+        $user = (new \Enlivenapp\FlightShield\Models\User($this->app->db()))
+            ->findById((int) $userId);
+
+        if ($user === null) {
+            $this->app->session()->flash('error', 'User not found.');
+            $this->app->redirect('/admin/users');
+            return;
+        }
 
         $profile    = $this->app->profiles()->findOrCreate((int) $userId);
         $avatarPicker = $this->app->media()->avatarPicker('avatar', $profile->avatar ?? '');

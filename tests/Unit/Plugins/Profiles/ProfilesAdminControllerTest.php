@@ -87,6 +87,36 @@ final class ProfilesAdminControllerTest extends TestCase
         self::assertSame(9, (int) $this->fetches[0]['data']['profile']->user_id);
     }
 
+    public function testShowUnknownUserRedirectsWithoutTouchingProfiles(): void
+    {
+        // Superadmins bypass profile.edit.any, so this is the exact path a
+        // superadmin takes with a bogus id. It must be a clean redirect, not
+        // an insert against the profiles user_id foreign key.
+        $this->canEditAny = true;
+
+        (new ProfilesAdminController($this->engine()))->show('99999');
+
+        self::assertSame('User not found.', $this->flashes['error'][0]);
+        self::assertSame(['/admin/users'], $this->redirects);
+        self::assertSame([], $this->fetches, 'no view may render for a missing user');
+
+        $stmt = $this->pdo->query('SELECT COUNT(*) AS c FROM profiles');
+        self::assertNotFalse($stmt);
+        self::assertSame(0, (int) ($stmt->fetch(PDO::FETCH_ASSOC)['c'] ?? -1), 'nothing may be inserted');
+    }
+
+    public function testShowDeletedUserRedirects(): void
+    {
+        // findById() excludes soft-deleted rows, so a deleted user reads as not found.
+        $this->pdo->exec("INSERT INTO users (id, username, active, deleted_at) VALUES (9, 'gone', 1, '2026-01-01 00:00:00')");
+        $this->canEditAny = true;
+
+        (new ProfilesAdminController($this->engine()))->show('9');
+
+        self::assertSame('User not found.', $this->flashes['error'][0]);
+        self::assertSame(['/admin/users'], $this->redirects);
+    }
+
     public function testUpdateOwnProfile(): void
     {
         $app = $this->engine(data: ['display_name' => 'Ada Lovelace']);
