@@ -45,7 +45,7 @@ class Plugin implements PluginInterface
             ['POST', $prefix . '/@id/dismiss',       [BrokenLinksAdminController::class, 'dismiss'], []],
         ], 'pubvana.brokenlinks');
 
-        // Core cron system (docs/Cron.md): daily scan of all registered
+        // Core cron system (build_docs/Cron.md): daily scan of all registered
         // outbound links. The scan never throws; broken-link findings are
         // informational and surfaced on the admin screen, so the task stays
         // quiet in the cron log unless a real (uncaught) failure occurs.

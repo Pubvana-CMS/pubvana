@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * Cron entry point. System crontabs call this script on three schedules
  * (every minute, every 4 hours, every 24 hours) and it runs the
- * plugin-registered tasks for the given interval. See docs/Cron.md for
+ * plugin-registered tasks for the given interval. See build_docs/Cron.md for
  * the crontab lines.
  *
  * Boots the full application (plugins included, so their Plugin.php
