@@ -173,11 +173,8 @@ class ActivityLogService
      */
     public function getActions(): array
     {
-        $stmt = $this->pdo->query("SELECT DISTINCT action FROM activity_logs ORDER BY action");
-        if ($stmt === false) {
-            return [];
-        }
-        return $stmt->fetchAll(\PDO::FETCH_COLUMN);
+        $model = new ActivityLog($this->pdo);
+        return $model->distinctActions();
     }
 
     /**
@@ -187,11 +184,8 @@ class ActivityLogService
      */
     public function getEntityTypes(): array
     {
-        $stmt = $this->pdo->query("SELECT DISTINCT entity_type FROM activity_logs ORDER BY entity_type");
-        if ($stmt === false) {
-            return [];
-        }
-        return $stmt->fetchAll(\PDO::FETCH_COLUMN);
+        $model = new ActivityLog($this->pdo);
+        return $model->distinctEntityTypes();
     }
 
     /**
@@ -201,13 +195,8 @@ class ActivityLogService
      */
     public function getUsers(): array
     {
-        $stmt = $this->pdo->query(
-            "SELECT DISTINCT user_id, user_name FROM activity_logs WHERE user_id IS NOT NULL ORDER BY user_name"
-        );
-        if ($stmt === false) {
-            return [];
-        }
-        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        $model = new ActivityLog($this->pdo);
+        return $model->distinctUsers();
     }
 
     /**

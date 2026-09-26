@@ -111,7 +111,7 @@ Manual check: visit `/admin/activity-log`, confirm filters, pages, and empty sta
 | [Config/Config.php](./Config/Config.php) | Defaults for route prefix, tracking flag, retention |
 | [Services/ActivityLogService.php](./Services/ActivityLogService.php) | `log()` at line 59, `logFromRoute()` at line 90, `inferFromRoute()` at line 239 |
 | [Plugin.php](./Plugin.php) | Service setup at line 30, admin route at line 43, dashboard card at line 48, listener at line 72 |
-| [Models/ActivityLog.php](./Models/ActivityLog.php) | Filtered reads at line 78, counts at line 94, filter rules at line 112 |
+| [Models/ActivityLog.php](./Models/ActivityLog.php) | Filtered reads at line 78, counts at line 94, filter rules at line 112, dropdown queries at lines 156, 169, 185 |
 
 ## Common tasks
 
@@ -120,6 +120,7 @@ Manual check: visit `/admin/activity-log`, confirm filters, pages, and empty sta
 | Add a route to auto tracking | `inferFromRoute()` in `Services/ActivityLogService.php:239` |
 | Change skip patterns | `Plugin.php:92` and `shouldSkipRoute()` in `Services/ActivityLogService.php:216` |
 | Add a filter field | `applyFilters()` in `Models/ActivityLog.php:112`, `filtered()` in `Models/ActivityLog.php:78`, form in `Views/admin/index.php` |
+| Add or change a filter dropdown | `distinctActions()`, `distinctEntityTypes()`, `distinctUsers()` in `Models/ActivityLog.php:156` |
 | Change dashboard card | `Plugin.php:48` |
 | Change retention default | `Config/Config.php:8` |
 | Change permission | Seed in `Database/Seeds/Seed.php:9`, check in `Plugin.php:40` |

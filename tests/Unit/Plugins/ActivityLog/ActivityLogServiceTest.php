@@ -336,6 +336,29 @@ final class ActivityLogServiceTest extends TestCase
         self::assertSame('bob', $users[1]['user_name']);
     }
 
+    public function testDropdownQueriesOnTheModel(): void
+    {
+        $model = new ActivityLog($this->pdo);
+
+        // Empty table: every dropdown is an empty array, not null.
+        self::assertSame([], $model->distinctActions());
+        self::assertSame([], $model->distinctEntityTypes());
+        self::assertSame([], $model->distinctUsers());
+
+        $this->pdo->exec("INSERT INTO activity_logs (user_name, action, entity_type, entity_name, ip, created_at) VALUES ('sys', 'update', 'page', 'A', '1.1.1.1', '2026-01-01 00:00:00')");
+        $this->pdo->exec("INSERT INTO activity_logs (user_id, user_name, action, entity_type, entity_name, ip, created_at) VALUES (1, 'ada', 'create', 'page', 'B', '1.1.1.1', '2026-01-01 00:00:00')");
+        $this->pdo->exec("INSERT INTO activity_logs (user_id, user_name, action, entity_type, entity_name, ip, created_at) VALUES (1, 'ada', 'create', 'user', 'C', '1.1.1.1', '2026-01-01 00:00:00')");
+        $this->pdo->exec("INSERT INTO activity_logs (user_id, user_name, action, entity_type, entity_name, ip, created_at) VALUES (2, 'bob', 'delete', 'user', 'D', '1.1.1.1', '2026-01-01 00:00:00')");
+
+        // Sorted and deduped: ada wrote twice, the null user_id row is gone.
+        self::assertSame(['create', 'delete', 'update'], $model->distinctActions());
+        self::assertSame(['page', 'user'], $model->distinctEntityTypes());
+        self::assertSame([
+            ['user_id' => 1, 'user_name' => 'ada'],
+            ['user_id' => 2, 'user_name' => 'bob'],
+        ], $model->distinctUsers());
+    }
+
     public function testExtractEntityIdAndNameHelpers(): void
     {
         $service = new ActivityLogService($this->pdo);

@@ -147,4 +147,60 @@ class ActivityLog extends \Pubvana\Models\AbstractModel
         $model->ge('created_at', $since);
         return (int) $model->find()->cnt;
     }
+
+    /**
+     * Distinct action values, for the filter dropdown.
+     *
+     * @return string[]
+     */
+    public function distinctActions(): array
+    {
+        $model = new self($this->getDatabaseConnection());
+        $values = $model->distinct()->orderByColumn('action')->pluck('action');
+
+        return array_map(static fn ($value): string => (string) $value, $values);
+    }
+
+    /**
+     * Distinct entity types, for the filter dropdown.
+     *
+     * @return string[]
+     */
+    public function distinctEntityTypes(): array
+    {
+        $model = new self($this->getDatabaseConnection());
+        $values = $model->distinct()->orderByColumn('entity_type')->pluck('entity_type');
+
+        return array_map(static fn ($value): string => (string) $value, $values);
+    }
+
+    /**
+     * Distinct users that have entries, for the filter dropdown.
+     *
+     * Raw SQL rather than the builder: distinct() only applies to the default
+     * table.* select and to pluck(), not to an explicit column list.
+     *
+     * @return array<int, array{user_id: int, user_name: string}>
+     */
+    public function distinctUsers(): array
+    {
+        // query() returns array|ActiveRecord depending on $single; this call
+        // is not single mode, so an array of rows is expected.
+        $rows = $this->query(
+            'SELECT DISTINCT user_id, user_name FROM activity_logs WHERE user_id IS NOT NULL ORDER BY user_name',
+            []
+        );
+
+        $users = [];
+        if (is_array($rows)) {
+            foreach ($rows as $row) {
+                $users[] = [
+                    'user_id'   => (int) $row->user_id,
+                    'user_name' => (string) $row->user_name,
+                ];
+            }
+        }
+
+        return $users;
+    }
 }
