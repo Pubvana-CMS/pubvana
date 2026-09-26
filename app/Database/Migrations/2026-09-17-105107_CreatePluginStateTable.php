@@ -14,7 +14,7 @@ use Enlivenapp\Migrations\Services\Migration;
  * whether it is a required part of the core stack (sessions/shield/csrf).
  *
  * Plugin IDs are Composer-style names ('enlivenapp/flight-sessions',
- * 'pubvana/blog') so they contain '/' and '-' — they are stored here and never
+ * 'pubvana/blog') so they contain '/' and '-' and they are stored here and never
  * used as settings keys.
  *
  * A disabled plugin runs nothing: no migrations, no seeds, no registration,

@@ -11,7 +11,7 @@ namespace Pubvana\Models;
  * of truth for enable/disable, load priority, and the required flag.
  *
  * Plugin IDs are Composer-style names ('enlivenapp/flight-sessions',
- * 'pubvana/blog') — they contain '/' and '-', so they are stored here and
+ * 'pubvana/blog') and they contain '/' and '-', so they are stored here and
  * must never be used as settings keys.
  *
  * A disabled plugin runs nothing (no migrations, seeds, or registration code)
