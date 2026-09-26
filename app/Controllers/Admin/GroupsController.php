@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Pubvana\Controllers\Admin;
 
-use flight\Engine;
 
 /**
  * GroupsController - Admin CRUD for group management.
