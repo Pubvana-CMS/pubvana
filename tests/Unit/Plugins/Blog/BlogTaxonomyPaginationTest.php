@@ -32,7 +32,7 @@ final class BlogTaxonomyPaginationTest extends TestCase
         parent::setUp();
         $this->pdo = Sqlite::recreate();
         $this->createBlogSchema($this->pdo);
-        $this->service = new BlogService($this->pdo, []);
+        $this->service = new BlogService($this->pdo, '/profile', []);
     }
 
     /**

@@ -21,23 +21,35 @@ class BlogService
     private PostTag $postTagModel;
     private PostRevision $revisionModel;
     private \PDO $pdo;
+    private string $profilesRoutePrefix;
 
     /** @var array<string, mixed> */
     private array $config;
 
     /**
+     * @param string $profilesRoutePrefix Public route prefix of the Profiles
+     *        plugin, e.g. '/profile'. Required, because author URLs are built
+     *        from it and a guessed prefix silently produces dead links.
      * @param array<string, mixed> $config
-    */
-    public function __construct(\PDO $pdo, array $config = [])
+     * @throws \InvalidArgumentException When $profilesRoutePrefix is empty
+     */
+    public function __construct(\PDO $pdo, string $profilesRoutePrefix, array $config = [])
     {
-        $this->postModel         = new Post($pdo);
-        $this->categoryModel     = new Category($pdo);
-        $this->tagModel          = new Tag($pdo);
-        $this->postCategoryModel = new PostCategory($pdo);
-        $this->postTagModel      = new PostTag($pdo);
-        $this->revisionModel     = new PostRevision($pdo);
-        $this->pdo               = $pdo;
-        $this->config            = $config;
+        if (trim($profilesRoutePrefix, '/') === '') {
+            throw new \InvalidArgumentException(
+                'BlogService requires a non-empty Profiles route prefix, e.g. "/profile".'
+            );
+        }
+
+        $this->postModel           = new Post($pdo);
+        $this->categoryModel       = new Category($pdo);
+        $this->tagModel            = new Tag($pdo);
+        $this->postCategoryModel   = new PostCategory($pdo);
+        $this->postTagModel        = new PostTag($pdo);
+        $this->revisionModel       = new PostRevision($pdo);
+        $this->pdo                 = $pdo;
+        $this->profilesRoutePrefix = $profilesRoutePrefix;
+        $this->config              = $config;
     }
 
     // ─── Posts ────────────────────────────────────────────────────────────
@@ -469,8 +481,6 @@ class BlogService
             $namesByUserId[(int) $profile->user_id] = (string) ($profile->display_name ?? '');
         }
 
-        $profilesPrefix = (string) ($this->config['profiles_route_prefix'] ?? '/profile');
-
         $map = [];
         foreach ($authorIds as $authorId) {
             $username = $usersById[$authorId] ?? null;
@@ -484,7 +494,7 @@ class BlogService
                 'id'       => $authorId,
                 'username' => $username,
                 'name'     => $displayName !== '' ? $displayName : $username,
-                'url'      => $username !== '' ? $profilesPrefix . '/' . $username : null,
+                'url'      => $username !== '' ? $this->profilesRoutePrefix . '/' . $username : null,
             ];
         }
 

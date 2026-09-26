@@ -24,7 +24,7 @@ final class BlogServiceTest extends TestCase
         parent::setUp();
         $this->pdo = Sqlite::recreate();
         BlogSchema::create($this->pdo);
-        $this->service = new BlogService($this->pdo, ['route_prefix' => '/blog', 'max_revisions' => 3]);
+        $this->service = new BlogService($this->pdo, '/profile', ['route_prefix' => '/blog', 'max_revisions' => 3]);
 
         $app = $this->app([
             'slugify' => static fn(string $text): string => strtolower(trim((string) preg_replace('/[^a-z0-9]+/i', '-', $text), '-')),

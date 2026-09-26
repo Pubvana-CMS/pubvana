@@ -34,7 +34,7 @@ final class BlogAdminControllerTest extends TestCase
         parent::setUp();
         $this->pdo = Sqlite::recreate();
         BlogSchema::create($this->pdo);
-        $this->blog = new BlogService($this->pdo, ['route_prefix' => '/blog']);
+        $this->blog = new BlogService($this->pdo, '/profile', ['route_prefix' => '/blog']);
         $this->fetches = [];
         $this->redirects = [];
         $this->flashes = [];

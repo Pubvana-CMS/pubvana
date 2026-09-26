@@ -38,7 +38,7 @@ final class BlogSearchWildcardTest extends TestCase
         parent::setUp();
         $this->pdo = Sqlite::recreate();
         $this->createBlogSchema($this->pdo);
-        $this->service = new BlogService($this->pdo, []);
+        $this->service = new BlogService($this->pdo, '/profile', []);
     }
 
     private function createBlogSchema(PDO $pdo): void

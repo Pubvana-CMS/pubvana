@@ -21,12 +21,12 @@ class Plugin implements PluginInterface
     {
         $prefix = $app->pluginLoader()->routePrefix('pubvana/blog');
         $config['route_prefix'] = $prefix;
-        $config['profiles_route_prefix'] = $app->pluginLoader()->routePrefix('pubvana/profiles');
+        $profilesPrefix = $app->pluginLoader()->routePrefix('pubvana/profiles');
 
-        $app->map('blog', function () use ($app, $config) {
+        $app->map('blog', function () use ($app, $config, $profilesPrefix) {
             static $instance = null;
             if ($instance === null) {
-                $instance = new Services\BlogService($app->db(), $config);
+                $instance = new Services\BlogService($app->db(), $profilesPrefix, $config);
             }
             return $instance;
         });
