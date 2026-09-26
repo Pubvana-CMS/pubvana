@@ -95,9 +95,92 @@ final class FormsServiceCaptchaTest extends TestCase
         self::assertArrayNotHasKey('h-captcha-response', $payload, 'the captcha token is not visitor data');
     }
 
+    public function testCreateRejectsAFieldNamedAfterTheCaptchaResponse(): void
+    {
+        $app = $this->buildApp();
+        $this->configureProvider($app);
+        $service = $this->service($app);
+
+        $this->expectException(\InvalidArgumentException::class);
+        try {
+            $service->createForm([
+                'name'              => 'Collide',
+                'slug'              => 'collide',
+                'status'            => 'draft',
+                'field_definitions' => json_encode([
+                    [
+                        'type'     => 'text',
+                        'name'     => 'h-captcha-response',
+                        'label'    => 'Token',
+                        'required' => false,
+                        'width'    => 'full',
+                        'options'  => [],
+                    ],
+                ]),
+            ]);
+        } finally {
+            self::assertSame(0, $this->formCount(), 'a rejected field name must not create a form');
+        }
+    }
+
+    public function testRenderSkipsAFieldThatCollidesWithTheCaptchaResponse(): void
+    {
+        // The form is built while no provider is configured, then captcha is
+        // switched on: the stored field now shadows the captcha response and
+        // would be lost on every submission.
+        $app = $this->buildApp();
+        $service = $this->service($app);
+        $form = $service->createForm([
+            'name'              => 'Contact',
+            'slug'              => 'contact',
+            'status'            => 'published',
+            'submit_label'      => 'Send',
+            'success_message'   => 'Thanks',
+            'field_definitions' => json_encode([
+                [
+                    'type'     => 'text',
+                    'name'     => 'name',
+                    'label'    => 'Name',
+                    'required' => true,
+                    'width'    => 'full',
+                    'options'  => [],
+                ],
+                [
+                    'type'     => 'text',
+                    'name'     => 'h-captcha-response',
+                    'label'    => 'Token',
+                    'required' => false,
+                    'width'    => 'full',
+                    'options'  => [],
+                ],
+            ]),
+        ]);
+
+        $this->configureProvider($app);
+        $this->enforceFormsArea($app, $this->alwaysAcceptingCaptcha($app));
+
+        $html = $service->renderPublicForm($form);
+
+        self::assertStringContainsString('name="name"', $html, 'the other fields still render');
+        self::assertStringNotContainsString('name="h-captcha-response"', $html, 'the colliding field is not rendered');
+        self::assertStringNotContainsString('>Token<', $html, 'the colliding field is not rendered');
+        self::assertStringContainsString('cannot be collected', $html, 'the visitor is told the field is missing');
+    }
+
     // -----------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------
+
+    /**
+     * Configure a captcha provider without switching the forms area on, so
+     * the POST field name is known but nothing is enforced yet.
+     */
+    private function configureProvider(Engine $app): void
+    {
+        $app->settings()->set('Captcha.provider', 'hcaptcha');
+        $app->settings()->set('Captcha.site_key', 'site-1');
+        $app->settings()->set('Captcha.secret_key', 'secret-1');
+    }
 
     /**
      * Fresh engine wired with the real settings store, extension registry,
@@ -219,6 +302,13 @@ final class FormsServiceCaptchaTest extends TestCase
     private function submissionCount(): int
     {
         $stmt = $this->pdo->query('SELECT COUNT(*) AS c FROM form_submissions');
+
+        return (int) ($stmt->fetch(PDO::FETCH_ASSOC)['c'] ?? 0);
+    }
+
+    private function formCount(): int
+    {
+        $stmt = $this->pdo->query('SELECT COUNT(*) AS c FROM forms');
 
         return (int) ($stmt->fetch(PDO::FETCH_ASSOC)['c'] ?? 0);
     }

@@ -104,11 +104,27 @@ class FormsService
      */
     private function assertWritable(array $data, array $fieldDefinitions): void
     {
+        // Asked of the provider directly rather than through enforcedFor():
+        // protection can be switched on later, and a field that collides then
+        // would start losing entries without anyone touching the form.
+        $captchaField = $this->app->captcha()->postField();
+
         foreach ($fieldDefinitions as $definition) {
             $name = trim((string) ($definition['name'] ?? ''));
-            if ($name !== '' && in_array($name, self::RESERVED_FIELD_NAMES, true)) {
+            if ($name === '') {
+                continue;
+            }
+
+            if (in_array($name, self::RESERVED_FIELD_NAMES, true)) {
                 throw new \InvalidArgumentException(sprintf(
                     '"%s" is reserved by the form renderer. Choose another field name.',
+                    $name
+                ));
+            }
+
+            if ($captchaField !== '' && $name === $captchaField) {
+                throw new \InvalidArgumentException(sprintf(
+                    '"%s" is the captcha response field. Choose another field name.',
                     $name
                 ));
             }
@@ -356,6 +372,14 @@ class FormsService
         $html .= '<input type="hidden" name="_return_url" value="' . htmlspecialchars($returnUrl) . '">';
         $html .= '<input type="text" name="pv_website" value="" autocomplete="off" tabindex="-1" style="position:absolute;left:-9999px;">';
 
+        // A field sharing the captcha's POST name cannot be collected: the
+        // provider's input is rendered after these and the browser would send
+        // both, so the captcha token wins and the field's value is lost. A
+        // form stored before that rule existed skips the field and says so
+        // rather than losing the entry silently.
+        $captchaField = $this->app->captcha()->postField();
+        $shadowedFields = [];
+
         foreach ($fields as $field) {
             $name = (string) $field->name;
             $type = (string) $field->type;
@@ -363,6 +387,12 @@ class FormsService
             $placeholder = (string) ($field->placeholder ?? '');
             $required = (int) $field->is_required === 1;
             $value = $values[$name] ?? '';
+
+            if ($captchaField !== '' && $name === $captchaField) {
+                $shadowedFields[] = $label !== '' ? $label : $name;
+                continue;
+            }
+
             $html .= '<div class="pv-form-field pv-form-field-' . htmlspecialchars($type) . '">';
             $html .= '<label class="pv-form-label" for="field-' . htmlspecialchars($name) . '">' . htmlspecialchars($label);
             if ($required) {
@@ -430,6 +460,13 @@ class FormsService
         // protected; the provider's div and script come from the service.
         $captchaSnippet = $this->app->captcha()->snippetFor('forms');
         if ($captchaSnippet !== '') {
+            if ($shadowedFields !== []) {
+                $html .= '<div class="pv-form-errors"><ul class="pv-form-errors-list">';
+                $html .= '<li>This form has a field that cannot be collected: '
+                    . htmlspecialchars(implode(', ', $shadowedFields))
+                    . '. The site owner has to rename it.</li>';
+                $html .= '</ul></div>';
+            }
             $html .= '<div class="pv-form-field pv-form-captcha">' . $captchaSnippet . '</div>';
         }
 
