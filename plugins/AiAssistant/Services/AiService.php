@@ -205,15 +205,18 @@ class AiService
             return ['key' => null, 'error' => 'Invalid API key.'];
         }
 
+        if ($key->isBlocked()) {
+            // Answered before the enabled check, and without counting: a
+            // key already in a block keeps its fixed window instead of
+            // having the block re-extended by further attempts.
+            return ['key' => null, 'error' => 'This API key is temporarily blocked due to repeated failed attempts.', 'key_known' => $key];
+        }
+
         if (!$key->isEnabled()) {
             // Probing a disabled key is an attributable failure: count it
             // and block the key once the threshold is crossed.
             $this->recordFailure($key);
             return ['key' => null, 'error' => 'This API key is disabled.', 'key_known' => $key];
-        }
-
-        if ($key->isBlocked()) {
-            return ['key' => null, 'error' => 'This API key is temporarily blocked due to repeated failed attempts.', 'key_known' => $key];
         }
 
         $this->resetFailures($key);

@@ -246,6 +246,28 @@ final class AiServiceTest extends TestCase
         self::assertStringContainsString('blocked', (string) $result['error']);
     }
 
+    public function testDisabledAndBlockedReportsBlockedAndKeepsItsWindow(): void
+    {
+        $service = $this->service();
+        $created = $service->createKey('DB');
+        $id = (int) $created['key']->id;
+        $service->toggle($id);
+
+        $until = '2999-01-01 00:00:00';
+        $this->pdo->exec(
+            "UPDATE ai_keys SET blocked_until = '{$until}', failed_attempts = 0 WHERE id = {$id}"
+        );
+
+        $result = $service->authenticate($created['plain']);
+        self::assertNull($result['key']);
+        self::assertStringContainsString('blocked', (string) $result['error']);
+
+        $key = $service->findKey($id);
+        self::assertNotNull($key);
+        self::assertSame($until, (string) $key->blocked_until);
+        self::assertSame(0, (int) $key->failed_attempts);
+    }
+
     public function testHasGrantUsesCache(): void
     {
         $service = $this->service();
