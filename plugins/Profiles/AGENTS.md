@@ -1,10 +1,10 @@
-# AGENTS.md — Profiles plugin
+# AGENTS.md: Profiles plugin
 
 Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
 ## Overview
 
-Profiles gives each user a browsable public profile and a self-service edit page: display name, bio, avatar, website, and social links, plus a job title and employer. Profiles are created lazily per user and are owned by the `users` table through a cascade foreign key.
+Profiles gives each user a browsable public profile and a self-service edit page: display name, bio, avatar, website, and social links, plus a job title and employer. Profiles are created lazily per user and belong to the `users` table through a cascade foreign key.
 
 - **Package:** `pubvana/profiles` (`pubvana.json:2`), semver `0.1.0`, category `admin`
 - **License:** MIT, matching the main project (repo `composer.json` declares `"license": "MIT"`)
@@ -123,7 +123,7 @@ Coverage: the suite covers the model, both controllers (URLs, website validation
 ## Out of scope / non-goals
 
 - This is an in-tree application plugin, not a Composer package; no `composer.json` and nothing for Packagist.
-- Public display templates (profile pages) live in the active theme, not in this plugin. The only `Views/public/` asset here is the Author Card block template, which follows the plugin default block layout.
+- Public display templates (profile pages) are in the active theme, not in this plugin. The only `Views/public/` asset here is the Author Card block template, which follows the plugin default block layout.
 - No hard profile delete; profiles disappear only through the `users` cascade delete.
 - No external avatar sources (Gravatar, Uploadcare, etc.); the avatar is a stored image path picked via the Media plugin.
 - No pagination, search, or discovery of profiles; a profile is reached by a known username.

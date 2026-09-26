@@ -1,4 +1,4 @@
-# AGENTS.md — Marketplace plugin
+# AGENTS.md: Marketplace plugin
 
 Guidance for AI agents contributing to this plugin, the buy-side companion for the Pubvana Digital Store.
 
@@ -63,7 +63,7 @@ No generated dirs in this plugin.
 - `GET {store}/api/store/items?currency=` - marketplace-listed items
 - `GET {store}/api/store/free?slug=` - streams a free product's package (is_free or scope none); free items are free to use anywhere and update with no license
 - `POST {store}/api/store/cart/add` - push item into account-bound cart
-- `GET {store}/api/store/purchases?domain=` - owned products + license state for this domain
+- `GET {store}/api/store/purchases?domain=` - purchased products + license state for this domain
 - `POST {store}/api/store/license/validate` - returns a download URL for a valid license
 - `POST {store}/api/store/license/transfer-request` - begin a domain move
 - `POST {store}/api/store/auth/token` - exchange email for account token

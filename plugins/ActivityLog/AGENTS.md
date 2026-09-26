@@ -74,7 +74,7 @@ composer psalm
 composer test
 ```
 
-Tests live in `tests/Unit/Plugins/ActivityLog/`:
+Tests are in `tests/Unit/Plugins/ActivityLog/`:
 
 ```
 tests/Unit/Plugins/ActivityLog/ActivityLogAdminControllerTest.php

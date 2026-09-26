@@ -1,4 +1,4 @@
-# AGENTS.md — Analytics plugin
+# AGENTS.md: Analytics plugin
 
 Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
@@ -104,7 +104,7 @@ Unique index on `(day, referrer_domain)`.
 
 ## Development and testing
 
-The unit suite lives in `tests/Unit/Plugins/Analytics/` and covers the service, the model and controller helpers, the rollup upsert SQL, and the report view's inline-script escaping.
+The unit suite is in `tests/Unit/Plugins/Analytics/` and covers the service, the model and controller helpers, the rollup upsert SQL, and the report view's inline-script escaping.
 
 ```bash
 php -l plugins/Analytics/Plugin.php           # lint every touched file
@@ -124,7 +124,7 @@ vendor/bin/phpunit tests/Unit/Plugins/Analytics
 Steps that go beyond the repo-wide style, derived from the existing code:
 
 1. `declare(strict_types=1);` first line in every class file.
-2. Class name, file name, and namespace must align: `Pubvana\Plugins\Analytics\Services\AnalyticsService` lives in `Services/AnalyticsService.php`.
+2. Class name, file name, and namespace must align: `Pubvana\Plugins\Analytics\Services\AnalyticsService` is in `Services/AnalyticsService.php`.
 3. All report SQL is in `AnalyticsService`; the controller and view never write SQL.
 4. Bound parameters only: every user-facing value (range cutoff is derived; limits are interiors) is bound with `bindValue`. Do not interpolate request input into SQL strings. The `LIMIT` value is already sanitized by `max(1, $limit)` before concatenation (`AnalyticsService.php:155`).
 5. Keep the report shape stable: `dashboard()` always returns `range`, `totalViews`, `trends` (`granularity`/`labels`/`series`), `topContent`, `referrers`. The view and the JSON endpoint both consume that exact shape.

@@ -1,4 +1,4 @@
-# AGENTS.md — Social Links plugin
+# AGENTS.md: Social Links plugin
 
 Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
@@ -16,7 +16,7 @@ Social Links is the port of the v2 SocialLinks feature. It stores site-wide soci
 
 ## Project guidelines
 
-1. **Route all reads and writes through the `$app->socialLinks()` service facade** (`Plugin.php:32-39`). Controllers must not touch models directly. Reason: the service owns the platform catalog, URL validation, icon normalization, and sequential ordering.
+1. **Route all reads and writes through the `$app->socialLinks()` service facade** (`Plugin.php:32-39`). Controllers must not touch models directly. Reason: the service handles the platform catalog, URL validation, icon normalization, and sequential ordering.
 2. **Known platforms derive their label and icon from the catalog; "custom" takes posted values.** `platformLabel()` and `platformIcon()` fall back to config defaults (`Services/SocialLinksService.php:151-165`). Reason: one canonical map keeps the admin dropdown, stored rows, and rendered icons in lockstep.
 3. **Never widen the platform catalog without a published Font Awesome class.** Every icon in `PLATFORMS` is verified against the staged `assets/css/brands.min.css` (`Services/SocialLinksService.php:33-70`). Reason: FA7 splits brand marks into brands.min.css, so an unverified class renders a broken box. Known missing brands in FA7 Free (do not rely on them): `stackoverflow`, `nextdoor`, `buffers`.
 4. **Validate URLs on write, never normalize on render.** A value must already be a full `http://` or `https://` URL; a bare domain, a handle, or any non-http(s) scheme is rejected and nothing is stored (`Services/SocialLinksService.php:289-301`). No scheme is assumed. Reason: the public template renders stored URLs unmodified, so the stored value must be exactly what gets emitted.

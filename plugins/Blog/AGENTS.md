@@ -1,4 +1,4 @@
-# AGENTS.md — Blog plugin
+# AGENTS.md: Blog plugin
 
 Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
@@ -16,7 +16,7 @@ Blog is the content module of Pubvana. It provides posts, categories, tags, revi
 
 ## Project guidelines
 
-1. **Route all writes through `BlogService`.** Controllers must call service methods (`createPost`, `updatePost`, `syncPostCategories`, `syncPostTags`) and never touch models directly. Reason: the service owns revision snapshots, taxonomy sync, `ai_generated` handling, and content purification (`Controllers/BlogAdminController.php:74-89`).
+1. **Route all writes through `BlogService`.** Controllers must call service methods (`createPost`, `updatePost`, `syncPostCategories`, `syncPostTags`) and never touch models directly. Reason: the service handles revision snapshots, taxonomy sync, `ai_generated` handling, and content purification (`Controllers/BlogAdminController.php:74-89`).
 2. **Never change a slug after creation.** `Post::updateRecord()` only writes whitelisted fields and `slug` is excluded (`Models/Post.php:324-327`). Reason: the immutable slug keeps post URLs, feeds, previews, and nav links stable.
 3. **Never change `ai_generated` after creation.** It is set once at create time (`Services/BlogService.php:85`) and influences the public AI disclosure (`Controllers/BlogPublicController.php:387-394`). Reason: the flag records provenance, not current state.
 4. **Bump post views with `incrementViewsDirect()`, not `incrementViews()`.**
@@ -164,5 +164,5 @@ The unit suite is in `tests/Unit/Plugins/Blog/` and covers the service (CRUD, re
 
 - This is an in-tree application plugin, not a Composer package; no `composer.json` and nothing for Packagist.
 - No locale/i18n support; labels and media strings are hardcoded English.
-- No raw SQL beyond the documented `incrementViewsDirect()` and the `searchByPattern()` LIKE pre-filter; search ran[Reasoning loop detected — thinking output suppressed]king stays in-process in the Search plugin (no full-text engine).
+- No raw SQL beyond the documented `incrementViewsDirect()` and the `searchByPattern()` LIKE pre-filter; search ranking stays in-process in the Search plugin (no full-text engine).
 - No front-end asset pipeline; the single admin stylesheet is loaded via `admin.css` registration.

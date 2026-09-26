@@ -1,4 +1,4 @@
-# AGENTS.md — AI Assistant plugin
+# AGENTS.md: AI Assistant plugin
 
 Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
@@ -97,7 +97,7 @@ Markdown is converted to sanitized HTML at ingest via `MarkdownService::toHtml()
 
 ### Fact checking
 
-The checking brain is external (the site owner's AI assistant over the API); the plugin owns everything around it (`FactCheckService`):
+The checking brain is external (the site owner's AI assistant over the API); the plugin handles everything around it (`FactCheckService`):
 
 - **Prompt.** The versioned terms/instructions are fetched from `factcheck_prompt_url` with the bundled `Config/fact-check-prompt.json` as fallback; the result is hashed and cached per request (`currentPrompt()`). The AI must re-fetch it before every check and attest `prompt_version` on submission.
 - **Gate.** `Ai.factcheck_enabled`, `Ai.factcheck_terms_version`, `Ai.factcheck_terms_accepted_at` settings drive `gateStatus()`: off is `403`, terms-version mismatch is `409`. Enabling requires terms acceptance plus at least one enabled key (`enableBlockers()`).
@@ -200,7 +200,7 @@ Posts and pages accept a nested `seo` object on create and update. Only included
 
 ## Development and testing
 
-The unit suite lives in `tests/Unit/Plugins/AiAssistant/` and covers the services, models, and grant logic; controllers and views are exercised through the full app.
+The unit suite is in `tests/Unit/Plugins/AiAssistant/` and covers the services, models, and grant logic; controllers and views are exercised through the full app.
 
 ```bash
 php -l plugins/AiAssistant/Plugin.php           # lint every touched file
@@ -220,7 +220,7 @@ vendor/bin/phpunit tests/Unit/Plugins/AiAssistant
 Steps that go beyond the repo-wide style, derived from the existing code:
 
 1. `declare(strict_types=1);` first line in every class file.
-2. Class name, file name, and namespace must align: `Pubvana\Plugins\AiAssistant\Services\AiService` lives in `Services/AiService.php`.
+2. Class name, file name, and namespace must align: `Pubvana\Plugins\AiAssistant\Services\AiService` is in `Services/AiService.php`.
 3. Endpoints keep the sequence: authenticate, require grant, validate input, act, log, respond through `ok()`/`fail()`. On validation failure, log a specific `error` detail before `fail()`.
 4. Every new permission must be added to `helpCatalog()` (`AiService.php:330`) with its route group, label, summary, and endpoints. The catalog drives `/api/ai/help`, the admin help page, and grant-form rendering, so it is the point of truth for grants.
 5. All API reads return display-safe arrays; HTML content is served as Markdown and never raw. Serializers (`serializePost`, `serializePage`, `serializeComment`, `serializeRedirect`, `serializeNavigationItem`) must stay in `AiService`.

@@ -1,4 +1,4 @@
-# AGENTS.md — Search plugin
+# AGENTS.md: Search plugin
 
 Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
@@ -21,7 +21,7 @@ Search aggregates content matches from content plugins (Blog, Pages, and future 
 3. **Strip HTML before anything is scored or highlighted.** Scoring lowercases a `strip_tags` copy of `content` (`Services/SearchService.php:284`); highlighting runs `htmlspecialchars` first and only then injects `<mark>` (`Services/SearchService.php:388-414`). Never highlight unescaped text. Reason: `<mark>` injection over provider-unsanitized HTML is an XSS vector.
 4. **Keep highlight work on the visible slice only.** Highlighting runs after pagination, on the `array_slice` result (`Services/SearchService.php:157-160`). Reason: highlighting the full result set on a large index would waste the request.
 5. **Non-legacy sources are enabled by default.** `enabledSources()` treats a source as on unless its key sits in the `Search.disabledSources` JSON list (`Services/SearchService.php:194`, `Services/SearchService.php:239`). New providers therefore appear automatically; never require an admin to flip them on.
-6. **Persist admin controls through the `Search.` settings namespace.** Toggles live in `Search.disabledSources` (JSON array), scalars in `Search.resultsPerPage` and `Search.minQueryLength` (`Services/SearchService.php:215, 249`; `Controllers/SearchAdminController.php:46-47`). Reason: the plugin has no database, and the settings service is the source of truth.
+6. **Persist admin controls through the `Search.` settings namespace.** Toggles are in `Search.disabledSources` (JSON array), scalars in `Search.resultsPerPage` and `Search.minQueryLength` (`Services/SearchService.php:215, 249`; `Controllers/SearchAdminController.php:46-47`). Reason: the plugin has no database, and the settings service is the source of truth.
 7. **Keep tokenization shared.** `tokenize()` is the single lowercase/tokenizer with quoted-phrase support (`Services/SearchService.php:259`). Reason: phrasing support only works if scoring and highlighting both consume the same token set.
 8. **Do not drag a database into this plugin.** Aggregation is a live scan over adext providers and the settings store. Reason: adding storage changes the plugin's shape and conflicts with the "no DB" architecture the code is built around.
 9. **Admin toggles key off the registry key.** The checkbox name is `source_{key}` and `setSourceEnabled` compares raw keys (`Controllers/SearchAdminController.php:49-52`). Keep any new control keyed the same way. Reason: keys are the stable identity; labels are display-only.

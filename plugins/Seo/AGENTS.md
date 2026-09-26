@@ -1,4 +1,4 @@
-# AGENTS.md — Seo plugin
+# AGENTS.md: Seo plugin
 
 Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 

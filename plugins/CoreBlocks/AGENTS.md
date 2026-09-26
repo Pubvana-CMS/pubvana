@@ -1,4 +1,4 @@
-# AGENTS.md — Core Blocks plugin
+# AGENTS.md: Core Blocks plugin
 
 Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 

@@ -1,4 +1,4 @@
-# AGENTS.md — Broken Links plugin
+# AGENTS.md: Broken Links plugin
 
 Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 

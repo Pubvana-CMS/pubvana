@@ -1,4 +1,4 @@
-# AGENTS.md — Comments plugin
+# AGENTS.md: Comments plugin
 
 Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
@@ -17,7 +17,7 @@ Comments provides nested, moderated site comments. Captcha on the comment form i
 ## Project guidelines
 
 1. **Only store comment bodies that have passed HTMLPurifier.** `create()` always purifies `body` before insert (`Services/CommentService.php:210-213`). Reason: comment text is untrusted visitor input and must not reach templates unsanitized.
-2. **Never hardcode a setting key in controllers or views.** Read all configuration through `CommentService::setting()` (which prefixes `Comments.`, `Services/CommentService.php:65-68`) and write it through `$app->settings()->set('Comments.*', ...)` in `settingsSave()`. Reason: settings live in the database and can be overridden; the `Comments.` prefix is the single source of truth.
+2. **Never hardcode a setting key in controllers or views.** Read all configuration through `CommentService::setting()` (which prefixes `Comments.`, `Services/CommentService.php:65-68`) and write it through `$app->settings()->set('Comments.*', ...)` in `settingsSave()`. Reason: settings are in the database and can be overridden; the `Comments.` prefix is the single source of truth.
 3. **Treat comment hosts as opt-in.** A host only renders when its adext key is in the `Comments.enabledHosts` JSON setting (`Services/CommentService.php:504-541`). New hosts start closed. Reason: hosts must be explicitly enabled by an admin before accepting visitor content.
 4. **Enforce the nesting limit on every reply.** `create()` checks `getDepth()` against `max_nesting_depth` (default 3) and throws before insert (`Services/CommentService.php:187-195`). Reason: unbounded threading makes threads unreadable and the model walk expensive.
 5. **Route all host lookups through the `comments.host` adext slot.** `hostItems()`, `hostItem()`, `hostTypeMap()`, and `enabledTypes()` all resolve hosts from registered `comments.host` contributions and cache them per request (`Services/CommentService.php:410-647`). Reason: hosts are other plugins by design; the adext registry is the only allowed discovery path and the caches stop per-comment SELECT storms.

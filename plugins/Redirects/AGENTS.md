@@ -1,4 +1,4 @@
-# AGENTS.md — Redirects plugin
+# AGENTS.md: Redirects plugin
 
 Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
@@ -20,7 +20,7 @@ Redirects manages 301/302 URL redirects and aggregates incoming 404 traffic. It 
 2. **Restrict status codes to 301 and 302.** `preparePayload()` coerces anything else back to 301 (`Services/RedirectsService.php:217-220`). Reason: any other code would mislead clients and search engines.
 3. **Never drop the query string when redirecting.** `buildRedirectLocation()` forwards the original query, joining with `&` when the target already has one (`Services/RedirectsService.php:288-297`). Reason: pages reached via redirects routinely rely on query parameters.
 4. **Keep the self-redirect guard in place.** A redirect whose target path matches the current path (same host) is never issued (`Services/RedirectsService.php:203-205, 311-324`). Reason: otherwise an accidental duplicate-path rule loops forever.
-5. **Normalize both sides of every comparison.** Admin-entered source paths and incoming request paths must pass through the same normalization (leading slash, duplicated-slash collapse, trailing-slash strip except root). The helpers live in `Services/RedirectsService.php:231-286`. Reason: `source_path` is a unique column, so un-normalized variants would either collide or silently fail to match.
+5. **Normalize both sides of every comparison.** Admin-entered source paths and incoming request paths must pass through the same normalization (leading slash, duplicated-slash collapse, trailing-slash strip except root). The helpers are in `Services/RedirectsService.php:231-286`. Reason: `source_path` is a unique column, so un-normalized variants would either collide or silently fail to match.
 6. **Never bypass the schema of the two services.** `preparePayload()` is the only whitelist for redirect fields (`Services/RedirectsService.php:215-229`). Reason: the models are lean and the payload mapping keeps `enabled`/`status_code`/`notes` coercions in one place.
 7. **Keep the 404 log keyed by `source_path` and reset resolution on each hit.** `logCurrentRequest()` updates an existing entry or inserts a new one, and clears `resolved_redirect_id`/`resolved_at` (`Services/RedirectsLinksService.php:161-183`). Reason: a path that 404s again after being resolved must surface in the Active list once more.
 8. **Preserve the create-from-404 association.** When a redirect is stored with an `incoming_404_id`, the controller marks that entry resolved and links the new redirect id (`Controllers/RedirectsAdminController.php:48-51`). Reason: the 404 manager's workflow depends on that link surviving.

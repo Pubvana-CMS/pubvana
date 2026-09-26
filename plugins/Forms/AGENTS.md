@@ -1,4 +1,4 @@
-# AGENTS.md — Forms plugin
+# AGENTS.md: Forms plugin
 
 Guidance for AI agents contributing to this plugin, which is part of the main Pubvana repo.
 
@@ -24,7 +24,7 @@ Forms is a form builder for Pubvana: admins build forms with a JSON field-defini
 6. **Sanitize by field type in `sanitizeScalarValue()`.** `textarea` goes through HTMLPurifier (fallback `strip_tags`), `email` through `FILTER_SANITIZE_EMAIL`, everything else is trimmed and `strip_tags`-ed (`Services/FormsService.php:672-693`). Reason: submission payloads are stored raw in JSON and later echoed in the admin; they must arrive clean.
 7. **Never let a mail failure break a submission.** `dispatchNotifications()` swallows every `\Throwable` from the mailer (`Services/FormsService.php:628-634`). Reason: an SMTP hiccup must not lose a visitor's submission.
 8. **Always pass `_return_url` through `normalizeReturnUrl()` before redirecting.** It strips an allowed `flight.base_url` prefix, rejects foreign absolute URLs, and forces a leading `/` (`Services/FormsService.php:467-489`). Reason: raw referrer/return values would otherwise be an open-redirect vector.
-9. **Ship form styles through adext `public.css`, never inline.** Public CSS lives in `assets/css/forms.css` and registers in `Plugin.php` as type `public.css` (served at `/assets/plugin/Forms/css/forms.css`). Reason: direct `plugins/` access is blocked by `.htaccess`, but AssetService serves `assets/` URLs, so an inline `<style>` block only escapes browser caching and loses to the theme's stylesheet overrides.
+9. **Provide form styles through adext `public.css`, never inline.** Public CSS is in `assets/css/forms.css` and registers in `Plugin.php` as type `public.css` (served at `/assets/plugin/Forms/css/forms.css`). Reason: direct `plugins/` access is blocked by `.htaccess`, but AssetService serves `assets/` URLs, so an inline `<style>` block only escapes browser caching and loses to the theme's stylesheet overrides.
 10. **Use the per-form session flash for error/values round-trips.** `storeSubmissionFlash()`/`consumeSubmissionFlash()` key `pubvana_forms_flash[formId]` (`Services/FormsService.php:491-503`), read back on the next render to repopulate the form (`Services/FormsService.php:221-228`). Reason: redirects after POST keep validation state without re-posting.
 11. **Start sessions defensively in the service.** `startSession()` only starts when no session is active and headers are not sent (`Services/FormsService.php:637-642`). Reason: the service may run before the core session layer initializes.
 
