@@ -88,6 +88,8 @@ class ProfileBlockService
             return $this->emptyPayload($options);
         }
 
+        $profilesPrefix = $this->app->pluginLoader()->routePrefix('pubvana/profiles');
+
         $avatarUrl = '';
         if (!empty($profile->avatar)) {
             $avatarUrl = '/' . ltrim($profile->avatar, '/');
@@ -104,7 +106,7 @@ class ProfileBlockService
             'author' => [
                 'name'          => $profile->display_name !== null ? $profile->display_name : $username,
                 'username'      => $username,
-                'url'           => '/profile/' . $username,
+                'url'           => $profilesPrefix . '/' . $username,
                 'bio'           => $profile->bio,
                 'avatar_url'    => $avatarUrl,
                 'safe_website'  => $safeWebsite,

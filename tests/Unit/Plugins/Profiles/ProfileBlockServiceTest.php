@@ -142,7 +142,11 @@ final class ProfileBlockServiceTest extends TestCase
             'pluginLoader' => fn () => new class {
                 public function routePrefix(string $plugin): string
                 {
-                    return $plugin === 'pubvana/blog' ? '/posts' : '/other';
+                    return match ($plugin) {
+                        'pubvana/blog'     => '/posts',
+                        'pubvana/profiles' => '/profile',
+                        default            => '/other',
+                    };
                 }
             },
         ]);
@@ -467,9 +471,10 @@ final class ProfileBlockServiceTest extends TestCase
                 public function routePrefix(string $plugin): string
                 {
                     return match ($plugin) {
-                        'pubvana/blog'  => '/blog',
-                        'pubvana/pages' => '/page',
-                        default         => '',
+                        'pubvana/blog'     => '/blog',
+                        'pubvana/pages'    => '/page',
+                        'pubvana/profiles' => '/profile',
+                        default            => '',
                     };
                 }
             },
