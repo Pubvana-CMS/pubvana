@@ -372,7 +372,10 @@ class SearchService
         if ($ts === false) {
             return null;
         }
-        return (int) floor((time() - $ts) / 86400);
+        // A future published_at yields a negative age, which used to inflate
+        // the recency boost past RECENCY_MAX and break the maxScore() ceiling.
+        // A future date reads as age 0 and collects the full boost.
+        return max(0, (int) floor((time() - $ts) / 86400));
     }
 
     /**

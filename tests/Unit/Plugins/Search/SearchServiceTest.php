@@ -370,6 +370,35 @@ final class SearchServiceTest extends TestCase
         self::assertSame(0, $this->invoke($service, 'ageDays', [date('Y-m-d H:i:s')]));
     }
 
+    public function testAgeDaysClampsFutureDatesToZero(): void
+    {
+        $service = $this->service();
+
+        // A future published_at must not produce a negative age, which used
+        // to inflate the recency boost above RECENCY_MAX.
+        self::assertSame(0, $this->invoke($service, 'ageDays', [(new \DateTimeImmutable('+90 days'))->format('Y-m-d H:i:s')]));
+        self::assertSame(0, $this->invoke($service, 'ageDays', ['2999-01-01 00:00:00']));
+    }
+
+    public function testFutureDatedItemStaysWithinTheReportedCeiling(): void
+    {
+        $future = (new \DateTimeImmutable('+400 days'))->format('Y-m-d H:i:s');
+        $this->providers = [
+            'pubvana.test' => [
+                'label' => 'Test',
+                'callable' => static fn(string $term): array => [[
+                    'title' => 'alpha', 'url' => '/a', 'excerpt' => '', 'content' => '',
+                    'published_at' => $future,
+                ]],
+            ],
+        ];
+
+        $result = $this->service()->search('alpha');
+
+        self::assertSame(24.0, $result['max_score']);
+        self::assertLessThanOrEqual($result['max_score'], $result['items'][0]['_score']);
+    }
+
     public function testSourceLabelJoinsUniqueSources(): void
     {
         $service = $this->service();
