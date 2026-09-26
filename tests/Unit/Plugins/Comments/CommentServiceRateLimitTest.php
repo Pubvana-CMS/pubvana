@@ -114,6 +114,45 @@ final class CommentServiceRateLimitTest extends TestCase
         self::assertSame('pending', (string) $comment->status);
     }
 
+    public function testAValidationFailureDoesNotConsumeTheSlot(): void
+    {
+        $service = $this->service('30');
+
+        try {
+            $service->create($this->payload('10.0.0.5', ['parent_id' => 999999]));
+            self::fail('an unusable parent must be rejected');
+        } catch (\InvalidArgumentException) {
+            // Expected.
+        }
+
+        // The reservation happens after validation, so a rejected comment
+        // leaves the window open for the next valid one.
+        $service->create($this->payload('10.0.0.5'));
+        self::assertSame(1, $this->commentCount());
+    }
+
+    public function testADatabaseFailureReleasesTheReservedSlot(): void
+    {
+        $service = $this->service('30');
+
+        // Drop the table so the insert throws after the slot is reserved.
+        $this->pdo->exec('DROP TABLE comments');
+
+        try {
+            $service->create($this->payload('10.0.0.6'));
+            self::fail('the insert must throw with no comments table');
+        } catch (\Throwable) {
+            // Expected: the slot must be undone, not burned.
+        }
+
+        // Recreate the table and confirm the same IP is not locked out.
+        Sqlite::recreate();
+        $this->pdo->exec('PRAGMA foreign_keys = ON');
+        $service = $this->service('30');
+        $service->create($this->payload('10.0.0.6'));
+        self::assertSame(1, $this->commentCount());
+    }
+
     // -----------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------

@@ -80,6 +80,71 @@ final class RateLimiter
     }
 
     /**
+     * Atomically check and record one attempt under a single lock.
+     *
+     * The check and the write happen in the same locked read-modify-write,
+     * so two concurrent callers cannot both observe a free slot. Returns
+     * true when the attempt is allowed and was recorded, false when the
+     * window is already full. Pair with undo() when the operation the slot
+     * was reserved for fails, so the slot is not burned.
+     *
+     * @param string $key           Stable key
+     * @param int    $maxAttempts   Attempts allowed per window
+     * @param int    $windowSeconds Window length in seconds
+     */
+    public function attempt(string $key, int $maxAttempts, int $windowSeconds): bool
+    {
+        if ($maxAttempts <= 0 || $windowSeconds <= 0) {
+            return true;
+        }
+
+        // Fail open if the backing file cannot be locked: state is lost, so
+        // nothing is recorded, matching check()'s treat-as-absent behavior.
+        $allowed = true;
+
+        $this->withLockedFile($this->pathFor($key), function (array $timestamps) use ($maxAttempts, $windowSeconds, &$allowed): array {
+            $cutoff = time() - $windowSeconds;
+            $recent = array_values(array_filter(
+                $timestamps,
+                static fn(int $ts): bool => $ts >= $cutoff
+            ));
+
+            if (count($recent) >= $maxAttempts) {
+                $allowed = false;
+                return $recent;
+            }
+
+            $recent[] = time();
+            $allowed = true;
+
+            return $recent;
+        });
+
+        return $allowed;
+    }
+
+    /**
+     * Release the most recent attempt recorded for the key.
+     *
+     * The compensating action for attempt(): call it when the operation
+     * the slot was reserved for failed (for example a database error), so
+     * a failed request does not count against the window.
+     */
+    public function undo(string $key): void
+    {
+        $path = $this->pathFor($key);
+        if (!is_file($path)) {
+            return;
+        }
+
+        $this->withLockedFile($path, function (array $timestamps): array {
+            array_pop($timestamps);
+
+            return $timestamps;
+        });
+    }
+
+    /**
      * Drop all recorded attempts for the key.
      */
     public function clear(string $key): void

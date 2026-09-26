@@ -27,6 +27,9 @@ class CommentService
 {
     private Comment $model;
 
+    /** Connection held for service-level lookups (user rows) without static \Flight access. */
+    private \PDO $pdo;
+
     /** @var Engine<object> */
     private Engine $app;
 
@@ -53,6 +56,7 @@ class CommentService
     {
         $this->model = new Comment($pdo);
         $this->app   = $app;
+        $this->pdo   = $pdo;
     }
 
     /**
@@ -185,9 +189,10 @@ class CommentService
      */
     public function create(array $data): Comment
     {
-        // Per-IP spam gate before any validation work: one comment per
-        // window from the same address (REMOTE_ADDR supplied by the
-        // controller; proxy headers are never consulted).
+        // Per-IP spam gate. The non-consuming pre-check rejects an obviously
+        // spent window early (cheap, no insert path); the authoritative
+        // reservation happens after validation, atomically, so concurrent
+        // requests cannot all pass the gate.
         $ip = (string) ($data['ip_address'] ?? '');
         $window = $this->rateLimitSeconds();
         $rateKey = 'comments:' . $ip;
@@ -197,12 +202,24 @@ class CommentService
             throw new \InvalidArgumentException('Please wait a moment before commenting again.');
         }
 
-        // Validate nesting depth
+        // Validate the reply target: it must exist, live on the same content
+        // item, and be visible. Depth alone let a reply to a pending,
+        // rejected, deleted, or foreign-item parent through, which later
+        // surfaced as an orphan root.
         if (!empty($data['parent_id'])) {
             $parentId = (int) $data['parent_id'];
-            $depth = $this->model->getDepth($parentId);
+            $parent = $this->model->findById($parentId);
 
-            if ($depth >= $this->maxNestingDepth()) {
+            if (
+                $parent === null
+                || (string) $parent->commentable_type !== (string) ($data['commentable_type'] ?? '')
+                || (int) $parent->commentable_id !== (int) ($data['commentable_id'] ?? 0)
+                || $parent->status !== 'approved'
+            ) {
+                throw new \InvalidArgumentException('The comment you are replying to is not available.');
+            }
+
+            if ($this->model->getDepth($parentId) >= $this->maxNestingDepth()) {
                 throw new \InvalidArgumentException('Maximum comment nesting depth reached.');
             }
         }
@@ -243,11 +260,25 @@ class CommentService
             $data['status'] = $this->defaultStatus();
         }
 
+        // Atomic reservation: check and record share one lock, so a
+        // concurrent burst cannot all pass the gate. Undone when the insert
+        // fails, so a database error does not burn the window.
+        $reserved = false;
         if ($window > 0 && $ip !== '') {
-            $limiter->hit($rateKey, $window);
+            if (!$limiter->attempt($rateKey, 1, $window)) {
+                throw new \InvalidArgumentException('Please wait a moment before commenting again.');
+            }
+            $reserved = true;
         }
 
-        return $this->model->createRecord($data);
+        try {
+            return $this->model->createRecord($data);
+        } catch (\Throwable $e) {
+            if ($reserved) {
+                $limiter->undo($rateKey);
+            }
+            throw $e;
+        }
     }
 
     /**
@@ -688,7 +719,7 @@ class CommentService
         foreach ($rows as $comment) {
             $authorName = $comment->guest_name ?: 'Anonymous';
             if ($comment->user_id !== null) {
-                $user = (new \Enlivenapp\FlightShield\Models\User(\Flight::db()))
+                $user = (new \Enlivenapp\FlightShield\Models\User($this->pdo))
                     ->findById((int) $comment->user_id);
                 $authorName = $user->username ?? 'Unknown';
             }
@@ -715,13 +746,17 @@ class CommentService
 
     /**
      * Sanitize HTML content via HTMLPurifier.
+     *
+     * When HTMLPurifier is unavailable, fall back to strip_tags rather than
+     * returning the raw input: an unpurified comment body is stored XSS.
+     * FormsService handles the missing-purifier case the same way.
      */
     private function purifyContent(string $html): string
     {
         if (!class_exists(\HTMLPurifier_Config::class)) {
-            return $html;
+            return strip_tags($html);
         }
-        $config = \HTMLPurifier_Config::create(\Flight::get('html_purifier') ?? []);
+        $config = \HTMLPurifier_Config::create($this->app->get('html_purifier') ?? []);
         return (new \HTMLPurifier($config))->purify($html);
     }
 
@@ -772,7 +807,7 @@ class CommentService
         foreach ($tree as $comment) {
             $authorName = $comment->guest_name ?: 'Anonymous';
             if ($comment->user_id !== null) {
-                $user = (new \Enlivenapp\FlightShield\Models\User(\Flight::db()))
+                $user = (new \Enlivenapp\FlightShield\Models\User($this->pdo))
                     ->findById((int) $comment->user_id);
                 $authorName = $user->username ?? 'Unknown';
             }

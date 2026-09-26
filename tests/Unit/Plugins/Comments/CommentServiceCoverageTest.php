@@ -12,6 +12,7 @@ use Pubvana\Plugins\Comments\Models\Comment;
 use Pubvana\Plugins\Comments\Services\CommentService;
 use Pubvana\Services\CaptchaService;
 use Pubvana\Services\ExtensionRegistry;
+use Pubvana\Services\PluginView;
 use Pubvana\Services\RateLimiter;
 use Pubvana\Services\SettingsService;
 use Pubvana\Tests\Support\Sqlite;
@@ -205,12 +206,111 @@ final class CommentServiceCoverageTest extends TestCase
         $app->settings()->set('Comments.max_nesting_depth', '1');
         $service = $this->service($app);
 
-        $root = $service->create($this->payload());
-        $child = $service->create($this->payload(['parent_id' => (int) $root->id]));
+        $root = $service->create($this->payload(['status' => 'approved']));
+        $child = $service->create($this->payload(['parent_id' => (int) $root->id, 'status' => 'approved']));
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Maximum comment nesting depth reached.');
         $service->create($this->payload(['parent_id' => (int) $child->id]));
+    }
+
+    public function testCreateRejectsUnusableReplyTargets(): void
+    {
+        $app = $this->buildApp();
+        $service = $this->service($app);
+
+        $pending = $service->create($this->payload(['body' => 'pending parent']));
+        $approved = $service->create($this->payload(['body' => 'approved parent', 'status' => 'approved']));
+        $rejected = $service->create($this->payload(['body' => 'rejected parent', 'status' => 'approved']));
+        $service->reject((int) $rejected->id);
+
+        // Nonexistent parent.
+        $this->assertReplyRejected($service, 999999);
+
+        // Pending and rejected parents are not visible, so they take no replies.
+        $this->assertReplyRejected($service, (int) $pending->id);
+        $this->assertReplyRejected($service, (int) $rejected->id);
+
+        // A parent from another content item.
+        $this->assertReplyRejected($service, (int) $approved->id, 'blog', 2);
+
+        // An approved, same-item parent is accepted and nests.
+        $reply = $service->create($this->payload([
+            'body' => 'valid reply',
+            'parent_id' => (int) $approved->id,
+            'status' => 'approved',
+        ]));
+        self::assertSame((int) $approved->id, (int) $reply->parent_id);
+
+        // Removing the parent promotes the reply to a root rather than dropping it.
+        $service->delete((int) $approved->id);
+        $tree = $service->findForContent('blog', 1);
+        self::assertSame('valid reply', (string) $tree[0]->body);
+    }
+
+    /**
+     * @param CommentService $service
+     */
+    private function assertReplyRejected(CommentService $service, int $parentId, string $type = 'blog', int $itemId = 1): void
+    {
+        try {
+            $service->create($this->payload([
+                'body' => 'reply',
+                'parent_id' => $parentId,
+                'commentable_type' => $type,
+                'commentable_id' => $itemId,
+            ]));
+            self::fail('an unusable reply target must be rejected');
+        } catch (\InvalidArgumentException $e) {
+            self::assertSame('The comment you are replying to is not available.', $e->getMessage());
+        }
+    }
+
+    public function testCreateRejectsAnUnsafeGuestWebsite(): void
+    {
+        $app = $this->buildApp();
+        $service = $this->service($app);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Website must be a full URL');
+        $service->create($this->payload(['guest_website' => 'javascript:alert(1)']));
+    }
+
+    public function testCreateAcceptsAndTrimsASafeGuestWebsite(): void
+    {
+        $app = $this->buildApp();
+        $service = $this->service($app);
+
+        $comment = $service->create($this->payload(['guest_website' => '  https://example.com/ada  ']));
+
+        self::assertSame('https://example.com/ada', (string) $comment->guest_website);
+    }
+
+    public function testCreateDropsAnEmptyGuestWebsiteInsteadOfStoringBlank(): void
+    {
+        $app = $this->buildApp();
+        $service = $this->service($app);
+
+        $comment = $service->create($this->payload(['guest_website' => '   ']));
+
+        self::assertSame('', (string) $comment->guest_website);
+    }
+
+    public function testCreateRecordWhitelistDropsUnknownColumns(): void
+    {
+        $model = new Comment($this->pdo);
+        $comment = $model->createRecord([
+            'commentable_type' => 'blog',
+            'commentable_id' => 1,
+            'body' => 'x',
+            'status' => 'pending',
+            'bogus_column' => 'injected',
+        ]);
+
+        // The unknown key is ignored rather than assigned: it can never
+        // reach the insert as a raw identifier.
+        self::assertSame('x', (string) $comment->body);
+        self::assertSame('pending', (string) $comment->status);
     }
 
     public function testModerationLifecycle(): void
@@ -315,6 +415,39 @@ final class CommentServiceCoverageTest extends TestCase
 
         $app->settings()->set('Comments.comments_enabled', '0');
         self::assertSame('', $service->render('blog', 1));
+    }
+
+    public function testRenderOutputsNestingControls(): void
+    {
+        $app = $this->buildApp();
+        $service = $this->service($app);
+        $this->registerHost($app, 'pubvana.blog', 'blog');
+
+        $service->setHostEnabled('pubvana.blog', true);
+        $app->settings()->set('Comments.allow_guest_comments', '1');
+        $service = $this->service($app);
+
+        $root = $service->create($this->payload(['status' => 'approved']));
+        $service->create($this->payload([
+            'status' => 'approved',
+            'parent_id' => (int) $root->id,
+        ]));
+
+        $view = new PluginView(PROJECT_ROOT . '/app/Views');
+        $view->addPluginPath('pubvana/comments', PROJECT_ROOT . '/plugins/Comments/Views');
+        $app->map('view', static fn (): PluginView => $view);
+
+        $html = $service->render('blog', 1);
+
+        // The approved child renders one level deep and every comment carries
+        // a reply control bound to its own id, with the form field to submit it.
+        self::assertStringContainsString('pv-comment-depth-1', $html);
+        self::assertStringContainsString('class="pv-comment-reply"', $html);
+        self::assertStringContainsString('data-parent-id="' . (int) $root->id . '"', $html);
+        self::assertStringContainsString('name="parent_id"', $html);
+
+        // A per-item opt-out renders nothing at all, controls included.
+        self::assertSame('', $service->render('blog', 1, false));
     }
 
     public function testHostRegistry(): void

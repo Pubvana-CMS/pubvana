@@ -3,7 +3,7 @@
    adext public.css. Plugin CSS loads before the theme stylesheet, so a theme
    overrides these selectors with plain rules at equal specificity. A theme
    can also replace this file entirely by shipping
-   themes/{theme}/assets/Comments/css/comments.css (see docs/Themes.md). */
+   themes/{theme}/assets/Comments/css/comments.css (see build_docs/Themes.md). */
 .pv-comments { margin-top: 2rem; }
 .pv-comments-list { list-style: none; margin: 0; padding: 0; }
 .pv-comment { padding: .75rem .75rem 0 0; }
@@ -13,6 +13,11 @@
 .pv-comment-depth-4 { margin-left: 5rem; }
 .pv-comment-meta { display: flex; gap: .75rem; align-items: baseline; }
 .pv-comment-body { margin-top: .25rem; }
+.pv-comment-reply { margin-top: .35rem; padding: 0; border: 0; background: none; color: var(--pv-link, #2563eb); cursor: pointer; font: inherit; }
+.pv-comment-reply:hover { text-decoration: underline; }
+.pv-comment-replying { display: flex; gap: .5rem; align-items: center; color: var(--pv-muted, #6b7280); }
+.pv-comment-replying[hidden] { display: none; }
+.pv-comment-cancel-reply { padding: 0; border: 0; background: none; color: var(--pv-link, #2563eb); cursor: pointer; font: inherit; text-decoration: underline; }
 .pv-comment-form { margin-top: 1.25rem; display: grid; gap: .5rem; }
 .pv-comment-form textarea,
 .pv-comment-form input { width: 100%; box-sizing: border-box; }

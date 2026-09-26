@@ -116,4 +116,59 @@ final class RateLimiterTest extends TestCase
             self::assertGreaterThanOrEqual(time() - 60, $ts);
         }
     }
+
+    public function testAttemptAllowsAndRecordsUnderOneLock(): void
+    {
+        self::assertTrue($this->limiter->attempt('k', 1, 60));
+        // The slot was recorded, so a second attempt is denied.
+        self::assertFalse($this->limiter->attempt('k', 1, 60));
+        self::assertFalse($this->limiter->check('k', 1, 60));
+    }
+
+    public function testAttemptDenialDoesNotConsumeFurtherSlots(): void
+    {
+        self::assertTrue($this->limiter->attempt('k', 2, 60));
+        self::assertTrue($this->limiter->attempt('k', 2, 60));
+        self::assertFalse($this->limiter->attempt('k', 2, 60));
+
+        $path = $this->cacheDir . '/' . hash('sha256', 'k') . '.json';
+        $timestamps = json_decode((string) file_get_contents($path), true);
+        self::assertIsArray($timestamps);
+        self::assertCount(2, $timestamps, 'a denied attempt records nothing');
+    }
+
+    public function testAttemptWithADisabledWindowNeverLimitsOrRecords(): void
+    {
+        self::assertTrue($this->limiter->attempt('k', 1, 0));
+        self::assertTrue($this->limiter->attempt('k', 1, 0));
+        self::assertFalse(is_file($this->cacheDir . '/' . hash('sha256', 'k') . '.json'));
+    }
+
+    public function testUndoReleasesTheMostRecentSlot(): void
+    {
+        self::assertTrue($this->limiter->attempt('k', 1, 60));
+        self::assertFalse($this->limiter->attempt('k', 1, 60));
+
+        $this->limiter->undo('k');
+        self::assertTrue($this->limiter->check('k', 1, 60));
+        self::assertTrue($this->limiter->attempt('k', 1, 60));
+    }
+
+    public function testUndoOnAnUnknownKeyIsHarmless(): void
+    {
+        $this->limiter->undo('never-recorded');
+        self::assertTrue($this->limiter->check('never-recorded', 1, 60));
+    }
+
+    public function testUndoLeavesEarlierSlotsIntact(): void
+    {
+        self::assertTrue($this->limiter->attempt('k', 2, 60));
+        $this->limiter->undo('k');
+
+        // No slot remains after the undo and the cap is two, so two more
+        // attempts fit and the third is denied.
+        self::assertTrue($this->limiter->attempt('k', 2, 60));
+        self::assertTrue($this->limiter->attempt('k', 2, 60));
+        self::assertFalse($this->limiter->attempt('k', 2, 60));
+    }
 }

@@ -144,6 +144,11 @@ class Comment extends \Pubvana\Models\AbstractModel
     /**
      * Create a new comment from an array of data.
      *
+     * Only the comment's own columns are writable. The list mirrors the
+     * migration and keeps the insert path as strict as the update path, so
+     * a key that is not a real column cannot reach the insert statement as
+     * a raw SQL identifier.
+     *
      * @param array<string, mixed> $data
      */
     public function createRecord(array $data): self
@@ -151,8 +156,16 @@ class Comment extends \Pubvana\Models\AbstractModel
         $now = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
         $record = new self($this->getDatabaseConnection());
 
-        foreach ($data as $key => $value) {
-            $record->$key = $value;
+        $allowed = [
+            'commentable_type', 'commentable_id', 'parent_id', 'user_id',
+            'guest_name', 'guest_email', 'guest_website', 'body', 'status',
+            'ip_address',
+        ];
+
+        foreach ($allowed as $key) {
+            if (array_key_exists($key, $data)) {
+                $record->$key = $data[$key];
+            }
         }
 
         $record->created_at = $now;
