@@ -21,6 +21,7 @@ class Plugin implements PluginInterface
     {
         $prefix = $app->pluginLoader()->routePrefix('pubvana/blog');
         $config['route_prefix'] = $prefix;
+        $config['profiles_route_prefix'] = $app->pluginLoader()->routePrefix('pubvana/profiles');
 
         $app->map('blog', function () use ($app, $config) {
             static $instance = null;

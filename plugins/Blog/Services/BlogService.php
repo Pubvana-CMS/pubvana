@@ -469,6 +469,8 @@ class BlogService
             $namesByUserId[(int) $profile->user_id] = (string) ($profile->display_name ?? '');
         }
 
+        $profilesPrefix = (string) ($this->config['profiles_route_prefix'] ?? '/profile');
+
         $map = [];
         foreach ($authorIds as $authorId) {
             $username = $usersById[$authorId] ?? null;
@@ -482,7 +484,7 @@ class BlogService
                 'id'       => $authorId,
                 'username' => $username,
                 'name'     => $displayName !== '' ? $displayName : $username,
-                'url'      => $username !== '' ? '/profile/' . $username : null,
+                'url'      => $username !== '' ? $profilesPrefix . '/' . $username : null,
             ];
         }
 

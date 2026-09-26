@@ -313,11 +313,13 @@ class BlogPublicController extends PublicController
         } catch (\Throwable) {
         }
 
+        $profilesPrefix = $this->app->pluginLoader()->routePrefix('pubvana/profiles');
+
         return [
             'id'       => $userId,
             'username' => $username,
             'name'     => $displayName !== '' ? $displayName : $username,
-            'url'      => $username !== '' ? '/profile/' . $username : null,
+            'url'      => $username !== '' ? $profilesPrefix . '/' . $username : null,
         ];
     }
 
