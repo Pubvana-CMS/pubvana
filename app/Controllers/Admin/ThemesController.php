@@ -43,7 +43,7 @@ class ThemesController extends AdminController
     }
 
     /**
-     * Theme listing — syncs filesystem, shows all themes with activate buttons.
+     * Theme listing, syncs filesystem, shows all themes with activate buttons.
      *
      * Trust statuses come from the shared trust cache; any theme with no
      * cache row is live-checked first (one batch) so fresh installs show real
@@ -292,7 +292,7 @@ class ThemesController extends AdminController
         }
 
         $this->render('admin/themes/options', [
-            'pageTitle' => 'Theme Options — ' . $theme->name,
+            'pageTitle' => 'Theme Options: ' . $theme->name,
             'theme'     => $theme,
             'options'   => $optionDefs,
             'saved'     => $saved,
@@ -342,7 +342,7 @@ class ThemesController extends AdminController
     }
 
     /**
-     * Region manager — show all regions, placements, available blocks, orphans.
+     * Region manager, show all regions, placements, available blocks, orphans.
      */
     public function regions(): void
     {

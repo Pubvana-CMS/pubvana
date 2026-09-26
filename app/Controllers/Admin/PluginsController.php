@@ -15,7 +15,7 @@ use flight\Engine;
  *
  * THE PAUSE: a newly installed plugin's row defaults to enabled=false
  * (see PluginLoader::defaultState). Its migrations, seeds, and registration
- * code never run until this page flips it on — and enabling runs that
+ * code never run until this page flips it on, and enabling runs that
  * plugin's migrations SEEDS IMMEDIATELY in the same request. If any
  * migration fails, the plugin is left DISABLED (row reverted) and the
  * error is surfaced here. A future boot after a half-failed enable is
@@ -117,7 +117,7 @@ class PluginsController extends AdminController
      * Save the enabled/disabled state for posted plugins.
      *
      * Autosave: each row posts its own tiny form (toggle only). Priority is
-     * read-only and never written here — plugin_state stays authoritative.
+     * read-only and never written here, so plugin_state stays authoritative.
      *
      * - Only posted plugin IDs that were actually discovered are accepted.
      * - Required plugins are never disabled (server-side invariant).
@@ -145,7 +145,7 @@ class PluginsController extends AdminController
         $failures = [];
 
         // Only act on plugins the form explicitly posted. A row absent from
-        // the POST (or an unknown plugin ID) is never touched — it does NOT
+        // the POST (or an unknown plugin ID) is never touched; it does NOT
         // mean "disable" during a partial save.
         $posted = array_intersect_key($post, $known);
 
@@ -164,7 +164,7 @@ class PluginsController extends AdminController
                 continue;
             }
 
-            // Priority is read-only (data, not form control) — this save only
+            // Priority is read-only (data, not form control), so this save only
             // ever flips the enabled switch. DB/plugin_state stays authoritative.
             $wasEnabled = (bool) $state->enabled;
             if ($state->required) {

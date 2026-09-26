@@ -32,7 +32,7 @@ class AdminController
     }
 
     /**
-     * Dashboard — landing page after login.
+     * Dashboard, landing page after login.
      *
      * Cards and sections are populated by plugins via $app->adext().
      */
