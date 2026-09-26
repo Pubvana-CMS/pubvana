@@ -50,7 +50,7 @@ final class AiModelTest extends TestCase
         $pdo->exec(
             'CREATE TABLE ai_key_grants (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
-                key_id     INTEGER NOT NULL,
+                key_id     INTEGER NOT NULL REFERENCES ai_keys(id) ON DELETE CASCADE,
                 permission TEXT NOT NULL
             )'
         );
@@ -160,6 +160,33 @@ final class AiModelTest extends TestCase
 
         $grants->replaceFor((int) $key->id, []);
         self::assertSame([], $grants->permissionsFor((int) $key->id));
+    }
+
+    public function testReplaceForKeepsTheOldGrantsWhenAnInsertFails(): void
+    {
+        $key = $this->insertKey('h-atomic');
+        $keyId = (int) $key->id;
+        $grants = new AiKeyGrant($this->pdo);
+
+        $grants->replaceFor($keyId, ['posts.update']);
+
+        // Aborts the second insert of the batch, after the first has landed.
+        $this->pdo->exec(
+            "CREATE TRIGGER grants_reject_create BEFORE INSERT ON ai_key_grants
+             WHEN NEW.permission = 'posts.create'
+             BEGIN SELECT RAISE(ABORT, 'rejected by test'); END"
+        );
+
+        try {
+            $grants->replaceFor($keyId, ['posts.read', 'posts.create', 'posts.delete']);
+            self::fail('Expected the aborted insert to throw.');
+        } catch (\Throwable) {
+            // Asserting the surviving grants, not the exception type.
+        }
+
+        // The pre-call set. Without the transaction the delete and the first
+        // insert both stand, leaving the key on ['posts.read'].
+        self::assertSame(['posts.update'], $grants->permissionsFor($keyId));
     }
 
     public function testLogRecent(): void

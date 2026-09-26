@@ -59,24 +59,40 @@ class AiKeyGrant extends \Pubvana\Models\AbstractModel
     /**
      * Replace every grant for a key with the given set.
      *
+     * The delete and the inserts share one transaction. The unique index on
+     * (key_id, permission) means the delete has to happen first, so without
+     * the transaction a failure partway through the insert loop leaves the key
+     * on a partial set. A key with no rows is deny-all, so the visible result
+     * of the failure is a key stripped of permissions, not an error.
+     *
      * @param int      $keyId
      * @param string[] $permissions
+     * @throws \Throwable When a statement fails; the key keeps the set it had
      */
     public function replaceFor(int $keyId, array $permissions): void
     {
         $pdo = $this->getDatabaseConnection();
 
-        $stmt = $pdo->prepare('DELETE FROM ai_key_grants WHERE key_id = :key_id');
-        $stmt->execute([':key_id' => $keyId]);
-
         $permissions = array_values(array_filter(array_unique(array_map('trim', $permissions)), static fn(string $value): bool => $value !== ''));
-        if ($permissions === []) {
-            return;
-        }
 
-        $stmt = $pdo->prepare('INSERT INTO ai_key_grants (key_id, permission) VALUES (:key_id, :permission)');
-        foreach ($permissions as $permission) {
-            $stmt->execute([':key_id' => $keyId, ':permission' => $permission]);
+        // Outside the try: if beginTransaction() throws, no transaction of
+        // ours is open, and rolling back would discard the caller's work.
+        $pdo->beginTransaction();
+        try {
+            $stmt = $pdo->prepare('DELETE FROM ai_key_grants WHERE key_id = :key_id');
+            $stmt->execute([':key_id' => $keyId]);
+
+            if ($permissions !== []) {
+                $stmt = $pdo->prepare('INSERT INTO ai_key_grants (key_id, permission) VALUES (:key_id, :permission)');
+                foreach ($permissions as $permission) {
+                    $stmt->execute([':key_id' => $keyId, ':permission' => $permission]);
+                }
+            }
+
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollback();
+            throw $e;
         }
     }
 }

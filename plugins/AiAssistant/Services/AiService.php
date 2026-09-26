@@ -183,6 +183,10 @@ class AiService
     /**
      * Delete a key and all of its grants.
      *
+     * The grants go with it through ON DELETE CASCADE on ai_key_grants, in the
+     * same statement, so there is no window where the key is gone and its
+     * grants are not.
+     *
      * @return bool False when the key does not exist
      */
     public function deleteKey(int $keyId): bool
@@ -192,7 +196,6 @@ class AiService
             return false;
         }
 
-        $this->grantModel()->replaceFor($keyId, []);
         $key->delete();
         unset($this->grantsCache[$keyId]);
         return true;

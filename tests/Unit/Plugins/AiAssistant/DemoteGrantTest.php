@@ -344,6 +344,7 @@ final class DemoteGrantTest extends TestCase
             return new AiService($this->pdo, $app);
         });
 
+        $this->ensureKeyRow();
         $statement = $this->pdo->prepare('INSERT INTO ai_key_grants (key_id, permission) VALUES (1, :permission)');
         foreach ($grants as $permission) {
             $statement->execute(['permission' => $permission]);
@@ -364,6 +365,7 @@ final class DemoteGrantTest extends TestCase
             return new AiService($this->pdo, $app);
         });
 
+        $this->ensureKeyRow();
         $statement = $this->pdo->prepare('INSERT INTO ai_key_grants (key_id, permission) VALUES (1, :permission)');
         foreach ($grants as $permission) {
             $statement->execute(['permission' => $permission]);
@@ -372,13 +374,21 @@ final class DemoteGrantTest extends TestCase
         return new PagesHarnessController($app);
     }
 
-    private function key(): AiKey
+    /**
+     * Grants carry a foreign key to ai_keys, so the parent row has to be
+     * there before a grant can reference it.
+     */
+    private function ensureKeyRow(): void
     {
-        $statement = $this->pdo->prepare(
-            "INSERT INTO ai_keys (id, name, key_hash, key_prefix, enabled, failed_attempts)
+        $this->pdo->exec(
+            "INSERT OR IGNORE INTO ai_keys (id, name, key_hash, key_prefix, enabled, failed_attempts)
              VALUES (1, 'test-key', 'hash-1', 'pvai1_test', 1, 0)"
         );
-        $statement->execute();
+    }
+
+    private function key(): AiKey
+    {
+        $this->ensureKeyRow();
 
         $key = (new AiKey($this->pdo))->findById(1);
         self::assertNotNull($key);
@@ -439,7 +449,7 @@ final class DemoteGrantTest extends TestCase
         $pdo->exec(
             'CREATE TABLE ai_key_grants (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
-                key_id     INTEGER NOT NULL,
+                key_id     INTEGER NOT NULL REFERENCES ai_keys(id) ON DELETE CASCADE,
                 permission TEXT NOT NULL,
                 UNIQUE(key_id, permission)
             )'

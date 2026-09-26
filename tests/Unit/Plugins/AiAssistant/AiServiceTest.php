@@ -117,7 +117,7 @@ final class AiServiceTest extends TestCase
         $pdo->exec(
             'CREATE TABLE ai_key_grants (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
-                key_id     INTEGER NOT NULL,
+                key_id     INTEGER NOT NULL REFERENCES ai_keys(id) ON DELETE CASCADE,
                 permission TEXT NOT NULL
             )'
         );
