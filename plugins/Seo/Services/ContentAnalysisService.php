@@ -80,6 +80,9 @@ class ContentAnalysisService
     /**
      * @return array{id: string, status: string, message: string}
     */
+    /**
+     * @return array{id: string, status: string, message: string}
+     */
     protected function checkTitleLength(string $title): array
     {
         $len = mb_strlen($title);
@@ -92,9 +95,6 @@ class ContentAnalysisService
         if ($len === 0) {
             return ['id' => 'title_length', 'status' => 'fail', 'message' => 'No title set.'];
         }
-    /**
-     * @return array{id: string, status: string, message: string}
-    */
         return ['id' => 'title_length', 'status' => 'fail', 'message' => "Title length ({$len} chars) is outside the recommended 50–60 range."];
     }
 
