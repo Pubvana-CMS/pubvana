@@ -122,11 +122,6 @@ class SeoMeta extends \Pubvana\Models\AbstractModel
      */
     public function countWithMetaTitle(): int
     {
-        $record = new self($this->getDatabaseConnection());
-        $record->isNotNull('meta_title')
-            ->notEqual('meta_title', '')
-            ->find();
-
         $records = new self($this->getDatabaseConnection());
         $all = $records->isNotNull('meta_title')->notEqual('meta_title', '')->findAll();
         return count($all);
