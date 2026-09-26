@@ -70,11 +70,6 @@ class Plugin implements PluginInterface
         // ─── Auto-tracking via flight.route.executed ────────────────────
         // Only fires when a route actually dispatches successfully
         $app->onEvent('flight.route.executed', function ($route, $executionTime) use ($app, $prefix) {
-            // Check config flag
-            if ($app->get('activity_log.track_admin_actions') === false) {
-                return;
-            }
-
             // Only admin routes with mutating methods. Route has no $method
             // property, so read the actual request method.
             $pattern = $route->pattern ?? '';
