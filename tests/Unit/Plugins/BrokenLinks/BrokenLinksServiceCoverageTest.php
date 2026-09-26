@@ -305,7 +305,41 @@ final class BrokenLinksServiceCoverageTest extends TestCase
         $result = $service->recheck($this->firstId());
 
         self::assertSame(200, $result['status']);
+        self::assertTrue($result['removed']);
+        self::assertFalse($result['dismissed']);
         self::assertSame(0, $this->rowCount());
+    }
+
+    public function testRecheckKeepsDismissedRowEvenWhenOk(): void
+    {
+        $registry = null;
+        $service = $this->makeService('', ['https://a.test/x' => ['status' => 200, 'error' => null]], $registry);
+
+        $service->upsert(['source_type' => 'post', 'source_id' => 1, 'source_title' => 'A', 'url' => 'https://a.test/x', 'http_status' => 404, 'error_message' => null]);
+        $service->dismiss($this->firstId());
+
+        $result = $service->recheck($this->firstId());
+
+        self::assertSame(200, $result['status']);
+        self::assertTrue($result['dismissed']);
+        self::assertFalse($result['removed']);
+        self::assertSame(1, $this->rowCount());
+        $row = $this->fetchRow('https://a.test/x');
+        self::assertNotFalse($row);
+        self::assertSame(1, (int) $row['dismissed']);
+    }
+
+    public function testDeleteOkLeavesDismissedRowsAlone(): void
+    {
+        $registry = null;
+        $service = $this->makeService('', [], $registry);
+
+        $service->upsert(['source_type' => 'post', 'source_id' => 1, 'source_title' => 'A', 'url' => 'https://example.com/gone', 'http_status' => 200, 'error_message' => null]);
+        $service->dismiss($this->firstId());
+
+        $service->deleteOk('post', 1);
+
+        self::assertSame(1, $this->rowCount());
     }
 
     public function testScanCountsAndCleansOk(): void
@@ -421,6 +455,58 @@ final class BrokenLinksServiceCoverageTest extends TestCase
         self::assertCount(2, $sources);
         self::assertSame('One', $sources[0]['title']);
         self::assertSame('Two', $sources[1]['title']);
+    }
+
+    public function testCollectSourcesSkipsThrowingContribution(): void
+    {
+        $registry = null;
+        $service = $this->makeService('', [], $registry);
+
+        $registry->register('brokenlinks', 'source', 'pubvana.throws', [
+            'label'    => 'Throws',
+            'callable' => static function (): array {
+                throw new \RuntimeException('posts table is gone');
+            },
+        ]);
+        $registry->register('brokenlinks', 'source', 'pubvana.good', [
+            'label'    => 'Good',
+            'callable' => static fn (): array => [
+                ['type' => 'post', 'id' => 1, 'title' => 'One', 'content' => '<p>x</p>'],
+            ],
+        ]);
+
+        $sources = $service->collectSources();
+
+        self::assertCount(1, $sources);
+        self::assertSame('One', $sources[0]['title']);
+    }
+
+    public function testScanSurvivesAThrowingSource(): void
+    {
+        $registry = null;
+        $service = $this->makeService('', [
+            'https://example.com/broken' => ['status' => 404, 'error' => null],
+        ], $registry);
+
+        $registry->register('brokenlinks', 'source', 'pubvana.throws', [
+            'label'    => 'Throws',
+            'callable' => static function (): array {
+                throw new \RuntimeException('pages table is gone');
+            },
+        ]);
+        $registry->register('brokenlinks', 'source', 'pubvana.test', [
+            'label' => 'Test',
+            'callable' => static fn (): array => [
+                ['type' => 'post', 'id' => 1, 'title' => 'One', 'content' => '<a href="https://example.com/broken">b</a>'],
+            ],
+        ]);
+
+        $result = $service->scan();
+
+        self::assertSame(1, $result['total']);
+        self::assertSame(1, $result['broken']);
+        self::assertSame(1, $result['sources']);
+        self::assertNotFalse($this->fetchRow('https://example.com/broken'));
     }
 
     public function testBrokenLinkFindersRunOnFreshInstances(): void

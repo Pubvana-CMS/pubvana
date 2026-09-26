@@ -94,12 +94,21 @@ class AiBrokenLinksApiController extends AiApiController
             $this->fail(404, 'Broken link entry not found.');
         }
 
-        $this->log($key, 'ok', 'broken_link', (int) $id, "Rechecked broken link #{$id}.");
+        $this->log(
+            $key,
+            'ok',
+            'broken_link',
+            (int) $id,
+            $result['dismissed']
+                ? "Rechecked dismissed broken link #{$id}; entry left in place."
+                : "Rechecked broken link #{$id}."
+        );
         $this->ok([
             'id'          => (int) $id,
             'http_status' => $result['status'],
             'error'       => $result['error'],
-            'resolved'    => $this->svc('brokenLinks')->isOk($result['status']),
+            'resolved'    => $result['removed'],
+            'dismissed'   => $result['dismissed'],
         ]);
     }
 

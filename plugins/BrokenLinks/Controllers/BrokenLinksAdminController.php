@@ -71,10 +71,16 @@ class BrokenLinksAdminController extends AdminController
             return;
         }
 
-        if ($this->app->brokenLinks()->isOk($result['status'])) {
+        $label = $result['status'] !== null ? (string) $result['status'] : 'unreachable';
+
+        if ($result['dismissed']) {
+            $this->app->session()->flash(
+                $this->app->brokenLinks()->isOk($result['status']) ? 'success' : 'error',
+                'Dismissed entry left in place (status: ' . $label . ').'
+            );
+        } elseif ($this->app->brokenLinks()->isOk($result['status'])) {
             $this->app->session()->flash('success', 'Link is now reachable and has been removed.');
         } else {
-            $label = $result['status'] !== null ? (string) $result['status'] : 'unreachable';
             $this->app->session()->flash('error', 'Link is still broken (status: ' . $label . ').');
         }
 

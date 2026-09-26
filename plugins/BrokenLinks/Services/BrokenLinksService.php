@@ -141,16 +141,33 @@ class BrokenLinksService
     /**
      * Recheck a single broken link by ID.
      *
-     * @return array{status: int|null, error: string|null} The check result
+     * A dismissed entry is checked but never written or removed: dismissal is
+     * permanent, so a dismissed row outlives a URL that now answers 2xx.
+     *
+     * @return array{status: int|null, error: string|null, removed: bool, dismissed: bool} The check result
      */
     public function recheck(int $id): array
     {
         $entry = $this->model()->findById($id);
         if ($entry === null) {
-            return ['status' => null, 'error' => 'Entry not found.'];
+            return [
+                'status'    => null,
+                'error'     => 'Entry not found.',
+                'removed'   => false,
+                'dismissed' => false,
+            ];
         }
 
         $result = $this->checkUrl($entry->url);
+
+        if ((int) $entry->dismissed === 1) {
+            return [
+                'status'    => $result['status'],
+                'error'     => $result['error'],
+                'removed'   => false,
+                'dismissed' => true,
+            ];
+        }
 
         $this->upsert([
             'source_type'   => $entry->source_type,
@@ -161,15 +178,22 @@ class BrokenLinksService
             'error_message' => $result['error'] ?? null,
         ]);
 
+        $removed = false;
         if ($this->isOk($result['status'])) {
             $this->deleteBySourceAndHash(
                 $entry->source_type,
                 (int) $entry->source_id,
                 $entry->url_hash
             );
+            $removed = true;
         }
 
-        return $result;
+        return [
+            'status'    => $result['status'],
+            'error'     => $result['error'],
+            'removed'   => $removed,
+            'dismissed' => false,
+        ];
     }
 
     /**
@@ -256,12 +280,15 @@ class BrokenLinksService
 
     /**
      * Remove results for URLs that are now OK after a rescan of a source.
+     *
+     * Dismissed rows are never removed: a dismissal outlives the URL it was
+     * recorded against.
      */
     public function deleteOk(string $sourceType, int $sourceId): void
     {
         $conn = $this->pdo;
         $stmt = $conn->prepare(
-            'DELETE FROM broken_links WHERE source_type = ? AND source_id = ? AND http_status >= 200 AND http_status < 300'
+            'DELETE FROM broken_links WHERE source_type = ? AND source_id = ? AND dismissed = 0 AND http_status >= 200 AND http_status < 300'
         );
         $stmt->execute([$sourceType, $sourceId]);
     }
@@ -345,7 +372,20 @@ class BrokenLinksService
                 continue;
             }
 
-            $items = call_user_func($contribution['callable']);
+            try {
+                $items = call_user_func($contribution['callable']);
+            } catch (\Throwable $e) {
+                // One source that throws must not abort the scan: the admin
+                // screen 500s and the cron task breaks its never-throws
+                // contract. Log it and scan whatever else registered.
+                error_log(sprintf(
+                    'BrokenLinks source "%s" failed: %s',
+                    (string) ($contribution['label'] ?? 'unknown'),
+                    $e->getMessage()
+                ));
+                continue;
+            }
+
             if (!is_array($items)) {
                 continue;
             }
