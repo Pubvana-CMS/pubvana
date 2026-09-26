@@ -570,6 +570,17 @@ final class AiServiceTest extends TestCase
         self::assertCount(1, $this->seoCalls);
     }
 
+    public function testSaveSeoCapsFocusKeywordsAtFive(): void
+    {
+        $service = $this->serviceWithSeo();
+
+        $service->saveSeo('post', 40, ['seo' => ['focus_keywords' => ['a', 'b', 'c', 'd', 'e', 'f', 'g']]]);
+        self::assertSame(['a', 'b', 'c', 'd', 'e'], $this->seoCalls[0][2]['focus_keywords']);
+
+        $service->saveSeo('post', 41, ['seo' => ['focus_keywords' => 'one, two, three, four, five, six']]);
+        self::assertSame(['one', 'two', 'three', 'four', 'five'], $this->seoCalls[1][2]['focus_keywords']);
+    }
+
     public function testSaveSeoToleratesMissingSeoPlugin(): void
     {
         $service = $this->service();

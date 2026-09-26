@@ -955,7 +955,8 @@ class AiService
             } else {
                 $keywords = array_filter(array_map('trim', explode(',', (string) $keywords)));
             }
-            $fields['focus_keywords'] = array_values($keywords);
+            // Cap at 5 to match the SEO plugin's documented keyword limit.
+            $fields['focus_keywords'] = array_values(array_slice($keywords, 0, 5));
         }
 
         if ($fields === []) {
