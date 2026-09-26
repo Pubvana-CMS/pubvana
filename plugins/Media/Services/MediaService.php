@@ -50,7 +50,7 @@ class MediaService
     */
     public function uploadImage(array $file, int $uploadedBy): Media
     {
-        $this->validateUpload($file, 'image');
+        $mime = $this->validateUpload($file, 'image');
 
         $ext    = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         $hex    = bin2hex(random_bytes(16));
@@ -79,7 +79,7 @@ class MediaService
             'type'        => 'image',
             'filename'    => $file['name'],
             'path'        => $relDir . '/' . $filename,
-            'mime_type'   => $file['type'],
+            'mime_type'   => $mime,
             'size'        => $file['size'],
             'uploaded_by' => $uploadedBy,
         ]);
@@ -90,7 +90,7 @@ class MediaService
     */
     public function uploadVideo(array $file, int $uploadedBy): Media
     {
-        $this->validateUpload($file, 'video');
+        $mime = $this->validateUpload($file, 'video');
 
         $ext    = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         $hex    = bin2hex(random_bytes(16));
@@ -483,9 +483,15 @@ class MediaService
     // ── Internal ───────────────────────────────────────────────
 
     /**
+     * Validate an upload and return the server-detected MIME type.
+     *
+     * The browser-supplied $file['type'] is never trusted: the finfo
+     * result is the one written to the database.
+     *
      * @param array{name: string, type: string, tmp_name: string, error: int, size: int} $file $_FILES entry
-    */
-    private function validateUpload(array $file, string $kind): void
+     * @return string Detected MIME type, already checked against the allow-list
+     */
+    private function validateUpload(array $file, string $kind): string
     {
         if ($file['error'] !== UPLOAD_ERR_OK) {
             throw new \InvalidArgumentException('Upload failed with error code: ' . $file['error']);
@@ -506,6 +512,7 @@ class MediaService
 
         $finfo     = new \finfo(FILEINFO_MIME_TYPE);
         $actualMime = $finfo->file($file['tmp_name']);
+        $actualMime = is_string($actualMime) ? $actualMime : '';
 
         $allowedMimes = ($kind === 'image')
             ? ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
@@ -514,6 +521,8 @@ class MediaService
         if (!in_array($actualMime, $allowedMimes, true)) {
             throw new \InvalidArgumentException('File content does not match an allowed type.');
         }
+
+        return $actualMime;
     }
 
     private function detectProvider(string $url): ?string

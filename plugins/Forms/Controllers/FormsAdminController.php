@@ -57,16 +57,22 @@ class FormsAdminController extends AdminController
             return;
         }
 
-        $this->app->forms()->createForm([
-            'name'                => $post['name'] ?? '',
-            'slug'                => $slug,
-            'description'         => $post['description'] ?? null,
-            'status'              => $post['status'] ?? 'draft',
-            'submit_label'        => $post['submit_label'] ?? 'Submit',
-            'success_message'     => $post['success_message'] ?? 'Thanks, your submission has been received.',
-            'notification_emails' => $post['notification_emails'] ?? null,
-            'field_definitions'   => $post['field_definitions'] ?? '[]',
-        ]);
+        try {
+            $this->app->forms()->createForm([
+                'name'                => $post['name'] ?? '',
+                'slug'                => $slug,
+                'description'         => $post['description'] ?? null,
+                'status'              => $post['status'] ?? 'draft',
+                'submit_label'        => $post['submit_label'] ?? 'Submit',
+                'success_message'     => $post['success_message'] ?? 'Thanks, your submission has been received.',
+                'notification_emails' => $post['notification_emails'] ?? null,
+                'field_definitions'   => $post['field_definitions'] ?? '[]',
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            $this->app->session()->flash('error', $e->getMessage());
+            $this->app->redirect($this->adminBase() . '/create');
+            return;
+        }
 
         $this->app->session()->flash('success', 'Form created.');
         $this->app->redirect($this->adminBase());
@@ -102,15 +108,21 @@ class FormsAdminController extends AdminController
             return;
         }
 
-        $this->app->forms()->updateForm((int) $id, [
-            'name'                => $post['name'] ?? '',
-            'description'         => $post['description'] ?? null,
-            'status'              => $post['status'] ?? 'draft',
-            'submit_label'        => $post['submit_label'] ?? 'Submit',
-            'success_message'     => $post['success_message'] ?? 'Thanks, your submission has been received.',
-            'notification_emails' => $post['notification_emails'] ?? null,
-            'field_definitions'   => $post['field_definitions'] ?? '[]',
-        ]);
+        try {
+            $this->app->forms()->updateForm((int) $id, [
+                'name'                => $post['name'] ?? '',
+                'description'         => $post['description'] ?? null,
+                'status'              => $post['status'] ?? 'draft',
+                'submit_label'        => $post['submit_label'] ?? 'Submit',
+                'success_message'     => $post['success_message'] ?? 'Thanks, your submission has been received.',
+                'notification_emails' => $post['notification_emails'] ?? null,
+                'field_definitions'   => $post['field_definitions'] ?? '[]',
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            $this->app->session()->flash('error', $e->getMessage());
+            $this->app->redirect($this->adminBase() . '/' . $id . '/edit');
+            return;
+        }
 
         $this->app->session()->flash('success', 'Form updated.');
         $this->app->redirect($this->adminBase() . '/' . $id . '/edit');

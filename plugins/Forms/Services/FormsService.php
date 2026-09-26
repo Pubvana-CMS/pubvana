@@ -12,6 +12,25 @@ use flight\Engine;
 
 class FormsService
 {
+    /**
+     * Names the renderer and submitter own. A field definition may not use
+     * one: the honeypot shares the request namespace with the real fields,
+     * so a collision makes a filled field look like a bot and the whole
+     * submission is silently dropped.
+     *
+     * @var list<string>
+     */
+    public const RESERVED_FIELD_NAMES = ['pv_website', '_csrf_token', '_return_url'];
+
+    /**
+     * The forms.status column is an enum of exactly these values
+     * (Database/Migrations/2026-09-17-105230_CreateFormsTable.php). Anything
+     * else is rejected rather than written.
+     *
+     * @var list<string>
+     */
+    private const VALID_STATUSES = ['draft', 'published'];
+
     /** @var Engine<object> */
     private Engine $app;
     private Form $forms;
@@ -74,12 +93,42 @@ class FormsService
     }
 
     /**
+     * Rejects a payload that the forms table cannot hold, so a bad POST can
+     * never reach the enum column. Nothing is written and nothing is
+     * normalized on the way through: an invalid value is an error the admin
+     * has to see, not a value the service quietly repairs.
+     *
      * @param array<string, mixed> $data
+     * @param array<int, array<string, mixed>> $fieldDefinitions
+     * @throws \InvalidArgumentException When a field name is reserved or the status is not a valid enum value.
+     */
+    private function assertWritable(array $data, array $fieldDefinitions): void
+    {
+        foreach ($fieldDefinitions as $definition) {
+            $name = trim((string) ($definition['name'] ?? ''));
+            if ($name !== '' && in_array($name, self::RESERVED_FIELD_NAMES, true)) {
+                throw new \InvalidArgumentException(sprintf(
+                    '"%s" is reserved by the form renderer. Choose another field name.',
+                    $name
+                ));
+            }
+        }
+
+        if (array_key_exists('status', $data) && !in_array((string) $data['status'], self::VALID_STATUSES, true)) {
+            throw new \InvalidArgumentException('Status must be draft or published.');
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @throws \InvalidArgumentException When the payload cannot be stored as given.
      */
     public function createForm(array $data): Form
     {
         $fieldDefinitions = $this->decodeFieldDefinitions($data['field_definitions'] ?? '[]');
         unset($data['field_definitions']);
+
+        $this->assertWritable($data, $fieldDefinitions);
 
         $form = $this->forms->createRecord($data);
         $this->syncFields((int) $form->id, $fieldDefinitions);
@@ -89,6 +138,7 @@ class FormsService
 
     /**
      * @param array<string, mixed> $data
+     * @throws \InvalidArgumentException When the payload cannot be stored as given.
      */
     public function updateForm(int $id, array $data): ?Form
     {
@@ -99,6 +149,10 @@ class FormsService
 
         $fieldDefinitions = $this->decodeFieldDefinitions($data['field_definitions'] ?? '[]');
         unset($data['field_definitions']);
+
+        // Before any write: syncFields() deletes the existing fields first,
+        // so a reserved name must be caught before the row is touched.
+        $this->assertWritable($data, $fieldDefinitions);
 
         $form->updateRecord($data);
         $this->syncFields($id, $fieldDefinitions);
@@ -300,7 +354,7 @@ class FormsService
         $html .= '<form method="POST" action="' . htmlspecialchars($action) . '" class="pv-form">';
         $html .= function_exists('csrf_field') ? csrf_field() : '';
         $html .= '<input type="hidden" name="_return_url" value="' . htmlspecialchars($returnUrl) . '">';
-        $html .= '<input type="text" name="website" value="" autocomplete="off" tabindex="-1" style="position:absolute;left:-9999px;">';
+        $html .= '<input type="text" name="pv_website" value="" autocomplete="off" tabindex="-1" style="position:absolute;left:-9999px;">';
 
         foreach ($fields as $field) {
             $name = (string) $field->name;
@@ -440,10 +494,10 @@ class FormsService
         unset($values['_csrf_token']);
         unset($values['_return_url']);
 
-        if (!empty($values['website'])) {
+        if (!empty($values['pv_website'])) {
             return ['ok' => true, 'errors' => [], 'values' => []];
         }
-        unset($values['website']);
+        unset($values['pv_website']);
 
         // Shared per-IP limiter: one successful submission per window per
         // form and address. Replaces the old per-session gate, which a

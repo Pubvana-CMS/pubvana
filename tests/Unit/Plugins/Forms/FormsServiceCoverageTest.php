@@ -159,6 +159,14 @@ final class FormsServiceCoverageTest extends TestCase
         return (int) ($stmt->fetch(PDO::FETCH_ASSOC)['c'] ?? 0);
     }
 
+    private function formCount(): int
+    {
+        $stmt = $this->pdo->query('SELECT COUNT(*) AS c FROM forms');
+        self::assertNotFalse($stmt);
+
+        return (int) ($stmt->fetch(PDO::FETCH_ASSOC)['c'] ?? 0);
+    }
+
     /** @return array<string, mixed> */
     private function lastSubmission(): array
     {
@@ -291,7 +299,7 @@ final class FormsServiceCoverageTest extends TestCase
 
         $html = $service->renderPublicForm($form, ['name' => '<b>Ada</b>'], ['e' => 'Boom <b>']);
         self::assertStringContainsString('/forms/submit/' . (int) $form->id, $html);
-        self::assertStringContainsString('name="website"', $html);
+        self::assertStringContainsString('name="pv_website"', $html);
         self::assertStringContainsString('Name *', $html);
         self::assertStringContainsString('&lt;b&gt;Ada&lt;/b&gt;', $html);
         self::assertStringContainsString('Boom &lt;b&gt;', $html);
@@ -356,10 +364,109 @@ final class FormsServiceCoverageTest extends TestCase
         $service = $this->service($app);
         $form = $this->makeForm($service, $this->textField());
 
-        $result = $service->submitForm($form, ['name' => 'Ada', 'website' => 'bot'], ['ip_address' => '10.0.0.1']);
+        $result = $service->submitForm($form, ['name' => 'Ada', 'pv_website' => 'bot'], ['ip_address' => '10.0.0.1']);
 
         self::assertTrue($result['ok']);
         self::assertSame(0, $this->submissionCount());
+    }
+
+    public function testSubmitAcceptsALegitimateWebsiteField(): void
+    {
+        // A form may define a field called "website": the honeypot owns a
+        // reserved name, so a filled real field is collected, not swallowed.
+        $app = $this->buildApp();
+        $service = $this->service($app);
+        $form = $this->makeForm($service, [
+            ['type' => 'text', 'name' => 'website', 'label' => 'Your site', 'required' => false, 'width' => 'full', 'options' => []],
+        ]);
+
+        $result = $service->submitForm(
+            $form,
+            ['website' => 'https://ada.test', 'pv_website' => ''],
+            ['ip_address' => '10.0.0.1']
+        );
+
+        self::assertTrue($result['ok']);
+        self::assertSame(1, $this->submissionCount());
+    }
+
+    public function testCreateRejectsAReservedFieldName(): void
+    {
+        $app = $this->buildApp();
+        $service = $this->service($app);
+
+        try {
+            $service->createForm([
+                'name' => 'Collide',
+                'slug' => 'collide',
+                'field_definitions' => json_encode([
+                    ['type' => 'text', 'name' => 'pv_website', 'label' => 'Trap', 'required' => false, 'width' => 'full', 'options' => []],
+                ]),
+            ]);
+            self::fail('Expected the reserved field name to be rejected.');
+        } catch (\InvalidArgumentException $e) {
+            self::assertStringContainsString('pv_website', $e->getMessage());
+        }
+
+        self::assertSame(0, $this->formCount());
+    }
+
+    public function testUpdateRejectsAReservedFieldNameAndKeepsExistingFields(): void
+    {
+        $app = $this->buildApp();
+        $service = $this->service($app);
+        $form = $this->makeForm($service, $this->textField());
+        $formId = (int) $form->id;
+
+        $this->expectException(\InvalidArgumentException::class);
+        try {
+            $service->updateForm($formId, [
+                'name' => 'Collide',
+                'field_definitions' => json_encode([
+                    ['type' => 'text', 'name' => 'pv_website', 'label' => 'Trap', 'required' => false, 'width' => 'full', 'options' => []],
+                ]),
+            ]);
+        } finally {
+            self::assertCount(1, $service->getFieldDefinitions($formId), 'the existing fields must survive a rejected update');
+        }
+    }
+
+    public function testCreateRejectsAnInvalidStatus(): void
+    {
+        $app = $this->buildApp();
+        $service = $this->service($app);
+
+        $this->expectException(\InvalidArgumentException::class);
+        try {
+            $service->createForm(['name' => 'Bad', 'slug' => 'bad', 'status' => 'archived']);
+        } finally {
+            self::assertSame(0, $this->formCount(), 'a rejected status must not create a form');
+        }
+    }
+
+    public function testUpdateRejectsAnInvalidStatusAndKeepsTheStoredValue(): void
+    {
+        $app = $this->buildApp();
+        $service = $this->service($app);
+        $form = $this->makeForm($service, $this->textField());
+        $formId = (int) $form->id;
+
+        $this->expectException(\InvalidArgumentException::class);
+        try {
+            $service->updateForm($formId, ['name' => 'Renamed', 'status' => '']);
+        } finally {
+            self::assertSame('published', (string) $service->findForm($formId)?->status, 'the stored status must be untouched, not clamped');
+        }
+    }
+
+    public function testValidStatusesAreAccepted(): void
+    {
+        $app = $this->buildApp();
+        $service = $this->service($app);
+
+        $form = $service->createForm(['name' => 'Live', 'slug' => 'live', 'status' => 'published']);
+
+        self::assertSame('published', (string) $form->status);
     }
 
     public function testSubmitValidation(): void
