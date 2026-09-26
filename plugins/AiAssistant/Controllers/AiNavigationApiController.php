@@ -23,7 +23,14 @@ class AiNavigationApiController extends AiApiController
         $key = $this->requireKey();
         $this->requireGrant($key, 'navigation.read');
 
-        $groups = $this->app->ai()->listNavigationByGroup();
+        $navigation = $this->svc('navigation');
+        $groups = [];
+        foreach ($navigation->getGroups() as $group) {
+            foreach ($navigation->getByGroup($group) as $item) {
+                $groups[$group][] = $this->app->ai()->serializeNavigationItem($item);
+            }
+        }
+
         $this->log($key, 'ok', 'navigation', null, 'Listed navigation.');
         $this->ok($groups);
     }

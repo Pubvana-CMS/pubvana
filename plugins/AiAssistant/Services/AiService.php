@@ -707,26 +707,6 @@ class AiService
         return $this->serializeNavigationItem($item);
     }
 
-    /**
-     * Get all navigation items grouped by group, flattened and ordered.
-     *
-     * @return array<string, array<int, array<string, mixed>>>
-     */
-    public function listNavigationByGroup(): array
-    {
-        $navigation = $this->app->navigation();
-        $groups = $navigation->getGroups();
-
-        $result = [];
-        foreach ($groups as $group) {
-            foreach ($navigation->getByGroup($group) as $item) {
-                $result[$group][] = $this->serializeNavigationItem($item);
-            }
-        }
-
-        return $result;
-    }
-
     // -----------------------------------------------------------------
     // Serializers
     // -----------------------------------------------------------------
