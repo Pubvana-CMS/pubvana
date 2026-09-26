@@ -130,6 +130,35 @@ final class SocialLinksServiceTest extends TestCase
         self::assertSame(1, (int) $second->sort_order);
     }
 
+    public function testCreateSortOrderLandsPastAGapLeftByADeletion(): void
+    {
+        $first = $this->service->create(['platform' => 'github', 'url' => 'https://a.test']);
+        $second = $this->service->create(['platform' => 'x', 'url' => 'https://b.test']);
+        $third = $this->service->create(['platform' => 'linkedin', 'url' => 'https://c.test']);
+
+        self::assertNotNull($first);
+        self::assertTrue($this->service->delete((int) $first->id));
+
+        // Two rows left holding 1 and 2. A row count would hand the new link
+        // 2, tying with a row already there; it has to be 3.
+        $fourth = $this->service->create(['platform' => 'facebook', 'url' => 'https://d.test']);
+
+        self::assertNotNull($fourth);
+        self::assertSame(3, (int) $fourth->sort_order);
+
+        $orders = array_map(static fn ($link): int => (int) $link->sort_order, $this->service->all());
+        self::assertSame([1, 2, 3], $orders, 'every sort_order is distinct');
+        self::assertSame((int) $fourth->id, (int) $this->service->all()[2]->id, 'the new link sorts last');
+    }
+
+    public function testCreateSortOrderStartsAtZeroOnAnEmptyTable(): void
+    {
+        $link = $this->service->create(['platform' => 'github', 'url' => 'https://a.test']);
+
+        self::assertNotNull($link);
+        self::assertSame(0, (int) $link->sort_order);
+    }
+
     public function testAllActiveLinksCountFind(): void
     {
         self::assertSame([], $this->service->all());

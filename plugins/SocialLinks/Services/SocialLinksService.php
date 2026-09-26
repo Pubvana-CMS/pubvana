@@ -180,7 +180,11 @@ class SocialLinksService
         $link->icon = $isCustom
             ? $this->normalizeIcon((string) ($data['icon'] ?? ''), (string) ($this->config['fallback_icon'] ?? 'fa-solid fa-link'))
             : $this->platformIcon($platform);
-        $link->sort_order = count($this->all());
+        // One past the highest value in use, not the row count: a deletion
+        // leaves a gap, and a count would land on a value another row already
+        // holds. A new link must sort strictly last, so it must be strictly
+        // greater than every existing one.
+        $link->sort_order = $this->nextSortOrder();
         $link->is_active = 1;
         $link->created_at = $now;
         $link->updated_at = $now;
@@ -291,6 +295,20 @@ class SocialLinksService
                 $link->save();
             }
         }
+    }
+
+    /**
+     * The next sort_order a new link should take: one past the highest value
+     * in use, or 0 for an empty table.
+     */
+    private function nextSortOrder(): int
+    {
+        $highest = -1;
+        foreach ($this->all() as $link) {
+            $highest = max($highest, (int) $link->sort_order);
+        }
+
+        return $highest + 1;
     }
 
     private function normalizePlatform(string $key): string
