@@ -7,7 +7,6 @@ namespace Pubvana\Controllers\Admin;
 use Enlivenapp\FlightShield\Models\AuthGroup;
 use Enlivenapp\FlightShield\Models\User;
 use Enlivenapp\FlightShield\Models\UserIdentity;
-use flight\Engine;
 use Pubvana\Services\UserAdminService;
 
 /**
@@ -295,7 +294,7 @@ class UsersController extends AdminController
             $data['password'] = $post['password'];
         }
 
-        // Profile update may fail validation (e.g. weak password) — the
+        // Profile update may fail validation (e.g. weak password), the
         // user record itself is untouched in that case; redirect is silent
         // to match this admin UI's no-flash-message convention.
         $this->app->auth()->users()->updateProfile($user, $data);
