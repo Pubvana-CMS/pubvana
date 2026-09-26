@@ -79,7 +79,7 @@ The CSRF middleware skips `/api/ai/*` (noted at `Plugin.php:34`), because these 
 
 ### Authentication and grants
 
-`AiService::authenticate()` (`AiService.php:199`) hashes the bearer token, looks it up by hash, rejects blocked and disabled keys, and resets failure state on success. A blocked key is answered as blocked and its counter is left alone, so the block runs its fixed window. Disabled-key probing otherwise counts toward a block: after `max_failed_attempts` failures the key is blocked for `block_minutes` (`AiService.php:1041`). Every successful call stamps `last_used_at`.
+`AiService::authenticate()` (`AiService.php:199`) hashes the bearer token, looks it up by hash, rejects blocked and disabled keys, and resets failure state on success. A blocked key is answered as blocked and its counter is left alone, so the block runs its fixed window. Disabled-key probing otherwise counts toward a block: after `max_failed_attempts` failures the key is blocked for `block_minutes` (`AiService.php:1041`). Enabling a key from the admin clears that block and the probe count with it (`AiService::toggle()`), so the Enable button always yields a working key. Every successful call stamps `last_used_at`.
 
 Each endpoint calls `requireKey()` (`AiApiController.php:109`) for auth and `requireGrant()` (`AiApiController.php:137`) for the specific permission. A held permission is checked against the per-request cached grant set built from `AiKeyGrant::permissionsFor()` (`AiService.php:232`).
 

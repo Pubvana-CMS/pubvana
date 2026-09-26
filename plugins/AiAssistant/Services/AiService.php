@@ -153,6 +153,11 @@ class AiService
     /**
      * Toggle a key's enabled state.
      *
+     * Turning a key back on is an explicit admin decision, so the block and
+     * probe count from earlier failed attempts go with it. Otherwise the
+     * enabled key would still refuse every request until the old block
+     * expired on its own.
+     *
      * @return bool False when the key does not exist
      */
     public function toggle(int $keyId): bool
@@ -162,7 +167,14 @@ class AiService
             return false;
         }
 
-        $key->enabled = $key->isEnabled() ? 0 : 1;
+        $enabling = !$key->isEnabled();
+        $key->enabled = $enabling ? 1 : 0;
+
+        if ($enabling) {
+            $key->failed_attempts = 0;
+            $key->blocked_until = null;
+        }
+
         $key->updated_at = $this->now();
         $key->save();
         return true;
