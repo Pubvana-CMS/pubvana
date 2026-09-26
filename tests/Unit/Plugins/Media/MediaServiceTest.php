@@ -210,6 +210,20 @@ final class MediaServiceTest extends TestCase
         @unlink($tmp);
     }
 
+    public function testValidateUploadReturnsTheServerDetectedMime(): void
+    {
+        $service = $this->service();
+        $png = $this->writePng('uploads/2026/01/valid.png', 10, 10);
+
+        // The browser claims image/jpeg; finfo sees image/png. The returned
+        // value is the finfo result, which is what the uploaders now store.
+        $mime = $this->invoke($service, 'validateUpload', [[
+            'name' => 'ok.png', 'type' => 'image/jpeg', 'tmp_name' => $png, 'error' => UPLOAD_ERR_OK, 'size' => 100,
+        ], 'image']);
+
+        self::assertSame('image/png', $mime);
+    }
+
     public function testQueries(): void
     {
         $service = $this->service();

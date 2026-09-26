@@ -119,7 +119,7 @@ class MediaService
             'type'        => 'video',
             'filename'    => $file['name'],
             'path'        => $videoRel,
-            'mime_type'   => $file['type'],
+            'mime_type'   => $mime,
             'size'        => $file['size'],
             'poster_path' => $posterPath,
             'uploaded_by' => $uploadedBy,
