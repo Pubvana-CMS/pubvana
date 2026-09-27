@@ -30,7 +30,7 @@ use Throwable;
  *     log the skip and still call run_result callbacks.
  *   - Runs tasks in priority order (lowest first), each guarded by
  *     try/catch: one failing task never blocks the rest.
- *   - Appends one line per task to writable/logs/cron.log.
+ *   - Appends one line per task to writable/logs/error.log.
  *
  * An optional 'run_result' callable per task receives the outcome of
  * every completed run, skipped or not: the interval, the task key, the
@@ -85,7 +85,7 @@ class CronService
     {
         $this->app = $app;
         $writable = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'writable';
-        $this->logFile = $logFile ?? $writable . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'cron.log';
+        $this->logFile = $logFile ?? $writable . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'error.log';
         $this->lockDir = $lockDir ?? $writable . DIRECTORY_SEPARATOR . 'cache';
     }
 
