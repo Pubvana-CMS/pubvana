@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pubvana\Tests\Unit\Config;
 
+use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 use flight\Engine;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use Pubvana\Controllers\Admin\GroupsController;
@@ -265,6 +266,44 @@ final class CoreAdminConfigTest extends TestCase
         self::assertContains('POST /navigation/reorder ' . NavigationController::class . '::reorder', $handlers);
     }
 
+    /**
+     * The plugins and navigation routes carry the fine-grained gates their
+     * seeded permissions describe. admin.access (auto-added by
+     * ExtensionRegistry::registerRoutes) only says "is an admin".
+     */
+    public function testPluginAndNavigationRoutesCarryTheirPermissionGates(): void
+    {
+        $app = $this->boot();
+        /** @var ExtensionRegistry $adext */
+        $adext = $app->adext();
+
+        $expected = [
+            'GET /plugins'                   => 'plugins.manage',
+            'POST /plugins/save'             => 'plugins.manage',
+            'POST /plugins/recheck'          => 'plugins.manage',
+            'GET /navigation'                => 'navigation.edit',
+            'POST /navigation/store'         => 'navigation.edit',
+            'POST /navigation/@id/delete'    => 'navigation.edit',
+            'POST /navigation/reorder'       => 'navigation.edit',
+        ];
+
+        $gates = [];
+        foreach ($adext->getRoutes() as $route) {
+            $gates[$route['method'] . ' ' . $route['path']] = $this->routePermissions($route['middleware']);
+        }
+
+        foreach ($expected as $signature => $permission) {
+            self::assertContains($permission, $gates[$signature] ?? [], $signature);
+        }
+    }
+
+    public function testGateAliasesAreSeeded(): void
+    {
+        $seed = (string) file_get_contents(PROJECT_ROOT . '/app/Database/Seeds/Seed.php');
+        self::assertStringContainsString("'alias' => 'plugins.manage'", $seed);
+        self::assertStringContainsString("'alias' => 'navigation.edit'", $seed);
+    }
+
     private function boot(bool $statsThrow = false): Engine
     {
         $test = $this;
@@ -354,5 +393,27 @@ final class CoreAdminConfigTest extends TestCase
         require PROJECT_ROOT . '/app/config/core-admin.php';
 
         return $app;
+    }
+
+    /**
+     * Every permission alias carried by a route's middleware stack.
+     *
+     * @param array<int, mixed> $middleware
+     *
+     * @return array<int, string>
+     */
+    private function routePermissions(array $middleware): array
+    {
+        $permissions = [];
+        foreach ($middleware as $mw) {
+            if (! $mw instanceof PermissionMiddleware) {
+                continue;
+            }
+            foreach ((array) $this->property($mw, 'permissions') as $alias) {
+                $permissions[] = (string) $alias;
+            }
+        }
+
+        return $permissions;
     }
 }

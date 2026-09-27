@@ -45,7 +45,9 @@
                     <h3 class="card-title">Permissions</h3>
                 </div>
                 <div class="card-body">
-                    <?php if (empty($allPermissions)): ?>
+                    <?php if ($group->alias === 'superadmin'): ?>
+                        <p class="mb-0 text-secondary">Superadmin can perform all functions.</p>
+                    <?php elseif (empty($allPermissions)): ?>
                         <p class="text-secondary">No permissions defined yet. Create permissions first.</p>
                     <?php else: ?>
                         <div class="row">

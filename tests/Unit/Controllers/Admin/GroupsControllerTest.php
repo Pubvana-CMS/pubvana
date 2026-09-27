@@ -6,8 +6,10 @@ namespace Pubvana\Tests\Unit\Controllers\Admin;
 
 use flight\Engine;
 use flight\util\Collection;
+use Enlivenapp\FlightShield\Result;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Pubvana\Controllers\Admin\GroupsController;
+use Pubvana\Services\GroupAdminService;
 use Pubvana\Tests\Support\TestCase;
 
 /**
@@ -24,6 +26,7 @@ final class GroupsControllerTest extends TestCase
     public array $redirects = [];
     /** @var array<string, list<string>> */
     public array $flashes = [];
+    public FakeGroupAdmin $groupAdminFake;
 
     protected function setUp(): void
     {
@@ -32,6 +35,7 @@ final class GroupsControllerTest extends TestCase
         $this->fetches = [];
         $this->redirects = [];
         $this->flashes = [];
+        $this->groupAdminFake = new FakeGroupAdmin();
     }
 
     public function testIndexRendersGroupsWithCounts(): void
@@ -136,9 +140,8 @@ final class GroupsControllerTest extends TestCase
     {
         $store = new GroupStore([['alias' => 'admin', 'title' => 'Admin']]);
         $app = $this->engine(store: $store);
-        (new GroupsController($app))->delete('1');
+        $this->controller($app)->delete('1');
 
-        self::assertFalse($store->has('admin'));
         self::assertSame(['/admin/groups'], $this->redirects);
         self::assertSame('Group deleted.', $this->flashes['success'][0]);
     }
@@ -149,6 +152,49 @@ final class GroupsControllerTest extends TestCase
         (new GroupsController($app))->delete('99');
 
         self::assertSame(['/admin/groups'], $this->redirects);
+    }
+
+    public function testDeleteRefusesSuperadminGroup(): void
+    {
+        $app = $this->engine(groups: [['alias' => 'superadmin', 'title' => 'Super Admin']]);
+        $this->groupAdminFake->deleteResult = (new Result())->setSuccess(false)
+            ->setReason('The superadmin group cannot be deleted.');
+
+        $this->controller($app)->delete('1');
+
+        self::assertSame('superadmin', $this->groupAdminFake->lastDelete);
+        self::assertSame(['/admin/groups'], $this->redirects);
+        self::assertSame('The superadmin group cannot be deleted.', $this->flashes['error'][0]);
+        self::assertArrayNotHasKey('success', $this->flashes);
+    }
+
+    public function testDeletePassesNonSuperadminToService(): void
+    {
+        $app = $this->engine();
+        $this->groupAdminFake->deleteResult = (new Result())->setSuccess(true);
+
+        $this->controller($app)->delete('1');
+
+        self::assertTrue($this->groupAdminFake->called);
+        self::assertSame('admin', $this->groupAdminFake->lastDelete);
+        self::assertSame('Group deleted.', $this->flashes['success'][0]);
+    }
+
+    private function controller(Engine $app): GroupsController
+    {
+        $test = $this;
+
+        return new class($app, $test) extends GroupsController {
+            public function __construct(Engine $app, private GroupsControllerTest $t)
+            {
+                parent::__construct($app);
+            }
+
+            protected function groupAdmin(): GroupAdminService
+            {
+                return $this->t->groupAdminFake;
+            }
+        };
     }
 
     private function engine(array $data = [], ?GroupStore $store = null, array $groups = [], array $counts = []): Engine
@@ -241,6 +287,31 @@ final class GroupsControllerTest extends TestCase
         \Flight::setEngine($app);
 
         return $app;
+    }
+}
+
+/**
+ * Group administration service double. Widened to object because the
+ * controller hands over whatever the groups fake returns, not a real
+ * AuthGroup.
+ */
+final class FakeGroupAdmin extends GroupAdminService
+{
+    public bool $called = false;
+    public string $lastDelete = '';
+    public Result $deleteResult;
+
+    public function __construct()
+    {
+        $this->deleteResult = (new Result())->setSuccess(true);
+    }
+
+    public function deleteGroup(object $group): Result
+    {
+        $this->called = true;
+        $this->lastDelete = (string) $group->alias;
+
+        return $this->deleteResult;
     }
 }
 

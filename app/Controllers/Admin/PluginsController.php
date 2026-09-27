@@ -24,8 +24,9 @@ use flight\Engine;
  * Required plugins (sessions/shield/csrf) are locked: they cannot be
  * disabled by anyone, and their priority is fixed.
  *
- * Security: this controller is only mounted for `plugins.manage` holders.
- * Superadmin bypasses via the bulk permission grant in Shield.
+ * Security: this controller is only reachable for `plugins.manage` holders
+ * (route gate in app/config/core-admin.php). Superadmins bypass every
+ * permission check in Shield's User::can().
  *
  * @package Pubvana\Controllers\Admin
  */

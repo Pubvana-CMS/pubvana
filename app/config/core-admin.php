@@ -30,6 +30,7 @@ use Pubvana\Controllers\Admin\CaptchaAdminController;
 use Pubvana\Controllers\Admin\PluginsController;
 
 use Enlivenapp\FlightShield\Middlewares\ForcePasswordResetMiddleware;
+use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 
 /** @var \flight\Engine $app */
 $app = $app ?? Flight::app();
@@ -369,18 +370,24 @@ $adext->addRoutes('admin', [
 ], 'pubvana.core', true);
 
 // Plugins (enable/disable + priority, trust status, forced recheck)
+// Gated on plugins.manage (Shield seeded permission).
+$pluginsPerm = new PermissionMiddleware($app, 'plugins.manage');
+
 $adext->addRoutes('admin', [
-    ['GET',  '/plugins',           [PluginsController::class, 'index'],  [$forceResetMiddleware]],
-    ['POST', '/plugins/save',      [PluginsController::class, 'save'],   []],
-    ['POST', '/plugins/recheck',   [PluginsController::class, 'recheck'], []],
+    ['GET',  '/plugins',           [PluginsController::class, 'index'],  [$forceResetMiddleware, $pluginsPerm]],
+    ['POST', '/plugins/save',      [PluginsController::class, 'save'],   [$pluginsPerm]],
+    ['POST', '/plugins/recheck',   [PluginsController::class, 'recheck'], [$pluginsPerm]],
 ], 'pubvana.core', true);
 
 // Navigation
+// Gated on navigation.edit (Shield seeded permission).
+$navigationPerm = new PermissionMiddleware($app, 'navigation.edit');
+
 $adext->addRoutes('admin', [
-    ['GET',  '/navigation',              [NavigationController::class, 'index'],   []],
-    ['POST', '/navigation/store',        [NavigationController::class, 'store'],   []],
-    ['POST', '/navigation/@id/delete',   [NavigationController::class, 'delete'],  []],
-    ['POST', '/navigation/reorder',      [NavigationController::class, 'reorder'], [$forceResetMiddleware]],
+    ['GET',  '/navigation',              [NavigationController::class, 'index'],   [$navigationPerm]],
+    ['POST', '/navigation/store',        [NavigationController::class, 'store'],   [$navigationPerm]],
+    ['POST', '/navigation/@id/delete',   [NavigationController::class, 'delete'],  [$navigationPerm]],
+    ['POST', '/navigation/reorder',      [NavigationController::class, 'reorder'], [$forceResetMiddleware, $navigationPerm]],
 ], 'pubvana.core', true);
 
 /*

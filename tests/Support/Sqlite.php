@@ -375,9 +375,10 @@ final class Sqlite
 
         $pdo->exec(
             'CREATE TABLE auth_group_permissions (
-                id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                group_id      INTEGER NOT NULL,
-                permission_id INTEGER NOT NULL
+                id               INTEGER PRIMARY KEY AUTOINCREMENT,
+                group_alias      TEXT NOT NULL,
+                permission_alias TEXT NOT NULL,
+                created_at       TEXT
             )'
         );
 

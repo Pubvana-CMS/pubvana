@@ -49,11 +49,13 @@
                             <td>
                                 <div class="btn-list flex-nowrap">
                                     <a href="/admin/groups/<?= (int) $g->id ?>/edit" class="btn btn-sm btn-outline-primary">Edit</a>
-                                    <form method="POST" action="/admin/groups/<?= (int) $g->id ?>/delete"
-                                          class="d-inline" onsubmit="return confirm('Delete this group? Users in this group will lose its permissions.')">
-                                        <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
-                                        <button class="btn btn-sm btn-outline-danger">Delete</button>
-                                    </form>
+                                    <?php if ($g->alias !== 'superadmin'): ?>
+                                        <form method="POST" action="/admin/groups/<?= (int) $g->id ?>/delete"
+                                              class="d-inline" onsubmit="return confirm('Delete this group? Users in this group will lose its permissions.')">
+                                            <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
+                                            <button class="btn btn-sm btn-outline-danger">Delete</button>
+                                        </form>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pubvana\Controllers\Admin;
 
+use Pubvana\Services\GroupAdminService;
 
 /**
  * GroupsController - Admin CRUD for group management.
@@ -150,7 +151,8 @@ class GroupsController extends AdminController
      *
      * flight-shield removes all group-user and group-permission
      * associations; users left with no groups fall back to the
-     * default 'user' group.
+     * default 'user' group. The superadmin group is refused
+     * (see GroupAdminService).
      *
      * @param string $id Group ID
      * @return void
@@ -160,10 +162,24 @@ class GroupsController extends AdminController
         $group = $this->app->auth()->groups()->findById((int) $id);
 
         if ($group !== null) {
-            $this->app->auth()->groups()->delete($group->alias);
+            $result = $this->groupAdmin()->deleteGroup($group);
+
+            if (!$result->isOK()) {
+                $this->app->session()->flash('error', $result->reason() ?: 'Group could not be deleted.');
+                $this->app->redirect('/admin/groups');
+                return;
+            }
         }
 
         $this->app->session()->flash('success', 'Group deleted.');
         $this->app->redirect('/admin/groups');
+    }
+
+    /**
+     * Group administration rules (the superadmin group is not deletable).
+     */
+    protected function groupAdmin(): GroupAdminService
+    {
+        return new GroupAdminService($this->app);
     }
 }
