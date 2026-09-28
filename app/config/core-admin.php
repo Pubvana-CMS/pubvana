@@ -29,7 +29,6 @@ use Pubvana\Controllers\Admin\CaptchaAdminController;
 
 use Pubvana\Controllers\Admin\PluginsController;
 
-use Enlivenapp\FlightShield\Middlewares\ForcePasswordResetMiddleware;
 use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 
 /** @var \flight\Engine $app */
@@ -282,19 +281,6 @@ $adext->register('admin.menu', 'appearance', 'pubvana.navigation', [
 | and a warning will be logged.
 */
 
-/*
-|--------------------------------------------------------------------------
-| Forced Password Reset Gate
-|--------------------------------------------------------------------------
-| Redirects LOGGED-IN users whose Shield email identity carries the
-| force_reset flag to /auth/reset-password until they save a new password.
-| Anonymous traffic passes straight through, so this adds no auth
-| protection on its own; it rides along on every admin route below.
-| After an admin sets Force Reset on a user, the user gets bounced here
-| on their next admin visit.
-*/
-$forceResetMiddleware = new ForcePasswordResetMiddleware($app);
-
 // Users
 $adext->addRoutes('admin', [
     ['GET',    '/users',              [UsersController::class, 'index'],   []],
@@ -307,7 +293,7 @@ $adext->addRoutes('admin', [
     ['POST',   '/users/@id/toggle',   [UsersController::class, 'toggle'],  []],
     ['POST',   '/users/@id/ban',      [UsersController::class, 'ban'],     []],
     ['POST',   '/users/@id/unban',    [UsersController::class, 'unban'],   []],
-    ['POST',   '/users/@id/force-reset', [UsersController::class, 'forceReset'], [$forceResetMiddleware]],
+    ['POST',   '/users/@id/force-reset', [UsersController::class, 'forceReset'], []],
 ], 'pubvana.core', true);
 
 // Groups
@@ -346,25 +332,25 @@ $adext->addRoutes('admin', [
 
 // Settings (General page - tabbed)
 $adext->addRoutes('admin', [
-    ['GET',  '/settings',       [SettingsController::class, 'general'], [$forceResetMiddleware]],
+    ['GET',  '/settings',       [SettingsController::class, 'general'], []],
     ['POST', '/settings/save',  [SettingsController::class, 'save'],    []],
 ], 'pubvana.core', true);
 
 // Login (Shield sign-in features - Settings > Login)
 $adext->addRoutes('admin', [
-    ['GET',  '/login-sec',       [LoginSecController::class, 'index'], [$forceResetMiddleware]],
+    ['GET',  '/login-sec',       [LoginSecController::class, 'index'], []],
     ['POST', '/login-sec/save',  [LoginSecController::class, 'save'],  []],
 ], 'pubvana.core', true);
 
 // Captcha (site-wide human verification - Settings > Captcha)
 $adext->addRoutes('admin', [
-    ['GET',  '/captcha',       [CaptchaAdminController::class, 'index'], [$forceResetMiddleware]],
+    ['GET',  '/captcha',       [CaptchaAdminController::class, 'index'], []],
     ['POST', '/captcha/save',  [CaptchaAdminController::class, 'save'],  []],
 ], 'pubvana.core', true);
 
 // Email (SMTP settings - Settings > Email)
 $adext->addRoutes('admin', [
-    ['GET',  '/email',       [EmailAdminController::class, 'index'], [$forceResetMiddleware]],
+    ['GET',  '/email',       [EmailAdminController::class, 'index'], []],
     ['POST', '/email/save',  [EmailAdminController::class, 'save'],  []],
     ['POST', '/email/test',  [EmailAdminController::class, 'test'],  []],
 ], 'pubvana.core', true);
@@ -374,7 +360,7 @@ $adext->addRoutes('admin', [
 $pluginsPerm = new PermissionMiddleware($app, 'plugins.manage');
 
 $adext->addRoutes('admin', [
-    ['GET',  '/plugins',           [PluginsController::class, 'index'],  [$forceResetMiddleware, $pluginsPerm]],
+    ['GET',  '/plugins',           [PluginsController::class, 'index'],  [$pluginsPerm]],
     ['POST', '/plugins/save',      [PluginsController::class, 'save'],   [$pluginsPerm]],
     ['POST', '/plugins/recheck',   [PluginsController::class, 'recheck'], [$pluginsPerm]],
 ], 'pubvana.core', true);
@@ -387,7 +373,7 @@ $adext->addRoutes('admin', [
     ['GET',  '/navigation',              [NavigationController::class, 'index'],   [$navigationPerm]],
     ['POST', '/navigation/store',        [NavigationController::class, 'store'],   [$navigationPerm]],
     ['POST', '/navigation/@id/delete',   [NavigationController::class, 'delete'],  [$navigationPerm]],
-    ['POST', '/navigation/reorder',      [NavigationController::class, 'reorder'], [$forceResetMiddleware, $navigationPerm]],
+    ['POST', '/navigation/reorder',      [NavigationController::class, 'reorder'], [$navigationPerm]],
 ], 'pubvana.core', true);
 
 /*
@@ -420,7 +406,7 @@ $adext->register('admin.settings', 'general', 'pubvana.cms.site', [
             'key'         => 'CMS.siteName',
             'label'       => 'Site Name',
             'type'        => 'text',
-            'default'     => 'Pubvana',
+            'default'     => 'Pubvana v3',
             'description' => 'Shown in the admin top bar and across the site.',
         ],
         [
@@ -431,33 +417,31 @@ $adext->register('admin.settings', 'general', 'pubvana.cms.site', [
             'description' => 'Shown under the site name publically.',
         ],
         [
-            'key'         => 'CMS.siteUrl',
-            'label'       => 'Site URL',
-            'type'        => 'text',
-            'description' => 'Absolute base URL used for generated links and emails.',
-        ],
-        [
             'key'         => 'CMS.logo',
             'label'       => 'Site Logo',
             'type'        => 'text',
+            'default'     => '/pubvana-nodrop-nobg.png',
             'description' => 'The site\'s logo shown in various areas',
         ],
         [
             'key'         => 'CMS.favicon',
             'label'       => 'Site FavIcon',
             'type'        => 'text',
+            'default'     => '/favicon.ico',
             'description' => 'Shows you favicon in browser tabs (default is Pubvana favicon)',
         ],
         [
             'key'         => 'CMS.copyright',
             'label'       => 'Site Copyright',
             'type'        => 'text',
+            'default'     => '© Your Site',
             'description' => 'Text that follows (c) and date: EG: Your Company (Defaults to Site Name above)',
         ],
         [
             'key'         => 'CMS.adminEmail',
             'label'       => 'Admin Email',
             'type'        => 'email',
+            'default'     => 'admin@example.com',
             'description' => 'Contact address for system notifications.',
         ],
         [
@@ -499,17 +483,24 @@ $adext->register('admin.settings', 'email', 'pubvana.cms.mail', [
     'priority'    => 20,
     'fields'      => [
         [
+            'key'         => 'Mail.enabled',
+            'label'       => 'Send Email via SMTP',
+            'type'        => 'checkbox',
+            'default'     => false,
+            'description' => 'When off, outbound mail is not attempted and is logged',
+        ],
+        [
             'key'         => 'Mail.fromEmail',
             'label'       => 'From Email',
             'type'        => 'email',
-            'default'     => null,
+            'default'     => '',
             'description' => 'Sender address shown to recipients. Defaults to the Admin Email.',
         ],
         [
             'key'         => 'Mail.fromName',
             'label'       => 'From Name',
             'type'        => 'text',
-            'default'     => null,
+            'default'     => '',
             'description' => 'Display name for the sender. Defaults to the Site Name.',
         ],
         [
@@ -542,14 +533,14 @@ $adext->register('admin.settings', 'email', 'pubvana.cms.mail', [
             'key'         => 'Mail.username',
             'label'       => 'SMTP Username',
             'type'        => 'text',
-            'default'     => null,
+            'default'     => '',
             'description' => 'SMTP auth username. Leave blank for no authentication.',
         ],
         [
             'key'         => 'Mail.password',
             'label'       => 'SMTP Password',
             'type'        => 'password',
-            'default'     => null,
+            'default'     => '',
             'description' => 'SMTP auth password. Stored encrypted. Leave blank to keep the current password.',
         ],
     ],
@@ -583,7 +574,7 @@ $adext->register('admin.settings', 'login_sec', 'pubvana.cms.login_sec', [
             'key'         => 'Shield.allow_registration',
             'label'       => 'Allow public registration',
             'type'        => 'checkbox',
-            'default'     => true,
+            'default'     => false,
             'description' => 'People can create their own accounts on the Register page. Turn off to only create accounts from the admin area.',
         ],
         [
@@ -597,7 +588,7 @@ $adext->register('admin.settings', 'login_sec', 'pubvana.cms.login_sec', [
             'key'         => 'Shield.remember_me',
             'label'       => 'Remember me',
             'type'        => 'checkbox',
-            'default'     => true,
+            'default'     => false,
             'description' => 'Adds a Remember me option to the login form so people stay signed in on their usual device for 30 days.',
         ],
         [

@@ -78,7 +78,7 @@ final class CoreAdminConfigTest extends TestCase
         self::assertArrayHasKey('pubvana.cms.site', $general);
         $siteFields = $general['pubvana.cms.site']['fields'];
         $keys = array_column($siteFields, 'key');
-        foreach (['CMS.siteName', 'CMS.siteByline', 'CMS.siteUrl', 'CMS.adminEmail', 'CMS.defaultTimezone', 'CMS.homepageType'] as $key) {
+        foreach (['CMS.siteName', 'CMS.siteByline', 'CMS.adminEmail', 'CMS.defaultTimezone', 'CMS.homepageType'] as $key) {
             self::assertContains($key, $keys, $key);
         }
 
