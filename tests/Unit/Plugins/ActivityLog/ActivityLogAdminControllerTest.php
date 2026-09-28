@@ -77,6 +77,13 @@ final class ActivityLogAdminControllerTest extends TestCase
     {
         $_SERVER['REMOTE_ADDR'] = '198.51.100.7';
         $app = $this->app([
+            // Settings-store stand-in: resolves CMS.* the way production does.
+            'settings' => static fn(): object => new class {
+                public function get(string $key, mixed $default = null): mixed
+                {
+                    return \Flight::app()->get($key) ?? $default;
+                }
+            },
             'auth' => static fn(): object => new class {
                 public function user(): object
                 {
@@ -108,6 +115,13 @@ final class ActivityLogAdminControllerTest extends TestCase
         $test = $this;
         $logs = $this->logs;
         $app = $this->app([
+            // Settings-store stand-in: resolves CMS.* the way production does.
+            'settings' => static fn(): object => new class {
+                public function get(string $key, mixed $default = null): mixed
+                {
+                    return \Flight::app()->get($key) ?? $default;
+                }
+            },
             'request' => static fn(): object => new class($query) {
                 public Collection $query;
                 /** @param array<string, mixed> $q */

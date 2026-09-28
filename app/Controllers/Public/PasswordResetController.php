@@ -15,7 +15,7 @@ use Pubvana\Services\PasswordResetService;
  *   - Token mode: an anonymous visitor follows an emailed link and sets a
  *     new password.
  *   - Session mode: a logged-in user carrying Shield's force_reset flag
- *     (ForcePasswordResetMiddleware redirect) sets a new password directly.
+ *     sets a new password directly.
  *
  * HTTP only, strict MVC: identity and email work live in
  * PasswordResetService.
@@ -276,6 +276,6 @@ class PasswordResetController
      */
     protected function siteName(): string
     {
-        return (string) ($this->app->get('CMS.siteName') ?? 'Pubvana');
+        return (string) $this->app->settings()->get('CMS.siteName');
     }
 }

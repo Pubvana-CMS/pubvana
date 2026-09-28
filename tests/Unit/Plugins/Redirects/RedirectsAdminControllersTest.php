@@ -204,6 +204,13 @@ final class RedirectsAdminControllersTest extends TestCase
         $redirects = $this->redirects;
         $links = $this->links;
         $app = $this->app([
+            // Settings-store stand-in: resolves CMS.* the way production does.
+            'settings' => static fn(): object => new class {
+                public function get(string $key, mixed $default = null): mixed
+                {
+                    return \Flight::app()->get($key) ?? $default;
+                }
+            },
             'request' => static fn(): object => new class($data, $query) {
                 public Collection $data;
                 public Collection $query;

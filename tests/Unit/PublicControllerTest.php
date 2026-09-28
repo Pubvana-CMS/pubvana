@@ -359,21 +359,17 @@ final class PublicControllerTest extends TestCase
 
     public function testSiteNameFallbackChain(): void
     {
-        // Nothing stored anywhere: the hardcoded name.
+        // Nothing stored: no site name, and no literal invented in code.
         $controller = new class($this->engine([])) extends PublicController {};
-        self::assertSame('Pubvana', $this->invoke($controller, 'getSiteName'));
+        self::assertSame('', $this->invoke($controller, 'getSiteName'));
 
-        // An app value answers.
-        $controller = new class($this->engine(['CMS.siteName' => 'FromConfig'])) extends PublicController {};
-        self::assertSame('FromConfig', $this->invoke($controller, 'getSiteName'));
-
-        // A stored row beats the app value.
-        $controller = new class($this->engine(['CMS.siteName' => 'FromConfig'], settingsDb: ['CMS.siteName' => 'FromDb'])) extends PublicController {};
+        // A stored row answers.
+        $controller = new class($this->engine(['CMS.siteName' => 'FromDb'])) extends PublicController {};
         self::assertSame('FromDb', $this->invoke($controller, 'getSiteName'));
 
-        // A stored NULL row falls through to the app value.
-        $controller = new class($this->engine(['CMS.siteName' => 'FromConfig'], settingsDb: ['CMS.siteName' => null])) extends PublicController {};
-        self::assertSame('FromConfig', $this->invoke($controller, 'getSiteName'));
+        // A stored NULL row is the value: the read is empty, not defaulted.
+        $controller = new class($this->engine(['CMS.siteName' => null])) extends PublicController {};
+        self::assertSame('', $this->invoke($controller, 'getSiteName'));
     }
 
     public function testGetActiveThemeName(): void
@@ -387,7 +383,7 @@ final class PublicControllerTest extends TestCase
 
     public function testGetSettingDelegatesToTheStore(): void
     {
-        $app = $this->engine(['CMS.siteName' => 'Pubvana'], settingsDb: ['CMS.copyright' => '(c) me']);
+        $app = $this->engine(['CMS.copyright' => '(c) me']);
         $controller = new class($app) extends PublicController {};
 
         self::assertSame('(c) me', $this->invoke($controller, 'getSetting', ['CMS.copyright']));
@@ -819,19 +815,17 @@ final class PublicControllerTest extends TestCase
     /**
      * Fresh Engine mapped the way services.php wires public pages.
      *
-     * @param array<string, mixed>       $appValues  Values set on the engine (CMS.siteName etc.)
+     * @param array<string, string|null> $settings   Settings-store rows
      * @param string|null                $pageSidebar layout.page_sidebar option
      * @param string|null                $blogLayout layout.blog_layout option
      * @param bool                       $noActiveTheme getActive() answers null
-     * @param array<string, string|null> $settingsDb Settings-store rows
      * @param array<string, string>      $themeOptions Theme option rows
      */
     private function engine(
-        array $appValues = [],
+        array $settings = [],
         ?string $pageSidebar = null,
         ?string $blogLayout = null,
         bool $noActiveTheme = false,
-        array $settingsDb = [],
         array $themeOptions = []
     ): Engine {
         $test = $this;
@@ -851,9 +845,9 @@ final class PublicControllerTest extends TestCase
                 }
                 return $view;
             },
-            // Fake settings store: rows beat app values.
-            'settings' => function () use ($settingsDb) {
-                return new class($settingsDb) {
+            // Fake settings store: a row is the value.
+            'settings' => function () use ($settings) {
+                return new class($settings) {
                     /** @param array<string, string|null> $rows */
                     public function __construct(private array $rows) {}
                     public function get(string $key, mixed $default = null): mixed
@@ -927,9 +921,6 @@ final class PublicControllerTest extends TestCase
             },
         ]);
 
-        foreach ($appValues as $key => $value) {
-            $app->set($key, $value);
-        }
         // services.php keys the app override tier off this engine value.
         $app->set('flight.views.path', $this->tmpRoot . '/app-views');
 

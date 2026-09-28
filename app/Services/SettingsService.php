@@ -11,12 +11,13 @@ use Pubvana\Services\ExtensionRegistry;
 /**
  * SettingsService - Runtime settings store ($app->settings()).
  *
- * Database-backed settings are the STRONGEST source in the settings
- * precedence chain, superseding config files. Only DECLARED settings
- * participate: anything registered via adext type 'admin.settings'
- * may be stored here; secrets and deployment-level values (DB creds,
- * SESSION_ENCRYPTION_KEY, Shield hmac/jwt keys, APP_ENV, etc.) are
- * never declared, so they can never enter this store or the admin UI.
+ * Settings are database-backed and are the only source for a declared key.
+ * There is no precedence chain: deployment config stays in .env and is read
+ * from $app->get() directly. Only DECLARED settings participate: anything
+ * registered via adext type 'admin.settings' may be stored here; secrets and
+ * deployment-level values (DB creds, SESSION_ENCRYPTION_KEY, Shield hmac/jwt
+ * keys, APP_ENV, SITE_URL, etc.) are never declared, so they can never enter
+ * this store or the admin UI.
  *
  * Sole exception: 'Mail.password' (SMTP) is declared and stored, but
  * only ever as ciphertext - the Mailer service encrypts it on write
@@ -25,14 +26,17 @@ use Pubvana\Services\ExtensionRegistry;
  *
  * Resolution order for get(), strongest first:
  *   1. Database row (this table)
- *   2. The value at $app->get($key) - which already encodes
- *      real-env > .env > config.php thanks to env-overrides.php
- *   3. The declaration's 'default' (from the admin.settings registration)
- *   4. The caller's $default parameter (final safety net)
+ *   2. The declaration's 'default' (from the admin.settings registration)
+ *   3. The caller's $default parameter (final safety net)
  *
- * Rows materialize lazily: nothing needs seeding. A row appears the
- * first time a setting is saved through the admin UI or set().
- * Until then values resolve down the chain above.
+ * Every declared setting has a row: app/Database/Seeds/Seed.php seeds the
+ * shipped defaults on install. Tiers 2 and 3 cover a key with no row, which
+ * is the normal case for a plugin key the admin has not saved yet. They are
+ * not a read path for core keys, where a row always exists.
+ *
+ * Reads are self-contained: nothing is layered in from $app->get(). A
+ * deployment value is deployment config, read from $app->get() directly
+ * (SITE_URL is read as $app->get('siteUrl')), never through a setting.
  *
  * Caching: autoload-flagged rows load in one query on first access;
  * everything else lazy-loads per key on miss. Writes update the cache
@@ -99,7 +103,7 @@ class SettingsService
     protected array $fieldDeclarations = [];
 
     /**
-     * @param Engine<object> $app Flight application for db(), adext() and $app->get()
+     * @param Engine<object> $app Flight application for db() and adext()
      */
     public function __construct(Engine $app)
     {
@@ -111,11 +115,12 @@ class SettingsService
     // -----------------------------------------------------------------
 
     /**
-     * Get a setting's resolved value.
+     * Get a setting's value.
      *
-     * Resolution order: DB row > the app's value (env > .env > config.php,
-     * pre-applied by env-overrides.php) > declaration default >
-     * caller's $default. Returns null when nothing resolves.
+     * Resolution order: DB row > declaration default > caller's $default.
+     * A declared setting has a row (Seed.php seeds the shipped defaults); the
+     * lower tiers exist so a missing row degrades to the documented default
+     * instead of null.
      *
      * @param string $key     Namespaced key (e.g. 'CMS.siteName')
      * @param mixed  $default Final fallback when nothing resolves
@@ -129,29 +134,21 @@ class SettingsService
             return Setting::cast($row['type'], $row['value']);
         }
 
-        // 2. The app's value here: env vars/.env/config.php already layered in.
-        //    A declaration may point elsewhere via 'fallback'.
+        // 2. Declared default beats the caller's argument: the declaration is
+        //    the setting's documented default.
         $declaration = $this->declaredFields()[$key] ?? null;
-        $fallbackKey = $declaration['fallback'] ?? $key;
-        $stored = $this->app->get($fallbackKey);
-        if ($stored !== null) {
-            return $stored;
-        }
-
-        // 3. Declared default beats the caller's argument: the
-        //    declaration is the setting's documented default.
         if ($declaration !== null && array_key_exists('default', $declaration)) {
             return $declaration['default'];
         }
 
-        // 4. Caller safety net
+        // 3. Caller safety net
         return $default;
     }
 
     /**
      * Does a value resolve for this key?
      *
-     * True when a DB row exists OR any tier below resolves to a
+     * True when a DB row exists OR the tiers below it resolve to a
      * non-null value. Note: an intentionally-stored NULL row counts
      * as having a value (the row IS the value).
      *
@@ -168,8 +165,8 @@ class SettingsService
     /**
      * Get every setting in one namespace, merged across tiers.
      *
-     * Merge order (weakest to strongest): declaration defaults <
-     * the app's value (env/.env/config.php) < database rows.
+     * Merge order (weakest to strongest): declaration defaults < database
+     * rows.
      *
      * @param string $namespace Namespace before the dot (e.g. 'CMS', 'blog')
      * @return array<string, mixed>
@@ -195,19 +192,12 @@ class SettingsService
             }
         }
 
-        // Resolve each candidate down the chain: DB row > the app's value
-        // (env/.env/config.php) > declaration default. Keys that
-        // resolve nowhere are omitted.
+        // Resolve each candidate down the chain: DB row > declaration default.
+        // Keys that resolve nowhere are omitted.
         $merged = [];
         foreach (array_unique($keys) as $key) {
             if (isset($this->rows[$key])) {
                 $merged[$key] = Setting::cast($this->rows[$key]['type'], $this->rows[$key]['value']);
-                continue;
-            }
-
-            $stored = $this->app->get($fields[$key]['fallback'] ?? $key);
-            if ($stored !== null) {
-                $merged[$key] = $stored;
                 continue;
             }
 

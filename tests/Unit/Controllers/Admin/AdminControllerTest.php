@@ -439,6 +439,15 @@ final class AdminControllerTest extends TestCase
 
                 return $registry;
             },
+            // Settings-store stand-in: reads the engine's own values so the
+            // CMS.* lookups the controller makes resolve the way they do in
+            // production, where the settings store is the strongest source.
+            'settings' => static fn(): object => new class {
+                public function get(string $key, mixed $default = null): mixed
+                {
+                    return \Flight::app()->get($key) ?? $default;
+                }
+            },
             'auth' => static fn(): object => $authThrow
                 ? new class {
                     /** @return never */

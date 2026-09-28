@@ -41,6 +41,13 @@ final class PagesAdminControllerTest extends TestCase
 
         $app = $this->app([
             'slugify' => static fn(string $text): string => strtolower(trim((string) preg_replace('/[^a-z0-9]+/i', '-', $text), '-')),
+            // Settings-store stand-in: resolves CMS.* the way production does.
+            'settings' => static fn(): object => new class {
+                public function get(string $key, mixed $default = null): mixed
+                {
+                    return \Flight::app()->get($key) ?? $default;
+                }
+            },
         ]);
         \Flight::setEngine($app);
     }
@@ -189,6 +196,13 @@ final class PagesAdminControllerTest extends TestCase
         $pages = $this->pages;
         $app = $this->app([
             'slugify' => static fn(string $text): string => strtolower(trim((string) preg_replace('/[^a-z0-9]+/i', '-', $text), '-')),
+            // Settings-store stand-in: resolves CMS.* the way production does.
+            'settings' => static fn(): object => new class {
+                public function get(string $key, mixed $default = null): mixed
+                {
+                    return \Flight::app()->get($key) ?? $default;
+                }
+            },
             'request' => static fn(): object => new class($data, $query) {
                 public Collection $data;
                 public Collection $query;

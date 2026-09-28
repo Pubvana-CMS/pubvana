@@ -86,7 +86,7 @@ class Plugin implements PluginInterface
         ], 'pubvana.blog');
 
         // Auto-discovery link tags
-        $siteName = $app->settings()->get('CMS.siteName') ?? 'Blog';
+        $siteName = (string) $app->settings()->get('CMS.siteName');
         $adext->register('public.head', 'other', 'pubvana.blog.feeds', [
             'output'   => '<link rel="alternate" type="application/rss+xml" title="' . htmlspecialchars($siteName) . ' RSS" href="/feed">' . "\n" .
                           '<link rel="alternate" type="application/atom+xml" title="' . htmlspecialchars($siteName) . ' Atom" href="/atom.xml">',

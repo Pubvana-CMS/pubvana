@@ -239,6 +239,13 @@ final class MarketplaceAdminControllerTest extends TestCase
         $test = $this;
         $marketplace = $this->marketplace;
         $app = $this->app([
+            // Settings-store stand-in: resolves CMS.* the way production does.
+            'settings' => static fn(): object => new class {
+                public function get(string $key, mixed $default = null): mixed
+                {
+                    return \Flight::app()->get($key) ?? $default;
+                }
+            },
             'request' => static fn(): object => new class($data) {
                 public Collection $data;
                 /** @param array<string, mixed> $d */

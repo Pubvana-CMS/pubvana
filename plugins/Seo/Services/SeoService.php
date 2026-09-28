@@ -257,7 +257,7 @@ class SeoService
     {
         $settings = $this->app->settings();
         $separator = $settings->get('Seo.title_separator', '|');
-        $siteName = $settings->get('CMS.siteName') ?? '';
+        $siteName = $settings->get('CMS.siteName');
 
         // Check for per-content meta_title override
         $metaTitle = $this->getMetaField('meta_title');
@@ -360,7 +360,7 @@ class SeoService
             'og:description' => $ogDesc,
             'og:url'         => $ogUrl,
             'og:type'        => $ogType,
-            'og:site_name'   => $settings->get('CMS.siteName') ?? '',
+            'og:site_name'   => $settings->get('CMS.siteName'),
             'og:locale'      => str_replace('-', '_', $this->buildHreflang()),
         ];
 
@@ -519,7 +519,7 @@ class SeoService
     /**
      * Get the current request URL (full, with scheme and host).
      *
-     * The origin comes from the configured CMS.siteUrl setting via
+     * The origin comes from the SITE_URL deployment value via
      * UrlService::siteOrigin(); the request contributes its path only.
      * The Host header is never trusted (see AUDIT M4).
      */
@@ -612,8 +612,8 @@ class SeoService
     /**
      * Absolute site base URL, preferring the configured site URL.
      *
-     * Delegates to UrlService::siteOrigin(): the DB-backed CMS.siteUrl
-     * setting, never the request Host header (see AUDIT M4).
+     * Delegates to UrlService::siteOrigin(): the SITE_URL deployment value,
+     * never the request Host header (see AUDIT M4).
      */
     protected function getSiteUrl(): string
     {

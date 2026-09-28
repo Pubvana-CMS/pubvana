@@ -111,7 +111,8 @@ final class SeoHostHeaderTest extends TestCase
         $app->map('url', $this->singleton(fn (): UrlService => new UrlService($app)));
 
         $app->settings()->set('CMS.siteName', 'Test Site');
-        $app->settings()->set('CMS.siteUrl', $siteUrl);
+        // SITE_URL is deployment config: the app store holds it.
+        $app->set('siteUrl', $siteUrl);
 
         return $app;
     }

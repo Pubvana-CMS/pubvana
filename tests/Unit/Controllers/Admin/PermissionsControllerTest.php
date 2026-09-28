@@ -91,6 +91,13 @@ final class PermissionsControllerTest extends TestCase
         $test = $this;
         $store ??= new PermStore(['admin.access']);
         $app = $this->app([
+            // Settings-store stand-in: resolves CMS.* the way production does.
+            'settings' => static fn(): object => new class {
+                public function get(string $key, mixed $default = null): mixed
+                {
+                    return \Flight::app()->get($key) ?? $default;
+                }
+            },
             'request' => static fn(): object => new class($data) {
                 public Collection $data;
                 public Collection $query;

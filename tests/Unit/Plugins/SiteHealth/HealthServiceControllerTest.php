@@ -185,6 +185,13 @@ final class HealthServiceControllerTest extends TestCase
     {
         $test = $this;
         $app = $this->app([
+            // Settings-store stand-in: resolves CMS.* the way production does.
+            'settings' => static fn(): object => new class {
+                public function get(string $key, mixed $default = null): mixed
+                {
+                    return \Flight::app()->get($key) ?? $default;
+                }
+            },
             'adext' => static fn(): object => new class($external) {
                 /** @param list<array<string, mixed>> $ext */
                 public function __construct(private array $ext)
@@ -201,6 +208,8 @@ final class HealthServiceControllerTest extends TestCase
             'request' => static fn(): object => new class {
                 public Collection $data;
                 public Collection $query;
+                public bool $secure = false;
+                public string $host = 'localhost';
                 public function __construct()
                 {
                     $this->data = new Collection([]);

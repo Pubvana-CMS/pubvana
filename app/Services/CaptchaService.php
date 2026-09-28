@@ -66,7 +66,7 @@ class CaptchaService
      */
     public function provider(): string
     {
-        $provider = (string) $this->app->settings()->get('Captcha.provider', 'none');
+        $provider = (string) $this->app->settings()->get('Captcha.provider');
         return isset(self::PROVIDERS[$provider]) ? $provider : 'none';
     }
 
@@ -75,7 +75,7 @@ class CaptchaService
      */
     public function siteKey(): string
     {
-        return (string) $this->app->settings()->get('Captcha.site_key', '');
+        return (string) $this->app->settings()->get('Captcha.site_key');
     }
 
     /**
@@ -84,7 +84,7 @@ class CaptchaService
      */
     public function secretKey(): string
     {
-        $stored = (string) $this->app->settings()->get('Captcha.secret_key', '');
+        $stored = (string) $this->app->settings()->get('Captcha.secret_key');
         if ($stored === '') {
             return '';
         }

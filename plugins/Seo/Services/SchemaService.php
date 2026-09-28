@@ -117,7 +117,7 @@ class SchemaService
     protected function buildOrganizationNode(string $id): ?array
     {
         $settings = $this->app->settings();
-        $siteName = $settings->get('CMS.siteName') ?? '';
+        $siteName = $settings->get('CMS.siteName');
         $orgName = $settings->get('Seo.organization_name') ?: $siteName;
 
         if ($orgName === '') {
@@ -187,7 +187,7 @@ class SchemaService
     */
     protected function buildWebSiteNode(string $id): array
     {
-        $siteName = $this->app->settings()->get('CMS.siteName') ?? '';
+        $siteName = $this->app->settings()->get('CMS.siteName');
         $siteUrl = $this->getSiteUrl();
 
         return [
@@ -345,7 +345,7 @@ class SchemaService
     }
 
     /**
-     * Absolute site base URL from the configured CMS.siteUrl setting via
+     * Absolute site base URL from the SITE_URL deployment value via
      * UrlService::siteOrigin(); never the request Host header (AUDIT M4).
      */
     protected function getSiteUrl(): string

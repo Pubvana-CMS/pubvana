@@ -395,10 +395,10 @@ abstract class PublicController
             'site' => [
                 'name'        => $siteName,
                 'url'         => $this->app->get('flight.base_url') ?? '/',
-                'description' => $this->app->settings()->get('CMS.siteByline') ?? '',
-                'logo'        => $this->app->settings()->get('CMS.logo') ?? '',
-                'favicon'     => $this->app->settings()->get('CMS.favicon') ?? '/favicon.ico',
-                'copyright'   => $this->app->settings()->get('CMS.copyright') ?? '© ' . date('Y') . ' ' . $siteName,
+                'description' => (string) $this->app->settings()->get('CMS.siteByline'),
+                'logo'        => (string) $this->app->settings()->get('CMS.logo'),
+                'favicon'     => (string) $this->app->settings()->get('CMS.favicon'),
+                'copyright'   => (string) $this->app->settings()->get('CMS.copyright'),
             ],
             'header' => [
                 'title' => 'Home - ' . $siteName,
@@ -652,9 +652,7 @@ abstract class PublicController
      */
     protected function getSiteName(): string
     {
-        return $this->app->settings()->get('CMS.siteName')
-            ?? $this->app->get('CMS.siteName')
-            ?? 'Pubvana';
+        return (string) $this->app->settings()->get('CMS.siteName');
     }
 
     /**

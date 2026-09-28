@@ -42,7 +42,7 @@ class AdminController
         $user = $this->app->auth()->user();
         $context = [
             'user'      => $user,
-            'site_name' => $this->app->get('CMS.siteName') ?? 'Pubvana',
+            'site_name' => (string) $this->app->settings()->get('CMS.siteName'),
         ];
 
         $groups = $this->dashboardGroups();
@@ -324,7 +324,7 @@ class AdminController
         $this->app->render('admin/layouts/admin', [
             'content'    => $content,
             'pageTitle'  => $data['pageTitle'] ?? 'Dashboard',
-            'siteName'   => $this->app->get('CMS.siteName') ?? 'Pubvana',
+            'siteName'   => (string) $this->app->settings()->get('CMS.siteName'),
             'user'       => $user,
             'userGroups' => $userGroups,
             'nav'        => $nav,

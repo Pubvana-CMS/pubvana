@@ -154,7 +154,7 @@ class RobotsTxtService
     }
 
     /**
-     * Absolute site base URL from the configured CMS.siteUrl setting via
+     * Absolute site base URL from the SITE_URL deployment value via
      * UrlService::siteOrigin(); never the request Host header (AUDIT M4).
      */
     protected function getSiteUrl(): string

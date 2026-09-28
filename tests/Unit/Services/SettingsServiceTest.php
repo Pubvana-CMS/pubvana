@@ -16,8 +16,8 @@ use stdClass;
 /**
  * SettingsService over the in-memory settings table.
  *
- * Covers the four-tier resolution order (DB row > app store >
- * declaration default > caller default), namespace merges, write and
+ * Covers the resolution order (DB row > declaration default >
+ * caller default), namespace merges, write and
  * delete paths, per-type encoding round-trips, the failed-bulk-load
  * fallback read, and the adext declaration scan (validation, skip
  * logging, duplicate handling, select options normalization).
@@ -39,7 +39,7 @@ final class SettingsServiceTest extends TestCase
     // Reads: resolution order
     // -----------------------------------------------------------------
 
-    public function testGetDatabaseRowBeatsTheAppStore(): void
+    public function testGetReturnsTheDatabaseRowAndIgnoresTheAppStore(): void
     {
         $app = $this->makeApp();
         $app->set('CMS.siteName', 'EnvValue');
@@ -50,17 +50,20 @@ final class SettingsServiceTest extends TestCase
         self::assertSame('DbValue', $service->get('CMS.siteName'));
     }
 
-    public function testGetFallsBackToTheAppStoreValue(): void
+    public function testGetIgnoresTheAppStore(): void
     {
         $app = $this->makeApp();
         $app->set('CMS.siteName', 'EnvValue');
 
         $service = new SettingsService($app);
 
-        self::assertSame('EnvValue', $service->get('CMS.siteName'));
+        // Deployment config sits in $app->get() under its own key; it is not a
+        // tier of the settings store, so it cannot answer for a setting key.
+        self::assertNull($service->get('CMS.siteName'));
+        self::assertSame('CallerDefault', $service->get('CMS.siteName', 'CallerDefault'));
     }
 
-    public function testGetUsesDeclarationFallbackKeyForAppStoreLookup(): void
+    public function testGetIgnoresADeclarationFallbackKey(): void
     {
         $app = $this->makeApp();
         $app->set('CMS.byline', 'FromConfig');
@@ -79,7 +82,9 @@ final class SettingsServiceTest extends TestCase
 
         $service = new SettingsService($app);
 
-        self::assertSame('FromConfig', $service->get('CMS.siteByline'));
+        // 'fallback' is no longer a supported declaration key: with no row and
+        // no declared default, the read lands on the caller's argument.
+        self::assertSame('CallerByline', $service->get('CMS.siteByline', 'CallerByline'));
     }
 
     public function testGetDeclarationDefaultBeatsCallerDefault(): void
@@ -116,11 +121,11 @@ final class SettingsServiceTest extends TestCase
     {
         $app = $this->makeApp();
         $this->insertRow('t.nullable', null, 'NULL');
+        $this->insertRow('CMS.copyright', '2026', 'string');
         $service = new SettingsService($app);
 
         self::assertFalse($service->has('nothing.anywhere'));
 
-        $app->set('CMS.copyright', '2026');
         self::assertTrue($service->has('CMS.copyright'));
 
         self::assertTrue($service->has('t.nullable'), 'a stored NULL row IS the value');
@@ -130,22 +135,15 @@ final class SettingsServiceTest extends TestCase
     // Reads: namespace merge (all())
     // -----------------------------------------------------------------
 
-    public function testAllMergesDefaultsAppStoreAndRows(): void
+    public function testAllMergesDeclarationDefaultsAndRows(): void
     {
         $app = $this->makeApp();
-        $app->set('CMS.siteName', 'EnvName');
-        $app->set('CMS.byline', 'ConfigByline');
         $registry = $this->adext($app);
         $registry->register('admin.settings', 'general', 'core.tabs', [
             'label'  => 'General',
             'fields' => [
                 ['key' => 'CMS.siteName', 'label' => 'Site name', 'type' => 'text'],
-                [
-                    'key'      => 'CMS.siteByline',
-                    'label'    => 'Byline',
-                    'type'     => 'text',
-                    'fallback' => 'CMS.byline',
-                ],
+                ['key' => 'CMS.siteByline', 'label' => 'Byline', 'type' => 'text', 'default' => 'Default byline'],
                 ['key' => 'CMS.footer', 'label' => 'Footer', 'type' => 'text', 'default' => 'Default footer'],
             ],
         ]);
@@ -157,8 +155,8 @@ final class SettingsServiceTest extends TestCase
         $merged = $service->all('CMS');
 
         self::assertSame('DbName', $merged['CMS.siteName'], 'DB row is strongest');
-        self::assertSame('ConfigByline', $merged['CMS.siteByline'], 'app store beats declaration default');
-        self::assertSame('Default footer', $merged['CMS.footer'], 'declaration default is weakest');
+        self::assertSame('Default byline', $merged['CMS.siteByline'], 'declaration default fills a missing row');
+        self::assertSame('Default footer', $merged['CMS.footer'], 'declaration default fills a missing row');
         self::assertArrayNotHasKey('legacy.orphan', $merged, 'another namespace is not merged in');
 
         self::assertSame(['kept'], array_values($service->all('legacy')));
@@ -237,10 +235,9 @@ final class SettingsServiceTest extends TestCase
         self::assertSame('log', $service->get('Mail.transport'));
     }
 
-    public function testForgetRemovesTheRowAndFallsBackDownTheChain(): void
+    public function testForgetRemovesTheRow(): void
     {
         $app = $this->makeApp();
-        $app->set('CMS.siteName', 'EnvValue');
         $this->insertRow('CMS.siteName', 'DbValue', 'string');
 
         $service = new SettingsService($app);
@@ -248,7 +245,7 @@ final class SettingsServiceTest extends TestCase
 
         $service->forget('CMS.siteName');
 
-        self::assertSame('EnvValue', $service->get('CMS.siteName'));
+        self::assertNull($service->get('CMS.siteName'));
         self::assertNull($this->fetchRow('CMS.siteName'));
     }
 

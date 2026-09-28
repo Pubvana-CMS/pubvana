@@ -116,7 +116,7 @@ class Plugin implements PluginInterface
             'token'    => trim($prefix, '/'),
             'priority' => 30,
             'callable' => function () use ($app): bool {
-                $pageId = (int) $app->settings()->get('CMS.homepagePageId', 0);
+                $pageId = (int) $app->settings()->get('CMS.homepagePageId');
                 if ($pageId <= 0) {
                     return false;
                 }
@@ -137,7 +137,7 @@ class Plugin implements PluginInterface
                     'label'            => 'Homepage Page',
                     'type'             => 'select',
                     'options'          => [],
-                    'default'          => null,
+                    'default'          => 0,
                     'description'      => 'Which published page to show when Homepage is set to Static Page.',
                     'options_callable' => fn() => $app->pages()->publishedOptions(),
                 ],

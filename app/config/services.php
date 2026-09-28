@@ -317,12 +317,12 @@ $app->map('navigation', function () use ($app) {
 |--------------------------------------------------------------------------
 | Settings Store
 |--------------------------------------------------------------------------
-| Database-backed runtime settings, the strongest source in the settings
-| precedence chain (supersedes config files; .env/deployment values stay
-| authoritative for undeclared keys). Only settings declared via adext
-| type 'admin.settings' may be stored - secrets and infra keys can
-| never enter this store (sole exception: Mail.password, which the
-| Mailer service stores encrypted-at-rest).
+| Database-backed runtime settings. Settings are the only source for a
+| declared key; deployment config stays in .env and is read with
+| $app->get(). Only settings declared via adext type 'admin.settings' may
+| be stored - secrets and infra keys can never enter this store (sole
+| exception: Mail.password, which the Mailer service stores
+| encrypted-at-rest).
 |
 | Registered BEFORE loadPlugins() so plugins can read/write settings
 | during their register() calls. Rows load lazily: autoload rows come
