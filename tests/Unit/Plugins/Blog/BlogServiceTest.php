@@ -226,6 +226,39 @@ final class BlogServiceTest extends TestCase
         self::assertTrue($this->service->isFuturePublishDate(date('Y-m-d H:i:s')));
     }
 
+    public function testPublishDuePostsFlipsOnlyDuePosts(): void
+    {
+        $past = (new \DateTimeImmutable('-1 hour'))->format('Y-m-d H:i:s');
+        $future = (new \DateTimeImmutable('+1 hour'))->format('Y-m-d H:i:s');
+
+        $due = $this->service->createPost(['title' => 'Due', 'slug' => 'due', 'status' => 'scheduled', 'published_at' => $past], 1);
+        $soon = $this->service->createPost(['title' => 'Soon', 'slug' => 'soon', 'status' => 'scheduled', 'published_at' => $future], 1);
+        $undated = $this->service->createPost(['title' => 'Undated', 'slug' => 'undated', 'status' => 'scheduled'], 1);
+        $draft = $this->service->createPost(['title' => 'Draft', 'slug' => 'draft', 'status' => 'draft'], 1);
+        $tombstoned = $this->service->createPost(['title' => 'Gone', 'slug' => 'gone', 'status' => 'scheduled', 'published_at' => $past], 1);
+        $this->service->deletePost((int) $tombstoned->id);
+
+        self::assertSame(1, $this->service->publishDuePosts());
+
+        $flipped = $this->service->findPost((int) $due->id);
+        self::assertNotNull($flipped);
+        self::assertSame('published', $flipped->status);
+        self::assertSame($past, $flipped->published_at);
+        // Live on schedule: the first edit after publishing bumps updated_at.
+        self::assertSame($past, $flipped->updated_at);
+
+        self::assertSame('scheduled', $this->service->findPost((int) $soon->id)?->status);
+        self::assertSame('scheduled', $this->service->findPost((int) $undated->id)?->status);
+        self::assertSame('draft', $this->service->findPost((int) $draft->id)?->status);
+
+        // Tombstoned rows are skipped; findPost() hides them, so read the row.
+        $tombstone = $this->pdo->query("select status from posts where slug = 'gone'")->fetchColumn();
+        self::assertSame('scheduled', $tombstone);
+
+        // Idempotent: nothing left due on the next tick.
+        self::assertSame(0, $this->service->publishDuePosts());
+    }
+
     public function testSyncPostCategories(): void
     {
         $post = $this->service->createPost(['title' => 'T', 'slug' => 't', 'status' => 'draft'], 1);

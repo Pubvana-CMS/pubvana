@@ -367,6 +367,34 @@ class Post extends \Pubvana\Models\AbstractModel
         $stmt->execute([':id' => $id]);
     }
 
+    /**
+     * Publish every scheduled post whose publish time has arrived.
+     *
+     * One statement for the whole batch: the scheduler runs every minute and
+     * hydrating rows just to flip a status would be a round trip per post.
+     * published_at keeps the time the editor typed; updated_at is set equal
+     * to it so a post that goes live on schedule looks untouched until
+     * someone edits it.
+     *
+     * Rows with no publish date are skipped: 'scheduled' with a NULL date has
+     * no moment to fire on.
+     *
+     * @param string $now Cutoff as 'Y-m-d H:i:s', in the site timezone
+     * @return int Rows flipped to published
+     */
+    public function publishDue(string $now): int
+    {
+        $pdo = $this->getDatabaseConnection();
+        $stmt = $pdo->prepare(
+            "UPDATE posts SET status = 'published', updated_at = published_at
+             WHERE status = 'scheduled' AND deleted_at IS NULL
+               AND published_at IS NOT NULL AND published_at <= :now"
+        );
+        $stmt->execute([':now' => $now]);
+
+        return $stmt->rowCount();
+    }
+
     public function generatePreviewToken(): string
     {
         $token = bin2hex(random_bytes(32));

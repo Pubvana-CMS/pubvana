@@ -211,6 +211,14 @@ class Plugin implements PluginInterface
             'callable' => fn() => $app->blog()->navLinkableItems($prefix),
         ]);
 
+        // ─── Cron ───────────────────────────────────────────────────────
+
+        $adext->register('cron', '1m', 'pubvana.blog', [
+            'label'    => 'Publish scheduled posts',
+            'priority' => 20,
+            'callable' => fn(): int => $app->blog()->publishDuePosts(),
+        ]);
+
         // ─── Admin CSS ──────────────────────────────────────────────────
 
         $adext->register('admin.css', 'default', 'pubvana.blog', [

@@ -82,6 +82,12 @@ final class BlogPluginTest extends TestCase
         self::assertArrayHasKey('pubvana.blog', $adext->get('nav.linkable', 'default'));
         self::assertArrayHasKey('pubvana.blog', $adext->get('brokenlinks', 'source'));
 
+        // Scheduled posts go live from the 1m cron task.
+        $cron = $adext->get('cron', '1m');
+        self::assertArrayHasKey('pubvana.blog', $cron);
+        self::assertSame('Publish scheduled posts', $cron['pubvana.blog']['label']);
+        self::assertIsCallable($cron['pubvana.blog']['callable']);
+
         // Homepage provider: the token follows routePrepend, so Blog answers
         // to 'blog' in CMS.homepageType. Priority 20 keeps it first, which is
         // what serves "/" when the setting is unset or names a provider that

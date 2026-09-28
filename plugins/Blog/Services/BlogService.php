@@ -229,6 +229,20 @@ class BlogService
     }
 
     /**
+     * Publish scheduled posts whose publish time has come.
+     *
+     * Runs from the plugin's 1m cron task. The count is returned so callers
+     * can report it; nothing else in the app depends on it.
+     *
+     * @param string|null $now Cutoff as 'Y-m-d H:i:s', defaults to now
+     * @return int Rows flipped to published
+     */
+    public function publishDuePosts(?string $now = null): int
+    {
+        return $this->postModel->publishDue($now ?? date('Y-m-d H:i:s'));
+    }
+
+    /**
      * @return array<int, PostRevision>
      */
     public function getRevisions(int $postId): array
