@@ -444,45 +444,77 @@ class ThemesController extends AdminController
             return;
         }
 
-        // Look up the block's option definitions to identify textarea fields
+        // Look up the block's option definitions to sanitize textarea fields
         $placement = new BlockPlacement($this->app->db());
         $placement->eq('id', $placementId)->find();
         $blockDef = $this->regionManager()->getAvailableBlocks()[$placement->block_key ?? ''] ?? [];
+
+        /** @var array<string, array<string, mixed>> $optionDefs */
         $optionDefs = $blockDef['options'] ?? [];
 
-        // Collect textarea field keys for sanitization
-        $textareaKeys = [];
-        foreach ($optionDefs as $fieldKey => $fieldDef) {
-            if (($fieldDef['type'] ?? '') === 'textarea') {
-                $textareaKeys[] = $fieldKey;
-            }
+        $values = $post['values'] ?? [];
+        if (!is_array($values)) {
+            $values = [];
         }
 
-        $values = $post['values'] ?? [];
-        $flat = [];
+        $this->regionManager()->savePlacementValues(
+            $placementId,
+            $this->sanitizeOptionValues($values, $optionDefs)
+        );
+        $this->app->redirect('/admin/themes/regions');
+    }
+
+    /**
+     * Sanitize submitted block option values against the block's option
+     * definitions. Values keep the shape they were submitted in, so the edit
+     * form reads repeater rows back as rows.
+     *
+     * @param array<array-key, mixed>             $values
+     * @param array<string, array<string, mixed>> $optionDefs
+     * @return array<array-key, mixed>
+     */
+    private function sanitizeOptionValues(array $values, array $optionDefs): array
+    {
+        $clean = [];
 
         foreach ($values as $key => $val) {
-            if (is_array($val)) {
-                foreach ($val as $index => $row) {
-                    if (is_array($row)) {
-                        foreach ($row as $subKey => $subVal) {
-                            $flat[$key . '.' . $index . '.' . $subKey] = (string) $subVal;
-                        }
-                    } else {
-                        $flat[$key . '.' . $index] = (string) $row;
-                    }
-                }
-            } else {
-                $value = (string) $val;
-                if (in_array($key, $textareaKeys, true)) {
-                    $value = $this->purifyHtml($value);
-                }
-                $flat[$key] = $value;
-            }
+            $def = $optionDefs[(string) $key] ?? [];
+            $clean[$key] = $this->sanitizeOptionValue($val, $def);
         }
 
-        $this->regionManager()->savePlacementValues($placementId, $flat);
-        $this->app->redirect('/admin/themes/regions');
+        return $clean;
+    }
+
+    /**
+     * Sanitize one submitted value against its option definition. An array is
+     * a repeater field and recurses through the definition's sub-fields;
+     * scalars are cast to string and purified when the option is a textarea.
+     *
+     * @param mixed                $value
+     * @param array<string, mixed> $def
+     * @return mixed
+     */
+    private function sanitizeOptionValue(mixed $value, array $def): mixed
+    {
+        if (is_array($value)) {
+            $subDefs = $def['fields'] ?? [];
+
+            /** @var array<string, array<string, mixed>> $subDefs */
+            $subDefs = is_array($subDefs) ? $subDefs : [];
+
+            $rows = [];
+            foreach ($value as $rowKey => $row) {
+                $rows[$rowKey] = is_array($row)
+                    ? $this->sanitizeOptionValues($row, $subDefs)
+                    : (string) $row;
+            }
+
+            return $rows;
+        }
+
+        $string = (string) $value;
+
+        return ($def['type'] ?? '') === 'textarea' ? $this->purifyHtml($string) : $string;
     }
 
     /**

@@ -247,6 +247,18 @@ final class TrustClientServiceTest extends TestCase
         self::assertSame('pubvana', $item['author']);
     }
 
+    public function testThemeItemRefusesFolderTraversal(): void
+    {
+        // The folder locates a manifest; it is not a path. Anything that
+        // could step out of the themes root resolves to no theme at all.
+        self::assertNull($this->service->themeItem('..'));
+        self::assertNull($this->service->themeItem('.'));
+        self::assertNull($this->service->themeItem('../themes/default'));
+        self::assertNull($this->service->themeItem('default/../../'));
+        self::assertNull($this->service->themeItem('/etc'));
+        self::assertNull($this->service->themeItem('nope'));
+    }
+
     // -----------------------------------------------------------------
     // Checks (HTTP seam canned)
     // -----------------------------------------------------------------

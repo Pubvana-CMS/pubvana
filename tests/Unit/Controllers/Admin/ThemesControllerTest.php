@@ -298,6 +298,44 @@ final class ThemesControllerTest extends TestCase
         self::assertArrayHasKey('body', $this->regions->savedValues);
         self::assertStringNotContainsString('<script>', (string) $this->regions->savedValues['body']);
         self::assertSame('T', $this->regions->savedValues['title']);
+        // Nested rows keep their shape so the edit modal can read them back.
+        self::assertSame([['a' => 'b']], $this->regions->savedValues['list'] ?? null);
+    }
+
+    public function testSaveBlockValuesPurifiesNestedRepeaterTextareas(): void
+    {
+        $pid = $this->seedPlacement('sidebar', 'core/list');
+        $this->regions->blocks = [
+            'core/list' => [
+                'options' => [
+                    'items' => [
+                        'type'   => 'repeater',
+                        'fields' => [
+                            'body'  => ['type' => 'textarea'],
+                            'label' => ['type' => 'text'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+        $app = $this->engine(data: [
+            'placement_id' => (string) $pid,
+            'values' => [
+                'items' => [
+                    ['body' => '<b>hi</b><script>x</script>', 'label' => '<i>L</i>'],
+                ],
+            ],
+        ]);
+        (new ThemesController($app))->saveBlockValues();
+
+        self::assertSame(['/admin/themes/regions'], $this->redirects);
+        $items = $this->regions->savedValues['items'] ?? null;
+        self::assertIsArray($items);
+        self::assertIsArray($items[0] ?? null);
+        self::assertStringContainsString('<b>hi</b>', (string) ($items[0]['body'] ?? ''));
+        self::assertStringNotContainsString('<script>', (string) ($items[0]['body'] ?? ''));
+        // A text sub-field is left alone, only textareas are purified.
+        self::assertSame('<i>L</i>', $items[0]['label'] ?? null);
     }
 
     private function seedTheme(string $name, string $folder, int $active): int

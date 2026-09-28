@@ -799,11 +799,34 @@ class TrustClientService
      * Read one theme's pubvana.json manifest, empty array when absent or
      * unreadable.
      *
+     * The folder is a single directory name. Anything that could step
+     * outside the themes root (separators, dot segments, a symlink pointing
+     * elsewhere, or anything but a real directory) reads nothing, so a
+     * caller that passes request input cannot turn this into a file read.
+     *
      * @return array<string, mixed>
      */
     private function readThemeManifest(string $folder): array
     {
-        $file = PROJECT_ROOT . DIRECTORY_SEPARATOR . 'themes' . DIRECTORY_SEPARATOR . $folder . DIRECTORY_SEPARATOR . 'pubvana.json';
+        $folder = trim($folder);
+        if ($folder === '' || $folder === '.' || $folder === '..' || $folder !== basename($folder)) {
+            return [];
+        }
+
+        $themesRoot = PROJECT_ROOT . DIRECTORY_SEPARATOR . 'themes';
+        $realRoot = realpath($themesRoot);
+        $realDir = realpath($themesRoot . DIRECTORY_SEPARATOR . $folder);
+
+        if ($realRoot === false || $realDir === false || !is_dir($realDir)) {
+            return [];
+        }
+
+        $prefix = rtrim($realRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        if (!str_starts_with($realDir . DIRECTORY_SEPARATOR, $prefix)) {
+            return [];
+        }
+
+        $file = $realDir . DIRECTORY_SEPARATOR . 'pubvana.json';
         if (!is_file($file)) {
             return [];
         }
