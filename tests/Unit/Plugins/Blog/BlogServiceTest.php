@@ -8,6 +8,7 @@ use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Pubvana\Plugins\Blog\Services\BlogService;
 use Pubvana\Plugins\Profiles\Services\ProfileBlockService;
+use Pubvana\Tests\Support\CountingPdo;
 use Pubvana\Tests\Support\Sqlite;
 use Pubvana\Tests\Support\TestCase;
 
@@ -335,6 +336,88 @@ final class BlogServiceTest extends TestCase
         self::assertCount(1, $related['posts']);
         self::assertSame('B', $related['posts'][0]['title']);
         self::assertSame(2, $related['posts'][0]['score']);
+    }
+
+    public function testTaxonomyBulkLoadersMapEveryRequestedPost(): void
+    {
+        $cat = $this->service->createCategory(['name' => 'News', 'slug' => 'news']);
+        $a = $this->service->createPost(['title' => 'A', 'slug' => 'a', 'status' => 'draft'], 1);
+        $b = $this->service->createPost(['title' => 'B', 'slug' => 'b', 'status' => 'draft'], 1);
+        $this->service->syncPostTags((int) $a->id, 'php, testing');
+        $this->service->syncPostCategories((int) $b->id, [(int) $cat->id]);
+
+        self::assertSame([], $this->service->tagNamesForPostIds([]));
+        self::assertSame([], $this->service->categoryIdsForPostIds([]));
+
+        $names = $this->service->tagNamesForPostIds([(int) $a->id, (int) $b->id, 99999]);
+        self::assertSame(['php', 'testing'], $names[(int) $a->id]);
+        self::assertSame([], $names[(int) $b->id]);
+        self::assertSame([], $names[99999]);
+
+        $ids = $this->service->categoryIdsForPostIds([(int) $a->id, (int) $b->id, 99999]);
+        self::assertSame([], $ids[(int) $a->id]);
+        self::assertSame([(int) $cat->id], $ids[(int) $b->id]);
+        self::assertSame([], $ids[99999]);
+
+        // The single-post helpers go through the same batched path.
+        self::assertSame(['php', 'testing'], $this->service->getPostTagNames((int) $a->id));
+        self::assertSame([], $this->service->getPostCategoryIds((int) $a->id));
+        self::assertSame([], $this->service->getPostTagNames(99999));
+    }
+
+    /**
+     * Related Posts scores every candidate from one batched pass. Twenty
+     * candidates would otherwise cost two lookups each.
+     */
+    public function testRelatedPostsBatchesTaxonomyLookups(): void
+    {
+        $counting = CountingPdo::copyOf($this->pdo);
+        $this->pdo = $counting;
+        $this->service = new BlogService($this->app([
+            'db'           => fn(): PDO => $counting,
+            'pluginLoader' => static fn(): object => new class {
+                public function isEnabled(string $pluginId): bool
+                {
+                    return false;
+                }
+            },
+        ]), ['route_prefix' => '/blog']);
+
+        $cat = $this->service->createCategory(['name' => 'News', 'slug' => 'news']);
+
+        $target = $this->service->createPost(['title' => 'Target', 'slug' => 'target', 'status' => 'published'], 1);
+        $this->service->syncPostTags((int) $target->id, 'php');
+        $this->service->syncPostCategories((int) $target->id, [(int) $cat->id]);
+
+        for ($i = 1; $i <= 20; $i++) {
+            $post = $this->service->createPost([
+                'title' => "P{$i}",
+                'slug'  => "p{$i}",
+                'status' => 'published',
+            ], 1);
+
+            if ($i === 7) {
+                $this->service->syncPostTags((int) $post->id, 'php');
+                $this->service->syncPostCategories((int) $post->id, [(int) $cat->id]);
+            } elseif ($i === 8) {
+                $this->service->syncPostTags((int) $post->id, 'php');
+            } elseif ($i === 9) {
+                $this->service->syncPostCategories((int) $post->id, [(int) $cat->id]);
+            } else {
+                $this->service->syncPostTags((int) $post->id, "tag{$i}");
+            }
+        }
+
+        $counting->queries = 0;
+        $related = $this->service->relatedPostsBlock(['count' => 5], ['post_id' => (int) $target->id], '/blog');
+        self::assertLessThan(12, $counting->queries, 'Related Posts should not look up taxonomy per candidate.');
+
+        self::assertSame('Related Posts', $related['title']);
+        self::assertCount(3, $related['posts']);
+        self::assertSame('P7', $related['posts'][0]['title']);
+        self::assertSame('/blog/p7', $related['posts'][0]['url']);
+        self::assertSame(2, $related['posts'][0]['score']);
+        self::assertSame([1, 1], array_column(array_slice($related['posts'], 1), 'score'));
     }
 
     public function testSearchProviderReturnsMatchesWithoutScoring(): void

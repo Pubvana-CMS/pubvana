@@ -10,6 +10,7 @@ use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Pubvana\Plugins\Blog\Controllers\BlogPublicController;
 use Pubvana\Plugins\Blog\Services\BlogService;
+use Pubvana\Tests\Support\CountingPdo;
 use Pubvana\Tests\Support\Sqlite;
 use Pubvana\Tests\Support\TestCase;
 
@@ -284,50 +285,7 @@ final class BlogPublicControllerTest extends TestCase
      */
     public function testFeedsBatchTaxonomyAndAuthorLookups(): void
     {
-        $stmt = $this->pdo->query(
-            "SELECT sql FROM sqlite_master WHERE sql IS NOT NULL"
-            . " AND name NOT LIKE 'sqlite_%' ORDER BY (type = 'table') DESC"
-        );
-        if ($stmt === false) {
-            self::fail('Could not read the schema for the counting connection.');
-        }
-        /** @var list<string> $schema */
-        $schema = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-        $counting = new class ($schema) extends PDO {
-            public int $queries = 0;
-
-            /** @param list<string> $schema */
-            public function __construct(array $schema)
-            {
-                parent::__construct('sqlite::memory:', null, null, [
-                    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                ]);
-                parent::exec('PRAGMA foreign_keys = ON');
-                foreach ($schema as $sql) {
-                    parent::exec($sql);
-                }
-            }
-
-            public function prepare(string $query, array $options = []): \PDOStatement|false
-            {
-                $this->queries++;
-                return parent::prepare($query, $options);
-            }
-
-            public function query(string $query, ?int $fetchMode = null, mixed ...$fetchModeArgs): \PDOStatement|false
-            {
-                $this->queries++;
-                return parent::query($query, $fetchMode, ...$fetchModeArgs);
-            }
-
-            public function exec(string $statement): int|false
-            {
-                $this->queries++;
-                return parent::exec($statement);
-            }
-        };
+        $counting = CountingPdo::copyOf($this->pdo);
 
         $authorIds = [];
         for ($u = 1; $u <= 3; $u++) {

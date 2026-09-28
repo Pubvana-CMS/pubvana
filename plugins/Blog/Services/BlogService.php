@@ -322,30 +322,91 @@ class BlogService
     // ─── Taxonomy Sync ────────────────────────────────────────────────────
 
     /**
+     * Category ids for one post.
+     *
      * @return array<int, int>
      */
     public function getPostCategoryIds(int $postId): array
     {
-        return $this->postCategoryModel->getCategoryIds($postId);
+        return $this->categoryIdsForPostIds([$postId])[$postId] ?? [];
     }
 
     /**
+     * Tag names for one post.
+     *
      * @return array<int, string>
      */
     public function getPostTagNames(int $postId): array
     {
-        $tagIds = $this->postTagModel->getTagIds($postId);
-        if ($tagIds === []) {
+        return $this->tagNamesForPostIds([$postId])[$postId] ?? [];
+    }
+
+    /**
+     * Category ids for many posts in one pivot query.
+     *
+     * Related Posts scores a page of candidates at once; a per-post lookup
+     * would mean one query per candidate for what a single IN() answers.
+     *
+     * @param array<int, int> $postIds
+     * @return array<int, list<int>> post id => category ids
+     */
+    public function categoryIdsForPostIds(array $postIds): array
+    {
+        if ($postIds === []) {
             return [];
         }
-        $tagsById = $this->tagModel->findByIds($tagIds);
-        $names = [];
-        foreach ($tagIds as $tagId) {
-            if (isset($tagsById[$tagId])) {
-                $names[] = $tagsById[$tagId]->name;
+
+        $links = (new PostCategory($this->pdo))->in('post_id', $postIds)->findAll();
+
+        $map = [];
+        foreach ($postIds as $postId) {
+            $map[(int) $postId] = [];
+        }
+        foreach ($links as $link) {
+            $map[(int) $link->post_id][] = (int) $link->category_id;
+        }
+
+        return $map;
+    }
+
+    /**
+     * Tag names for many posts in two queries: the pivot rows, then the
+     * referenced tags.
+     *
+     * @param array<int, int> $postIds
+     * @return array<int, list<string>> post id => tag names
+     */
+    public function tagNamesForPostIds(array $postIds): array
+    {
+        if ($postIds === []) {
+            return [];
+        }
+
+        $links = (new PostTag($this->pdo))->in('post_id', $postIds)->findAll();
+
+        $tagIdsByPost = [];
+        $allTagIds = [];
+        foreach ($links as $link) {
+            $tagId = (int) $link->tag_id;
+            $tagIdsByPost[(int) $link->post_id][] = $tagId;
+            $allTagIds[$tagId] = true;
+        }
+
+        $tagsById = $allTagIds === [] ? [] : $this->tagModel->findByIds(array_keys($allTagIds));
+
+        $map = [];
+        foreach ($postIds as $postId) {
+            $map[(int) $postId] = [];
+        }
+        foreach ($tagIdsByPost as $postId => $tagIds) {
+            foreach ($tagIds as $tagId) {
+                if (isset($tagsById[$tagId])) {
+                    $map[$postId][] = $tagsById[$tagId]->name;
+                }
             }
         }
-        return $names;
+
+        return $map;
     }
 
     /**
@@ -640,6 +701,12 @@ class BlogService
     }
 
     /**
+     * Posts sharing tags or categories with the current post.
+     *
+     * Taxonomy for the current post and every candidate is loaded in one
+     * batched pass (two queries for tags, one for categories) rather than
+     * two lookups per candidate.
+     *
      * @param array<string, mixed> $options
      * @param array<string, mixed> $context
      * @return array<string, mixed>
@@ -651,22 +718,29 @@ class BlogService
             return ['title' => $options['title'] ?? 'Related Posts', 'posts' => []];
         }
 
-        $currentTagNames = $this->getPostTagNames($postId);
-        $currentCategoryIds = $this->getPostCategoryIds($postId);
-        $result = $this->listPosts(1, 20, 'published');
+        $candidates = $this->postModel->publishedRecent(20);
+
+        $candidateIds = [$postId];
+        foreach ($candidates as $post) {
+            $candidateIds[] = (int) $post->id;
+        }
+
+        $tagNamesByPost = $this->tagNamesForPostIds($candidateIds);
+        $categoryIdsByPost = $this->categoryIdsForPostIds($candidateIds);
+
+        $currentTagNames = $tagNamesByPost[$postId] ?? [];
+        $currentCategoryIds = $categoryIdsByPost[$postId] ?? [];
+
         $posts = [];
 
-        foreach ($result['items'] as $post) {
-            if ((int) $post->id === $postId) {
+        foreach ($candidates as $post) {
+            $id = (int) $post->id;
+            if ($id === $postId) {
                 continue;
             }
 
-            $score = 0;
-            $tagNames = $this->getPostTagNames((int) $post->id);
-            $categoryIds = $this->getPostCategoryIds((int) $post->id);
-
-            $score += count(array_intersect($currentTagNames, $tagNames));
-            $score += count(array_intersect($currentCategoryIds, $categoryIds));
+            $score = count(array_intersect($currentTagNames, $tagNamesByPost[$id] ?? []))
+                + count(array_intersect($currentCategoryIds, $categoryIdsByPost[$id] ?? []));
 
             if ($score > 0) {
                 $posts[] = [
