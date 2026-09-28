@@ -250,7 +250,11 @@ class PasswordResetService
             return;
         }
 
-        $resetUrl = $this->baseUrl() . '/auth/reset-password?token=' . urlencode($token);
+        if (trim((string) ($this->app->get('siteUrl') ?? '')) === '') {
+            throw new \RuntimeException('SITE_URL is not set, so the reset email cannot be sent.');
+        }
+
+        $resetUrl = $this->app->url()->absoluteUrl('/auth/reset-password?token=' . urlencode($token));
         $siteName = (string) $this->app->settings()->get('CMS.siteName');
 
         $body = $this->app->view()->fetch('enlivenapp/flight-shield/Email/password_reset_email', [
@@ -266,25 +270,6 @@ class PasswordResetService
             . 'The link expires in one hour. If you did not request this, you can safely ignore it.';
 
         $this->app->mailer()->sendHtml($to, 'Reset your password - ' . $siteName, $body, ['alt' => $alt]);
-    }
-
-    /**
-     * Resolve the absolute site base URL for the reset email link.
-     *
-     * Uses SITE_URL, the deployment value set in .env. It never derives
-     * anything from the request Host header, which is attacker-controlled
-     * and could otherwise poison the emailed link. When SITE_URL is unset
-     * it falls back to the constant default.
-     */
-    protected function baseUrl(): string
-    {
-        $siteUrl = trim((string) ($this->app->get('siteUrl') ?? ''));
-
-        if ($siteUrl !== '') {
-            return rtrim($siteUrl, '/');
-        }
-
-        return 'http://localhost';
     }
 
     /**

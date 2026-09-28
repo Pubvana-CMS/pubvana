@@ -142,7 +142,16 @@ class UsersController extends AdminController
         }
 
         $siteName = (string) $this->app->settings()->get('CMS.siteName');
-        $registerUrl = rtrim($this->baseUrl(), '/') . '/auth/register';
+
+        // SITE_URL is the only trustworthy origin for an emailed link; the
+        // request Host header is never used, so there is no fallback here.
+        if (trim((string) ($this->app->get('siteUrl') ?? '')) === '') {
+            $this->app->session()->flash('error', 'SITE_URL is not set, so invitations cannot be sent.');
+            $this->app->redirect('/admin/users');
+            return;
+        }
+
+        $registerUrl = $this->app->url()->absoluteUrl('/auth/register');
 
         $bodyHtml = '<p>You have been invited to join ' . htmlspecialchars($siteName) . '.</p>'
             . '<p><a href="' . htmlspecialchars($registerUrl) . '">Create your account</a></p>'
@@ -167,32 +176,6 @@ class UsersController extends AdminController
 
         $this->app->session()->flash('success', 'Invitation sent to ' . $email . '.');
         $this->app->redirect('/admin/users');
-    }
-
-    /**
-     * Resolve the absolute site base URL for links in outbound mail.
-     *
-     * Prefers SITE_URL, the deployment value used for generated links and
-     * emails. Falls back to deriving a scheme from the HTTPS policy and the
-     * request host when it is not configured.
-     *
-     * @return string Absolute base URL, no trailing slash
-     */
-    protected function baseUrl(): string
-    {
-        $siteUrl = trim((string) ($this->app->get('siteUrl') ?? ''));
-
-        if ($siteUrl !== '') {
-            return rtrim($siteUrl, '/');
-        }
-
-        $request = $this->app->request();
-        $https = $this->app->get('flight.force_https') === true || (bool) ($request->secure ?? false);
-        $scheme = $https ? 'https' : 'http';
-        $host = $request->getHeader('Host') ?: ($_SERVER['HTTP_HOST'] ?? 'localhost');
-        $path = rtrim((string) ($request->base ?? ''), '/');
-
-        return $scheme . '://' . $host . $path;
     }
 
     /**

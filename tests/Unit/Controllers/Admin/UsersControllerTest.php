@@ -138,7 +138,8 @@ final class UsersControllerTest extends TestCase
     public function testInviteSendsWithConfiguredSiteUrl(): void
     {
         $this->settingsRows = ['CMS.siteName' => 'My Site'];
-        $app = $this->engine(data: ['email' => 'new@x.test']);
+        // A hostile Host header is offered; the configured SITE_URL must win.
+        $app = $this->engine(data: ['email' => 'new@x.test'], host: 'evil.example');
         // SITE_URL is deployment config: the app store holds it.
         $app->set('siteUrl', 'https://example.test/');
         $this->controller($app)->invite();
@@ -146,16 +147,20 @@ final class UsersControllerTest extends TestCase
         self::assertSame('new@x.test', $this->sent['to']);
         self::assertStringContainsString('My Site', $this->sent['subject']);
         self::assertStringContainsString('https://example.test/auth/register', $this->sent['body']);
+        self::assertStringNotContainsString('evil.example', $this->sent['body']);
         self::assertSame('Invitation sent to new@x.test.', $this->flashes['success'][0]);
     }
 
-    public function testInviteDerivesBaseUrlFromRequest(): void
+    public function testInviteRefusedWhenSiteUrlIsUnset(): void
     {
         $this->settingsRows = ['CMS.siteName' => 'S'];
+        // The Host header is present but must never be used as an origin.
         $app = $this->engine(data: ['email' => 'n2@x.test'], host: 'h.test', secure: true, base: '/sub');
         $this->controller($app)->invite();
 
-        self::assertStringContainsString('https://h.test/sub/auth/register', $this->sent['body']);
+        self::assertSame(['/admin/users'], $this->redirects);
+        self::assertSame('SITE_URL is not set, so invitations cannot be sent.', $this->flashes['error'][0]);
+        self::assertSame([], $this->sent);
     }
 
     public function testInviteMailFailure(): void
@@ -163,6 +168,7 @@ final class UsersControllerTest extends TestCase
         $this->mailThrow = true;
         $this->settingsRows = ['CMS.siteName' => 'S'];
         $app = $this->engine(data: ['email' => 'fail@x.test']);
+        $app->set('siteUrl', 'https://example.test');
         $this->controller($app)->invite();
 
         self::assertSame('Failed to send the invitation. Check the mail settings.', $this->flashes['error'][0]);
@@ -488,6 +494,7 @@ final class UsersControllerTest extends TestCase
                 };
             },
         ]);
+        $app->map('url', static fn(): object => new \Pubvana\Services\UrlService($app));
         $app->set('admin.topNav', []);
         if ($shield !== null) {
             $app->set('enlivenapp.flight-shield', $shield);

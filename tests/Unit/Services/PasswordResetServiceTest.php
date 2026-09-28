@@ -270,24 +270,23 @@ final class PasswordResetServiceTest extends TestCase
         self::assertStringNotContainsString('ignored.example', $this->sentEmails[0]['body']);
     }
 
-    public function testResetEmailNeverUsesAttackerControlledHost(): void
+    public function testResetEmailRefusedWhenSiteUrlIsUnset(): void
     {
-        $user = $this->seedUser('ada', 'ada@example.com');
+        $this->seedUser('ada', 'ada@example.com');
         $service = $this->makeService();
 
-        // No configured site URL: only the fallback path remains. The
-        // request stand-in answers a hostile Host header; it must not shape
-        // the emailed link.
+        // No configured site URL, and the request stand-in answers a hostile
+        // Host header: there is no trustworthy origin, so nothing is sent.
         $this->testApp->set('siteUrl', null);
 
-        $service->issueResetToken('ada@example.com');
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('SITE_URL is not set');
 
-        self::assertCount(1, $this->sentEmails);
-        self::assertStringContainsString(
-            'http://localhost/auth/reset-password?token=',
-            $this->sentEmails[0]['body']
-        );
-        self::assertStringNotContainsString('evil.example', $this->sentEmails[0]['body']);
+        try {
+            $service->issueResetToken('ada@example.com');
+        } finally {
+            self::assertCount(0, $this->sentEmails);
+        }
     }
 
     // -----------------------------------------------------------------
@@ -370,12 +369,17 @@ final class PasswordResetServiceTest extends TestCase
             },
         ]);
 
+        // Emitted links build on UrlService::siteOrigin(), which reads the
+        // siteUrl app key.
+        $app->map('url', static fn(): object => new \Pubvana\Services\UrlService($app));
+
         // Shield models talk to \Flight::db() (the global engine), so the
         // test engine must BE the global one.
         \Flight::setEngine($app);
 
         $app->set('enlivenapp.flight-shield', self::SHIELD_CONFIG);
         $app->set('CMS.siteUrl', 'http://localhost');
+        $app->set('siteUrl', 'https://admin.example');
 
         $this->testApp = $app;
 
