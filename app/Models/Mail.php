@@ -21,7 +21,10 @@ namespace Pubvana\Models;
  *
  * @method self eq(string $field, mixed $value, string $operator = 'AND')
  * @method self order(string $field)
+ * @method self select(string $field, string ...$fields)
  * @method self limit(int $limit)
+ *
+ * @property int $cnt Aggregate alias from COUNT(*) selects
  */
 class Mail extends AbstractModel
 {
@@ -84,8 +87,8 @@ class Mail extends AbstractModel
     public function countByStatus(string $status): int
     {
         $model = new self($this->getDatabaseConnection());
-        $model->eq('status', $status);
+        $result = $model->select('COUNT(*) AS cnt')->eq('status', $status)->find();
 
-        return count($model->findAll());
+        return (int) $result->cnt;
     }
 }
