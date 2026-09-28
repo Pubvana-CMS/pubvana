@@ -1,6 +1,17 @@
 {
     "releases": [
         {
+            "version": "3.0.0-beta.5",
+            "release_date": "2026-09-27",
+            "min_php_version": "8.2",
+            "breaking_changes": [],
+            "migration_notes": [
+                "A New email toggle was added. Default is off. If you have email enabled make sure to re-enable your email sending. Settings -> Email -> Email."
+            ],
+            "notices": [],
+            "download_url": "https://github.com/Pubvana-CMS/pubvana/releases/download/3.0.0-beta.5/release.zip"
+        },
+        {
             "version": "3.0.0-beta.4",
             "release_date": "2026-09-24",
             "min_php_version": "8.2",

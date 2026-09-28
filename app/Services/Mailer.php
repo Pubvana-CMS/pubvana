@@ -18,6 +18,11 @@ use Pubvana\Models\Mail;
  * sends it, and records the attempt (sent/failed) in the mail_logs
  * table via the Mail model. SMTP is the only transport.
  *
+ * Mail.enabled (Settings > Email) gates the service. While it is off no
+ * send is attempted: the attempt is appended to writable/logs/error.log,
+ * no mail_logs row is written, and the call returns without throwing.
+ * The test probe is gated the same way.
+ *
  * Secrets: the SMTP password is stored ENCRYPTED at rest in the
  * settings table (AES-256-CBC, key derived from the site's
  * SESSION_ENCRYPTION_KEY). It is decrypted only here, inside the
@@ -32,13 +37,19 @@ class Mailer
     protected Engine $app;
     protected \Pubvana\Services\SettingsService $settings;
 
+    /** Append-only log for sends skipped while sending is disabled. */
+    protected string $logFile;
+
     /**
      * @param Engine<object> $app
+     * @param string|null    $logFile Override the skip log path (tests)
      */
-    public function __construct(Engine $app)
+    public function __construct(Engine $app, ?string $logFile = null)
     {
         $this->app = $app;
         $this->settings = $app->settings();
+        $writable = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'writable';
+        $this->logFile = $logFile ?? $writable . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'error.log';
     }
 
     /**
@@ -52,6 +63,11 @@ class Mailer
      */
     public function sendHtml(string $to, string $subject, string $bodyHtml, array $opts = []): void
     {
+        if (!$this->enabled()) {
+            $this->logSkipped($to, $subject);
+            return;
+        }
+
         $from = $this->fromDefaults($opts);
 
         try {
@@ -88,6 +104,14 @@ class Mailer
     public function test(string $to): array
     {
         $buffer = '';
+        $siteName = (string) $this->settings->get('CMS.siteName');
+        $subject = 'Test message from ' . $siteName;
+
+        if (!$this->enabled()) {
+            $this->logSkipped($to, $subject);
+            return ['ok' => false, 'debug' => '', 'error' => 'Email sending is disabled'];
+        }
+
         $from = $this->fromDefaults([]);
 
         try {
@@ -95,8 +119,6 @@ class Mailer
             $this->captureDebug($mail, $buffer);
             $mail->setFrom($from['address'], $from['name']);
             $mail->addAddress($to);
-            $siteName = (string) ($this->app->get('CMS.siteName') ?? 'Pubvana');
-            $subject = 'Test message from ' . $siteName;
             $mail->Subject = $subject;
             $mail->isHTML(true);
             $mail->Body = '<p>This is a test email. If you can read this, SMTP is configured correctly.</p>';
@@ -111,7 +133,7 @@ class Mailer
             $error = $e->getMessage();
         }
 
-        $this->log($to, $subject ?? 'Test message', 'failed', $error, $from['address']);
+        $this->log($to, $subject, 'failed', $error, $from['address']);
 
         return ['ok' => false, 'debug' => $buffer, 'error' => $error];
     }
@@ -190,6 +212,27 @@ class Mailer
     // -----------------------------------------------------------------
 
     /**
+     * Whether outbound mail is switched on. Off is off: nothing is sent,
+     * the test probe included.
+     */
+    protected function enabled(): bool
+    {
+        return (bool) $this->settings->get('Mail.enabled');
+    }
+
+    /**
+     * Append a skipped-send line to the skip log (writable/logs/error.log).
+     * Logging must never break the caller, so a failure is swallowed.
+     */
+    protected function logSkipped(string $to, string $subject): void
+    {
+        $line = (new \DateTimeImmutable())->format('Y-m-d H:i:s')
+            . ' [mail] sending disabled, skipped: ' . $to . ' "' . $subject . '"' . PHP_EOL;
+
+        @file_put_contents($this->logFile, $line, FILE_APPEND | LOCK_EX);
+    }
+
+    /**
      * Build a configured PHPMailer instance. SMTP is the only transport.
      */
     protected function transport(): PHPMailer
@@ -197,13 +240,13 @@ class Mailer
         $mail = new PHPMailer(true); // exceptions
         $mail->isSMTP();
 
-        $mail->Host = (string) ($this->settings->get('Mail.host', 'localhost') ?? 'localhost');
-        $mail->Port = (int) ($this->settings->get('Mail.port', 587) ?? 587);
+        $mail->Host = (string) $this->settings->get('Mail.host');
+        $mail->Port = (int) $this->settings->get('Mail.port');
 
-        $encryption = (string) ($this->settings->get('Mail.encryption', 'tls') ?? 'tls');
+        $encryption = (string) $this->settings->get('Mail.encryption');
         $mail->SMTPSecure = $encryption === 'none' ? '' : $encryption;
 
-        $username = (string) ($this->settings->get('Mail.username', '') ?? '');
+        $username = (string) $this->settings->get('Mail.username');
         $password = $this->password();
         if ($username !== '') {
             $mail->SMTPAuth = true;
@@ -238,14 +281,14 @@ class Mailer
      */
     protected function fromDefaults(array $opts): array
     {
-        $address = $opts['from'] ?? ($this->settings->get('Mail.fromEmail', '') ?? '');
-        $name = $opts['fromName'] ?? ($this->settings->get('Mail.fromName', '') ?? '');
+        $address = $opts['from'] ?? (string) $this->settings->get('Mail.fromEmail');
+        $name = $opts['fromName'] ?? (string) $this->settings->get('Mail.fromName');
 
-        if (!is_string($address) || $address === '') {
-            $address = (string) ($this->app->get('CMS.adminEmail') ?? 'no-reply@localhost');
+        if ($address === '') {
+            $address = (string) $this->settings->get('CMS.adminEmail');
         }
-        if (!is_string($name) || $name === '') {
-            $name = (string) ($this->app->get('CMS.siteName') ?? 'Pubvana');
+        if ($name === '') {
+            $name = (string) $this->settings->get('CMS.siteName');
         }
 
         return ['address' => $address, 'name' => $name];
@@ -259,7 +302,7 @@ class Mailer
      */
     protected function password(): string
     {
-        $stored = $this->settings->get('Mail.password', null);
+        $stored = $this->settings->get('Mail.password');
         if (!is_string($stored) || $stored === '') {
             return '';
         }

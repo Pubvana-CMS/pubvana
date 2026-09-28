@@ -33,10 +33,23 @@ final class MailerTest extends TestCase
 
     private PDO $pdo;
 
+    /** @var string[] Skip logs created per test, removed on teardown. */
+    private array $tempLogFiles = [];
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->pdo = Sqlite::recreate();
+    }
+
+    protected function tearDown(): void
+    {
+        foreach ($this->tempLogFiles as $path) {
+            @unlink($path);
+        }
+        $this->tempLogFiles = [];
+
+        parent::tearDown();
     }
 
     // -----------------------------------------------------------------
@@ -59,11 +72,11 @@ final class MailerTest extends TestCase
     public function testFromDefaultsFallsBackToSettingsThenCoreValues(): void
     {
         $app = $this->makeApp();
-        $app->set('CMS.siteName', 'My Site');
-        $app->set('CMS.adminEmail', 'admin@example.com');
+        $app->settings()->set('CMS.siteName', 'My Site');
+        $app->settings()->set('CMS.adminEmail', 'admin@example.com');
         $mailer = new Mailer($app);
 
-        // Nothing configured: core values answer.
+        // Nothing configured for mail: the core site values answer.
         $resolved = $this->invoke($mailer, 'fromDefaults', [[]]);
         self::assertSame('admin@example.com', $resolved['address']);
         self::assertSame('My Site', $resolved['name']);
@@ -76,14 +89,17 @@ final class MailerTest extends TestCase
         self::assertSame('From Name', $resolved['name']);
     }
 
-    public function testFromDefaultsUsesHardcodedSafetyNet(): void
+    public function testFromDefaultsInventsNothingWhenNothingIsConfigured(): void
     {
         $mailer = $this->mailer();
 
         $resolved = $this->invoke($mailer, 'fromDefaults', [[]]);
 
-        self::assertSame('no-reply@localhost', $resolved['address']);
-        self::assertSame('Pubvana', $resolved['name']);
+        // No row, no address. The code invents no sender, so a send with an
+        // empty From fails loudly in PHPMailer instead of quietly claiming
+        // to come from localhost.
+        self::assertSame('', $resolved['address']);
+        self::assertSame('', $resolved['name']);
     }
 
     // -----------------------------------------------------------------
@@ -113,15 +129,15 @@ final class MailerTest extends TestCase
         self::assertSame(10, $mail->Timeout);
     }
 
-    public function testTransportDefaultsWhenNothingIsConfigured(): void
+    public function testTransportInventsNoDefaultsWhenNothingIsConfigured(): void
     {
         $app = $this->makeApp();
 
         $mail = $this->invoke(new Mailer($app), 'transport');
 
-        self::assertSame('localhost', $mail->Host);
-        self::assertSame(587, $mail->Port);
-        self::assertSame('tls', $mail->SMTPSecure);
+        self::assertSame('', $mail->Host);
+        self::assertSame(0, $mail->Port);
+        self::assertSame('', $mail->SMTPSecure);
         self::assertFalse($mail->SMTPAuth, 'no username, no auth');
     }
 
@@ -142,8 +158,8 @@ final class MailerTest extends TestCase
     public function testSendHtmlSendsAndLogsASentRow(): void
     {
         $app = $this->makeApp();
-        $app->set('CMS.siteName', 'My Site');
-        $app->set('CMS.adminEmail', 'admin@example.com');
+        $app->settings()->set('CMS.siteName', 'My Site');
+        $app->settings()->set('CMS.adminEmail', 'admin@example.com');
         $mailer = $this->spiedMailer($app);
         $mailer->spy->result = true;
 
@@ -172,7 +188,7 @@ final class MailerTest extends TestCase
     public function testSendHtmlFailureLogsFailedRowAndThrows(): void
     {
         $app = $this->makeApp();
-        $app->set('CMS.adminEmail', 'admin@example.com');
+        $app->settings()->set('CMS.adminEmail', 'admin@example.com');
         $mailer = $this->spiedMailer($app);
         $mailer->spy->result = false;
         $mailer->spy->ErrorInfo = 'SMTP connect failed';
@@ -207,14 +223,62 @@ final class MailerTest extends TestCase
     }
 
     // -----------------------------------------------------------------
+    // Mail.enabled gate
+    // -----------------------------------------------------------------
+
+    public function testSendingIsOffWhenNothingIsConfigured(): void
+    {
+        $app = $this->makeApp();
+
+        self::assertFalse($this->invoke($this->mailer($app), 'enabled'));
+    }
+
+    public function testSendHtmlIsSkippedAndLoggedWhenSendingIsDisabled(): void
+    {
+        $app = $this->makeApp();
+        $logFile = $this->tempLogFile();
+        $mailer = $this->spiedMailer($app, $logFile);
+        $app->settings()->set('Mail.enabled', false);
+
+        $mailer->sendHtml('user@example.com', 'Hello', '<p>Hi</p>');
+
+        self::assertCount(0, $mailer->spy->sent, 'nothing reaches the transport while off');
+        self::assertSame([], (new Mail($this->pdo))->recent(5), 'no mail_logs row is written');
+        self::assertStringContainsString(
+            '[mail] sending disabled, skipped: user@example.com "Hello"',
+            (string) file_get_contents($logFile)
+        );
+    }
+
+    public function testProbeIsSkippedAndLoggedWhenSendingIsDisabled(): void
+    {
+        $app = $this->makeApp();
+        $logFile = $this->tempLogFile();
+        $mailer = $this->spiedMailer($app, $logFile);
+        $app->settings()->set('Mail.enabled', false);
+
+        $result = $mailer->test('user@example.com');
+
+        self::assertFalse($result['ok']);
+        self::assertSame('Email sending is disabled', $result['error']);
+        self::assertSame('', $result['debug']);
+        self::assertCount(0, $mailer->spy->sent);
+        self::assertSame([], (new Mail($this->pdo))->recent(5));
+        self::assertStringContainsString(
+            '[mail] sending disabled, skipped: user@example.com',
+            (string) file_get_contents($logFile)
+        );
+    }
+
+    // -----------------------------------------------------------------
     // test() probe
     // -----------------------------------------------------------------
 
     public function testProbeReportsSuccessAndDebugBuffer(): void
     {
         $app = $this->makeApp();
-        $app->set('CMS.siteName', 'My Site');
-        $app->set('CMS.adminEmail', 'admin@example.com');
+        $app->settings()->set('CMS.siteName', 'My Site');
+        $app->settings()->set('CMS.adminEmail', 'admin@example.com');
         $mailer = $this->spiedMailer($app);
         $mailer->spy->result = true;
 
@@ -231,10 +295,26 @@ final class MailerTest extends TestCase
         self::assertSame('sent', $logged[0]->status);
     }
 
+    public function testSiteNameAndFromComeFromTheSettingsStore(): void
+    {
+        $app = $this->makeApp();
+        $settings = $app->settings();
+        $settings->set('CMS.siteName', 'Db Site');
+        $settings->set('CMS.adminEmail', 'db@example.com');
+        $mailer = $this->spiedMailer($app);
+        $mailer->spy->result = true;
+
+        $mailer->test('user@example.com');
+
+        self::assertSame('Test message from Db Site', $mailer->spy->sent[0]['subject']);
+        self::assertSame('db@example.com', $mailer->spy->sent[0]['from']);
+        self::assertSame('Db Site', $mailer->spy->sent[0]['fromName']);
+    }
+
     public function testProbeReportsFailure(): void
     {
         $app = $this->makeApp();
-        $app->set('CMS.adminEmail', 'admin@example.com');
+        $app->settings()->set('CMS.adminEmail', 'admin@example.com');
         $mailer = $this->spiedMailer($app);
         $mailer->spy->result = false;
         $mailer->spy->ErrorInfo = 'connection refused';
@@ -438,8 +518,9 @@ final class MailerTest extends TestCase
     /**
      * Mailer whose transport() answers a send-spy PHPMailer subclass.
      */
-    private function spiedMailer(\flight\Engine $app): Mailer
+    private function spiedMailer(\flight\Engine $app, ?string $logFile = null): Mailer
     {
+        $app->settings()->set('Mail.enabled', true);
         $test = $this;
 
         $spy = new class(true) extends PHPMailer {
@@ -468,10 +549,10 @@ final class MailerTest extends TestCase
             }
         };
 
-        return new class($app, $spy) extends Mailer {
-            public function __construct(\flight\Engine $app, public readonly PHPMailer $spy)
+        return new class($app, $spy, $logFile) extends Mailer {
+            public function __construct(\flight\Engine $app, public readonly PHPMailer $spy, ?string $logFile = null)
             {
-                parent::__construct($app);
+                parent::__construct($app, $logFile);
             }
 
             protected function transport(): PHPMailer
@@ -502,6 +583,14 @@ final class MailerTest extends TestCase
                 ['key' => 'Mail.notifyOnSend', 'label' => 'Notify on send', 'type' => 'checkbox'],
             ],
         ]);
+    }
+
+    private function tempLogFile(): string
+    {
+        $path = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'pubvana-mailer-' . uniqid('', true) . '.log';
+        $this->tempLogFiles[] = $path;
+
+        return $path;
     }
 
     private function cipher(\flight\Engine $app): \Pubvana\Services\SecretCipher
