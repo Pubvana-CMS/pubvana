@@ -30,7 +30,7 @@ class BackupsRestoreCommand extends AbstractBaseCommand
         parent::__construct('backups:restore', 'Restore from a backup (backup current -> restore -> backup restored)', $config);
 
         $this
-            ->argument('<filename>', 'Backup zip filename (e.g. 2026-05-15_221300-full.zip)')
+            ->argument('[filename]', 'Backup zip filename (e.g. 2026-05-15_221300-full.zip)')
             ->option('--user', 'Username of the admin who initiated the restore', null, 'cli')
             ->usage(
                 '<bold>  runway backups:restore 2026-05-15_221300-full.zip</end><eol/>' .
@@ -38,9 +38,14 @@ class BackupsRestoreCommand extends AbstractBaseCommand
             );
     }
 
-    public function execute(string $filename): int
+    public function execute(?string $filename = null): int
     {
         $io = $this->io();
+
+        if ($filename === null || $filename === '') {
+            $this->showHelp();
+            return 0;
+        }
 
         $triggeredBy = $this->user ?? 'cli';
 

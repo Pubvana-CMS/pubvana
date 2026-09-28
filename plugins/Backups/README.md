@@ -16,8 +16,14 @@ From the command line:
 
 ```bash
 php runway backups:create
+php runway backups:create --trigger manual --user admin
 php runway backups:restore 2026-05-15_221300-full.zip
+php runway backups:restore 2026-05-15_221300-full.zip --user admin
 ```
+
+`backups:create --trigger` records why the backup was taken: `manual`,
+`pre-update`, `pre-rollback` or `post-rollback`. Both commands take `--user` to
+record who started them.
 
 ## License
 
