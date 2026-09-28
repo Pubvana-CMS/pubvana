@@ -19,8 +19,8 @@ use Pubvana\Models\Mail;
  * table via the Mail model. SMTP is the only transport.
  *
  * Mail.enabled (Settings > Email) gates the service. While it is off no
- * send is attempted: the attempt is appended to writable/logs/error.log,
- * no mail_logs row is written, and the call returns without throwing.
+ * send is attempted: the attempt goes to the error log, no mail_logs row
+ * is written, and the call returns without throwing.
  * The test probe is gated the same way.
  *
  * Secrets: the SMTP password is stored ENCRYPTED at rest in the
@@ -37,19 +37,13 @@ class Mailer
     protected Engine $app;
     protected \Pubvana\Services\SettingsService $settings;
 
-    /** Append-only log for sends skipped while sending is disabled. */
-    protected string $logFile;
-
     /**
      * @param Engine<object> $app
-     * @param string|null    $logFile Override the skip log path (tests)
      */
-    public function __construct(Engine $app, ?string $logFile = null)
+    public function __construct(Engine $app)
     {
         $this->app = $app;
         $this->settings = $app->settings();
-        $writable = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'writable';
-        $this->logFile = $logFile ?? $writable . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'error.log';
     }
 
     /**
@@ -233,15 +227,14 @@ class Mailer
     }
 
     /**
-     * Append a skipped-send line to the skip log (writable/logs/error.log).
-     * Logging must never break the caller, so a failure is swallowed.
+     * Write a skipped-send line to the error log.
      */
     protected function logSkipped(string $to, string $subject): void
     {
-        $line = (new \DateTimeImmutable())->format('Y-m-d H:i:s')
-            . ' [mail] sending disabled, skipped: ' . $to . ' "' . $subject . '"' . PHP_EOL;
-
-        @file_put_contents($this->logFile, $line, FILE_APPEND | LOCK_EX);
+        error_log(
+            (new \DateTimeImmutable())->format('Y-m-d H:i:s')
+            . ' [mail] sending disabled, skipped: ' . $to . ' "' . $subject . '"'
+        );
     }
 
     /**

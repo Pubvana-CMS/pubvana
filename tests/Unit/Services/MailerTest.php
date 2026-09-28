@@ -236,38 +236,36 @@ final class MailerTest extends TestCase
     public function testSendHtmlIsSkippedAndLoggedWhenSendingIsDisabled(): void
     {
         $app = $this->makeApp();
-        $logFile = $this->tempLogFile();
-        $mailer = $this->spiedMailer($app, $logFile);
+        $mailer = $this->spiedMailer($app);
         $app->settings()->set('Mail.enabled', false);
 
-        $mailer->sendHtml('user@example.com', 'Hello', '<p>Hi</p>');
+        $logged = $this->captureErrorLog(static function () use ($mailer): void {
+            $mailer->sendHtml('user@example.com', 'Hello', '<p>Hi</p>');
+        });
 
         self::assertCount(0, $mailer->spy->sent, 'nothing reaches the transport while off');
         self::assertSame([], (new Mail($this->pdo))->recent(5), 'no mail_logs row is written');
-        self::assertStringContainsString(
-            '[mail] sending disabled, skipped: user@example.com "Hello"',
-            (string) file_get_contents($logFile)
-        );
+        self::assertStringContainsString('[mail] sending disabled, skipped: user@example.com "Hello"', $logged);
     }
 
     public function testProbeIsSkippedAndLoggedWhenSendingIsDisabled(): void
     {
         $app = $this->makeApp();
-        $logFile = $this->tempLogFile();
-        $mailer = $this->spiedMailer($app, $logFile);
+        $mailer = $this->spiedMailer($app);
         $app->settings()->set('Mail.enabled', false);
 
-        $result = $mailer->test('user@example.com');
+        /** @var array{ok: bool, debug: string, error: ?string} $result */
+        $result = ['ok' => true, 'debug' => '', 'error' => null];
+        $logged = $this->captureErrorLog(static function () use ($mailer, &$result): void {
+            $result = $mailer->test('user@example.com');
+        });
 
         self::assertFalse($result['ok']);
         self::assertSame('Email sending is disabled', $result['error']);
         self::assertSame('', $result['debug']);
         self::assertCount(0, $mailer->spy->sent);
         self::assertSame([], (new Mail($this->pdo))->recent(5));
-        self::assertStringContainsString(
-            '[mail] sending disabled, skipped: user@example.com',
-            (string) file_get_contents($logFile)
-        );
+        self::assertStringContainsString('[mail] sending disabled, skipped: user@example.com', $logged);
     }
 
     // -----------------------------------------------------------------
@@ -518,7 +516,7 @@ final class MailerTest extends TestCase
     /**
      * Mailer whose transport() answers a send-spy PHPMailer subclass.
      */
-    private function spiedMailer(\flight\Engine $app, ?string $logFile = null): Mailer
+    private function spiedMailer(\flight\Engine $app): Mailer
     {
         $app->settings()->set('Mail.enabled', true);
         $test = $this;
@@ -549,10 +547,10 @@ final class MailerTest extends TestCase
             }
         };
 
-        return new class($app, $spy, $logFile) extends Mailer {
-            public function __construct(\flight\Engine $app, public readonly PHPMailer $spy, ?string $logFile = null)
+        return new class($app, $spy) extends Mailer {
+            public function __construct(\flight\Engine $app, public readonly PHPMailer $spy)
             {
-                parent::__construct($app, $logFile);
+                parent::__construct($app);
             }
 
             protected function transport(): PHPMailer
@@ -591,6 +589,26 @@ final class MailerTest extends TestCase
         $this->tempLogFiles[] = $path;
 
         return $path;
+    }
+
+    /**
+     * Run a callable with error_log() pointed at a temp file, then return
+     * what was written.
+     *
+     * @param callable(): void $fn
+     */
+    private function captureErrorLog(callable $fn): string
+    {
+        $path = $this->tempLogFile();
+        $previous = ini_set('error_log', $path);
+
+        try {
+            $fn();
+        } finally {
+            ini_set('error_log', is_string($previous) ? $previous : '');
+        }
+
+        return (string) file_get_contents($path);
     }
 
     private function cipher(\flight\Engine $app): \Pubvana\Services\SecretCipher

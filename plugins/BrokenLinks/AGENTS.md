@@ -68,7 +68,7 @@ plugins/BrokenLinks/
 
 **CLI.** `php runway broken-links:check` runs the same scan logic. Returns exit code 1 if any broken links found, 0 otherwise. Auto-discovered by Runway from `plugins/BrokenLinks/commands/`.
 
-**Cron.** The plugin registers a `24h` core cron task (`pubvana.brokenlinks`) that runs `scan()` daily. The task never throws; broken-link findings are informational and surfaced on the admin screen, so it stays quiet in `writable/logs/cron.log` unless a real (uncaught) failure occurs. `BrokenLinksCronCommand` is a separate `broken-links:cron` runway command that runs the same scan on demand; both paths share `scan()`.
+**Cron.** The plugin registers a `24h` core cron task (`pubvana.brokenlinks`) that runs `scan()` daily. The task never throws; broken-link findings are informational and surfaced on the admin screen, so it stays quiet in the error log unless a real (uncaught) failure occurs. `BrokenLinksCronCommand` is a separate `broken-links:cron` runway command that runs the same scan on demand; both paths share `scan()`.
 
 ## Development and testing
 

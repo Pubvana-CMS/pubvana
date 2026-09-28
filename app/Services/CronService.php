@@ -30,7 +30,7 @@ use Throwable;
  *     log the skip and still call run_result callbacks.
  *   - Runs tasks in priority order (lowest first), each guarded by
  *     try/catch: one failing task never blocks the rest.
- *   - Appends one line per task to writable/logs/error.log.
+ *   - Appends one line per task to the error log.
  *
  * An optional 'run_result' callable per task receives the outcome of
  * every completed run, skipped or not: the interval, the task key, the
@@ -70,22 +70,17 @@ class CronService
     /** @var Engine<object> */
     private Engine $app;
 
-    /** Path of the append-only run log. */
-    private string $logFile;
-
     /** Directory holding the per-interval lock files. */
     private string $lockDir;
 
     /**
      * @param Engine<object> $app
-     * @param string|null    $logFile Override the run log path (tests)
      * @param string|null    $lockDir Override the lock directory (tests)
      */
-    public function __construct(Engine $app, ?string $logFile = null, ?string $lockDir = null)
+    public function __construct(Engine $app, ?string $lockDir = null)
     {
         $this->app = $app;
         $writable = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'writable';
-        $this->logFile = $logFile ?? $writable . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'error.log';
         $this->lockDir = $lockDir ?? $writable . DIRECTORY_SEPARATOR . 'cache';
     }
 
@@ -261,7 +256,6 @@ class CronService
      */
     private function log(string $interval, string $message): void
     {
-        $line = '[' . date('Y-m-d H:i:s') . '] [' . $interval . '] ' . $message . PHP_EOL;
-        @file_put_contents($this->logFile, $line, FILE_APPEND | LOCK_EX);
+        error_log('[' . date('Y-m-d H:i:s') . '] [' . $interval . '] ' . $message);
     }
 }

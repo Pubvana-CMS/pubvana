@@ -13,38 +13,34 @@ use RuntimeException;
 /**
  * CronService runs adext-registered cron tasks for an interval. A real
  * ExtensionRegistry behind a mapped adext service drives the whole
- * surface; log file and lock directory point at a temp dir so tests
- * never touch writable/.
+ * surface; the lock directory points at a temp dir so tests never touch
+ * writable/.
  */
 #[CoversClass(CronService::class)]
 final class CronServiceTest extends TestCase
 {
-    /** Temporary directory holding the test log file and lock files. */
+    /** Temporary directory holding the test lock files. */
     private string $tmpDir;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->tmpDir = sys_get_temp_dir() . '/pubvana-cron-test-' . uniqid();
-        mkdir($this->tmpDir . '/logs', 0777, true);
+        mkdir($this->tmpDir, 0777, true);
     }
 
     protected function tearDown(): void
     {
-        foreach (glob($this->tmpDir . '/logs/*') ?: [] as $file) {
+        foreach (glob($this->tmpDir . '/*') ?: [] as $file) {
             @unlink($file);
         }
-        foreach (glob($this->tmpDir . '/cron-*.lock') ?: [] as $file) {
-            @unlink($file);
-        }
-        @rmdir($this->tmpDir . '/logs');
         @rmdir($this->tmpDir);
         parent::tearDown();
     }
 
     /**
-     * Build a CronService backed by a real registry, with the log file
-     * and lock directory redirected into the temp dir.
+     * Build a CronService backed by a real registry, with the lock
+     * directory redirected into the temp dir.
      */
     private function makeService(ExtensionRegistry $registry): CronService
     {
@@ -52,11 +48,27 @@ final class CronServiceTest extends TestCase
             'adext' => fn (): ExtensionRegistry => $registry,
         ]);
 
-        return new CronService(
-            $app,
-            $this->tmpDir . '/logs/cron.log',
-            $this->tmpDir
-        );
+        return new CronService($app, $this->tmpDir);
+    }
+
+    /**
+     * Run a callable with error_log() pointed at a temp file, then return
+     * what was written.
+     *
+     * @param callable(): void $fn
+     */
+    private function captureErrorLog(callable $fn): string
+    {
+        $path = $this->tmpDir . '/error.log';
+        $previous = ini_set('error_log', $path);
+
+        try {
+            $fn();
+        } finally {
+            ini_set('error_log', is_string($previous) ? $previous : '');
+        }
+
+        return is_file($path) ? (string) file_get_contents($path) : '';
     }
 
     /**
@@ -98,8 +110,13 @@ final class CronServiceTest extends TestCase
     {
         $service = $this->makeService(new ExtensionRegistry());
 
-        self::assertSame(CronService::EXIT_OK, $service->run('4h'));
-        self::assertFileDoesNotExist($this->tmpDir . '/logs/cron.log');
+        $exit = null;
+        $logged = $this->captureErrorLog(static function () use ($service, &$exit): void {
+            $exit = $service->run('4h');
+        });
+
+        self::assertSame(CronService::EXIT_OK, $exit);
+        self::assertSame('', $logged);
     }
 
     public function testRunsTasksInPriorityOrder(): void
@@ -197,9 +214,11 @@ final class CronServiceTest extends TestCase
         ]);
 
         $service = $this->makeService($registry);
-        $service->run('24h');
 
-        $log = (string) file_get_contents($this->tmpDir . '/logs/cron.log');
+        $log = $this->captureErrorLog(static function () use ($service): void {
+            $service->run('24h');
+        });
+
         self::assertStringContainsString('[24h] task pubvana.good ok', $log);
         self::assertStringContainsString('[24h] task pubvana.bad FAILED: RuntimeException: boom', $log);
     }
@@ -216,9 +235,11 @@ final class CronServiceTest extends TestCase
         flock($handle, LOCK_EX | LOCK_NB);
 
         $service = $this->makeService($registry);
-        $service->run('1m');
 
-        $log = (string) file_get_contents($this->tmpDir . '/logs/cron.log');
+        $log = $this->captureErrorLog(static function () use ($service): void {
+            $service->run('1m');
+        });
+
         self::assertStringContainsString('[1m] run skipped: previous run still holds the lock', $log);
 
         flock($handle, LOCK_UN);
