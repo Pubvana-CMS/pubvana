@@ -41,13 +41,20 @@ require(__DIR__ . $ds . 'env-overrides.php');
 // Enforce the HTTPS policy before services and plugins run. Shield throws a
 // SecurityException on insecure requests when force_https is true; visitors
 // get a clean 308 upgrade instead. Request::secure honours X-Forwarded-Proto.
+// The target is SITE_URL, never the request's Host header (request input).
+// No usable SITE_URL means no redirect, and Shield refuses the request.
 // redirect() does NOT halt execution (start() would dispatch over it), so
 // exit immediately after the response is sent.
 if (php_sapi_name() !== 'cli'
     && $app->get('flight.force_https') === true
     && !$app->request()->secure) {
-    $app->redirect('https://' . $app->request()->host . $app->request()->url, 308);
-    exit;
+    $siteUrl = rtrim((string) ($app->get('siteUrl') ?? ''), '/');
+
+    if (preg_match('#^https?://#i', $siteUrl) === 1) {
+        $location = (string) preg_replace('#^http://#i', 'https://', $siteUrl);
+        $app->redirect($location . $app->request()->url, 308);
+        exit;
+    }
 }
 
 // Services: DB connection, session, auth, settings, plugin loader, error handler

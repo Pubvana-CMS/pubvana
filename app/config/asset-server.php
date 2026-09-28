@@ -43,10 +43,22 @@ $isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
     || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
 
 if ($forceHttps === true && !$isSecure) {
-    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    $uri  = $_SERVER['REQUEST_URI'] ?? '/';
-    header('Location: https://' . $host . $uri, true, 308);
-    exit;
+    // The redirect target is SITE_URL, never the request's Host header
+    // (request input). A real environment variable beats .env, matching
+    // env-overrides.php. No usable SITE_URL means no redirect: the site
+    // cannot boot without it anyway.
+    $processSiteUrl = getenv('SITE_URL');
+    $siteUrl = is_string($processSiteUrl) && $processSiteUrl !== ''
+        ? $processSiteUrl
+        : (string) ($assetEnv['SITE_URL'] ?? '');
+    $siteUrl = rtrim($siteUrl, '/');
+
+    if (preg_match('#^https?://#i', $siteUrl) === 1) {
+        $uri = $_SERVER['REQUEST_URI'] ?? '/';
+        $location = (string) preg_replace('#^http://#i', 'https://', $siteUrl);
+        header('Location: ' . $location . $uri, true, 308);
+        exit;
+    }
 }
 
 // URL shape: /assets/{type}/{name}/{path...} (same as the full-app route).
