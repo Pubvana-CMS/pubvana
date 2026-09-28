@@ -134,4 +134,36 @@ final class AssetServiceTest extends TestCase
 
         self::assertSame(['code' => 404, 'message' => 'Asset not found'], $halted);
     }
+
+    // -----------------------------------------------------------------
+    // Cache revalidation
+    // -----------------------------------------------------------------
+
+    public function testIsFreshMatchesEtagsTheWayBrowsersSendThem(): void
+    {
+        $etag = '"abc123"';
+
+        self::assertTrue($this->service->isFresh($etag, '', 1000, $etag), 'quoted, as browsers echo it');
+        self::assertTrue($this->service->isFresh('W/"abc123"', '', 1000, $etag), 'weak prefix');
+        self::assertTrue($this->service->isFresh('"other", "abc123"', '', 1000, $etag), 'list');
+        self::assertTrue($this->service->isFresh('abc123', '', 1000, $etag), 'unquoted, older clients');
+        self::assertFalse($this->service->isFresh('"stale"', '', 1000, $etag));
+    }
+
+    public function testIsFreshFallsBackToIfModifiedSince(): void
+    {
+        $etag = '"abc123"';
+
+        self::assertTrue($this->service->isFresh('', 'Fri, 01 Jan 2100 00:00:00 GMT', 1000, $etag));
+        self::assertFalse($this->service->isFresh('', 'Thu, 01 Jan 1970 00:00:00 GMT', 1000, $etag));
+        self::assertFalse($this->service->isFresh('', 'not a date', 1000, $etag), 'unparsable date is ignored');
+    }
+
+    public function testIfNoneMatchOutranksIfModifiedSince(): void
+    {
+        self::assertFalse(
+            $this->service->isFresh('"stale"', 'Fri, 01 Jan 2100 00:00:00 GMT', 1000, '"abc123"'),
+            'a stale etag must not be rescued by a newer date'
+        );
+    }
 }

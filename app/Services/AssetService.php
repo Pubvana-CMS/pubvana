@@ -186,23 +186,64 @@ class AssetService
             $this->fail404();
             return;
         }
-        $etag = md5($filePath . $lastModified);
+        // Quoted, per RFC 7232 entity-tag syntax. Browsers echo the tag back
+        // with its quotes, so an unquoted value never matches.
+        $etag = '"' . md5($filePath . $lastModified) . '"';
+        $cacheHeaders = [
+            'Cache-Control' => 'public, max-age=86400', // 1 day
+            'ETag'          => $etag,
+            'Last-Modified' => gmdate('D, d M Y H:i:s', $lastModified) . ' GMT',
+        ];
 
-        // Check If-None-Match (ETag)
-        $ifNoneMatch = $_SERVER['HTTP_IF_NONE_MATCH'] ?? '';
-        if ($ifNoneMatch === $etag) {
+        // Revalidate. A 304 still carries the validators.
+        if ($this->isFresh(
+            (string) ($_SERVER['HTTP_IF_NONE_MATCH'] ?? ''),
+            (string) ($_SERVER['HTTP_IF_MODIFIED_SINCE'] ?? ''),
+            $lastModified,
+            $etag
+        )) {
             header('HTTP/1.1 304 Not Modified');
+            foreach ($cacheHeaders as $name => $value) {
+                header("{$name}: {$value}");
+            }
             exit;
         }
 
-        // Set headers
         header('Content-Type: ' . $mimeType);
         header('Content-Length: ' . filesize($filePath));
-        header('Cache-Control: public, max-age=86400'); // 1 day
-        header('ETag: ' . $etag);
-        header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $lastModified) . ' GMT');
+        foreach ($cacheHeaders as $name => $value) {
+            header("{$name}: {$value}");
+        }
 
         readfile($filePath);
         exit;
+    }
+
+    /**
+     * Whether the client's copy is still fresh, from the two revalidation
+     * headers. If-None-Match outranks If-Modified-Since when both arrive
+     * (RFC 7232), and an unparsable date is ignored.
+     */
+    public function isFresh(string $ifNoneMatch, string $ifModifiedSince, int $lastModified, string $etag): bool
+    {
+        $ifNoneMatch = trim($ifNoneMatch);
+
+        if ($ifNoneMatch !== '') {
+            // The header may carry a weak prefix (W/"x"), a comma-separated
+            // list, or the bare hash older clients send. Take all three.
+            $bare = trim($etag, '"');
+
+            foreach (explode(',', $ifNoneMatch) as $candidate) {
+                if (trim(ltrim(trim($candidate), 'W/'), '"') === $bare) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        $since = trim($ifModifiedSince) === '' ? false : strtotime($ifModifiedSince);
+
+        return $since !== false && $since >= $lastModified;
     }
 }
