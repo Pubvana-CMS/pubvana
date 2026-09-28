@@ -457,6 +457,7 @@ final class CommentServiceCoverageTest extends TestCase
 
         $this->insertUser(1, 'ada');
         $this->insertUser(2, 'bob');
+        $this->insertUser(3, 'gone', '2026-01-01 00:00:00');
 
         $root = $service->create($this->payload([
             'status' => 'approved', 'user_id' => 1, 'guest_name' => null, 'body' => 'from ada',
@@ -468,6 +469,10 @@ final class CommentServiceCoverageTest extends TestCase
         // A comment whose user row is gone: falls back, does not error.
         $service->create($this->payload([
             'status' => 'approved', 'user_id' => 999, 'guest_name' => null, 'body' => 'from nobody',
+        ]));
+        // A comment whose user row is soft-deleted: excluded the same way.
+        $service->create($this->payload([
+            'status' => 'approved', 'user_id' => 3, 'guest_name' => null, 'body' => 'from gone',
         ]));
 
         $tree = $service->findForContent('blog', 1);
@@ -481,6 +486,7 @@ final class CommentServiceCoverageTest extends TestCase
         self::assertSame('ada', $byBody['from ada']);
         self::assertSame('bob', $byBody['from bob']);
         self::assertSame('Unknown', $byBody['from nobody']);
+        self::assertSame('Unknown', $byBody['from gone']);
     }
 
     public function testRecentCommentsBlockResolvesUserAuthors(): void
@@ -497,13 +503,13 @@ final class CommentServiceCoverageTest extends TestCase
         self::assertSame('carol', $block['comments'][0]['author']);
     }
 
-    private function insertUser(int $id, string $username): void
+    private function insertUser(int $id, string $username, ?string $deletedAt = null): void
     {
         $stmt = $this->pdo->prepare(
-            'INSERT INTO users (id, username, active, created_at) VALUES (?, ?, 1, ?)'
+            'INSERT INTO users (id, username, active, created_at, deleted_at) VALUES (?, ?, 1, ?, ?)'
         );
         self::assertNotFalse($stmt);
-        $stmt->execute([$id, $username, (new \DateTimeImmutable())->format('Y-m-d H:i:s')]);
+        $stmt->execute([$id, $username, (new \DateTimeImmutable())->format('Y-m-d H:i:s'), $deletedAt]);
     }
 
     public function testHostRegistry(): void

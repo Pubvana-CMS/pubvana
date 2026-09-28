@@ -10,6 +10,7 @@ use Pubvana\Plugins\Blog\Models\Tag;
 use Pubvana\Plugins\Blog\Models\PostCategory;
 use Pubvana\Plugins\Blog\Models\PostTag;
 use Pubvana\Plugins\Blog\Models\PostRevision;
+use Enlivenapp\FlightShield\Models\User;
 use Flight;
 
 class BlogService
@@ -467,13 +468,10 @@ class BlogService
         }
 
         $usersById = [];
-        $placeholders = implode(',', array_fill(0, count($authorIds), '?'));
-        $stmt = $this->pdo->prepare(
-            'SELECT id, username FROM users WHERE id IN (' . $placeholders . ') AND deleted_at IS NULL'
-        );
-        $stmt->execute($authorIds);
-        foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $row) {
-            $usersById[(int) $row['id']] = (string) $row['username'];
+        /** @var array<int, User> $users */
+        $users = (new User($this->pdo))->in('id', $authorIds)->isNull('deleted_at')->findAll();
+        foreach ($users as $user) {
+            $usersById[(int) $user->id] = (string) $user->username;
         }
 
         $namesByUserId = [];

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Pubvana\Plugins\Comments\Services;
 
 use Pubvana\Plugins\Comments\Models\Comment;
+use Enlivenapp\FlightShield\Models\User;
 use Pubvana\Services\RateLimiter;
 use Pubvana\Services\UrlService;
 use flight\Engine;
@@ -852,19 +853,12 @@ class CommentService
         }
 
         $idList = array_keys($ids);
-        $placeholders = implode(',', array_fill(0, count($idList), '?'));
-
-        $stmt = $this->pdo->prepare(
-            "SELECT id, username FROM users WHERE deleted_at IS NULL AND id IN ({$placeholders})"
-        );
-        if ($stmt === false) {
-            return [];
-        }
-        $stmt->execute($idList);
 
         $names = [];
-        foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $row) {
-            $names[(int) $row['id']] = (string) $row['username'];
+        /** @var array<int, User> $users */
+        $users = (new User($this->pdo))->in('id', $idList)->isNull('deleted_at')->findAll();
+        foreach ($users as $user) {
+            $names[(int) $user->id] = (string) $user->username;
         }
 
         return $names;

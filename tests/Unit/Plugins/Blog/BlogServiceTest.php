@@ -245,6 +245,12 @@ final class BlogServiceTest extends TestCase
         self::assertSame('Alice A', $map[$uid]['name']);
         self::assertSame('/profile/alice', $map[$uid]['url']);
         self::assertNull($map[99999]);
+
+        // Soft-deleted users are excluded, so their id maps to null rather
+        // than to a stale username.
+        $this->pdo->exec("INSERT INTO users (username, active, deleted_at) VALUES ('gone', 1, '2026-01-01 00:00:00')");
+        $goneId = (int) $this->pdo->lastInsertId();
+        self::assertNull($this->service->authorItemsForIds([$goneId])[$goneId]);
     }
 
     public function testBlocks(): void
