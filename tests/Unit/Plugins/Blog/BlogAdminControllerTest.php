@@ -142,6 +142,58 @@ final class BlogAdminControllerTest extends TestCase
         self::assertSame('2030-01-01 10:00:00', $post->published_at);
     }
 
+    public function testStoreScheduledNormalizesDatetimeLocalValue(): void
+    {
+        $app = $this->engine(data: [
+            'title' => 'Soon', 'status' => 'scheduled', 'published_at' => '2030-01-01T10:00',
+        ]);
+        (new BlogAdminController($app))->store();
+
+        $post = $this->blog->findPost(1);
+        self::assertNotNull($post);
+        self::assertSame('scheduled', $post->status);
+        self::assertSame('2030-01-01 10:00:00', $post->published_at);
+    }
+
+    public function testStoreRejectsUnusableScheduleDates(): void
+    {
+        $posted = ['not-a-date', '', '2020-01-01 10:00:00'];
+
+        foreach ($posted as $value) {
+            $this->redirects = [];
+            $this->flashes = [];
+
+            $app = $this->engine(data: [
+                'title' => 'Soon', 'slug' => 'soon', 'status' => 'scheduled', 'published_at' => $value,
+            ]);
+            (new BlogAdminController($app))->store();
+
+            self::assertSame(['/admin/blog/create'], $this->redirects, "posted date: {$value}");
+            self::assertSame(
+                'Scheduled posts need a publish date in the future.',
+                $this->flashes['error'][0] ?? null,
+                "posted date: {$value}",
+            );
+            self::assertNull($this->blog->findPost(1), "posted date: {$value}");
+        }
+    }
+
+    public function testUpdateRejectsUnusableScheduleDateAndKeepsPost(): void
+    {
+        $this->blog->createPost(['title' => 'E', 'slug' => 'e', 'status' => 'draft'], 1);
+
+        $app = $this->engine(data: ['title' => 'E', 'status' => 'scheduled', 'published_at' => 'nope']);
+        (new BlogAdminController($app))->update('1');
+
+        self::assertSame(['/admin/blog/1/edit'], $this->redirects);
+        self::assertSame('Scheduled posts need a publish date in the future.', $this->flashes['error'][0]);
+
+        $post = $this->blog->findPost(1);
+        self::assertNotNull($post);
+        self::assertSame('draft', $post->status);
+        self::assertNull($post->published_at);
+    }
+
     public function testEditMissAndHit(): void
     {
         (new BlogAdminController($this->engine()))->edit('99');

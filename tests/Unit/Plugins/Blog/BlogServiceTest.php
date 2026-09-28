@@ -201,6 +201,31 @@ final class BlogServiceTest extends TestCase
         self::assertSame([], $this->service->getPostTagNames($id));
     }
 
+    public function testNormalizePublishDate(): void
+    {
+        // The admin form posts a datetime-local value.
+        self::assertSame('2030-01-01 10:00:00', $this->service->normalizePublishDate('2030-01-01T10:00'));
+        self::assertSame('2030-01-01 10:00:00', $this->service->normalizePublishDate('2030-01-01 10:00:00'));
+        self::assertSame('2030-01-01 10:00:00', $this->service->normalizePublishDate('  2030-01-01T10:00  '));
+
+        self::assertNull($this->service->normalizePublishDate(''));
+        self::assertNull($this->service->normalizePublishDate('   '));
+        self::assertNull($this->service->normalizePublishDate('not-a-date'));
+    }
+
+    public function testIsFuturePublishDate(): void
+    {
+        $future = (new \DateTimeImmutable('+1 day'))->format('Y-m-d H:i:s');
+        $past = (new \DateTimeImmutable('-1 day'))->format('Y-m-d H:i:s');
+
+        self::assertTrue($this->service->isFuturePublishDate($future));
+        self::assertFalse($this->service->isFuturePublishDate($past));
+        self::assertFalse($this->service->isFuturePublishDate(null));
+
+        // A date typed as "now" survives save latency.
+        self::assertTrue($this->service->isFuturePublishDate(date('Y-m-d H:i:s')));
+    }
+
     public function testSyncPostCategories(): void
     {
         $post = $this->service->createPost(['title' => 'T', 'slug' => 't', 'status' => 'draft'], 1);

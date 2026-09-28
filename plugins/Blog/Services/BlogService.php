@@ -124,6 +124,51 @@ class BlogService
     }
 
     /**
+     * Normalize a posted publish date to 'Y-m-d H:i:s'.
+     *
+     * The admin form posts a datetime-local value ('2030-01-01T10:00').
+     * MySQL coerces that, SQLite and Postgres store it verbatim, so the
+     * value is normalized before it reaches the database.
+     *
+     * @return string|null Normalized date, or null when empty or unparseable
+     */
+    public function normalizePublishDate(string $raw): ?string
+    {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return null;
+        }
+
+        $ts = strtotime($raw);
+        if ($ts === false) {
+            return null;
+        }
+
+        return date('Y-m-d H:i:s', $ts);
+    }
+
+    /**
+     * Whether a normalized publish date is still ahead of now.
+     *
+     * A scheduled post is published as typed once the scheduler exists, so
+     * a past date would land as a backdated publish. The minute of slack
+     * keeps a date typed as "now" from being rejected by save latency.
+     *
+     * Backdating an already published post is a separate affordance, not a
+     * side effect of scheduling.
+     */
+    public function isFuturePublishDate(?string $publishAt): bool
+    {
+        if ($publishAt === null) {
+            return false;
+        }
+
+        $ts = strtotime($publishAt);
+
+        return $ts !== false && $ts > time() - 60;
+    }
+
+    /**
      * @param array<string, mixed> $data
      */
     public function createPost(array $data, int $userId): Post

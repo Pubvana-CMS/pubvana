@@ -80,8 +80,14 @@ class BlogAdminController extends AdminController
         $publishedAt = null;
         if ($status === 'published') {
             $publishedAt = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
-        } elseif ($status === 'scheduled' && !empty($post['published_at'])) {
-            $publishedAt = $post['published_at'];
+        } elseif ($status === 'scheduled') {
+            $publishedAt = $this->app->blog()->normalizePublishDate((string) ($post['published_at'] ?? ''));
+
+            if (!$this->app->blog()->isFuturePublishDate($publishedAt)) {
+                $this->app->session()->flash('error', 'Scheduled posts need a publish date in the future.');
+                $this->app->redirect($this->adminBase() . '/create');
+                return;
+            }
         }
 
         $newPost = $this->app->blog()->createPost([
@@ -152,8 +158,14 @@ class BlogAdminController extends AdminController
             $publishedAt = ($existing && $existing->status === 'published')
                 ? $existing->published_at
                 : (new \DateTimeImmutable())->format('Y-m-d H:i:s');
-        } elseif ($status === 'scheduled' && !empty($post['published_at'])) {
-            $publishedAt = $post['published_at'];
+        } elseif ($status === 'scheduled') {
+            $publishedAt = $this->app->blog()->normalizePublishDate((string) ($post['published_at'] ?? ''));
+
+            if (!$this->app->blog()->isFuturePublishDate($publishedAt)) {
+                $this->app->session()->flash('error', 'Scheduled posts need a publish date in the future.');
+                $this->app->redirect($this->adminBase() . '/' . $id . '/edit');
+                return;
+            }
         }
 
         $this->app->blog()->updatePost((int) $id, [
