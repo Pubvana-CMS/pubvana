@@ -66,7 +66,11 @@
                 <div class="d-flex justify-content-between align-items-start mb-2">
                     <h3 class="card-title mb-0"><?= htmlspecialchars($theme->name) ?></h3>
                     <div class="d-flex gap-1">
-                        <span data-trust-cell><?= trust_badge($trustInfo['status'], $trustInfo['warning']) ?></span>
+                        <?php
+                        $badgeStatus  = $trustInfo['status'];
+                        $badgeWarning = $trustInfo['warning'];
+                        ?>
+                        <span data-trust-cell><?php include __DIR__ . '/../_trust_badge.php'; ?></span>
                         <?php if ($theme->is_active): ?>
                             <span class="badge bg-primary-lt">Active</span>
                         <?php endif; ?>
@@ -223,7 +227,7 @@
         });
     }
 
-    // The trust_badge() helper in badge form, warning tooltip included.
+    // The _trust_badge.php partial in badge form, warning tooltip included.
     function badgeHtml(status, warning) {
         var w = warning ? ' title="' + esc(warning) + '"' : '';
         switch (status) {

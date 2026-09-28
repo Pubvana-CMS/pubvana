@@ -279,7 +279,11 @@ $renderSkipped = static function () use ($skipped, $adminBase): void {
         <i class="ti ti-rocket me-1"></i> Update to version <?= htmlspecialchars($target) ?>
     </button>
     <span class="d-inline-flex align-items-center gap-1" title="What the Pubvana trust service thinks of this version">
-        <?= trust_badge($trust['status'] ?? 'none', $trust['warning'] ?? null) ?>
+        <?php
+        $badgeStatus  = $trust['status'] ?? 'none';
+        $badgeWarning = $trust['warning'] ?? null;
+        include __DIR__ . '/_trust_badge.php';
+        ?>
     </span>
 </div>
 <?php if (($trust['status'] ?? 'none') === 'unknown'): ?>
@@ -400,7 +404,11 @@ foreach ($addonSections as $addonLabel => $addonRows): ?>
                     <td><?= $addonRow['version'] !== null ? htmlspecialchars($addonRow['version']) : '-' ?></td>
                     <td><?=$hasUpdate ? htmlspecialchars((string) $update['latest_version']) : htmlspecialchars($addonRow['version'] ?? '-') ?></td>
                     <td class="text-nowrap">
-                        <span data-trust-cell><?= trust_badge($addonRow['trust_status'] ?? 'none', $addonRow['trust_warning'] ?? null) ?></span>
+                        <span data-trust-cell><?php
+                            $badgeStatus  = $addonRow['trust_status'] ?? 'none';
+                            $badgeWarning = $addonRow['trust_warning'] ?? null;
+                            include __DIR__ . '/_trust_badge.php';
+                        ?></span>
                         <?php if ($recheckHandle !== ''): ?>
                         <button type="button" class="btn btn-icon btn-sm text-secondary"
                                 data-trust-recheck="<?= $recheckKind ?>"
@@ -473,7 +481,11 @@ foreach ($addonSections as $addonLabel => $addonRows): ?>
                 <p>This will backup your site, download the update, and apply it.</p>
                 <p class="d-flex align-items-center gap-2 mb-1">
                     Trust standing:
-                    <?= trust_badge($trust['status'] ?? 'none', $trust['warning'] ?? null) ?>
+                    <?php
+                    $badgeStatus  = $trust['status'] ?? 'none';
+                    $badgeWarning = $trust['warning'] ?? null;
+                    include __DIR__ . '/_trust_badge.php';
+                    ?>
                 </p>
                 <p class="small text-muted mb-0">
                     Your <code>.env</code> and <code>app/config/shield.php</code> are never overwritten.
@@ -787,7 +799,7 @@ foreach ($addonSections as $addonLabel => $addonRows): ?>
     // ------------------------------------------------------------------
     // Trust recheck: per-row buttons hit the existing core recheck
     // endpoints (identity re-derived server-side) and swap the badge in
-    // place. The badge markup mirrors the trust_badge() helper.
+    // place. The badge markup mirrors _trust_badge.php.
     // ------------------------------------------------------------------
     var csrfToken = '<?= csrf_token() ?>';
 

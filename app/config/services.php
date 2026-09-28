@@ -36,11 +36,6 @@ if (!defined('PROJECT_ROOT')) {
     define('PROJECT_ROOT', dirname(__DIR__, 2));
 }
 
-// Global view helpers (guard-guarded, safe to load once per boot). Required
-// here so both boot paths (web bootstrap.php and the CLI, which loads this
-// file directly) carry them.
-require(__DIR__ . $ds . '..' . $ds . 'Support' . $ds . 'helpers.php');
-
 // Ensure config values are loaded into the app. There is no single config
 // file anymore, so $config is never populated under either boot path;
 // values come from env-overrides.php below.

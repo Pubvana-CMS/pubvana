@@ -101,7 +101,11 @@
                         <?php endif; ?>
                     </td>
                     <td class="text-center" data-trust-cell="<?= $pluginIdAttr ?>">
-                        <span data-trust-badge><?= trust_badge($plugin['trust_status'], $plugin['trust_warning'] ?? null) ?></span>
+                        <span data-trust-badge><?php
+                            $badgeStatus  = $plugin['trust_status'];
+                            $badgeWarning = $plugin['trust_warning'] ?? null;
+                            include __DIR__ . '/../_trust_badge.php';
+                        ?></span>
                         <?php if ($plugin['trust_status'] !== 'trusted'): ?>
                             <button type="button" class="btn btn-icon btn-sm text-secondary"
                                     data-recheck="<?= $pluginIdAttr ?>"
@@ -213,7 +217,7 @@
         return div.innerHTML;
     }
 
-    // The trust_badge() helper in badge form, warning tooltip included.
+    // The _trust_badge.php partial in badge form, warning tooltip included.
     function badgeHtml(status, warning) {
         var w = warning ? ' title="' + esc(warning) + '"' : '';
         switch (status) {
