@@ -31,18 +31,23 @@ use flight\Engine;
  * Home-site push: every check response may carry a "malicious" list, entries
  * of {"type": "plugin"|"theme", "slug": "..."} naming addons the trust service
  * has found to be malicious. The list never carries verdicts, it is a prompt
- * to re-ask. The client stores it in writable/cache/trust-malicious.json as
- * {"current": [...], "processed": [...]}:
+ * to re-ask. The response list is the live truth; the client keeps no mirror
+ * of it. The only state kept is writable/cache/trust-malicious.json as
+ * {"processed": [...]}, the entries already re-asked about:
  *
- *   - Cron runs diff current against processed and re-ask (one small batch,
- *     trusted-skip overridden) for entries matching an installed addon, TTL
- *     independent, so a post-activation malicious finding surfaces within one
- *     4h tick. processed advances only after the re-ask succeeds. The diff
- *     means each finding triggers exactly one small request, ever.
- *   - Web requests (activation gate, manual recheck) only refresh the file's
- *     current list, they never chain follow-up requests while an admin waits.
- *   - Persistent list entries are exempt from the trusted-skip in the regular
- *     TTL batch, so the client keeps confirming them on the normal cadence.
+ *   - Cron runs diff the response list against processed and re-ask (one
+ *     small batch, trusted-skip overridden) for entries matching an installed
+ *     addon, TTL independent, so a post-activation malicious finding surfaces
+ *     within one 4h tick. processed advances only after the re-ask succeeds.
+ *     The diff means each finding triggers exactly one small request, ever.
+ *   - processed is pruned to entries still present in the latest response, so
+ *     a finding the home site clears stops being re-asked and stops being
+ *     exempt from the trusted-skip.
+ *   - Web requests (activation gate, manual recheck) never chain follow-up
+ *     requests while an admin waits.
+ *   - Entries still on the response list are exempt from the trusted-skip in
+ *     the regular TTL batch, so the client keeps confirming them on the
+ *     normal cadence.
  *
  * Response envelope contract (for the home-site build):
  *
@@ -104,25 +109,25 @@ class TrustClientService
      */
     public function checkIfDue(): void
     {
-        $state = $this->maliciousListRead();
-        $currentList = $state['current'];
-        $processed = $state['processed'];
-        $latestList = $currentList;
+        $processed = $this->maliciousListRead()['processed'];
+
+        // The response list is the live truth. It starts as whatever the
+        // previous run last saw, so a run that makes no request (fresh TTL,
+        // nothing due) does not forget the findings it is still honoring.
+        $list = $this->maliciousListRead()['current'];
 
         // 1. New malicious findings: re-ask immediately, TTL independent.
-        $newEntries = $this->listDiff($currentList, $processed);
+        $newEntries = $this->listDiff($list, $processed);
         if ($newEntries !== []) {
             $matches = $this->matchInstalled($newEntries);
             if ($matches === []) {
                 // Nothing installed matches; the findings are fully handled.
-                $processed = $currentList;
+                $processed = $list;
             } else {
                 $outcome = $this->checkAddons($matches);
                 if ($outcome['ok']) {
-                    $processed = $currentList;
-                    if ($outcome['malicious'] !== []) {
-                        $latestList = $outcome['malicious'];
-                    }
+                    $processed = $list;
+                    $list = $outcome['malicious'];
                 }
                 // On failure processed stays put, the next tick retries.
             }
@@ -131,14 +136,12 @@ class TrustClientService
         // 2. The TTL-gated batch.
         if (!$this->isCacheFresh()) {
             $items = $this->collectInstalledAddons();
-            $due = $this->filterDueItems($items, $currentList);
+            $due = $this->filterDueItems($items, $list);
             if ($due !== []) {
                 $outcome = $this->checkAddons($due);
                 if ($outcome['ok']) {
                     $this->stampLastCheck();
-                    if ($outcome['malicious'] !== []) {
-                        $latestList = $outcome['malicious'];
-                    }
+                    $list = $outcome['malicious'];
                 }
             } else {
                 // Every addon is trusted-cached and nothing is on the list:
@@ -153,7 +156,11 @@ class TrustClientService
             }
         }
 
-        $this->maliciousListWrite($latestList, $processed);
+        // Prune processed to entries the home site still lists, so a cleared
+        // finding stops being re-asked and stops being trusted-skip exempt.
+        $processed = $this->pruneProcessed($processed, $list);
+
+        $this->maliciousListWrite($list, $processed);
     }
 
     // -----------------------------------------------------------------
@@ -202,12 +209,11 @@ class TrustClientService
 
         $this->cacheModel()->upsert($type, $slug, $version, $author, $status, $warning);
 
-        // Web path: refresh the home-site list, never chain follow-ups here.
+        // Web path: the response list is authoritative, never chain follow-ups
+        // here. An empty list clears entries the home site has dropped.
         $list = $this->extractMaliciousList($data);
-        if ($list !== []) {
-            $state = $this->maliciousListRead();
-            $this->maliciousListWrite($list, $state['processed']);
-        }
+        $processed = $this->pruneProcessed($this->maliciousListRead()['processed'], $list);
+        $this->maliciousListWrite($list, $processed);
 
         return ['status' => $status, 'warning' => $warning, 'answered' => true];
     }
@@ -293,9 +299,9 @@ class TrustClientService
         }
 
         $outcome = $this->checkAddons($toCheck);
-        if ($outcome['ok'] && $outcome['malicious'] !== []) {
-            $state = $this->maliciousListRead();
-            $this->maliciousListWrite($outcome['malicious'], $state['processed']);
+        if ($outcome['ok']) {
+            $processed = $this->pruneProcessed($this->maliciousListRead()['processed'], $outcome['malicious']);
+            $this->maliciousListWrite($outcome['malicious'], $processed);
         }
     }
 
@@ -316,9 +322,9 @@ class TrustClientService
 
         $outcome = $this->checkAddons($items);
 
-        if ($outcome['ok'] && $outcome['malicious'] !== []) {
-            $state = $this->maliciousListRead();
-            $this->maliciousListWrite($outcome['malicious'], $state['processed']);
+        if ($outcome['ok']) {
+            $processed = $this->pruneProcessed($this->maliciousListRead()['processed'], $outcome['malicious']);
+            $this->maliciousListWrite($outcome['malicious'], $processed);
         }
 
         return $outcome;
@@ -541,6 +547,10 @@ class TrustClientService
      * Read the malicious-list state file. A missing or corrupt file reads as
      * empty state (fail closed): worst case the findings are re-asked.
      *
+     * 'current' is the last list the home site sent, kept only so a run that
+     * makes no request still knows what it is honoring. It is never treated
+     * as authoritative over a fresh response.
+     *
      * @return array{current: list<array{type: string, slug: string}>, processed: list<array{type: string, slug: string}>}
      */
     public function maliciousListRead(): array
@@ -619,22 +629,13 @@ class TrustClientService
     }
 
     /**
-     * This site's base URL: the SITE_URL deployment value when present,
-     * otherwise derived from the request (cron falls back to localhost).
+     * This site's base URL: the SITE_URL deployment value, and nothing else.
+     * The request Host and X-Forwarded-Proto headers are attacker-controlled,
+     * so they never contribute; an unset SITE_URL sends an empty string.
      */
     public function getBaseUrl(): string
     {
-        $siteUrl = trim((string) ($this->app->get('siteUrl') ?? ''));
-        if ($siteUrl !== '') {
-            return rtrim($siteUrl, '/');
-        }
-
-        $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-            || (string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
-        $scheme = $https ? 'https' : 'http';
-        $host = (string) ($_SERVER['HTTP_HOST'] ?? 'localhost');
-
-        return $scheme . '://' . $host;
+        return rtrim(trim((string) ($this->app->get('siteUrl') ?? '')), '/');
     }
 
     /**
@@ -749,6 +750,32 @@ class TrustClientService
         }
 
         return $new;
+    }
+
+    /**
+     * Drop processed entries the home site no longer lists. Without this the
+     * file grows forever and a cleared finding stays exempt from the
+     * trusted-skip, so it is re-asked on every TTL batch indefinitely.
+     *
+     * @param list<array{type: string, slug: string}> $processed
+     * @param list<array{type: string, slug: string}> $current
+     * @return list<array{type: string, slug: string}>
+     */
+    private function pruneProcessed(array $processed, array $current): array
+    {
+        $live = [];
+        foreach ($current as $entry) {
+            $live[$entry['type'] . '|' . $entry['slug']] = true;
+        }
+
+        $kept = [];
+        foreach ($processed as $entry) {
+            if (isset($live[$entry['type'] . '|' . $entry['slug']])) {
+                $kept[] = $entry;
+            }
+        }
+
+        return $kept;
     }
 
     /**

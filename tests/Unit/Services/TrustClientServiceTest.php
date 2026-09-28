@@ -308,6 +308,27 @@ final class TrustClientServiceTest extends TestCase
         self::assertContains(['type' => 'plugin', 'slug' => 'blog'], $state['current']);
     }
 
+    public function testCheckAddonEmptyListClearsAStaleFinding(): void
+    {
+        $this->service->maliciousListWrite(
+            [['type' => 'plugin', 'slug' => 'blog']],
+            [['type' => 'plugin', 'slug' => 'blog']]
+        );
+
+        $this->service->bodies[] = (string) json_encode([
+            'results'   => [
+                ['type' => 'plugin', 'slug' => 'Blog', 'version' => '1.0.0', 'status' => 'trusted', 'warning' => null],
+            ],
+            'malicious' => [],
+        ]);
+
+        $this->service->checkAddon('plugin', 'Blog', '1.0.0', 'pubvana');
+
+        $state = $this->service->maliciousListRead();
+        self::assertSame([], $state['current']);
+        self::assertSame([], $state['processed']);
+    }
+
     public function testRecheckAllBatchesCoreAndInstalledAddons(): void
     {
         $this->service->bodies[] = (string) json_encode([
@@ -422,6 +443,7 @@ final class TrustClientServiceTest extends TestCase
             'results' => [
                 ['type' => 'plugin', 'slug' => 'blog', 'version' => '1.0.0', 'status' => 'malicious', 'warning' => 'bad code'],
             ],
+            'malicious' => [['type' => 'plugin', 'slug' => 'blog']],
         ]);
 
         $this->service->checkIfDue();
@@ -432,6 +454,40 @@ final class TrustClientServiceTest extends TestCase
 
         $state = $this->service->maliciousListRead();
         self::assertSame([['type' => 'plugin', 'slug' => 'blog']], $state['processed']);
+    }
+
+    public function testCheckIfDueClearedFindingStopsBeingReasked(): void
+    {
+        // Blog is trusted and on the list, already processed. TTL expired, so
+        // the batch re-asks it. The home site now answers with an empty list.
+        $this->cachePut('plugin', 'blog', '1.0.0', 'pubvana', 'trusted');
+        $this->settings->store[TrustClientService::LAST_CHECK_KEY] = date('c', time() - 86400 * 2);
+        $this->service->maliciousListWrite(
+            [['type' => 'plugin', 'slug' => 'blog']],
+            [['type' => 'plugin', 'slug' => 'blog']]
+        );
+
+        $this->service->bodies[] = (string) json_encode([
+            'results' => [
+                ['type' => 'plugin', 'slug' => 'blog', 'version' => '1.0.0', 'status' => 'trusted', 'warning' => null],
+            ],
+            'malicious' => [],
+        ]);
+
+        $this->service->checkIfDue();
+
+        // The cleared entry is gone from both lists, so the next TTL batch
+        // will not force it past the trusted-skip again.
+        $state = $this->service->maliciousListRead();
+        self::assertSame([], $state['current']);
+        self::assertSame([], $state['processed']);
+
+        // Second run, TTL expired again: Blog is trusted and unlisted, so it
+        // must not be forced past the trusted-skip again.
+        $this->settings->store[TrustClientService::LAST_CHECK_KEY] = date('c', time() - 86400 * 2);
+        $this->service->checkIfDue();
+        $lastRequest = $this->service->requests[count($this->service->requests) - 1] ?? [];
+        self::assertNotContains('blog', array_column($lastRequest['items'] ?? [], 'slug'));
     }
 
     public function testCheckIfDueDropsFindingsForUninstalledAddons(): void
@@ -487,6 +543,7 @@ final class TrustClientServiceTest extends TestCase
             'results' => [
                 ['type' => 'plugin', 'slug' => 'blog', 'version' => '1.0.0', 'status' => 'malicious', 'warning' => 'oops'],
             ],
+            'malicious' => [['type' => 'plugin', 'slug' => 'blog']],
         ]);
 
         $this->service->checkIfDue();
@@ -536,6 +593,31 @@ final class TrustClientServiceTest extends TestCase
         $state = $this->service->maliciousListRead();
         self::assertSame([], $state['processed']);
         self::assertSame([['type' => 'plugin', 'slug' => 'blog']], $state['current']);
+    }
+
+    public function testCheckIfDuePrunesProcessedForClearedFindings(): void
+    {
+        // Two findings processed; the home site now lists only one of them.
+        $this->cachePut('plugin', 'blog', '1.0.0', 'pubvana', 'trusted');
+        $this->settings->store[TrustClientService::LAST_CHECK_KEY] = date('c', time() - 86400 * 2);
+        $this->service->maliciousListWrite(
+            [['type' => 'plugin', 'slug' => 'blog'], ['type' => 'plugin', 'slug' => 'orphan']],
+            [['type' => 'plugin', 'slug' => 'blog'], ['type' => 'plugin', 'slug' => 'orphan']]
+        );
+
+        $this->service->bodies[] = (string) json_encode([
+            'results' => [
+                ['type' => 'plugin', 'slug' => 'blog', 'version' => '1.0.0', 'status' => 'malicious', 'warning' => 'still bad'],
+                ['type' => 'plugin', 'slug' => 'orphan', 'version' => '2.0.0', 'status' => 'trusted', 'warning' => null],
+            ],
+            'malicious' => [['type' => 'plugin', 'slug' => 'blog']],
+        ]);
+
+        $this->service->checkIfDue();
+
+        $state = $this->service->maliciousListRead();
+        self::assertSame([['type' => 'plugin', 'slug' => 'blog']], $state['current']);
+        self::assertSame([['type' => 'plugin', 'slug' => 'blog']], $state['processed']);
     }
 
     public function testVersionChangeIsANaturalCacheMiss(): void
