@@ -420,7 +420,7 @@ class MediaService
         return $this->model->findById($id);
     }
 
-    // ── Widgets ────────────────────────────────────────────────
+    // ── Pickers ────────────────────────────────────────────────
 
     private function adminBase(): string
     {
