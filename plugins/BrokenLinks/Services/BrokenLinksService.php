@@ -416,7 +416,7 @@ class BrokenLinksService
 
         $urls = [];
         $siteHost = strtolower((string) parse_url(
-            $this->app->settings()->get('CMS.siteUrl', ''),
+            (string) ($this->app->get('siteUrl') ?? ''),
             PHP_URL_HOST
         ));
 

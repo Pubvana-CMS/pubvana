@@ -619,17 +619,12 @@ class TrustClientService
     }
 
     /**
-     * This site's base URL: the CMS.siteUrl setting when present, otherwise
-     * derived from the request (cron falls back to localhost).
+     * This site's base URL: the SITE_URL deployment value when present,
+     * otherwise derived from the request (cron falls back to localhost).
      */
     public function getBaseUrl(): string
     {
-        $siteUrl = '';
-        try {
-            $siteUrl = trim((string) ($this->app->settings()->get('CMS.siteUrl', '') ?? ''));
-        } catch (\Throwable) {
-            // Settings store unreadable; fall through to the request host.
-        }
+        $siteUrl = trim((string) ($this->app->get('siteUrl') ?? ''));
         if ($siteUrl !== '') {
             return rtrim($siteUrl, '/');
         }

@@ -67,19 +67,13 @@ class HttpsCheck implements CheckInterface
     /**
      * Resolve the canonical site URL for HTTPS detection.
      *
-     * Prefers the CMS.siteUrl setting; falls back to the current request
-     * scheme and host.
+     * Prefers the SITE_URL deployment value; falls back to the current
+     * request scheme and host.
      */
     private function resolveSiteUrl(): string
     {
-        $siteUrl = '';
+        $siteUrl = (string) ($this->app->get('siteUrl') ?? '');
 
-        if (method_exists($this->app, 'settings')) {
-            $siteUrl = (string) $this->app->settings()->get('CMS.siteUrl', '');
-        }
-        if (empty($siteUrl)) {
-            $siteUrl = (string) ($this->app->get('CMS.siteUrl') ?? '');
-        }
         if (empty($siteUrl)) {
             $request = $this->app->request();
             $scheme = $request->secure ? 'https' : 'http';

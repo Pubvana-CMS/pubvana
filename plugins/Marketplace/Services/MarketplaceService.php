@@ -1520,20 +1520,15 @@ class MarketplaceService
     /**
      * This site's bare domain, as sent to the store for license lookup.
      *
-     * Built on the DB-backed CMS.siteUrl setting the admin UI writes (the
-     * same value UrlService::siteOrigin() reads), never the request Host
-     * header. Port and path are dropped, leaving the host a purchase is
-     * bound to.
+     * Built on the SITE_URL deployment value (the same value
+     * UrlService::siteOrigin() reads), never the request Host header. Port
+     * and path are dropped, leaving the host a purchase is bound to.
      *
      * @return non-empty-string
      */
     protected function siteDomain(): string
     {
-        try {
-            $siteUrl = trim((string) ($this->app->settings()->get('CMS.siteUrl', '') ?? ''));
-        } catch (\Throwable) {
-            $siteUrl = '';
-        }
+        $siteUrl = trim((string) ($this->app->get('siteUrl') ?? ''));
         if ($siteUrl === '') {
             $siteUrl = 'http://localhost';
         }

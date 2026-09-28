@@ -146,20 +146,24 @@ final class MarketplaceServiceTest extends TestCase
     // License domain + verification
     // -----------------------------------------------------------------
 
-    public function testSiteDomainUsesTheSettingsValueAndDropsThePort(): void
+    public function testSiteDomainUsesTheSiteUrlValueAndDropsThePort(): void
     {
-        $this->property($this->service, 'app')->set('CMS.siteUrl', 'http://env.example');
-        $this->settings->data['CMS.siteUrl'] = 'https://www.Example.com:8443/blog';
+        $this->property($this->service, 'app')->set('siteUrl', 'https://www.Example.com:8443/blog');
+        // A leftover settings row must not shadow the deployment value.
+        $this->settings->data['CMS.siteUrl'] = 'http://ignored.example';
 
         self::assertSame('example.com', $this->invoke($this->service, 'siteDomain'));
     }
 
-    public function testSiteDomainFallsBackToLocalhostWithoutTheHostHeader(): void
+    public function testSiteDomainFallsBackToLocalhostWithoutSiteUrl(): void
     {
-        // Nothing in the settings store; the app-level value must not be used.
-        $this->property($this->service, 'app')->set('CMS.siteUrl', 'http://spoofed.example');
-
-        self::assertSame('localhost', $this->invoke($this->service, 'siteDomain'));
+        // No SITE_URL configured; the request Host header must not be used.
+        $_SERVER['HTTP_HOST'] = 'spoofed.example';
+        try {
+            self::assertSame('localhost', $this->invoke($this->service, 'siteDomain'));
+        } finally {
+            unset($_SERVER['HTTP_HOST']);
+        }
     }
 
     public function testVerifyPurchasesReportsNotConnected(): void
@@ -187,7 +191,7 @@ final class MarketplaceServiceTest extends TestCase
     public function testVerifyPurchasesReconcilesAndReportsSuccess(): void
     {
         $this->settings->data['Marketplace.account_token'] = 'abc:xyz';
-        $this->settings->data['CMS.siteUrl'] = 'https://example.com';
+        $this->property($this->service, 'app')->set('siteUrl', 'https://example.com');
         $this->service->getResponses = [
             '{"ok":true,"purchases":[{"product_id":7,"name":"Demo","license_key":"LIC-7","licensed":1,"scope":"single_site","expires":"2027-01-01"}]}',
         ];

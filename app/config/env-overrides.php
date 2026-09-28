@@ -99,9 +99,9 @@ $envMap = [
     'APP_ENV'     => 'environment',
     // FORCE_HTTPS is parsed strictly below rather than in this map, so raw
     // strings never end up as app config values.
-    'SITE_NAME'   => 'CMS.siteName',
-    'ADMIN_EMAIL' => 'CMS.adminEmail',
-    'SITE_URL'    => 'CMS.siteUrl',
+    // SITE_URL is deployment config and stays out of the settings store:
+    // it lands on a plain app key, read as $app->get('siteUrl').
+    'SITE_URL'    => 'siteUrl',
     // FORCE_HTTPS is parsed strictly below rather than in this map, so raw
     // strings never end up as app config values.
     'DB_HOST'     => null,

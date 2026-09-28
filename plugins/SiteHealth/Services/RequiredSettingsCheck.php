@@ -18,9 +18,9 @@ class RequiredSettingsCheck implements CheckInterface
     {
         $missing = [];
 
-        $siteUrl = $this->settingsValue('CMS.siteUrl');
+        $siteUrl = (string) ($this->app->get('siteUrl') ?? '');
         if (empty($siteUrl) || $siteUrl === 'http://example.com' || $siteUrl === 'https://example.com') {
-            $missing[] = 'CMS.siteUrl (still set to placeholder or empty)';
+            $missing[] = 'SITE_URL (still set to placeholder or empty)';
         }
 
         $siteName = $this->settingsValue('CMS.siteName');
@@ -35,7 +35,7 @@ class RequiredSettingsCheck implements CheckInterface
                 category: CheckResult::CAT_CONFIGURATION,
                 status: CheckResult::WARNING,
                 message: 'Settings using default or placeholder values: ' . implode(', ', $missing),
-                remediation: 'Update these settings in Admin > Settings with your actual site values.',
+                remediation: 'Update the listed settings in Admin > Settings. Set SITE_URL in .env.',
             );
         }
 

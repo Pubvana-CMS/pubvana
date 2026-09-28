@@ -479,9 +479,9 @@ class BlogPublicController extends PublicController
      */
     private function generateRss(array $posts): string
     {
-        $siteName = $this->app->settings()->get('CMS.siteName') ?? 'Blog';
-        $siteUrl = $this->app->settings()->get('CMS.siteUrl') ?? $this->app->get('flight.base_url');
-        $siteDescription = $this->app->settings()->get('CMS.siteByline') ?? '';
+        $siteName = (string) $this->app->settings()->get('CMS.siteName');
+        $siteUrl = $this->app->get('siteUrl') ?? $this->app->get('flight.base_url');
+        $siteDescription = (string) $this->app->settings()->get('CMS.siteByline');
         $prefix = $this->app->pluginLoader()->routePrefix('pubvana/blog');
 
         $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
@@ -534,8 +534,8 @@ class BlogPublicController extends PublicController
      */
     private function generateAtom(array $posts): string
     {
-        $siteName = $this->app->settings()->get('CMS.siteName') ?? 'Blog';
-        $siteUrl = $this->app->settings()->get('CMS.siteUrl') ?? $this->app->get('flight.base_url');
+        $siteName = (string) $this->app->settings()->get('CMS.siteName');
+        $siteUrl = $this->app->get('siteUrl') ?? $this->app->get('flight.base_url');
         $prefix = $this->app->pluginLoader()->routePrefix('pubvana/blog');
 
         $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";

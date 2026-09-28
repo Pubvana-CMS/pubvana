@@ -46,9 +46,9 @@ plugins/SiteHealth/
 │   ├── EnvironmentFilePermissionsCheck.php  .env world-writable (critical) / world-readable (warning)
 │   ├── ShieldCheck.php                   Flight Shield installed + configured
 │   ├── SessionConfigCheck.php            httponly, secure, samesite, gc_maxlifetime
-│   ├── RequiredSettingsCheck.php         CMS.siteUrl / CMS.siteName placeholders
+│   ├── RequiredSettingsCheck.php         SITE_URL / CMS.siteName placeholders
 │   ├── WritableDirectoriesCheck.php      public/uploads, writable/cache, writable/logs
-│   ├── ConfigDefaultsCheck.php           .env placeholders (SITE_URL, DB_PASS, keys, SITE_NAME, ADMIN_EMAIL)
+│   ├── ConfigDefaultsCheck.php           .env placeholders (SITE_URL, DB_PASS, keys)
 │   ├── PluginMigrationsCheck.php         Pending migrations via MigrationSetup
 │   └── PluginDependenciesCheck.php       flightphp-* package require graph from installed.json
 ├── Plugin.php                            Entry; maps health facade; admin routes; dashboard card

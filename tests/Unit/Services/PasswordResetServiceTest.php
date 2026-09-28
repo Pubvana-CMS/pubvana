@@ -249,16 +249,16 @@ final class PasswordResetServiceTest extends TestCase
     // Reset link base URL (Host-header poisoning)
     // -----------------------------------------------------------------
 
-    public function testResetEmailUsesDbBackedSiteUrlSetting(): void
+    public function testResetEmailUsesTheConfiguredSiteUrl(): void
     {
         $user = $this->seedUser('ada', 'ada@example.com');
         $service = $this->makeService();
 
-        // A stale app-level value (configured SITE_URL env var) sits under
-        // the DB-backed row, the way the admin UI writes CMS.siteUrl. The
-        // DB row must win: that is the value the operator actually set.
-        $this->testApp->set('CMS.siteUrl', 'https://env.example');
-        $this->testApp->settings()->set('CMS.siteUrl', 'https://admin.example');
+        // SITE_URL is deployment config, read from the app store. A leftover
+        // CMS.siteUrl row must not shadow it: the settings store is not the
+        // source of this value any more.
+        $this->testApp->set('siteUrl', 'https://admin.example');
+        $this->testApp->settings()->set('CMS.siteUrl', 'https://ignored.example');
 
         $service->issueResetToken('ada@example.com');
 
@@ -267,7 +267,7 @@ final class PasswordResetServiceTest extends TestCase
             'https://admin.example/auth/reset-password?token=',
             $this->sentEmails[0]['body']
         );
-        self::assertStringNotContainsString('env.example', $this->sentEmails[0]['body']);
+        self::assertStringNotContainsString('ignored.example', $this->sentEmails[0]['body']);
     }
 
     public function testResetEmailNeverUsesAttackerControlledHost(): void
@@ -278,7 +278,7 @@ final class PasswordResetServiceTest extends TestCase
         // No configured site URL: only the fallback path remains. The
         // request stand-in answers a hostile Host header; it must not shape
         // the emailed link.
-        $this->testApp->set('CMS.siteUrl', null);
+        $this->testApp->set('siteUrl', null);
 
         $service->issueResetToken('ada@example.com');
 
@@ -328,8 +328,8 @@ final class PasswordResetServiceTest extends TestCase
 
         $app = $this->app([
             'db' => fn(): PDO => $this->pdo,
-            // Real settings store over the in-memory DB: a DB-backed
-            // CMS.siteUrl row must resolve exactly like the admin UI writes it.
+            // Real settings store over the in-memory DB. SITE_URL is deployment
+            // config and comes from the app store, not from a settings row.
             'settings' => $this->singleton(fn(): SettingsService => new SettingsService(\Flight::app())),
             // SettingsService::declaredFields() reads the extension registry.
             'adext' => $this->singleton(fn(): ExtensionRegistry => new ExtensionRegistry()),

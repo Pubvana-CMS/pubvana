@@ -231,7 +231,7 @@ final class PluginViewTest extends TestCase
     {
         $app = $this->engine();
         $app->map('request', fn(): object => $this->requestStub(''));
-        $app->set('CMS.siteUrl', 'http://localhost/public');
+        $app->set('siteUrl', 'http://localhost/public');
 
         $view = $this->view();
 

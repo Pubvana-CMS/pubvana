@@ -81,20 +81,14 @@ class UrlService
      *
      * Every URL the application renders for the outside world (canonical
      * tags, og:url, JSON-LD ids, sitemaps, robots.txt, emailed links)
-     * must build on this value. It resolves the DB-backed CMS.siteUrl
-     * setting the admin UI writes and never consults the request: the
-     * Host header is attacker-controlled, so it can never contribute.
-     * When the setting is unconfigured the seeded default
-     * (http://localhost) is returned, which is constant and not
-     * attacker-influenced.
+     * must build on this value. It resolves the SITE_URL deployment value
+     * from the app store and never consults the request: the Host header
+     * is attacker-controlled, so it can never contribute. When SITE_URL is
+     * unset the constant default (http://localhost) is returned.
      */
     public function siteOrigin(): string
     {
-        try {
-            $siteUrl = trim((string) ($this->app->settings()->get('CMS.siteUrl', '') ?? ''));
-        } catch (\Throwable) {
-            $siteUrl = '';
-        }
+        $siteUrl = trim((string) ($this->app->get('siteUrl') ?? ''));
 
         if ($siteUrl !== '') {
             return rtrim($siteUrl, '/');
@@ -190,10 +184,10 @@ class UrlService
     }
 
     /**
-     * The site's authoritative origin: the configured CMS.siteUrl setting,
-     * else an absolute flight.base_url, else the request host. Returns null
-     * only when nothing is derivable; with no reference host, absolute URLs
-     * must be refused.
+     * The site's authoritative origin: the configured SITE_URL deployment
+     * value, else an absolute flight.base_url, else the request host.
+     * Returns null only when nothing is derivable; with no reference host,
+     * absolute URLs must be refused.
      *
      * This is the validation-side reference for sameSite(), not the
      * emission-side origin. The base_url/request tiers stay because a
@@ -202,14 +196,7 @@ class UrlService
      */
     private function siteHost(): ?string
     {
-        $siteUrl = '';
-
-        try {
-            $settings = $this->app->settings()->get('CMS.siteUrl', '');
-            $siteUrl = trim((string) ($settings ?? ''));
-        } catch (\Throwable) {
-            // Settings store unreadable; fall through to base/request host.
-        }
+        $siteUrl = trim((string) ($this->app->get('siteUrl') ?? ''));
 
         if ($siteUrl === '') {
             $baseUrl = (string) ($this->app->get('flight.base_url') ?? '');

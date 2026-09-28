@@ -24,9 +24,8 @@ use flight\Engine;
  *   - Token flow: an anonymous visitor requests a reset link by email
  *     (issueResetToken), then sets a new password with the link's token
  *     (resetByToken).
- *   - Session flow: a logged-in user carrying Shield's force_reset flag is
- *     redirected by ForcePasswordResetMiddleware and sets a new password
- *     (resetForUser).
+ *   - Session flow: a logged-in user carrying Shield's force_reset flag
+ *     sets a new password (resetForUser).
  *
  * Both clear the force_reset flag and revoke remember-me tokens on success,
  * so stale devices cannot ride out a password change.
@@ -252,7 +251,7 @@ class PasswordResetService
         }
 
         $resetUrl = $this->baseUrl() . '/auth/reset-password?token=' . urlencode($token);
-        $siteName = (string) ($this->app->get('CMS.siteName') ?? 'Pubvana');
+        $siteName = (string) $this->app->settings()->get('CMS.siteName');
 
         $body = $this->app->view()->fetch('enlivenapp/flight-shield/Email/password_reset_email', [
             'resetUrl'  => $resetUrl,
@@ -272,15 +271,14 @@ class PasswordResetService
     /**
      * Resolve the absolute site base URL for the reset email link.
      *
-     * Uses the configured CMS.siteUrl setting, the DB-backed value the
-     * admin UI writes. It never derives anything from the request Host
-     * header, which is attacker-controlled and could otherwise poison the
-     * emailed link. When the setting is unconfigured it falls back to the
-     * seeded default.
+     * Uses SITE_URL, the deployment value set in .env. It never derives
+     * anything from the request Host header, which is attacker-controlled
+     * and could otherwise poison the emailed link. When SITE_URL is unset
+     * it falls back to the constant default.
      */
     protected function baseUrl(): string
     {
-        $siteUrl = trim((string) ($this->app->settings()->get('CMS.siteUrl', '') ?? ''));
+        $siteUrl = trim((string) ($this->app->get('siteUrl') ?? ''));
 
         if ($siteUrl !== '') {
             return rtrim($siteUrl, '/');

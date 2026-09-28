@@ -98,7 +98,7 @@ Categories and tags are many-to-many through `posts_to_categories` and `tags_to_
 
 ### Feeds
 
-`BlogPublicController::rss()` and `atom()` render RSS 2.0 and Atom XML strings directly (20 most recent published posts), drawing `CMS.siteName`, `CMS.siteUrl`, and `CMS.siteByline` from app settings with fallbacks (`Controllers/BlogPublicController.php:399-526`).
+`BlogPublicController::rss()` and `atom()` render RSS 2.0 and Atom XML strings directly (20 most recent published posts), drawing `CMS.siteName` and `CMS.siteByline` through `settings()->get()` and `SITE_URL` from `$app->get('siteUrl')`, with fallbacks (`Controllers/BlogPublicController.php:399-526`).
 
 ## Development and testing
 

@@ -342,10 +342,11 @@ final class PasswordResetControllerTest extends TestCase
         self::assertSame('/fallback/Views', $view3->getThemePath());
     }
 
-    public function testSiteNameFallsBackToPubvana(): void
+    public function testSiteNameComesFromTheStore(): void
     {
-        self::assertSame('Pubvana', $this->controller($this->engine())->callSiteName());
-        self::assertSame('My Site', $this->controller($this->engine(['CMS.siteName' => 'My Site']))->callSiteName());
+        // No row: empty. The read invents nothing.
+        self::assertSame('', $this->controller($this->engine())->callSiteName());
+        self::assertSame('My Site', $this->controller($this->engine(settingsRows: ['CMS.siteName' => 'My Site']))->callSiteName());
     }
 
     // -----------------------------------------------------------------
@@ -366,9 +367,22 @@ final class PasswordResetControllerTest extends TestCase
         array $query = [],
         ?array $shieldConfig = ['redirects' => ['after_login' => '/members', 'after_login_admin' => '/admin']],
         ?string $activeThemeFolder = '_fxauth',
-        bool $themesThrow = false
+        bool $themesThrow = false,
+        array $settingsRows = []
     ): \flight\Engine {
         $app = $this->app([
+            // Settings-store stand-in: a row is the value.
+            'settings' => static fn(): object => new class($settingsRows) {
+                /** @param array<string, string|null> $rows */
+                public function __construct(private array $rows)
+                {
+                }
+
+                public function get(string $key, mixed $default = null): mixed
+                {
+                    return $this->rows[$key] ?? $default;
+                }
+            },
             'view' => function (): \Pubvana\Services\PluginView {
                 static $view = null;
                 if ($view === null) {

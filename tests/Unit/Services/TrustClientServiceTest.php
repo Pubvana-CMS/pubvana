@@ -65,7 +65,6 @@ final class TrustClientServiceTest extends TestCase
     {
         $this->pdo = Sqlite::recreate();
         $this->settings = new ArraySettings();
-        $this->settings->store['CMS.siteUrl'] = 'https://test.example.com/';
         $this->maliciousFile = (string) tempnam(sys_get_temp_dir(), 'trust-malicious-');
         @unlink($this->maliciousFile);
 
@@ -109,6 +108,9 @@ final class TrustClientServiceTest extends TestCase
                 }
             },
         ]);
+
+        // SITE_URL is deployment config: the service reads it from the app.
+        $app->set('siteUrl', 'https://test.example.com/');
 
         $this->service = new FakeHttpTrustClient($this->pdo, $app, $this->maliciousFile);
     }

@@ -25,7 +25,7 @@ final class EnvOverridesTest extends TestCase
 
     /** @var list<string> */
     private const KEYS = [
-        'APP_ENV', 'APP_DEBUG', 'FORCE_HTTPS', 'SITE_NAME', 'ADMIN_EMAIL', 'SITE_URL',
+        'APP_ENV', 'APP_DEBUG', 'FORCE_HTTPS', 'SITE_URL',
         'DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASS', 'SESSION_ENCRYPTION_KEY',
     ];
 
@@ -77,15 +77,13 @@ final class EnvOverridesTest extends TestCase
     {
         $app = $this->freshEngine();
         putenv('APP_ENV=development');
-        putenv('SITE_NAME=My Site');
-        putenv('ADMIN_EMAIL=a@b.test');
         putenv('SITE_URL=https://example.test');
         $this->includeOverrides($app);
 
         self::assertSame('development', $app->get('environment'));
-        self::assertSame('My Site', $app->get('CMS.siteName'));
-        self::assertSame('a@b.test', $app->get('CMS.adminEmail'));
-        self::assertSame('https://example.test', $app->get('CMS.siteUrl'));
+        // SITE_URL is deployment config: a plain app key, never a settings key.
+        self::assertSame('https://example.test', $app->get('siteUrl'));
+        self::assertNull($app->get('CMS.siteUrl'));
         // No FORCE_HTTPS: off by default regardless of APP_ENV.
         self::assertFalse($app->get('flight.force_https'));
     }
@@ -198,12 +196,12 @@ final class EnvOverridesTest extends TestCase
     public function testIdempotentDoubleInclude(): void
     {
         $app = $this->freshEngine();
-        putenv('SITE_NAME=Once');
+        putenv('SITE_URL=https://once.test');
         $this->includeOverrides($app);
-        putenv('SITE_NAME=Twice');
+        putenv('SITE_URL=https://twice.test');
         $this->includeOverrides($app);
 
-        self::assertSame('Twice', $app->get('CMS.siteName'));
+        self::assertSame('https://twice.test', $app->get('siteUrl'));
         /** @var array<string, mixed> $db */
         $db = $app->get('database');
         self::assertSame('mysql', $db['driver']);

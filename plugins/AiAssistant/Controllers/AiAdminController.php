@@ -64,7 +64,7 @@ class AiAdminController extends AdminController
     {
         $logLimit = max(1, (int) $this->getConfig('log_limit', 200));
 
-        $siteUrl = trim((string) ($this->app->settings()->get('CMS.siteUrl') ?? ''));
+        $siteUrl = trim((string) ($this->app->get('siteUrl') ?? ''));
         if ($siteUrl === '') {
             $siteUrl = $this->app->request()->getBaseUrl();
         }

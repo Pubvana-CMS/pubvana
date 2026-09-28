@@ -125,7 +125,7 @@ final class UrlServiceTest extends TestCase
         }
     }
 
-    public function testSiteOriginPrefersTheConfiguredSetting(): void
+    public function testSiteOriginPrefersTheConfiguredSiteUrl(): void
     {
         $service = $this->service('https://example.com/');
 
@@ -216,27 +216,9 @@ final class UrlServiceTest extends TestCase
 
     private function service(string $siteUrl): UrlService
     {
-        $app = $this->app([
-            'settings' => $this->stubSettings($siteUrl),
-        ]);
+        $app = $this->app();
+        $app->set('siteUrl', $siteUrl);
 
         return new UrlService($app);
-    }
-
-    /**
-     * A settings stand-in returning the configured CMS.siteUrl.
-     */
-    private function stubSettings(string $siteUrl): callable
-    {
-        return static fn (): object => new class($siteUrl) {
-            public function __construct(private string $siteUrl)
-            {
-            }
-
-            public function get(string $key, mixed $default = null): mixed
-            {
-                return $key === 'CMS.siteUrl' ? $this->siteUrl : $default;
-            }
-        };
     }
 }

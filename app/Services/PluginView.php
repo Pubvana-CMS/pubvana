@@ -191,7 +191,7 @@ class PluginView extends View
         }
 
         // Strip base URL prefix (e.g. /public) so /public/admin matches /admin
-        $parsedBase = parse_url(\Flight::get('CMS.siteUrl') ?? '', PHP_URL_PATH);
+        $parsedBase = parse_url((string) (\Flight::get('siteUrl') ?? ''), PHP_URL_PATH);
         $baseUrl = rtrim(is_string($parsedBase) ? $parsedBase : '', '/');
         if ($baseUrl !== '' && str_starts_with($path, $baseUrl)) {
             $path = substr($path, strlen($baseUrl));

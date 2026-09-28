@@ -40,17 +40,9 @@ final class BrokenLinksServiceCoverageTest extends TestCase
         $reg = $registry;
         $app = $this->app([
             'adext' => static fn (): ExtensionRegistry => $reg,
-            'settings' => static fn (): object => new class ($siteUrl) {
-                public function __construct(private string $siteUrl)
-                {
-                }
-
-                public function get(string $key, mixed $default = ''): mixed
-                {
-                    return $this->siteUrl;
-                }
-            },
         ]);
+        // SITE_URL is deployment config: the app store holds it.
+        $app->set('siteUrl', $siteUrl);
 
         $service = new TestableBrokenLinksService($this->pdo, $app);
         $service->checkResults = $results;
