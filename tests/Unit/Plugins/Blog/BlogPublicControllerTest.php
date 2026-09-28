@@ -276,6 +276,140 @@ final class BlogPublicControllerTest extends TestCase
         self::assertStringContainsString('application/atom+xml', (string) $headers['Content-Type']);
     }
 
+    /**
+     * A feed must batch taxonomy and author lookups: one set of queries for
+     * the whole document rather than a handful per item. Twenty posts is
+     * enough for a per-post regression to blow past the query budget, and
+     * the content checks below prove the batched maps land on the right item.
+     */
+    public function testFeedsBatchTaxonomyAndAuthorLookups(): void
+    {
+        $stmt = $this->pdo->query(
+            "SELECT sql FROM sqlite_master WHERE sql IS NOT NULL"
+            . " AND name NOT LIKE 'sqlite_%' ORDER BY (type = 'table') DESC"
+        );
+        if ($stmt === false) {
+            self::fail('Could not read the schema for the counting connection.');
+        }
+        /** @var list<string> $schema */
+        $schema = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        $counting = new class ($schema) extends PDO {
+            public int $queries = 0;
+
+            /** @param list<string> $schema */
+            public function __construct(array $schema)
+            {
+                parent::__construct('sqlite::memory:', null, null, [
+                    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                ]);
+                parent::exec('PRAGMA foreign_keys = ON');
+                foreach ($schema as $sql) {
+                    parent::exec($sql);
+                }
+            }
+
+            public function prepare(string $query, array $options = []): \PDOStatement|false
+            {
+                $this->queries++;
+                return parent::prepare($query, $options);
+            }
+
+            public function query(string $query, ?int $fetchMode = null, mixed ...$fetchModeArgs): \PDOStatement|false
+            {
+                $this->queries++;
+                return parent::query($query, $fetchMode, ...$fetchModeArgs);
+            }
+
+            public function exec(string $statement): int|false
+            {
+                $this->queries++;
+                return parent::exec($statement);
+            }
+        };
+
+        $authorIds = [];
+        for ($u = 1; $u <= 3; $u++) {
+            $counting->exec("INSERT INTO users (username, active) VALUES ('user{$u}', 1)");
+            $authorIds[] = (int) $counting->lastInsertId();
+        }
+
+        $this->pdo = $counting;
+        $this->blog = new BlogService($this->app([
+            'db'           => fn(): PDO => $counting,
+            'pluginLoader' => static fn(): object => new class {
+                public function isEnabled(string $pluginId): bool
+                {
+                    return false;
+                }
+            },
+        ]), ['route_prefix' => '/blog']);
+
+        // Built before seeding: syncPostTags() resolves slugify through the
+        // global Flight engine, which engine() installs.
+        $halted = [];
+        $app = $this->engine();
+        $app->map('halt', function (int $code, string $body) use (&$halted): void {
+            $halted[] = ['code' => $code, 'body' => $body];
+        });
+        $headers = new \ArrayObject([]);
+        $app->map('response', static fn(): object => new class($headers) {
+            public function __construct(private \ArrayObject $h)
+            {
+            }
+
+            public function header(string $k, string $v): void
+            {
+                $this->h[$k] = $v;
+            }
+        });
+
+        for ($i = 1; $i <= 20; $i++) {
+            $category = $this->blog->createCategory(['name' => "Cat{$i}", 'slug' => "cat{$i}"]);
+            $post = $this->blog->createPost([
+                'title'        => "Post {$i}",
+                'slug'         => "post-{$i}",
+                'content'      => "Body {$i}",
+                'status'       => 'published',
+                'published_at' => sprintf('2026-01-%02d 10:00:00', $i),
+            ], $authorIds[($i - 1) % 3]);
+            $this->blog->syncPostCategories((int) $post->id, [(int) $category->id]);
+            $this->blog->syncPostTags((int) $post->id, "tag{$i}");
+        }
+
+        $counting->queries = 0;
+        $this->controller($app)->rss();
+        self::assertLessThan(15, $counting->queries, 'RSS feed should not query per item.');
+
+        $dom = new \DOMDocument();
+        self::assertTrue($dom->loadXML($halted[0]['body']));
+        $xpath = new \DOMXPath($dom);
+
+        $items = $xpath->query('/rss/channel/item');
+        self::assertNotFalse($items);
+        self::assertCount(20, $items);
+
+        $categories = $xpath->query('/rss/channel/item[title="Post 7"]/category');
+        self::assertNotFalse($categories);
+        $names = [];
+        foreach ($categories as $node) {
+            $names[] = $node->textContent;
+        }
+        self::assertContains('Cat7', $names);
+        self::assertContains('tag7', $names);
+
+        $author = $xpath->query('/rss/channel/item[title="Post 7"]/author');
+        self::assertNotFalse($author);
+        self::assertSame('user1', $author->item(0)?->textContent);
+
+        $halted = [];
+        $counting->queries = 0;
+        $this->controller($app)->atom();
+        self::assertLessThan(15, $counting->queries, 'Atom feed should not query per item.');
+        self::assertStringContainsString('<title>Post 7</title>', $halted[0]['body']);
+    }
+
     private function controller(Engine $app): BlogPublicController
     {
         $test = $this;

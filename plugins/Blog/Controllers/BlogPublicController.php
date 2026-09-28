@@ -453,6 +453,10 @@ class BlogPublicController extends PublicController
     /**
      * Generate RSS 2.0 XML from posts.
      *
+     * Taxonomy and author data comes from one batched lookup per type for
+     * the whole feed; calling the per-post helpers here would cost a handful
+     * of queries per item (see taxonomyMapsFor()).
+     *
      * @param array{items: array<int, Post>, total: int, page: int, per_page: int} $posts
      */
     private function generateRss(array $posts): string
@@ -461,6 +465,7 @@ class BlogPublicController extends PublicController
         $siteUrl = $this->app->get('siteUrl') ?? $this->app->get('flight.base_url');
         $siteDescription = (string) $this->app->settings()->get('CMS.siteByline');
         $prefix = $this->app->pluginLoader()->routePrefix('pubvana/blog');
+        $maps = $this->taxonomyMapsFor($posts['items']);
 
         $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
         $xml .= '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">' . "\n";
@@ -472,9 +477,10 @@ class BlogPublicController extends PublicController
         $xml .= '<atom:link href="' . htmlspecialchars($siteUrl . '/feed') . '" rel="self" type="application/rss+xml"/>' . "\n";
 
         foreach ($posts['items'] as $post) {
+            $postId = (int) $post->id;
             $postUrl = $siteUrl . $prefix . '/' . $post->slug;
-            $categories = $this->getPostCategories((int) $post->id);
-            $tags = $this->getPostTags((int) $post->id);
+            $categories = $maps['categories'][$postId] ?? [];
+            $tags = $maps['tags'][$postId] ?? [];
 
             $xml .= '<item>' . "\n";
             $xml .= '<title>' . htmlspecialchars($post->title) . '</title>' . "\n";
@@ -482,7 +488,7 @@ class BlogPublicController extends PublicController
             $xml .= '<guid isPermaLink="true">' . htmlspecialchars($postUrl) . '</guid>' . "\n";
             $xml .= '<pubDate>' . $this->feedDate($post->published_at, 'r') . '</pubDate>' . "\n";
 
-            $author = $this->getAuthor($post);
+            $author = $maps['authors'][(int) ($post->author_id ?? 0)] ?? null;
             if ($author) {
                 $xml .= '<author>' . htmlspecialchars($author['name']) . '</author>' . "\n";
             }
@@ -508,6 +514,10 @@ class BlogPublicController extends PublicController
     /**
      * Generate Atom XML from posts.
      *
+     * Taxonomy and author data comes from one batched lookup per type for
+     * the whole feed; calling the per-post helpers here would cost a handful
+     * of queries per item (see taxonomyMapsFor()).
+     *
      * @param array{items: array<int, Post>, total: int, page: int, per_page: int} $posts
      */
     private function generateAtom(array $posts): string
@@ -515,6 +525,7 @@ class BlogPublicController extends PublicController
         $siteName = (string) $this->app->settings()->get('CMS.siteName');
         $siteUrl = $this->app->get('siteUrl') ?? $this->app->get('flight.base_url');
         $prefix = $this->app->pluginLoader()->routePrefix('pubvana/blog');
+        $maps = $this->taxonomyMapsFor($posts['items']);
 
         $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
         $xml .= '<feed xmlns="http://www.w3.org/2005/Atom">' . "\n";
@@ -529,9 +540,10 @@ class BlogPublicController extends PublicController
         }
 
         foreach ($posts['items'] as $post) {
+            $postId = (int) $post->id;
             $postUrl = $siteUrl . $prefix . '/' . $post->slug;
-            $categories = $this->getPostCategories((int) $post->id);
-            $tags = $this->getPostTags((int) $post->id);
+            $categories = $maps['categories'][$postId] ?? [];
+            $tags = $maps['tags'][$postId] ?? [];
 
             $xml .= '<entry>' . "\n";
             $xml .= '<title>' . htmlspecialchars($post->title) . '</title>' . "\n";
@@ -540,7 +552,7 @@ class BlogPublicController extends PublicController
             $xml .= '<published>' . $this->feedDate($post->published_at, 'c') . '</published>' . "\n";
             $xml .= '<updated>' . $this->feedDate($post->updated_at ?? $post->published_at, 'c') . '</updated>' . "\n";
 
-            $author = $this->getAuthor($post);
+            $author = $maps['authors'][(int) ($post->author_id ?? 0)] ?? null;
             if ($author) {
                 $xml .= '<author><name>' . htmlspecialchars($author['name']) . '</name></author>' . "\n";
             }
