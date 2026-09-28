@@ -42,7 +42,6 @@ final class ShieldMigrationsConfigTest extends TestCase
         self::assertNull($config['actions']['login']);
         self::assertNull($config['actions']['register']);
         self::assertSame(['email'], $config['valid_login_fields']);
-        self::assertSame([], $config['personal_fields']);
         self::assertSame('user', $config['default_group']);
 
         foreach (['login', 'logout', 'after_login', 'after_login_admin', 'after_register', 'after_logout', 'force_reset', 'permission_denied', 'group_denied'] as $key) {

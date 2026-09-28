@@ -123,9 +123,6 @@ return [
     // Valid fields for login
     'valid_login_fields' => ['email'],
 
-    // Personal fields (checked by NothingPersonalValidator)
-    'personal_fields' => [],
-
     // Default group for new users
     'default_group' => 'user',
 
