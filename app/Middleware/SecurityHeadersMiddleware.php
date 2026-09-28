@@ -7,14 +7,17 @@ namespace Pubvana\Middleware;
 /**
  * SecurityHeadersMiddleware - Adds security headers to every response.
  *
- * Applied before every request in routes.php. Headers include:
+ * Applied before every request in routes.php. Defaults:
  *   - Content-Security-Policy: restricts where resources can load from
- *   - Strict-Transport-Security: forces HTTPS for 1 year
  *   - X-Content-Type-Options: prevents MIME type sniffing
  *   - X-Frame-Options: prevents clickjacking (same origin only)
  *   - X-XSS-Protection: enables browser XSS filter
  *   - Referrer-Policy: limits referrer info to same origin
  *   - Permissions-Policy: disables camera, microphone, geolocation
+ *
+ * Strict-Transport-Security is not a default: it must be passed in through
+ * $config, and routes.php only does that when flight.force_https is on
+ * (HSTS over plain HTTP is meaningless).
  *
  * CSP sources:
  *   - 'self': only load resources from our own domain
