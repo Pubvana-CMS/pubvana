@@ -213,6 +213,22 @@ final class UsersControllerTest extends TestCase
         self::assertSame(['user', 123, 'admin'], $this->userAdminFake->lastSync);
         self::assertArrayNotHasKey('password', $this->usersSvc->lastProfile);
         self::assertSame(['/admin/users/5/edit'], $this->redirects);
+        self::assertSame('User updated.', $this->flashes['success'][0]);
+    }
+
+    public function testUpdateProfileFailureReportsError(): void
+    {
+        $this->usersSvc->findResult = new FakeUser(5);
+        $this->userAdminFake->syncResult = (new Result())->setSuccess(true);
+        $this->usersSvc->profileResult = (new Result())
+            ->setSuccess(false)
+            ->setReason('Password does not meet requirements.');
+        $app = $this->engine(data: ['groups' => ['user'], 'password' => 'weak']);
+        $this->controller($app)->update('5');
+
+        self::assertSame(['/admin/users/5/edit'], $this->redirects);
+        self::assertSame('Password does not meet requirements.', $this->flashes['error'][0]);
+        self::assertArrayNotHasKey('success', $this->flashes);
     }
 
     public function testDeleteMissingRedirects(): void
@@ -546,6 +562,12 @@ final class FakeUsersSvc
     /** @var array<string, mixed> */
     public array $lastProfile = [];
     public bool $profileUpdated = false;
+    public Result $profileResult;
+
+    public function __construct()
+    {
+        $this->profileResult = (new Result())->setSuccess(true);
+    }
 
     /** @return list<object> */
     public function paginated(int $page, int $perPage, bool $inc): array
@@ -578,7 +600,7 @@ final class FakeUsersSvc
         $this->lastProfile = $data;
         $this->profileUpdated = true;
 
-        return (new Result())->setSuccess(true);
+        return $this->profileResult;
     }
 }
 

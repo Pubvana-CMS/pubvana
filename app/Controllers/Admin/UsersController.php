@@ -294,10 +294,16 @@ class UsersController extends AdminController
             $data['password'] = $post['password'];
         }
 
-        // Profile update may fail validation (e.g. weak password), the
-        // user record itself is untouched in that case; redirect is silent
-        // to match this admin UI's no-flash-message convention.
-        $this->app->auth()->users()->updateProfile($user, $data);
+        // Profile update may fail validation (e.g. weak password). Nothing
+        // is written in that case, but the group sync above has already been
+        // saved, so the failure must be reported instead of flashing success
+        // over a partially applied update.
+        $result = $this->app->auth()->users()->updateProfile($user, $data);
+        if (!$result->isOK()) {
+            $this->app->session()->flash('error', $result->reason() ?: 'User could not be updated.');
+            $this->app->redirect('/admin/users/' . $id . '/edit');
+            return;
+        }
 
         $this->app->session()->flash('success', 'User updated.');
         $this->app->redirect('/admin/users/' . $id . '/edit');
