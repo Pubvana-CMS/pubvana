@@ -111,6 +111,124 @@ final class ExtensionRegistryTest extends TestCase
         self::assertFalse($registry->has('admin.menu', 'not-a-slot'));
     }
 
+    public function testRegisterReportsStoredOrRefusedAsABool(): void
+    {
+        $registry = new ExtensionRegistry();
+
+        self::assertTrue($registry->register('admin.menu', 'content', 'pubvana.blog', [
+            'label' => 'Blog',
+            'url'   => '/blog',
+        ]));
+        self::assertFalse($registry->register('admin.menu', 'not-a-slot', 'pubvana.bad', [
+            'label' => 'Bad',
+            'url'   => '/bad',
+        ]));
+    }
+
+    public function testARefusalIsRecordedWithTypeSlotKeyAndReason(): void
+    {
+        $registry = new ExtensionRegistry();
+        $registry->register('nope.menu', 'content', 'pubvana.x', ['label' => 'X', 'url' => '/x']);
+
+        $errors = $registry->errors();
+
+        self::assertCount(1, $errors);
+        self::assertSame('nope.menu', $errors[0]['type']);
+        self::assertSame('content', $errors[0]['slot']);
+        self::assertSame('pubvana.x', $errors[0]['key']);
+        self::assertStringContainsString("unknown type 'nope.menu'", $errors[0]['reason']);
+    }
+
+    public function testASuccessfulRegistrationRecordsNothing(): void
+    {
+        $registry = new ExtensionRegistry();
+        $registry->register('admin.menu', 'content', 'pubvana.blog', ['label' => 'Blog', 'url' => '/blog']);
+
+        self::assertSame([], $registry->errors());
+    }
+
+    public function testBadlyTypedValuesAreRefusedInsteadOfThrowing(): void
+    {
+        // Each of these values is read by register() itself (URL prefixing,
+        // the asset rewrite, or the path/handler/middleware handed to
+        // addRoute()), so a wrong type used to be a TypeError mid-boot.
+        $cases = [
+            'priority'   => ['cron', '1m', ['priority' => '10', 'callable' => static fn (): null => null]],
+            'url'        => ['public.css', 'default', ['url' => ['/x.css']]],
+            'middleware' => ['public.nav', 'main', ['label' => 'X', 'url' => '/x', 'middleware' => 'nope']],
+            'submenu'    => ['admin.menu', 'content', ['label' => 'X', 'url' => '/x', 'submenu' => 'nope']],
+            'fields'     => ['admin.settings', 'general', ['label' => 'X', 'fields' => 'nope']],
+            'route'      => ['admin.menu', 'content', ['label' => 'X', 'url' => '/x', 'route' => ['GET', '/x']]],
+        ];
+
+        foreach ($cases as $key => $case) {
+            $registry = new ExtensionRegistry();
+            $stored = $registry->register($case[0], $case[1], 'pubvana.bad', $case[2]);
+            $errors = $registry->errors();
+
+            self::assertFalse($stored, "{$key} should be refused");
+            self::assertCount(1, $errors, "{$key} should record one refusal");
+            self::assertStringContainsString("'{$key}'", $errors[0]['reason'], "{$key} should be named in the reason");
+            self::assertFalse($registry->has($case[0], $case[1]), "{$key} should not be stored");
+        }
+    }
+
+    public function testARefusedRouteIsNotCollected(): void
+    {
+        $registry = new ExtensionRegistry();
+
+        $stored = $registry->register('admin.menu', 'content', 'pubvana.bad', [
+            'label' => 'Bad',
+            'url'   => '/bad',
+            'route' => ['GET', '/bad', null],
+        ]);
+
+        self::assertFalse($stored);
+        self::assertFalse($registry->has('admin.menu', 'content'));
+        self::assertSame([], $registry->getRoutes());
+    }
+
+    public function testANonCallableIsStillStoredForTheConsumerToReport(): void
+    {
+        // Deliberate: handling a non-callable is the consumer's job.
+        // CronService::run counts it as a failed task and
+        // PluginLoader::dispatchHomepage skips it, so refusing it here would
+        // turn a reported failure into a silently empty slot.
+        $registry = new ExtensionRegistry();
+
+        self::assertTrue($registry->register('cron', '4h', 'pubvana.bad', [
+            'callable' => 'no-such-function-anywhere',
+        ]));
+        self::assertSame([], $registry->errors());
+        self::assertTrue($registry->has('cron', '4h'));
+    }
+
+    public function testBatchModeReturnsFalseWhenAnEntryIsRefused(): void
+    {
+        $registry = new ExtensionRegistry();
+
+        $stored = $registry->register('admin.menu', 'content', [
+            'pubvana.good' => ['label' => 'Good', 'url' => '/good'],
+            'pubvana.bad'  => ['label' => 'Bad', 'nope' => 'x'],
+        ]);
+
+        self::assertFalse($stored);
+        self::assertTrue($registry->has('admin.menu', 'content'));
+        self::assertCount(1, $registry->errors());
+        self::assertSame('pubvana.bad', $registry->errors()[0]['key']);
+    }
+
+    public function testBatchModeRefusesANonArrayEntryInsteadOfThrowing(): void
+    {
+        $registry = new ExtensionRegistry();
+
+        $stored = $registry->register('cron', '4h', ['pubvana.bad' => 'not-an-array']);
+
+        self::assertFalse($stored);
+        self::assertFalse($registry->has('cron', '4h'));
+        self::assertStringContainsString('missing required keys', $registry->errors()[0]['reason']);
+    }
+
     public function testDottedSlotRegistersAndRetrieves(): void
     {
         $registry = new ExtensionRegistry();
@@ -409,12 +527,12 @@ final class ExtensionRegistryTest extends TestCase
     public function testRegisterRoutesGatesAdminScopeByDefault(): void
     {
         $registry = new ExtensionRegistry();
-        $registry->addRoute('GET', '/widgets', [\stdClass::class, 'widgets'], [], 'admin', 'pubvana.widgets');
+        $registry->addRoute('GET', '/blocks', [\stdClass::class, 'blocks'], [], 'admin', 'pubvana.blocks');
 
         $app = $this->app();
         $registry->registerRoutes($app);
 
-        $matched = $app->router()->route($this->makeRequest('/admin/widgets', 'GET'));
+        $matched = $app->router()->route($this->makeRequest('/admin/blocks', 'GET'));
         self::assertNotFalse($matched);
 
         $gates = array_values(array_filter(

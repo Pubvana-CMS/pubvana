@@ -24,7 +24,14 @@ use flight\Engine;
  *
  * This class is schema-validated. Every type, slot, and required key is
  * defined in TYPES. If a plugin registers something that doesn't match
- * the schema, it gets rejected with a clear error message. No silent failures.
+ * the schema, the registration is refused with a clear error message,
+ * register() returns false, and the reason is kept in errors(). No silent
+ * failures.
+ *
+ * Callables: a contribution may carry a 'callable'. The registry invokes it
+ * only for slots read with a non-empty $context, which today is
+ * admin.dashboard and content.edit.panel. Every other type is read with no
+ * context, so the consumer service invokes the callable itself.
  *
  * Usage from a plugin:
  *   $app->adext()->register('admin.menu', 'content', 'pubvana.blog', [
@@ -69,9 +76,21 @@ class ExtensionRegistry
             'optional' => ['icon', 'priority', 'submenu', 'route', 'middleware', 'core'],
         ],
         'admin.dashboard' => [
+            // A card (slot 'cards') carries a 'value' plus optional icon,
+            // tone and href. A section (slot 'sections') carries a 'title'
+            // and an 'items' list, each item optionally carrying its own
+            // 'href'. Both may supply a 'callable' returning the array
+            // instead of inlining it.
+            //
+            // Every 'href' (card, section, and item) is a site-root-relative
+            // path such as '/blog' or '/blog/12/edit'. The dashboard prepends
+            // '/admin' before rendering (AdminController::normalizeDashboardUrls()),
+            // so contributors must NOT include '/admin' themselves. A path
+            // that already starts with '/admin' is left untouched, and
+            // absolute http(s) URLs are never rewritten.
             'slots'    => ['cards', 'sections'],
             'required' => ['label'],
-            'optional' => ['callable', 'output', 'value', 'icon', 'color', 'priority'],
+            'optional' => ['callable', 'output', 'value', 'icon', 'color', 'priority', 'href', 'items'],
         ],
         'admin.settings' => [
             // Settings pages. Each contribution becomes a tab on the
@@ -406,7 +425,16 @@ class ExtensionRegistry
      * @var array<string, array<string, array<string, array<string, mixed>>>>
      */
     protected array $extensions = [];
-
+    /**
+     * Registrations refused since boot, in the order they were refused.
+     *
+     * register() reports every refusal through error_log() and returns false.
+     * The same refusal is recorded here so a test can assert on it, and a
+     * consumer can surface it in the UI, without parsing the error log.
+     *
+     * @var list<array{type: string, slot: string, key: string, reason: string}>
+     */
+    protected array $errors = [];
     /**
      * Route definitions collected from registrations.
      *
@@ -442,9 +470,14 @@ class ExtensionRegistry
      *       'pubvana.groups'       => ['label' => 'Groups', ...],
      *   ]);
      *
-     * Validates against the TYPES schema. Rejects unknown types, unknown slots,
-     * missing required keys, unknown keys, and duplicate contributor keys.
-     * Logs clear errors so plugin authors know exactly what they broke.
+     * Validates against the TYPES schema. Refuses unknown types, unknown slots,
+     * missing required keys, unknown keys, duplicate contributor keys, and
+     * values of a type register() itself cannot use. Every refusal is logged
+     * through error_log() and recorded in errors(), so a caller that cares can
+     * see the problem without reading the error log.
+     *
+     * Nothing is stored until the config passes, so a refused registration
+     * never leaves a half-applied entry or a route behind.
      *
      * If a 'route' key is provided (for menu/nav types), the route is
      * automatically stored for later registration with Flight's router.
@@ -453,19 +486,21 @@ class ExtensionRegistry
      *   - admin.* types: auto-prefixes /admin
      *   - public.* types: no prefix
      *
+     * In batch mode the return value is true only when every entry in the
+     * batch was stored.
+     *
      * @param string               $type   The extension type (must exist in TYPES)
      * @param string               $slot   The slot name (must exist in TYPES[$type]['slots'])
      * @param string|array<string, mixed> $key    Single key string, or array of key => config pairs
      * @param array<string, mixed> $config Data being registered (single mode only)
      *
-     * @return void
+     * @return bool True when the contribution was stored
      */
-    public function register(string $type, string $slot, string|array $key, array $config = []): void
+    public function register(string $type, string $slot, string|array $key, array $config = []): bool
     {
         if (!isset(self::TYPES[$type])) {
             $allowed = implode(', ', array_keys(self::TYPES));
-            error_log("ExtensionRegistry: unknown type '{$type}'. Allowed: {$allowed}");
-            return;
+            return $this->reject($type, $slot, $key, "unknown type '{$type}'. Allowed: {$allowed}");
         }
 
         $schema = self::TYPES[$type];
@@ -484,37 +519,50 @@ class ExtensionRegistry
 
         if (!$slotOk) {
             $allowed = implode(', ', $schema['slots']);
-            error_log("ExtensionRegistry: unknown slot '{$slot}' for type '{$type}'. Allowed: {$allowed}");
-            return;
+            return $this->reject($type, $slot, $key, "unknown slot '{$slot}' for type '{$type}'. Allowed: {$allowed}");
         }
 
         // Batch mode: $key is [contributorKey => config, ...]
         if (is_array($key)) {
+            $stored = true;
             foreach ($key as $batchKey => $batchConfig) {
-                $this->register($type, $slot, $batchKey, $batchConfig);
+                // A non-array entry is cast rather than thrown at, so one bad
+                // entry is refused by the recursive call instead of aborting
+                // the whole batch with a TypeError.
+                $stored = $this->register($type, $slot, (string) $batchKey, (array) $batchConfig) && $stored;
             }
-            return;
+            return $stored;
         }
 
         // Single mode
         $missing = array_diff($schema['required'], array_keys($config));
         if (!empty($missing)) {
             $keys = implode(', ', $missing);
-            error_log("ExtensionRegistry: missing required keys [{$keys}] for '{$type}.{$slot}' (key: '{$key}')");
-            return;
+            return $this->reject($type, $slot, $key, "missing required keys [{$keys}] for '{$type}.{$slot}' (key: '{$key}')");
         }
 
         $allowedKeys = array_merge($schema['required'], $schema['optional']);
         $unknown = array_diff(array_keys($config), $allowedKeys);
         if (!empty($unknown)) {
             $keys = implode(', ', $unknown);
-            error_log("ExtensionRegistry: unknown keys [{$keys}] for '{$type}.{$slot}' (key: '{$key}'). Allowed: " . implode(', ', $allowedKeys));
-            return;
+            $allowed = implode(', ', $allowedKeys);
+            return $this->reject($type, $slot, $key, "unknown keys [{$keys}] for '{$type}.{$slot}' (key: '{$key}'). Allowed: {$allowed}");
         }
 
         if (isset($this->extensions[$type][$slot][$key])) {
-            error_log("ExtensionRegistry: duplicate key '{$key}' in [{$type}][{$slot}] - rejected.");
-            return;
+            return $this->reject($type, $slot, $key, "duplicate key '{$key}' in [{$type}][{$slot}] - rejected.");
+        }
+
+        // register() reads these values itself (URL prefixing, the asset-URL
+        // rewrite, and the path/handler/middleware it hands to addRoute()), so
+        // a wrong type reaches addRoute() and throws a TypeError mid-boot.
+        // 'callable' is deliberately not checked: handling a non-callable is
+        // the consumer's job (CronService counts it as a failed task,
+        // PluginLoader::dispatchHomepage skips it).
+        $problems = $this->valueErrors($config);
+        if ($problems !== []) {
+            $list = implode('; ', $problems);
+            return $this->reject($type, $slot, $key, "invalid value for '{$type}.{$slot}' (key: '{$key}'): {$list}");
         }
 
         // Auto-prefix /admin URLs for admin types
@@ -541,6 +589,10 @@ class ExtensionRegistry
             }
         }
 
+        // Store before collecting the route so a registration is never
+        // half-applied: the entry is present with its route, or not at all.
+        $this->extensions[$type][$slot][$key] = $config;
+
         // Collect route if provided
         if (isset($config['route']) && is_array($config['route'])) {
             $scope = str_starts_with($type, 'admin.') ? 'admin' : 'public';
@@ -554,7 +606,95 @@ class ExtensionRegistry
             );
         }
 
-        $this->extensions[$type][$slot][$key] = $config;
+        return true;
+    }
+
+    /**
+     * Refuse a registration: log it, record it, and report failure.
+     *
+     * The log line keeps the 'ExtensionRegistry: ' prefix it has always
+     * carried; the recorded reason is the message without that prefix.
+     *
+     * @param string               $type   Extension type the registration targeted
+     * @param string               $slot   Slot the registration targeted
+     * @param string|array<string, mixed> $key Contributor key, or the whole batch map
+     * @param string               $reason Why it was refused
+     *
+     * @return bool Always false, so callers can `return $this->reject(...)`.
+     */
+    private function reject(string $type, string $slot, string|array $key, string $reason): bool
+    {
+        $label = is_array($key) ? implode(', ', array_map('strval', array_keys($key))) : $key;
+
+        error_log("ExtensionRegistry: {$reason}");
+        $this->errors[] = [
+            'type'   => $type,
+            'slot'   => $slot,
+            'key'    => $label,
+            'reason' => $reason,
+        ];
+
+        return false;
+    }
+
+    /**
+     * Type-check the values register() reads for itself.
+     *
+     * URL prefixing, the asset-URL rewrite, and the path/handler/middleware
+     * list handed to addRoute() all read $config without a guard, so a wrong
+     * type there is a TypeError out of addRoute() mid-boot. Keys checked here
+     * are exactly the ones register() consumes; the rest are stored as given
+     * for the consuming service to interpret.
+     *
+     * @param array<string, mixed> $config Registration being validated
+     *
+     * @return list<string> Problems found; empty when the config is usable
+     */
+    private function valueErrors(array $config): array
+    {
+        $problems = [];
+
+        foreach (['url', 'prefix'] as $key) {
+            if (isset($config[$key]) && !is_string($config[$key])) {
+                $problems[] = "'{$key}' must be a string";
+            }
+        }
+
+        foreach (['middleware', 'submenu', 'fields'] as $key) {
+            if (isset($config[$key]) && !is_array($config[$key])) {
+                $problems[] = "'{$key}' must be an array";
+            }
+        }
+
+        if (isset($config['priority']) && !is_int($config['priority'])) {
+            $problems[] = "'priority' must be an integer";
+        }
+
+        if (isset($config['route'])) {
+            if (!is_array($config['route'])) {
+                $problems[] = "'route' must be an array";
+
+                return $problems;
+            }
+
+            $route = array_values($config['route']);
+            $path = $route[1] ?? $config['url'] ?? null;
+            $handler = $route[2] ?? null;
+
+            if (!is_string($path)) {
+                $problems[] = "'route' needs a path in element 1, or a 'url' key";
+            }
+
+            if (!is_callable($handler) && !is_array($handler)) {
+                $problems[] = "'route' element 2 must be a callable or a [class, method] array";
+            }
+
+            if (isset($route[0]) && !is_string($route[0])) {
+                $problems[] = "'route' element 0 must be an HTTP method string";
+            }
+        }
+
+        return $problems;
     }
 
     /**
@@ -563,6 +703,12 @@ class ExtensionRegistry
      * When context is provided and a contribution has a 'callable' key,
      * the callable is invoked with the context and its return value is
      * merged into the contribution.
+     *
+     * An empty $context means callables are NOT invoked: the raw
+     * contributions come back and the consumer calls them itself. The check
+     * is on the context, not on the type, so a slot read without a context
+     * never triggers a callable. Only admin.dashboard and content.edit.panel
+     * are read with a context today.
      *
      * @param string                                 $type    The extension type (e.g. 'admin.menu', 'public.nav')
      * @param string                                 $slot    The slot name (e.g. 'content', 'main')
@@ -611,6 +757,16 @@ class ExtensionRegistry
     public function has(string $type, string $slot): bool
     {
         return !empty($this->extensions[$type][$slot]);
+    }
+
+    /**
+     * Registrations refused since boot.
+     *
+     * @return list<array{type: string, slot: string, key: string, reason: string}>
+     */
+    public function errors(): array
+    {
+        return $this->errors;
     }
 
     /**
