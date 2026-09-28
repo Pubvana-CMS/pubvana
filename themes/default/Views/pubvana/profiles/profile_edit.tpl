@@ -2,7 +2,7 @@
 <div class="pv-profile-card">
     <h3 class="pv-profile-section-title">Edit Profile</h3>
     {# Plain HTML form: POSTs to the profile update endpoint. #}
-    <form method="post" action="/profile/{{ user.username }}/update" class="pv-profile-form">
+    <form method="post" action="{{ profileBase }}/{{ user.id }}/update" class="pv-profile-form">
         {# Custom tag: emits the hidden CSRF token input the framework validates on POST. #}
         {% csrf_field %}
 
@@ -63,7 +63,7 @@
 
         <div class="pv-profile-form-actions">
             <button type="submit" class="pv-profile-btn">Save Profile</button>
-            <a href="/profile/{{ user.username }}" class="pv-profile-btn pv-profile-btn-secondary">Cancel</a>
+            <a href="{{ profileBase }}/{{ user.id }}" class="pv-profile-btn pv-profile-btn-secondary">Cancel</a>
         </div>
     </form>
 </div>

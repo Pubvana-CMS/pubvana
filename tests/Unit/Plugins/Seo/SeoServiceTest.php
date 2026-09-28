@@ -143,6 +143,12 @@ final class SeoServiceTest extends TestCase
                     return $this->stubs['profile'] ?? null;
                 }
             },
+            'pluginLoader' => static fn (): object => new class {
+                public function routePrefix(string $pluginId): string
+                {
+                    return $pluginId === 'pubvana/profiles' ? '/profile' : '';
+                }
+            },
             'seoSchema' => static fn (): SchemaService => new SchemaService($test->schemaApp()),
         ]);
 

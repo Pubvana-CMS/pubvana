@@ -7,6 +7,7 @@ namespace Pubvana\Plugins\Profiles\Services;
 use Enlivenapp\FlightShield\Models\User;
 use Pubvana\Plugins\Blog\Models\Post;
 use Pubvana\Plugins\Pages\Models\Page;
+use Pubvana\Plugins\Profiles\Models\Profile;
 use Pubvana\Services\UrlService;
 use flight\Engine;
 
@@ -106,7 +107,7 @@ class ProfileBlockService
             'author' => [
                 'name'          => $profile->display_name !== null ? $profile->display_name : $username,
                 'username'      => $username,
-                'url'           => $profilesPrefix . '/' . $username,
+                'url'           => $profilesPrefix . '/' . $authorId,
                 'bio'           => $profile->bio,
                 'avatar_url'    => $avatarUrl,
                 'safe_website'  => $safeWebsite,
@@ -118,6 +119,72 @@ class ProfileBlockService
             'show_avatar'  => !empty($options['show_avatar']),
             'show_socials' => !empty($options['show_socials']),
         ];
+    }
+
+    /**
+     * Profile name and public URL for each given user id, keyed by user id.
+     *
+     * The name is the profile's display_name. Where that is not populated
+     * the Shield username stands in, asked for those ids only, in one query.
+     * The URL is /{prefix}/{user id}: the id is the address, so a username is
+     * never needed to link to a profile and is never published in one. Ids
+     * with no name to show get no entry rather than a null one.
+     *
+     * @param array<int, int> $userIds
+     * @return array<int, array{name: string, url: string|null}>
+     */
+    public function nameAndUrlFor(array $userIds): array
+    {
+        $userIds = array_values(array_unique(array_filter(
+            array_map('intval', $userIds),
+            static fn (int $id): bool => $id > 0
+        )));
+
+        if ($userIds === []) {
+            return [];
+        }
+
+        /** @var array<int, Profile> $profiles */
+        $profiles = (new Profile($this->app->db()))->in('user_id', $userIds)->findAll();
+
+        $names = [];
+        foreach ($profiles as $profile) {
+            $displayName = trim((string) ($profile->display_name ?? ''));
+            if ($displayName !== '') {
+                $names[(int) $profile->user_id] = $displayName;
+            }
+        }
+
+        $withoutName = array_values(array_diff($userIds, array_keys($names)));
+
+        if ($withoutName !== []) {
+            // Soft-deleted accounts included: attribution outlives the account,
+            // so their username is still the name to show.
+            /** @var array<int, User> $users */
+            $users = (new User($this->app->db()))->in('id', $withoutName)->findAll();
+
+            foreach ($users as $user) {
+                $names[(int) $user->id] = (string) $user->username;
+            }
+        }
+
+        $prefix = rtrim($this->app->pluginLoader()->routePrefix('pubvana/profiles'), '/');
+
+        $authors = [];
+        foreach ($userIds as $userId) {
+            $name = $names[$userId] ?? null;
+
+            if ($name === null) {
+                continue;
+            }
+
+            $authors[$userId] = [
+                'name' => $name,
+                'url'  => $prefix . '/' . $userId,
+            ];
+        }
+
+        return $authors;
     }
 
     /**
@@ -189,11 +256,15 @@ class ProfileBlockService
     }
 
     /**
-     * Username for a user id, or empty string when the user is gone.
+     * Username for a user id, or empty string when there is no such row.
+     *
+     * Soft-deleted accounts resolve: attribution outlives the account.
      */
     protected function usernameFor(int $userId): string
     {
-        $user = (new User($this->app->db()))->findById($userId);
-        return $user !== null ? (string) $user->username : '';
+        $user = new User($this->app->db());
+        $user->eq('id', $userId)->find();
+
+        return $user->isHydrated() ? (string) $user->username : '';
     }
 }

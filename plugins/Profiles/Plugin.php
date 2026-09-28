@@ -45,9 +45,9 @@ class Plugin implements PluginInterface
 
         // Public routes
         $adext->addRoutes('public', [
-            ['GET',  $prefix . '/@username',       [ProfilesPublicController::class, 'show']],
-            ['GET',  $prefix . '/@username/edit',  [ProfilesPublicController::class, 'edit']],
-            ['POST', $prefix . '/@username/update', [ProfilesPublicController::class, 'update']],
+            ['GET',  $prefix . '/@id',       [ProfilesPublicController::class, 'show']],
+            ['GET',  $prefix . '/@id/edit',  [ProfilesPublicController::class, 'edit']],
+            ['POST', $prefix . '/@id/update', [ProfilesPublicController::class, 'update']],
         ], 'pubvana.profiles');
 
         // Public CSS

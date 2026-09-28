@@ -27,6 +27,8 @@ Profiles gives each user a browsable public profile and a self-service edit page
 8. **Keep the public asset URL and disk path in sync.** The `public.css` adext registration points at `/assets/plugin/Profiles/css/profiles.css` (`Plugin.php:43-47`), which must stay in step with `assets/css/profiles.css`. Reason: a mismatch is a silently 404'd stylesheet.
 9. **Do not touch the `.pv-profile-*` class names without updating the theme.** The public views are theme templates (`profile`, `profile_edit` at `Controllers/ProfilesPublicController.php:35, 59`) that consume the classes defined in `assets/css/profiles.css`. The plugin does not own those templates.
 10. **Compose public routes from `routePrefix()`, never hardcode `/profile`.** The prefix resolves through `pluginLoader()->routePrefix('pubvana/profiles')` (`Plugin.php:36-41`). Reason: the prefix is configurable via `routePrepend`, and a hardcoded path breaks under custom prefixes.
+11. **A public profile URL carries the user id, never the username.** The route param is `@id` (`Plugin.php:37-41`), the controller resolves it with `findUser()` (`Controllers/ProfilesPublicController.php:135`), and every link builder produces `{prefix}/{id}` (`Services/ProfileBlockService.php:110, 183`, `Seo/Services/SeoService.php:588-590`). Reason: a username in a URL publishes account names for free. Editors pass `profileBase` to the profile templates rather than writing the path out.
+12. **A soft-deleted account still resolves on its public page.** `findUser()` reads the row by `id` with no `deleted_at` filter, because the profile row survives the soft delete and posts the account wrote keep their byline link. Attribution outlives the account; do not reintroduce `findById()`, which filters deleted rows. Only a user with no row at all is a 404.
 
 ## Repository layout
 
@@ -55,7 +57,7 @@ plugins/Profiles/
 
 **Data flow.** Any profile page first calls `findOrCreate($userId)`, which lazily inserts a bare row (timestamps only) when none exists (`Models/Profile.php:55-70`). Saves flow through `updateProfile()` → `findOrCreate()` → `updateFromArray()` with the whitelist (`Models/Profile.php:79-86, 99-122`).
 
-**Public tenant**. `show()` resolves the user via FlightShield's `findByCredentials(['username' => ...])`, 404s on miss, renders the theme `profile` template with `isOwner` and a normalized `avatar_url` (`Controllers/ProfilesPublicController.php:17-42`). `edit()` and `update()` render/redirect to the theme `profile_edit`.
+**Public tenant.** `show()` takes the user id from the URL and resolves it with `findUser()` (`Controllers/ProfilesPublicController.php:18, 135`), which reads the row by `id` including soft-deleted accounts; the profile row survives a soft delete and posts keep their byline link, so the page stays answerable. It renders the theme `profile` template with `isOwner`, `profileBase` and a normalized `avatar_url` (`Controllers/ProfilesPublicController.php:18-45`). `edit()` and `update()` render/redirect to the theme `profile_edit`. Usernames are display text only (`profile.tpl`), never part of a URL.
 
 **Admin tenant.** `index()` renders the shared `pubvana/profiles/admin/profile/index` view for the current user with the Media avatar picker; `show(@userId)` renders the same view for another user when permitted, seeding the `returnUrl` differently (`Controllers/ProfilesAdminController.php`).
 
@@ -75,7 +77,7 @@ The plugin has no `composer.json` (it is in-tree), but it has a test suite under
   - [ ] Avatar picker stores a path; the public page renders the avatar with exactly one leading slash
   - [ ] A logged-in non-owner hitting `/profile/{other}/edit` is redirected, not served
   - [ ] Editing another user from `/admin/profile/{id}` is blocked without `profile.edit.any` and allowed with it
-  - [ ] Unknown usernames return a 404 (`halt`), not an empty page
+  - [ ] Unknown ids (no `users` row) return a 404 (`halt`), not an empty page, while a soft-deleted account's profile still serves
   - [ ] `GET /assets/plugin/Profiles/css/profiles.css` returns the stylesheet
   - [ ] No dashboard card or section appears for Profiles (matches current code, despite the manifest declaration)
   - [ ] Deleting a user cascades the profile row (foreign key `CASCADE`)
@@ -126,4 +128,4 @@ Coverage: the suite covers the model, both controllers (URLs, website validation
 - Public display templates (profile pages) are in the active theme, not in this plugin. The only `Views/public/` asset here is the Author Card block template, which follows the plugin default block layout.
 - No hard profile delete; profiles disappear only through the `users` cascade delete.
 - No external avatar sources (Gravatar, Uploadcare, etc.); the avatar is a stored image path picked via the Media plugin.
-- No pagination, search, or discovery of profiles; a profile is reached by a known username.
+- No pagination, search, or discovery of profiles; a profile is reached by a known user id.

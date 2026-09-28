@@ -55,7 +55,7 @@ final class ProfileBlockServiceTest extends TestCase
         self::assertNotNull($payload['author']);
         self::assertSame('Ada Lovelace', $payload['author']['name']);
         self::assertSame('ada', $payload['author']['username']);
-        self::assertSame('/profile/ada', $payload['author']['url']);
+        self::assertSame('/profile/7', $payload['author']['url']);
     }
 
     public function testPageReturnsAuthorCardWhenEnabled(): void
@@ -69,7 +69,7 @@ final class ProfileBlockServiceTest extends TestCase
         self::assertNotNull($payload['author']);
         self::assertSame('Grace Hopper', $payload['author']['name']);
         self::assertSame('grace', $payload['author']['username']);
-        self::assertSame('/profile/grace', $payload['author']['url']);
+        self::assertSame('/profile/9', $payload['author']['url']);
     }
 
     // -----------------------------------------------------------------
@@ -200,15 +200,19 @@ final class ProfileBlockServiceTest extends TestCase
         self::assertNull($payload['author']);
     }
 
-    public function testDeletedUserReturnsEmpty(): void
+    public function testDeletedUserKeepsTheCard(): void
     {
+        // Attribution outlives the account: the profile row survives a soft
+        // delete, and the page it links to still answers.
         $this->insertUser(7, 'ada', '2026-01-01 00:00:00');
         $this->insertProfile(7, ['display_name' => 'Ada']);
         $this->insertPost(1, 'hello-world', 7, 'published');
 
         $payload = $this->service('/blog/hello-world')->provide(['show_on_blog' => 1]);
 
-        self::assertNull($payload['author']);
+        self::assertNotNull($payload['author']);
+        self::assertSame('Ada', $payload['author']['name']);
+        self::assertSame('/profile/7', $payload['author']['url']);
     }
 
     public function testPageWithZeroCreatedByReturnsEmpty(): void

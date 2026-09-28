@@ -7,6 +7,7 @@ namespace Pubvana\Tests\Unit\Plugins\Blog;
 use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Pubvana\Plugins\Blog\Services\BlogService;
+use Pubvana\Plugins\Profiles\Services\ProfileBlockService;
 use Pubvana\Tests\Support\Sqlite;
 use Pubvana\Tests\Support\TestCase;
 
@@ -24,12 +25,20 @@ final class BlogServiceTest extends TestCase
         parent::setUp();
         $this->pdo = Sqlite::recreate();
         BlogSchema::create($this->pdo);
-        $this->service = new BlogService($this->pdo, '/profile', ['route_prefix' => '/blog', 'max_revisions' => 3]);
 
         $app = $this->app([
             'slugify' => static fn(string $text): string => strtolower(trim((string) preg_replace('/[^a-z0-9]+/i', '-', $text), '-')),
+            'db'      => fn(): PDO => $this->pdo,
+            'pluginLoader' => static fn(): object => new class {
+                public function isEnabled(string $pluginId): bool
+                {
+                    return false;
+                }
+            },
         ]);
         \Flight::setEngine($app);
+
+        $this->service = new BlogService($app, ['route_prefix' => '/blog', 'max_revisions' => 3]);
     }
 
     public function testCreatePostPurifiesAndSnapshotsRevision(): void
@@ -238,19 +247,46 @@ final class BlogServiceTest extends TestCase
 
         $this->pdo->exec("INSERT INTO users (username, active) VALUES ('alice', 1)");
         $uid = (int) $this->pdo->lastInsertId();
-        $this->pdo->exec("INSERT INTO profiles (user_id, display_name) VALUES ({$uid}, 'Alice A')");
 
+        // No Profiles service: the Shield username stands in, with no URL.
         $map = $this->service->authorItemsForIds([$uid, 99999]);
-        self::assertSame('alice', $map[$uid]['username']);
-        self::assertSame('Alice A', $map[$uid]['name']);
-        self::assertSame('/profile/alice', $map[$uid]['url']);
+        self::assertSame('alice', $map[$uid]['name']);
+        self::assertNull($map[$uid]['url']);
         self::assertNull($map[99999]);
 
-        // Soft-deleted users are excluded, so their id maps to null rather
-        // than to a stale username.
+        // Soft-deleted users keep their attribution, so the name stays.
         $this->pdo->exec("INSERT INTO users (username, active, deleted_at) VALUES ('gone', 1, '2026-01-01 00:00:00')");
         $goneId = (int) $this->pdo->lastInsertId();
-        self::assertNull($this->service->authorItemsForIds([$goneId])[$goneId]);
+        self::assertSame('gone', $this->service->authorItemsForIds([$goneId])[$goneId]['name']);
+    }
+
+    public function testAuthorItemsForIdsUsesProfilesWhenLoaded(): void
+    {
+        $this->pdo->exec("INSERT INTO users (username, active) VALUES ('alice', 1)");
+        $uid = (int) $this->pdo->lastInsertId();
+        $this->pdo->exec("INSERT INTO profiles (user_id, display_name) VALUES ({$uid}, 'Alice A')");
+
+        $app = $this->app([
+            'db'           => fn (): PDO => $this->pdo,
+            'pluginLoader' => static fn (): object => new class {
+                public function isEnabled(string $pluginId): bool
+                {
+                    return true;
+                }
+
+                public function routePrefix(string $pluginId): string
+                {
+                    return '/profile';
+                }
+            },
+        ]);
+        $app->map('profileBlock', static fn () => new ProfileBlockService($app));
+
+        $service = new BlogService($app, []);
+        $map = $service->authorItemsForIds([$uid]);
+
+        self::assertSame('Alice A', $map[$uid]['name']);
+        self::assertSame('/profile/' . $uid, $map[$uid]['url']);
     }
 
     public function testBlocks(): void

@@ -298,29 +298,7 @@ class BlogPublicController extends PublicController
 
         $userId = (int) $post->author_id;
 
-        $user = (new \Enlivenapp\FlightShield\Models\User(\Flight::db()))->findById($userId);
-        if ($user === null) {
-            return null;
-        }
-
-        $username = (string) $user->username;
-        $displayName = '';
-        try {
-            $profile = $this->app->profiles()->findByUserId($userId);
-            if ($profile && !empty($profile->display_name)) {
-                $displayName = (string) $profile->display_name;
-            }
-        } catch (\Throwable) {
-        }
-
-        $profilesPrefix = $this->app->pluginLoader()->routePrefix('pubvana/profiles');
-
-        return [
-            'id'       => $userId,
-            'username' => $username,
-            'name'     => $displayName !== '' ? $displayName : $username,
-            'url'      => $username !== '' ? $profilesPrefix . '/' . $username : null,
-        ];
+        return $this->app->blog()->authorItemsForIds([$userId])[$userId] ?? null;
     }
 
     /**

@@ -585,7 +585,10 @@ class SeoService
         return [
             'name'     => $name,
             'username' => $username,
-            'url'      => $username !== '' ? $this->getSiteUrl() . '/profile/' . $username : '',
+            // The id is the address: a username is never published in a URL.
+            'url'      => $this->getSiteUrl()
+                . rtrim($this->app->pluginLoader()->routePrefix('pubvana/profiles'), '/')
+                . '/' . $userId,
             'sameAs'   => $sameAs,
             'jobTitle' => $profile && !empty($profile->job_title) ? (string) $profile->job_title : null,
             'worksFor' => $profile && !empty($profile->works_for) ? (string) $profile->works_for : null,

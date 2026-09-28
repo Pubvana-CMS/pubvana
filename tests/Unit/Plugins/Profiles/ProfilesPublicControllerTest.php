@@ -53,7 +53,7 @@ final class ProfilesPublicControllerTest extends TestCase
             'twitter' => 'https://x.com/ada',
         ]);
 
-        $this->controller($this->engine())->show('ada');
+        $this->controller($this->engine())->show('7');
 
         self::assertSame('pubvana/profiles/profile', $this->renders[0]['template']);
         $data = $this->renders[0]['data'];
@@ -66,7 +66,7 @@ final class ProfilesPublicControllerTest extends TestCase
 
     public function testShowHaltsOnMissingUser(): void
     {
-        $this->controller($this->engine())->show('nobody');
+        $this->controller($this->engine())->show('999');
         self::assertSame([['code' => 404, 'msg' => 'User not found']], $this->halts);
     }
 
@@ -76,7 +76,7 @@ final class ProfilesPublicControllerTest extends TestCase
         (new Profile($this->pdo))->updateProfile(7, ['avatar' => 'uploads/ada.png']);
         $this->currentUserId = 7;
 
-        $this->controller($this->engine())->show('ada');
+        $this->controller($this->engine())->show('7');
 
         self::assertTrue($this->renders[0]['data']['isOwner']);
         self::assertSame('/uploads/ada.png', $this->renders[0]['data']['avatar_url']);
@@ -86,7 +86,7 @@ final class ProfilesPublicControllerTest extends TestCase
     {
         $this->pdo->exec("INSERT INTO users (id, username, active) VALUES (7, 'ada', 1)");
 
-        $this->controller($this->engine())->show('ada');
+        $this->controller($this->engine())->show('7');
 
         self::assertSame("ada's Profile", $this->renders[0]['data']['title']);
     }
@@ -96,7 +96,7 @@ final class ProfilesPublicControllerTest extends TestCase
         $this->pdo->exec("INSERT INTO users (id, username, active) VALUES (7, 'ada', 1)");
         $this->pdo->exec("INSERT INTO profiles (user_id, website) VALUES (7, 'javascript:alert(1)')");
 
-        $this->controller($this->engine())->show('ada');
+        $this->controller($this->engine())->show('7');
 
         self::assertNull($this->renders[0]['data']['safe_website']);
     }
@@ -106,7 +106,7 @@ final class ProfilesPublicControllerTest extends TestCase
         $this->pdo->exec("INSERT INTO users (id, username, active) VALUES (7, 'ada', 1)");
         $this->currentUserId = 7;
 
-        $this->controller($this->engine())->edit('ada');
+        $this->controller($this->engine())->edit('7');
 
         self::assertSame('pubvana/profiles/profile_edit', $this->renders[0]['template']);
         self::assertSame('Edit Profile', $this->renders[0]['data']['title']);
@@ -114,7 +114,7 @@ final class ProfilesPublicControllerTest extends TestCase
 
     public function testEditHaltsOnMissingUser(): void
     {
-        $this->controller($this->engine())->edit('nobody');
+        $this->controller($this->engine())->edit('999');
         self::assertSame([['code' => 404, 'msg' => 'User not found']], $this->halts);
     }
 
@@ -123,7 +123,7 @@ final class ProfilesPublicControllerTest extends TestCase
         $this->pdo->exec("INSERT INTO users (id, username, active) VALUES (7, 'ada', 1)");
         $this->currentUserId = 9;
 
-        $this->controller($this->engine())->edit('ada');
+        $this->controller($this->engine())->edit('7');
 
         self::assertSame('You can only edit your own profile.', $this->flashes['danger'][0]);
         self::assertSame(['/'], $this->redirects);
@@ -135,9 +135,9 @@ final class ProfilesPublicControllerTest extends TestCase
         $this->currentUserId = 7;
 
         $app = $this->engine(data: ['display_name' => 'Ada L']);
-        $this->controller($app)->update('ada');
+        $this->controller($app)->update('7');
 
-        self::assertSame(['/profile/ada'], $this->redirects);
+        self::assertSame(['/profile/7'], $this->redirects);
         $profile = (new Profile($this->pdo))->findByUserId(7);
         self::assertNotNull($profile);
         self::assertSame('Ada L', $profile->display_name);
@@ -146,7 +146,7 @@ final class ProfilesPublicControllerTest extends TestCase
     public function testUpdateHaltsOnMissingUser(): void
     {
         $this->currentUserId = 7;
-        $this->controller($this->engine())->update('nobody');
+        $this->controller($this->engine())->update('999');
         self::assertSame([['code' => 404, 'msg' => 'User not found']], $this->halts);
     }
 
@@ -155,10 +155,10 @@ final class ProfilesPublicControllerTest extends TestCase
         $this->pdo->exec("INSERT INTO users (id, username, active) VALUES (7, 'ada', 1)");
         $this->currentUserId = 9;
 
-        $this->controller($this->engine(data: []))->update('ada');
+        $this->controller($this->engine(data: []))->update('7');
 
         self::assertSame('You can only edit your own profile.', $this->flashes['danger'][0]);
-        self::assertSame(['/profile/ada'], $this->redirects);
+        self::assertSame(['/profile/7'], $this->redirects);
     }
 
     public function testUpdateRejectsBadWebsite(): void
@@ -167,10 +167,10 @@ final class ProfilesPublicControllerTest extends TestCase
         $this->currentUserId = 7;
 
         $app = $this->engine(data: ['website' => 'javascript:alert(1)']);
-        $this->controller($app)->update('ada');
+        $this->controller($app)->update('7');
 
         self::assertSame('Website must be a full http:// or https:// URL.', $this->flashes['danger'][0]);
-        self::assertSame(['/profile/ada/edit'], $this->redirects);
+        self::assertSame(['/profile/7/edit'], $this->redirects);
     }
 
     private function controller(Engine $app): ProfilesPublicController

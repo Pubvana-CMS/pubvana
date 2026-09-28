@@ -55,9 +55,9 @@ final class ProfilesPluginTest extends TestCase
         self::assertContains('admin GET /profile', $handlers);
         self::assertContains('admin GET /profile/@userId', $handlers);
         self::assertContains('admin POST /profile/@userId/update', $handlers);
-        self::assertContains('public GET /profile/@username', $handlers);
-        self::assertContains('public GET /profile/@username/edit', $handlers);
-        self::assertContains('public POST /profile/@username/update', $handlers);
+        self::assertContains('public GET /profile/@id', $handlers);
+        self::assertContains('public GET /profile/@id/edit', $handlers);
+        self::assertContains('public POST /profile/@id/update', $handlers);
 
         $blocks = $adext->get('block', 'available');
         self::assertArrayHasKey('pubvana.profiles.author-card', $blocks);

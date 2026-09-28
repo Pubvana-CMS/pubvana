@@ -43,7 +43,15 @@ final class BlogPublicControllerTest extends TestCase
         parent::setUp();
         $this->pdo = Sqlite::recreate();
         BlogSchema::create($this->pdo);
-        $this->blog = new BlogService($this->pdo, '/profile', ['route_prefix' => '/blog']);
+        $this->blog = new BlogService($this->app([
+            'db'           => fn(): PDO => $this->pdo,
+            'pluginLoader' => static fn(): object => new class {
+                public function isEnabled(string $pluginId): bool
+                {
+                    return false;
+                }
+            },
+        ]), ['route_prefix' => '/blog']);
         $this->renders = [];
         $this->halts = [];
         $this->settingsRows = [];
@@ -124,7 +132,7 @@ final class BlogPublicControllerTest extends TestCase
         self::assertSame(['type' => 'blog', 'id' => (int) $post->id], $data['commentable']);
         self::assertTrue($data['allow_comments']);
         self::assertSame('post', $data['seo_context']['content_type']);
-        self::assertSame('alice', $data['author']['username']);
+        self::assertSame('alice', $data['author']['name']);
 
         // View counted.
         $fresh = $this->blog->findPost((int) $post->id);

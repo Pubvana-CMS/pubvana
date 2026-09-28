@@ -38,6 +38,11 @@ final class BlogPluginTest extends TestCase
             {
                 return '/blog';
             }
+
+            public function isEnabled(string $id): bool
+            {
+                return false;
+            }
         });
         $app->map('db', fn(): \PDO => $pdo);
         $app->map('settings', static fn(): object => new class {

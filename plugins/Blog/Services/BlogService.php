@@ -11,6 +11,7 @@ use Pubvana\Plugins\Blog\Models\PostCategory;
 use Pubvana\Plugins\Blog\Models\PostTag;
 use Pubvana\Plugins\Blog\Models\PostRevision;
 use Enlivenapp\FlightShield\Models\User;
+use flight\Engine;
 use Flight;
 
 class BlogService
@@ -22,34 +23,29 @@ class BlogService
     private PostTag $postTagModel;
     private PostRevision $revisionModel;
     private \PDO $pdo;
-    private string $profilesRoutePrefix;
+
+    /** @var Engine<object> Flight application instance */
+    private Engine $app;
 
     /** @var array<string, mixed> */
     private array $config;
 
     /**
-     * @param string $profilesRoutePrefix Public route prefix of the Profiles
-     *        plugin, e.g. '/profile'. Required, because author URLs are built
-     *        from it and a guessed prefix silently produces dead links.
+     * @param Engine<object> $app
      * @param array<string, mixed> $config
-     * @throws \InvalidArgumentException When $profilesRoutePrefix is empty
      */
-    public function __construct(\PDO $pdo, string $profilesRoutePrefix, array $config = [])
+    public function __construct(Engine $app, array $config = [])
     {
-        if (trim($profilesRoutePrefix, '/') === '') {
-            throw new \InvalidArgumentException(
-                'BlogService requires a non-empty Profiles route prefix, e.g. "/profile".'
-            );
-        }
+        $pdo = $app->db();
 
+        $this->app                 = $app;
+        $this->pdo                 = $pdo;
         $this->postModel           = new Post($pdo);
         $this->categoryModel       = new Category($pdo);
         $this->tagModel            = new Tag($pdo);
         $this->postCategoryModel   = new PostCategory($pdo);
         $this->postTagModel        = new PostTag($pdo);
         $this->revisionModel       = new PostRevision($pdo);
-        $this->pdo                 = $pdo;
-        $this->profilesRoutePrefix = $profilesRoutePrefix;
         $this->config              = $config;
     }
 
@@ -455,10 +451,13 @@ class BlogService
     }
 
     /**
-     * Author cards for many posts in two queries: users, then profiles.
+     * Author name and profile URL per user id, or null when the user is gone.
+     *
+     * Names and URLs come from the Profiles plugin. With Profiles disabled
+     * the Shield username stands in and there is no profile URL.
      *
      * @param array<int, int> $authorIds
-     * @return array<int, array{id: int, username: string, name: string, url: string|null}|null> author id => author card or null
+     * @return array<int, array{name: string, url: string|null}|null> author id => entry
      */
     public function authorItemsForIds(array $authorIds): array
     {
@@ -467,32 +466,39 @@ class BlogService
             return [];
         }
 
-        $usersById = [];
-        /** @var array<int, User> $users */
-        $users = (new User($this->pdo))->in('id', $authorIds)->isNull('deleted_at')->findAll();
-        foreach ($users as $user) {
-            $usersById[(int) $user->id] = (string) $user->username;
-        }
-
-        $namesByUserId = [];
-        foreach ((new \Pubvana\Plugins\Profiles\Models\Profile($this->pdo))->in('user_id', $authorIds)->findAll() as $profile) {
-            $namesByUserId[(int) $profile->user_id] = (string) ($profile->display_name ?? '');
-        }
+        // Resolved per call, never at boot: reading a peer plugin's config
+        // while plugins are still loading yields the derived fallback prefix
+        // instead of the configured one.
+        $authors = $this->app->pluginLoader()->isEnabled('pubvana/profiles')
+            ? $this->app->profileBlock()->nameAndUrlFor($authorIds)
+            : $this->usernamesFor($authorIds);
 
         $map = [];
         foreach ($authorIds as $authorId) {
-            $username = $usersById[$authorId] ?? null;
-            if ($username === null) {
-                $map[$authorId] = null;
-                continue;
-            }
+            $map[$authorId] = $authors[$authorId] ?? null;
+        }
 
-            $displayName = $namesByUserId[$authorId] ?? '';
-            $map[$authorId] = [
-                'id'       => $authorId,
-                'username' => $username,
-                'name'     => $displayName !== '' ? $displayName : $username,
-                'url'      => $username !== '' ? $this->profilesRoutePrefix . '/' . $username : null,
+        return $map;
+    }
+
+    /**
+     * Username-only author entries, used when Profiles is not loaded.
+     *
+     * Soft-deleted accounts included: attribution outlives the account.
+     *
+     * @param array<int, int> $authorIds
+     * @return array<int, array{name: string, url: string|null}>
+     */
+    private function usernamesFor(array $authorIds): array
+    {
+        /** @var array<int, User> $users */
+        $users = (new User($this->pdo))->in('id', $authorIds)->findAll();
+
+        $map = [];
+        foreach ($users as $user) {
+            $map[(int) $user->id] = [
+                'name' => (string) $user->username,
+                'url'  => null,
             ];
         }
 

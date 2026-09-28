@@ -49,7 +49,7 @@
 
     {# Conditional: the edit link renders only for the profile's owner. #}
     {% if isOwner %}
-    <a href="/profile/{{ user.username }}/edit" class="pv-profile-btn">Edit Profile</a>
+    <a href="{{ profileBase }}/{{ user.id }}/edit" class="pv-profile-btn">Edit Profile</a>
     {% endif %}
 </div>
 

@@ -15,9 +15,9 @@ class ProfilesPublicController extends PublicController
         parent::__construct($app, 'pubvana.profiles');
     }
 
-    public function show(string $username): void
+    public function show(string $id): void
     {
-        $user = $this->findUserByUsername($username);
+        $user = $this->findUser($id);
         if ($user === null) {
             $this->app->halt(404, 'User not found');
             return;
@@ -42,6 +42,7 @@ class ProfilesPublicController extends PublicController
 
         $this->render('pubvana/profiles/profile', [
             'title'         => ($profile->display_name ?? $user->username) . "'s Profile",
+            'profileBase'   => $this->profileBase(),
             'profile'       => $profile,
             'user'          => $user,
             'isOwner'       => $isOwner,
@@ -63,9 +64,9 @@ class ProfilesPublicController extends PublicController
             : null;
     }
 
-    public function edit(string $username): void
+    public function edit(string $id): void
     {
-        $user = $this->findUserByUsername($username);
+        $user = $this->findUser($id);
         if ($user === null) {
             $this->app->halt(404, 'User not found');
             return;
@@ -79,22 +80,26 @@ class ProfilesPublicController extends PublicController
         $profile = $this->app->profiles()->findOrCreate((int) $user->id);
 
         $this->render('pubvana/profiles/profile_edit', [
-            'title'   => 'Edit Profile',
-            'profile' => $profile,
-            'user'    => $user,
+            'title'       => 'Edit Profile',
+            'profileBase' => $this->profileBase(),
+            'profile'     => $profile,
+            'user'        => $user,
         ]);
     }
 
-    public function update(string $username): void
+    public function update(string $id): void
     {
-        $user = $this->findUserByUsername($username);
+        $user = $this->findUser($id);
         if ($user === null) {
             $this->app->halt(404, 'User not found');
             return;
         }
+
+        $profileUrl = $this->profileBase() . '/' . (int) $user->id;
+
         if ((int) ($this->app->auth()->user()?->id) !== (int) $user->id) {
             $this->app->session()->flash('danger', 'You can only edit your own profile.');
-            $this->app->redirect('/' . $this->getRoutePrepend() . '/' . $username);
+            $this->app->redirect($profileUrl);
             return;
         }
 
@@ -103,16 +108,40 @@ class ProfilesPublicController extends PublicController
 
         if ($this->app->profiles()->updateProfile((int) $user->id, $post) === null) {
             $this->app->session()->flash('danger', 'Website must be a full http:// or https:// URL.');
-            $this->app->redirect('/' . $this->getRoutePrepend() . '/' . $username . '/edit');
+            $this->app->redirect($profileUrl . '/edit');
             return;
         }
 
-        $this->app->redirect('/' . $this->getRoutePrepend() . '/' . $username);
+        $this->app->redirect($profileUrl);
     }
 
-    protected function findUserByUsername(string $username): ?User
+    /**
+     * Public profile URL base, e.g. '/profile'.
+     */
+    private function profileBase(): string
     {
-        $userModel = new User($this->app->db());
-        return $userModel->findByCredentials(['username' => $username]);
+        return '/' . trim($this->getRoutePrepend(), '/');
+    }
+
+    /**
+     * Resolve the user a public profile URL points at.
+     *
+     * The id is the address, never the username: a username in a public URL
+     * hands out account names for free. Soft-deleted accounts resolve too.
+     * The profile row survives a soft delete, and posts the account wrote keep
+     * their byline link, so the page it points at has to still answer. Only a
+     * user with no row at all is a 404.
+     */
+    protected function findUser(string $id): ?User
+    {
+        $userId = (int) $id;
+        if ($userId <= 0) {
+            return null;
+        }
+
+        $user = new User($this->app->db());
+        $user->eq('id', $userId)->find();
+
+        return $user->isHydrated() ? $user : null;
     }
 }
