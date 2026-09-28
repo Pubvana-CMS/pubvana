@@ -76,9 +76,10 @@ $app->route('GET /admin', function () use ($app) {
 |--------------------------------------------------------------------------
 | Forgot-password and reset endpoints, built on Shield's identity
 | primitives (see PasswordResetService). POSTs carry CSRF + Shield's
-| rate limiter; failed attempts record into auth_logins so the limiter
-| counts them with login failures. The send endpoint answers identically
-| whether the email exists or not.
+| rate limiter, which counts real login failures for the IP. Reset
+| attempts are deliberately not written to auth_logins: a typo'd
+| address must not lock the IP out of logging in. The send endpoint
+| answers identically whether the email exists or not.
 */
 $app->route('GET /auth/forgot', function () use ($app) {
     (new \Pubvana\Controllers\Public\PasswordResetController($app))->forgotForm();

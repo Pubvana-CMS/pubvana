@@ -65,8 +65,6 @@ class PasswordResetController
     {
         $email = trim((string) ($this->app->request()->data->email ?? ''));
 
-        $this->resets->recordFailure($email);
-
         if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
             $this->renderAuthPage('enlivenapp/flight-shield/auth/forgot', [
                 'error' => 'Enter a valid email address.',
@@ -164,8 +162,6 @@ class PasswordResetController
             $this->app->redirect('/auth/forgot');
             return;
         }
-
-        $this->resets->recordFailure('reset');
 
         $result = $this->resets->resetByToken($token, $password, $passwordConfirm);
 

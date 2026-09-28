@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Pubvana\Services;
 
-use Enlivenapp\FlightShield\Models\Login;
 use Enlivenapp\FlightShield\Models\RememberToken;
 use Enlivenapp\FlightShield\Models\User;
 use Enlivenapp\FlightShield\Models\UserIdentity;
@@ -40,6 +39,9 @@ class PasswordResetService
     /** Reset link validity window in seconds */
     public const TOKEN_LIFETIME = 3600;
 
+    /** Minimum seconds between reset mails for one account */
+    public const RESEND_INTERVAL = 120;
+
     /** @var Engine<object> Flight application instance */
     protected Engine $app;
 
@@ -62,9 +64,18 @@ class PasswordResetService
     /**
      * Create a single-use reset token for the given email and send the link.
      *
-     * Returns false when no user matches the email; the controller renders
-     * the same response either way so probes cannot enumerate accounts.
-     * Any previous reset token for the user is replaced.
+     * Returns false when no user matches the email, and when there is no
+     * address to send to or outbound mail is off; the controller renders the
+     * same response either way so probes cannot enumerate accounts.
+     *
+     * The mail goes out before the stored token is replaced. If the send
+     * fails, the link the user already holds has to keep working; otherwise
+     * all they have is a dead link while the replacement sits in
+     * auth_identities, unreachable, until it expires.
+     *
+     * One mail per account per RESEND_INTERVAL. Repeat posts inside that
+     * window are answered with the same page and change nothing, which is
+     * what stops this endpoint being used to flood a known address.
      */
     public function issueResetToken(string $email): bool
     {
@@ -74,10 +85,18 @@ class PasswordResetService
             return false;
         }
 
-        $identityModel = new UserIdentity($this->app->db());
-        $identityModel->deleteIdentitiesByType($user, self::IDENTITY_TYPE);
+        if ($this->resetWasSentWithin($user, self::RESEND_INTERVAL)) {
+            return true;
+        }
 
         $token = bin2hex(random_bytes(20));
+
+        if (!$this->sendResetEmail($user, $token)) {
+            return false;
+        }
+
+        $identityModel = new UserIdentity($this->app->db());
+        $identityModel->deleteIdentitiesByType($user, self::IDENTITY_TYPE);
 
         $identityModel->createCodeIdentity(
             $user,
@@ -89,8 +108,6 @@ class PasswordResetService
             ],
             static fn(): string => $token
         );
-
-        $this->sendResetEmail($user, $token);
 
         return true;
     }
@@ -166,29 +183,28 @@ class PasswordResetService
     }
 
     // -----------------------------------------------------------------
-    // Rate limiter feeding
+    // Internal
     // -----------------------------------------------------------------
 
     /**
-     * Record a failed auth attempt row so Shield's RateLimitMiddleware
-     * counts reset-endpoint abuse into the same per-IP window as logins.
+     * Was a reset link sent for this account inside the window?
+     *
+     * The stored identity is the counter, so this needs no extra storage.
+     * The account is the thing worth capping: an address repeated in a
+     * victim's inbox is the harm, and capping the sender's IP does not stop
+     * it when requests arrive from anywhere.
      */
-    public function recordFailure(string $identifier): void
+    protected function resetWasSentWithin(User $user, int $seconds): bool
     {
-        $login = new Login($this->app->db());
-        $login->id_type    = self::IDENTITY_TYPE;
-        $login->identifier = $identifier;
-        $login->success    = false;
-        $login->user_id    = null;
-        $login->ip_address = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-        $login->user_agent = $_SERVER['HTTP_USER_AGENT'] ?? null;
-        $login->date       = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
-        $login->insert();
-    }
+        $identity = (new UserIdentity($this->app->db()))->getIdentityByType($user, self::IDENTITY_TYPE);
 
-    // -----------------------------------------------------------------
-    // Internal
-    // -----------------------------------------------------------------
+        if ($identity === null || $identity->created_at === null || $identity->created_at === '') {
+            return false;
+        }
+
+        return new \DateTimeImmutable((string) $identity->created_at)
+            > new \DateTimeImmutable('-' . $seconds . ' seconds');
+    }
 
     /**
      * The unexpired reset identity for a raw token, or null.
@@ -238,16 +254,24 @@ class PasswordResetService
     }
 
     /**
-     * Email the reset link. Failures propagate: the controller catches and
-     * flashes, since a silent failure would leave the user waiting forever.
+     * Email the reset link.
+     *
+     * Returns false when there is nothing to send to (no email identity, or
+     * outbound mail switched off), so the caller leaves stored tokens alone.
+     * Delivery failures propagate: the controller catches and flashes, since
+     * a silent failure would leave the user waiting forever.
      */
-    protected function sendResetEmail(User $user, string $token): void
+    protected function sendResetEmail(User $user, string $token): bool
     {
         $identity = (new UserIdentity($this->app->db()))->getEmailIdentity($user);
         $to = $identity?->secret;
 
         if ($to === null || $to === '') {
-            return;
+            return false;
+        }
+
+        if (!$this->app->mailer()->isEnabled()) {
+            return false;
         }
 
         if (trim((string) ($this->app->get('siteUrl') ?? '')) === '') {
@@ -270,6 +294,8 @@ class PasswordResetService
             . 'The link expires in one hour. If you did not request this, you can safely ignore it.';
 
         $this->app->mailer()->sendHtml($to, 'Reset your password - ' . $siteName, $body, ['alt' => $alt]);
+
+        return true;
     }
 
     /**

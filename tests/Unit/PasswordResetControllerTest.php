@@ -96,7 +96,7 @@ final class PasswordResetControllerTest extends TestCase
             $fetch = $GLOBALS['pw_fetch_log'][0];
             self::assertSame('enlivenapp/flight-shield/auth/forgot', $fetch['partial']);
             self::assertSame('Enter a valid email address.', $fetch['data']['error']);
-            self::assertTrue($behaviors['failureRecorded'], 'the attempt is rate-limit charged');
+            self::assertArrayNotHasKey('issued', $behaviors, 'invalid input never reaches the service');
         }
     }
 
@@ -132,8 +132,6 @@ final class PasswordResetControllerTest extends TestCase
             $existsFetch['partial'],
             'the success path uses the message page, never an account-exists signal'
         );
-        self::assertTrue($behaviors['failureRecorded']);
-        self::assertTrue($behaviors2['failureRecorded']);
     }
 
     public function testSendResetLinkReportsAMailFailureGracefully(): void
@@ -279,7 +277,6 @@ final class PasswordResetControllerTest extends TestCase
         self::assertFalse($fetch['data']['sessionMode']);
         self::assertSame('live', $fetch['data']['token']);
         self::assertSame('too short', $fetch['data']['error']);
-        self::assertTrue($behaviors['failureRecorded'], 'failed attempts are rate-limit charged');
 
         // Success renders the confirmation page.
         $GLOBALS['pw_fetch_log'] = [];
@@ -513,13 +510,10 @@ final class PasswordResetControllerTest extends TestCase
                 parent::__construct($engine);
             }
 
-            public function recordFailure(string $identifier): void
-            {
-                $this->b['failureRecorded'] = true;
-            }
-
             public function issueResetToken(string $email): bool
             {
+                $this->b['issued'] = true;
+
                 if (($this->b['issue'] ?? '') === 'throw') {
                     throw new \RuntimeException('mailer down');
                 }

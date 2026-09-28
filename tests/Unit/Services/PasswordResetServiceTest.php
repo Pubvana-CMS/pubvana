@@ -59,6 +59,12 @@ final class PasswordResetServiceTest extends TestCase
     /** @var string[] Template names passed to the view stand-in. */
     public array $fetchedTemplates = [];
 
+    /** Mailer stand-in behavior: throw from sendHtml (transport down). */
+    public bool $mailerThrows = false;
+
+    /** Mailer stand-in behavior: what isEnabled() reports. */
+    public bool $mailerEnabled = true;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -103,10 +109,31 @@ final class PasswordResetServiceTest extends TestCase
         $service = $this->makeService();
 
         $service->issueResetToken('ada@example.com');
+        $oldToken = $this->lastTokenFromEmail();
+
+        // Second attempt, past the resend window.
+        $this->ageResetIdentity($user, PasswordResetService::RESEND_INTERVAL + 60);
         $service->issueResetToken('ada@example.com');
 
         $count = (int) $this->resetIdentityCount($user);
         self::assertSame(1, $count, 'a new request must replace the old token');
+        self::assertNull($service->findUserByToken($oldToken), 'the replaced link stops working');
+        self::assertCount(2, $this->sentEmails);
+    }
+
+    public function testSecondRequestInsideTheWindowDoesNotSendAgain(): void
+    {
+        $user = $this->seedUser('ada', 'ada@example.com');
+        $service = $this->makeService();
+
+        $service->issueResetToken('ada@example.com');
+        $token = $this->lastTokenFromEmail();
+
+        self::assertTrue($service->issueResetToken('ada@example.com'));
+
+        self::assertCount(1, $this->sentEmails, 'one link per account per window');
+        self::assertSame(1, $this->resetIdentityCount($user));
+        self::assertNotNull($service->findUserByToken($token), 'the link already sent stays valid');
     }
 
     public function testIssueResetTokenIsFalseForUnknownEmail(): void
@@ -290,19 +317,66 @@ final class PasswordResetServiceTest extends TestCase
     }
 
     // -----------------------------------------------------------------
-    // Rate limiter feeding
+    // Send ordering and the login lockout
     // -----------------------------------------------------------------
 
-    public function testRecordFailureWritesPasswordResetLoginRow(): void
+    public function testSendFailureLeavesThePreviousLinkWorking(): void
     {
+        $user = $this->seedUser('ada', 'ada@example.com');
         $service = $this->makeService();
 
-        $service->recordFailure('reset');
+        self::assertTrue($service->issueResetToken('ada@example.com'));
+        $oldToken = $this->lastTokenFromEmail();
 
-        $count = (int) $this->pdo
-            ->query("SELECT COUNT(*) c FROM auth_logins WHERE id_type='" . PasswordResetService::IDENTITY_TYPE . "' AND success=0")
-            ->fetch()['c'];
-        self::assertSame(1, $count);
+        // Second attempt, past the resend window, and the mail server is down.
+        $this->ageResetIdentity($user, PasswordResetService::RESEND_INTERVAL + 60);
+        $this->mailerThrows = true;
+
+        $thrown = null;
+        try {
+            $service->issueResetToken('ada@example.com');
+        } catch (\RuntimeException $e) {
+            $thrown = $e;
+        }
+
+        self::assertNotNull($thrown, 'a transport failure must reach the caller');
+        self::assertStringContainsString('smtp is down', (string) $thrown?->getMessage());
+        self::assertCount(1, $this->sentEmails, 'nothing new was delivered');
+        self::assertNotNull(
+            $service->findUserByToken($oldToken),
+            'the link the user already holds must survive a failed send'
+        );
+        self::assertSame(1, $this->resetIdentityCount($user), 'no token churn on a failed send');
+    }
+
+    public function testNoTokenIsStoredWhenOutboundMailIsOff(): void
+    {
+        $user = $this->seedUser('ada', 'ada@example.com');
+        $service = $this->makeService();
+
+        self::assertTrue($service->issueResetToken('ada@example.com'));
+        $oldToken = $this->lastTokenFromEmail();
+
+        $this->ageResetIdentity($user, PasswordResetService::RESEND_INTERVAL + 60);
+        $this->mailerEnabled = false;
+
+        self::assertFalse($service->issueResetToken('ada@example.com'));
+        self::assertCount(1, $this->sentEmails);
+        self::assertNotNull($service->findUserByToken($oldToken));
+        self::assertSame(1, $this->resetIdentityCount($user));
+    }
+
+    public function testResetAttemptsAreNotLoggedAsLoginFailures(): void
+    {
+        $this->seedUser('ada', 'ada@example.com');
+        $service = $this->makeService();
+
+        $service->issueResetToken('ada@example.com');
+        $service->issueResetToken('nobody@example.com');
+
+        $count = (int) $this->pdo->query('SELECT COUNT(*) c FROM auth_logins')->fetch()['c'];
+
+        self::assertSame(0, $count, 'reset traffic must not feed the per-IP login lockout');
     }
 
     // -----------------------------------------------------------------
@@ -355,11 +429,19 @@ final class PasswordResetServiceTest extends TestCase
                     return '<a href="' . $url . '">body</a>';
                 }
             },
-            // Mailer stand-in: records sendHtml calls.
+            // Mailer stand-in: records sendHtml calls, and can be switched
+            // off or made to fail so the caller's ordering is observable.
             'mailer' => fn(): object => new class($test) {
                 public function __construct(private readonly PasswordResetServiceTest $test) {}
+                public function isEnabled(): bool
+                {
+                    return $this->test->mailerEnabled;
+                }
                 public function sendHtml(string $to, string $subject, string $bodyHtml, array $opts = []): void
                 {
+                    if ($this->test->mailerThrows) {
+                        throw new \RuntimeException('smtp is down');
+                    }
                     $this->test->sentEmails[] = [
                         'to' => $to,
                         'subject' => $subject,
@@ -458,5 +540,19 @@ final class PasswordResetServiceTest extends TestCase
         $stmt->execute([':uid' => (int) $user->id, ':type' => PasswordResetService::IDENTITY_TYPE]);
 
         return (int) $stmt->fetch()['c'];
+    }
+
+    /**
+     * Backdate the stored reset identity, so a repeat request falls outside
+     * the resend window and the send path runs again.
+     */
+    private function ageResetIdentity(User $user, int $seconds): void
+    {
+        $stamp = (new DateTimeImmutable('-' . $seconds . ' seconds'))->format('Y-m-d H:i:s');
+
+        $this->pdo->exec(
+            "UPDATE auth_identities SET created_at='{$stamp}' "
+            . "WHERE user_id={$user->id} AND type='" . PasswordResetService::IDENTITY_TYPE . "'"
+        );
     }
 }

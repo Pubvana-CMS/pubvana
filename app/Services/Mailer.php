@@ -207,6 +207,18 @@ class Mailer
         return (new Mail($this->app->db()))->recent($limit);
     }
 
+    /**
+     * Whether outbound mail is switched on.
+     *
+     * Public form of enabled(), for callers that must decide before they
+     * commit to work that only pays off if a message actually goes out, such
+     * as rotating a password reset token.
+     */
+    public function isEnabled(): bool
+    {
+        return $this->enabled();
+    }
+
     // -----------------------------------------------------------------
     // Internal Helpers
     // -----------------------------------------------------------------
