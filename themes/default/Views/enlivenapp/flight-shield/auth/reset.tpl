@@ -29,7 +29,14 @@
     <button type="submit" class="btn btn-primary auth-submit">Set New Password</button>
 </form>
 
-{% if not sessionMode %}
+{% if sessionMode %}
+<div class="auth-links">
+    <form method="post" action="/auth/logout">
+        {% csrf_field %}
+        <button type="submit" class="btn btn-link p-0">Sign out instead</button>
+    </form>
+</div>
+{% else %}
 <div class="auth-links">
     <a href="/auth/forgot">Request a new link</a>
 </div>

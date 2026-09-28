@@ -135,10 +135,12 @@ final class UsersControllerTest extends TestCase
         self::assertSame('A user with that email address already exists.', $this->flashes['error'][0]);
     }
 
-    public function testInviteSendsWithSiteUrlSetting(): void
+    public function testInviteSendsWithConfiguredSiteUrl(): void
     {
-        $this->settingsRows = ['CMS.siteName' => 'My Site', 'CMS.siteUrl' => 'https://example.test/'];
+        $this->settingsRows = ['CMS.siteName' => 'My Site'];
         $app = $this->engine(data: ['email' => 'new@x.test']);
+        // SITE_URL is deployment config: the app store holds it.
+        $app->set('siteUrl', 'https://example.test/');
         $this->controller($app)->invite();
 
         self::assertSame('new@x.test', $this->sent['to']);
@@ -274,6 +276,17 @@ final class UsersControllerTest extends TestCase
         self::assertSame('User banned.', $this->flashes['success'][0]);
     }
 
+    public function testForceResetSelfRefused(): void
+    {
+        $this->usersSvc->findResult = new FakeUser(5);
+        $this->controller($this->engine(actorId: 5))->forceReset('5');
+        self::assertSame(
+            'You cannot require a password reset on your own account.',
+            $this->flashes['error'][0]
+        );
+        self::assertNull($this->userAdminFake->lastForceReset);
+    }
+
     public function testUnbanAndForceReset(): void
     {
         $this->usersSvc->findResult = new FakeUser(6);
@@ -291,7 +304,8 @@ final class UsersControllerTest extends TestCase
         $this->redirects = [];
         $this->usersSvc->findResult = null;
         $this->controller($this->engine())->forceReset('99');
-        self::assertSame(['/admin/users/99/edit'], $this->redirects);
+        self::assertSame(['/admin/users'], $this->redirects);
+        self::assertSame('That user no longer exists.', $this->flashes['error'][0]);
     }
 
     private function controller(Engine $app): UsersController
@@ -585,6 +599,8 @@ final class FakeUserAdmin extends \Pubvana\Services\UserAdminService
     /** @var array{0: object, 1: ?string}|null */
     public ?array $lastBan = null;
     public ?object $lastUnban = null;
+    /** @var array{0: object, 1: bool}|null */
+    public ?array $lastForceReset = null;
 
     public function __construct()
     {
@@ -634,5 +650,6 @@ final class FakeUserAdmin extends \Pubvana\Services\UserAdminService
 
     public function forceReset(object $user, bool $f): void
     {
+        $this->lastForceReset = [$user, $f];
     }
 }

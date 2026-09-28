@@ -62,10 +62,6 @@ class UserAdminService
 
     /**
      * Set or clear Shield's force_reset flag on the user's email identity.
-     *
-     * With the flag set, any request the user makes through a route guarded
-     * by ForcePasswordResetMiddleware redirects to the reset page until a
-     * new password is saved.
      */
     public function forceReset(User $user, bool $force): void
     {

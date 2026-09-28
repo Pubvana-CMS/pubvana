@@ -11,8 +11,9 @@
  *   4. Enforces HTTPS when the policy demands it (before anything else runs,
  *      Shield and sessions read this same flag later in boot)
  *   5. Loads services.php (DB, auth, settings, plugin loader, etc.)
- *   6. Loads core-admin.php + routes.php, registers stored routes
- *   7. Starts FlightPHP to process the request
+ *   6. Sends users with a pending password reset to the reset page
+ *   7. Loads core-admin.php + routes.php, registers stored routes
+ *   8. Starts FlightPHP to process the request
  *
  * @package Pubvana\config
  */
@@ -28,13 +29,13 @@ $ds = DIRECTORY_SEPARATOR;
 require(PROJECT_ROOT . $ds . 'vendor' . $ds . 'autoload.php');
 
 // Config is no longer a file. app/config/env-overrides.php seeds environment,
-// database, CMS.siteName, CMS.adminEmail, flight.debug, flight.force_https
-// from .env — web and CLI share that one path, identical values.
+// database, flight.debug, flight.force_https from .env - web and CLI share
+// that one path, identical values.
 $app = Flight::app();
 
 // .env overrides + HTTPS policy derivation (idempotent, shared with CLI).
 // Seeds: environment, database (defaults via env-overrides), flight.debug,
-// CMS.* , DB_* folds, and session encryption key.
+// SITE_URL, DB_* folds, and session encryption key.
 require(__DIR__ . $ds . 'env-overrides.php');
 
 // Enforce the HTTPS policy before services and plugins run. Shield throws a
@@ -52,13 +53,28 @@ if (php_sapi_name() !== 'cli'
 // Services: DB connection, session, auth, settings, plugin loader, error handler
 require(__DIR__ . $ds . 'services.php');
 
+/*
+|--------------------------------------------------------------------------
+| Forced Password Reset
+|--------------------------------------------------------------------------
+| Signed-in users whose Shield email identity carries the force_reset flag
+| go to /auth/reset-password until they save a new password. This runs
+| before routing, so it covers core, adext, and plugin routes. Anonymous
+| requests pass straight through.
+|
+| Web only: the CLI shares this bootstrap and has no session to check.
+*/
+if (php_sapi_name() !== 'cli') {
+    (new \Pubvana\Middleware\ForcedPasswordResetCheck($app))->enforce();
+}
+
 // Core admin: registers users/groups/permissions via adext (menu items + routes)
 require(__DIR__ . $ds . 'core-admin.php');
 
 // Timezone: after core-admin so declaredFields() cache isn't poisoned early.
-// Tolerant of fresh installs: falls back to config/env tier when the
-// settings table doesn't exist yet.
-$tz = $app->settings()->get('CMS.defaultTimezone', 'UTC');
+// Tolerant of fresh installs: an unreadable settings table falls back to the
+// declaration default, and the catch below pins UTC if even that is unusable.
+$tz = $app->settings()->get('CMS.defaultTimezone');
 try {
     new \DateTimeZone((string) $tz);
 } catch (\Throwable) {

@@ -141,7 +141,7 @@ class UsersController extends AdminController
             return;
         }
 
-        $siteName = $this->app->settings()->get('CMS.siteName') ?? 'Pubvana';
+        $siteName = (string) $this->app->settings()->get('CMS.siteName');
         $registerUrl = rtrim($this->baseUrl(), '/') . '/auth/register';
 
         $bodyHtml = '<p>You have been invited to join ' . htmlspecialchars($siteName) . '.</p>'
@@ -172,15 +172,15 @@ class UsersController extends AdminController
     /**
      * Resolve the absolute site base URL for links in outbound mail.
      *
-     * Prefers the CMS.siteUrl setting (declared as the absolute base used
-     * for generated links and emails). Falls back to deriving a scheme from
-     * the HTTPS policy and the request host when it is not configured.
+     * Prefers SITE_URL, the deployment value used for generated links and
+     * emails. Falls back to deriving a scheme from the HTTPS policy and the
+     * request host when it is not configured.
      *
      * @return string Absolute base URL, no trailing slash
      */
     protected function baseUrl(): string
     {
-        $siteUrl = trim((string) ($this->app->settings()->get('CMS.siteUrl') ?? ''));
+        $siteUrl = trim((string) ($this->app->get('siteUrl') ?? ''));
 
         if ($siteUrl !== '') {
             return rtrim($siteUrl, '/');
@@ -415,8 +415,9 @@ class UsersController extends AdminController
     /**
      * Toggle Shield's force password reset flag for a user.
      *
-     * With the flag set, the user's next guarded request redirects to the
-     * reset page until a new password is saved.
+     * The self-toggle is refused for the same reason a self-ban is: the flag
+     * locks the account out of everything until a new password is saved,
+     * which would lock the admin out of their own session.
      *
      * @param string $id User ID
      * @return void
@@ -425,9 +426,19 @@ class UsersController extends AdminController
     {
         $user = $this->app->auth()->users()->find((int) $id, $this->viewerIsSuperadmin());
 
-        if ($user !== null) {
-            $this->userAdmin()->forceReset($user, !$user->requiresPasswordReset());
+        if ($user === null) {
+            $this->app->session()->flash('error', 'That user no longer exists.');
+            $this->app->redirect('/admin/users');
+            return;
         }
+
+        if ((string) $user->id === (string) $this->app->auth()->id()) {
+            $this->app->session()->flash('error', 'You cannot require a password reset on your own account.');
+            $this->app->redirect('/admin/users/' . $id . '/edit');
+            return;
+        }
+
+        $this->userAdmin()->forceReset($user, !$user->requiresPasswordReset());
 
         $this->app->session()->flash('success', 'Password reset requirement updated.');
         $this->app->redirect('/admin/users/' . $id . '/edit');

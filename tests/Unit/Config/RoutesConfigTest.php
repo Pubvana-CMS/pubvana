@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Pubvana\Tests\Unit\Config;
 
 use Enlivenapp\FlightCsrf\Middlewares\CsrfMiddleware;
-use Enlivenapp\FlightShield\Middlewares\ForcePasswordResetMiddleware;
 use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 use Enlivenapp\FlightShield\Middlewares\RateLimitMiddleware;
 use flight\Engine;
@@ -57,7 +56,6 @@ final class RoutesConfigTest extends TestCase
         $route = $this->findRoute($app, 'GET /admin');
         self::assertNotNull($route);
         $classes = array_map(static fn($m): string => is_object($m) ? $m::class : (string) $m, $route->middleware);
-        self::assertContains(ForcePasswordResetMiddleware::class, $classes);
         self::assertContains(PermissionMiddleware::class, $classes);
     }
 

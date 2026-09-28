@@ -18,7 +18,6 @@
 use Pubvana\Middleware\SecurityHeadersMiddleware;
 
 use Enlivenapp\FlightCsrf\Middlewares\CsrfMiddleware;
-use Enlivenapp\FlightShield\Middlewares\ForcePasswordResetMiddleware;
 use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 use Enlivenapp\FlightShield\Middlewares\RateLimitMiddleware;
 
@@ -69,8 +68,7 @@ $app->route('GET /assets/@type/@name/@path:.+', function (string $type, string $
 */
 $app->route('GET /admin', function () use ($app) {
     (new \Pubvana\Controllers\Admin\AdminController($app))->index();
-})->addMiddleware(new ForcePasswordResetMiddleware($app))
-  ->addMiddleware(new PermissionMiddleware($app, 'admin.access'));
+})->addMiddleware(new PermissionMiddleware($app, 'admin.access'));
 
 /*
 |--------------------------------------------------------------------------
