@@ -26,12 +26,9 @@
 			<demo>https://github.com/Pubvana-CMS/pubvana</demo>
 			<ratings>http://www.softaculous.com/ratings.php?soft=<!--soft--></ratings>
 			<support>https://github.com/Pubvana-CMS/pubvana/issues</support>
-			<site_settings>Site Settings</site_settings>
 			<upgrade_note>Upgrade</upgrade_note>
 			<upgrade_note_exp>Your database, settings and uploaded files are kept during the upgrade.</upgrade_note_exp>
 			<admin_account>Administrator Account</admin_account>
-			<site_name>Site Name</site_name>
-			<site_name_exp>The name used for your site across the application.</site_name_exp>
 			<admin_username>Admin Username</admin_username>
 			<admin_username_exp>Username to log in to the admin area (max 30 characters).</admin_username_exp>
 			<admin_pass>Admin Password</admin_pass>

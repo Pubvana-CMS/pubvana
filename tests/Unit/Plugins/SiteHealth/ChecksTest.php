@@ -201,7 +201,7 @@ final class ChecksTest extends TestCase
     {
         file_put_contents(
             $this->tmpRoot . '/.env',
-            "SITE_URL=https://example.org\nDB_PASS=s3cret\nSESSION_ENCRYPTION_KEY=k\nSITE_NAME=Real\nADMIN_EMAIL=a@real.org\n"
+            "SITE_URL=https://example.org\nDB_PASS=s3cret\nSESSION_ENCRYPTION_KEY=k\n"
         );
 
         $result = (new ConfigDefaultsCheck($this->tmpRoot))->run();
@@ -212,20 +212,20 @@ final class ChecksTest extends TestCase
     public function testRequiredSettingsFlagsDefaults(): void
     {
         $app = $this->app();
-        $app->set('CMS.siteUrl', 'http://example.com');
+        $app->set('siteUrl', 'http://example.com');
         $app->set('CMS.siteName', 'Pubvana');
 
         $result = (new RequiredSettingsCheck($app))->run();
 
         self::assertSame(CheckResult::WARNING, $result->status);
-        self::assertStringContainsString('CMS.siteUrl', $result->message);
+        self::assertStringContainsString('SITE_URL', $result->message);
         self::assertStringContainsString('CMS.siteName', $result->message);
     }
 
     public function testRequiredSettingsPassesWhenConfigured(): void
     {
         $app = $this->app();
-        $app->set('CMS.siteUrl', 'https://real.org');
+        $app->set('siteUrl', 'https://real.org');
         $app->set('CMS.siteName', 'Real Site');
 
         $result = (new RequiredSettingsCheck($app))->run();
@@ -369,7 +369,7 @@ final class ChecksTest extends TestCase
     private function httpsResult(string $url, bool $force, string $env): CheckResult
     {
         $app = $this->app();
-        $app->set('CMS.siteUrl', $url);
+        $app->set('siteUrl', $url);
         $app->set('flight.force_https', $force);
         $app->set('environment', $env);
 

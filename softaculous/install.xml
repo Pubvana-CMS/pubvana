@@ -2,19 +2,6 @@
 <softinstall xmlns="http://www.softaculous.com">
 	<settings>
 		<group>
-			<name>{{site_settings}}</name>
-			<fields>
-				<field>
-					<variable>site_name</variable>
-					<type>text</type>
-					<name>{{site_name}}</name>
-					<exp>{{site_name_exp}}</exp>
-					<value>Pubvana</value>
-					<onerror>Please enter a site name.</onerror>
-				</field>
-			</fields>
-		</group>
-		<group>
 			<name>{{admin_account}}</name>
 			<fields>
 				<field>

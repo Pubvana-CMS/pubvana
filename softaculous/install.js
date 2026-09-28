@@ -1,15 +1,10 @@
 function formcheck()
 {
-    var siteName = document.getElementById('site_name').value;
     var adminUser = document.getElementById('admin_username').value;
     var adminPass = document.getElementById('admin_pass').value;
     var adminEmail = document.getElementById('admin_email').value;
 
     var error = '';
-
-    if (siteName.length < 2) {
-        error += 'Please enter a site name.\n';
-    }
 
     if (adminUser.length < 1 || adminUser.length > 30) {
         error += 'Admin username must be between 1 and 30 characters.\n';

@@ -26,7 +26,6 @@ if (!function_exists('__install')) {
         $dbUser = (string) ($s['softusername'] ?? '');
         $dbPass = (string) ($s['softpassword'] ?? '');
         $siteUrl = rtrim((string) ($s['softurl'] ?? ''), '/');
-        $siteName = trim((string) ($s['site_name'] ?? ''));
         $adminUser = trim((string) ($s['admin_username'] ?? ''));
         $adminPass = (string) ($s['admin_pass'] ?? '');
         $adminEmail = trim((string) ($s['admin_email'] ?? ''));
@@ -49,9 +48,7 @@ if (!function_exists('__install')) {
             . "DB_USER=" . $dbUser . "\n"
             . "DB_PASS=" . $dbPass . "\n"
             . "\n"
-            . "SITE_NAME=" . $siteName . "\n"
             . "SITE_URL=" . $siteUrl . "\n"
-            . "ADMIN_EMAIL=" . $adminEmail . "\n"
             . "\n"
             . "SESSION_ENCRYPTION_KEY=" . bin2hex(random_bytes(32)) . "\n";
 

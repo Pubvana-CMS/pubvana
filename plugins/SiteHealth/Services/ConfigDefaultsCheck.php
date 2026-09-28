@@ -63,16 +63,6 @@ class ConfigDefaultsCheck implements CheckInterface
             $issues[] = 'SESSION_ENCRYPTION_KEY (empty)';
         }
 
-        $siteName = $parsed['SITE_NAME'] ?? '';
-        if ($siteName === '' || $siteName === 'Pubvana') {
-            $issues[] = 'SITE_NAME (still using default)';
-        }
-
-        $adminEmail = $parsed['ADMIN_EMAIL'] ?? '';
-        if ($adminEmail === '' || str_contains($adminEmail, '@example.com')) {
-            $issues[] = 'ADMIN_EMAIL (still using placeholder)';
-        }
-
         if (!empty($issues)) {
             return new CheckResult(
                 id: 'config-defaults',
