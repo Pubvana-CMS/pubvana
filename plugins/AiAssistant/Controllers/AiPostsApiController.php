@@ -329,6 +329,12 @@ class AiPostsApiController extends AiApiController
             }
             $ts = strtotime($publishOn);
             $publishedAt = $ts !== false ? date('Y-m-d H:i:s', $ts) : null;
+            // The scheduler publishes due posts on its next run, so a past
+            // date would publish immediately. Same rule as the admin form.
+            if (!$this->svc('blog')->isFuturePublishDate($publishedAt)) {
+                $this->log($key, 'error', 'post', $existing !== null ? (int) $existing->id : null, 'publish_on is not in the future.');
+                $this->fail(422, 'publish_on must be in the future.');
+            }
         } elseif ($status === 'draft') {
             if ($explicit && $existing !== null && in_array((string) $existing->status, ['published', 'scheduled'], true)) {
                 $grant = $this->app->ai()->demoteGrant('posts', (string) $existing->status);

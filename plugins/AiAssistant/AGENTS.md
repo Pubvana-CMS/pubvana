@@ -130,7 +130,7 @@ Grants are deny-all and per key. A request that needs an ungranted permission fa
 | `posts.update` | `POST /api/ai/posts/{id}/update` |
 | `posts.delete` | `POST /api/ai/posts/{id}/delete` |
 | `posts.publish` | status `published` on create/update, and removing it (published -> draft) on update |
-| `posts.schedule` | status `scheduled` + `publish_on` on create/update, and cancelling it (scheduled -> draft) on update |
+| `posts.schedule` | status `scheduled` + a future `publish_on` on create/update, and cancelling it (scheduled -> draft) on update |
 | `posts.tags.read` | `GET /api/ai/posts/tags` |
 | `posts.categories.read` | `GET /api/ai/posts/categories` |
 | `pages.read` | `GET /api/ai/pages` lists pages; `GET /api/ai/pages/{slug}` fetches one with full content |
@@ -162,7 +162,7 @@ Fact checking has no per-key grants; its endpoints open to every authenticated k
 
 - Lists and single fetches need the matching read grant. `GET /api/ai/posts` and `GET /api/ai/pages` paginate over every status, drafts included. Query params: `page` (default 1), `per_page` (default 25, max 100), `status`, `search` (adds a `snippet` around the first match).
 - `GET /api/ai/posts/{slug}` and `/api/ai/pages/{slug}` return the full record; `content` is served as Markdown, converted from stored HTML.
-- `POST /api/ai/posts` needs `title` plus `content_md` (Markdown, sanitized to HTML) or `content` (already-rendered HTML). `status` is `draft` (default), `published` (needs `posts.publish`), or `scheduled` (needs `posts.schedule` plus `publish_on`). Optional: `slug`, `tags`, `categories`, `excerpt`, `featured_image`, `is_featured`, `allow_comments`, and a nested `seo` object.
+- `POST /api/ai/posts` needs `title` plus `content_md` (Markdown, sanitized to HTML) or `content` (already-rendered HTML). `status` is `draft` (default), `published` (needs `posts.publish`), or `scheduled` (needs `posts.schedule` plus a future `publish_on`). Optional: `slug`, `tags`, `categories`, `excerpt`, `featured_image`, `is_featured`, `allow_comments`, and a nested `seo` object.
 - Updates are partial; omitting `status` leaves the current state. Demoting a live item to `draft` takes the grant for the state being torn down (`AiService::demoteGrant()`).
 - `POST /api/ai/pages` uses the same content rule; `status` is `draft` or `published`.
 - `POST /api/ai/redirects` needs `source_path` (normalized: leading slash, no trailing slash) and `target_url`; optional `status_code` (301/302), `enabled`, `notes`.

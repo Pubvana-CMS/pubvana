@@ -11,6 +11,7 @@ use Pubvana\Plugins\AiAssistant\Controllers\AiPostsApiController;
 use Pubvana\Plugins\AiAssistant\Models\AiKey;
 use Pubvana\Plugins\AiAssistant\Services\AiService;
 use Pubvana\Plugins\Blog\Models\Post;
+use Pubvana\Plugins\Blog\Services\BlogService;
 use Pubvana\Plugins\Pages\Models\Page;
 use Pubvana\Tests\Support\Sqlite;
 use Pubvana\Tests\Support\TestCase;
@@ -205,6 +206,76 @@ final class DemoteGrantTest extends TestCase
         self::assertNotSame('', (string) $result[1]);
     }
 
+    // -----------------------------------------------------------------
+    // Posts: scheduled dates must be in the future
+    // -----------------------------------------------------------------
+
+    public function testScheduleWithPastPublishOnFails422(): void
+    {
+        $controller = $this->controller(['posts.create', 'posts.schedule']);
+
+        try {
+            $this->invoke($controller, 'resolvePostStatus', [
+                $this->key(),
+                ['status' => 'scheduled', 'publish_on' => date('Y-m-d H:i:s', time() - 3600)],
+                null,
+            ]);
+            self::fail('A past publish_on must fail 422.');
+        } catch (GrantDenied $denied) {
+            self::assertSame(422, $denied->status);
+            self::assertStringContainsString('future', $denied->getMessage());
+        }
+    }
+
+    public function testUpdateToPastPublishOnFails422(): void
+    {
+        $post = $this->post(12, 'draft', null);
+        $controller = $this->controller(['posts.update', 'posts.schedule']);
+
+        try {
+            $this->invoke($controller, 'resolvePostStatus', [
+                $this->key(),
+                ['status' => 'scheduled', 'publish_on' => date('Y-m-d H:i:s', time() - 3600)],
+                $post,
+            ]);
+            self::fail('A past publish_on must fail 422.');
+        } catch (GrantDenied $denied) {
+            self::assertSame(422, $denied->status);
+        }
+    }
+
+    public function testReSchedulingWithPastPublishOnFails422(): void
+    {
+        $post = $this->post(11, 'scheduled', date('Y-m-d H:i:s', time() + 3600));
+        $controller = $this->controller(['posts.update']);
+
+        try {
+            $this->invoke($controller, 'resolvePostStatus', [
+                $this->key(),
+                ['status' => 'scheduled', 'publish_on' => date('Y-m-d H:i:s', time() - 3600)],
+                $post,
+            ]);
+            self::fail('A past publish_on must fail 422.');
+        } catch (GrantDenied $denied) {
+            self::assertSame(422, $denied->status);
+        }
+    }
+
+    public function testScheduleWithFuturePublishOnPasses(): void
+    {
+        $post = $this->post(12, 'draft', null);
+        $controller = $this->controller(['posts.update', 'posts.schedule']);
+        $future = date('Y-m-d H:i:s', time() + 3600);
+
+        $result = $this->invoke($controller, 'resolvePostStatus', [
+            $this->key(),
+            ['status' => 'scheduled', 'publish_on' => $future],
+            $post,
+        ]);
+
+        self::assertSame(['scheduled', $future], $result);
+    }
+
     public function testCreateDefaultsToDraftWithoutPublishGrant(): void
     {
         $controller = $this->controller(['posts.create']);
@@ -340,6 +411,8 @@ final class DemoteGrantTest extends TestCase
     private function controller(array $grants): HarnessController
     {
         $app = $this->app([]);
+        $app->map('db', fn (): PDO => $this->pdo);
+        $app->map('blog', fn (): BlogService => new BlogService($app));
         $app->map('ai', function () use ($app): AiService {
             return new AiService($this->pdo, $app);
         });
