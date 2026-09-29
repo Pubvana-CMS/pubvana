@@ -5,16 +5,90 @@ All notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## Unreleased - 2026-09-
+## [3.0.0-beta.5] - 2026-09-28
 
-### Fixed
+### Added
+- Email on|off toggle in Settings > Email. 
+- Cron runner for Scheduled posts.
+
+### Fixed|Changed
+- docs clean up
+- Removed confusion around `CMS.siteUrl`, SITE_URL is from .env only, read as `$app->get('siteUrl')`.
+- `settings()->get()` and `$app->get()` conflicted with possibly different values. `$app` is now `.env` values, `settings()` is soley database values.
+- SITE_NAME and ADMIN_EMAIL removed from .env, HARDENING.md, and Softaculous.
+- Login toggles (registration, magic link, remember me, email 2FA, email activation) default to off.
+- Force Password reset enforced sitewide and reset page shows "Sign out instead" when a password reset is required.
 - cron broken on lsphp because the shebang wasn't removed. so we did.
 - updates trying to be too clever and display which php to use (was wrong), now just a static "try here, this is where it usually is" sort of thing.
 - PHPStan 2.2.14 --> 2.2.15 'broken' code in Comments. fix to pass again. 
 - Comment submission errors are shown as a flash message.
 - removed Comments using a special flash message key
-
-
+- Protected-path check missed nested protected files.
+- Two updates could start at the same time.
+- A crashed update blocked the next update for 30 minutes.
+- `trustClient()->coreItem()` unwrapped couldn't pass `null` to `trustGate()` failing to start the update.
+- BackupsRestoreCommand.php declares Commands, should be commands
+- Backups: Stderr-only child never returns
+- Backups: a dead background process leaves status "started" forever
+- Marketplace: Marketplace gets the site domain from the request.
+- Marketplace's `Verify()` reports a store failure instead of a success message.
+- Marketplace shows free-tier and no-license items as free, with the download action.
+- Marketplace reused the package staging directory without emptying it.
+- AI key generation exposed the key in sessions from a flash message
+- AiService::authenticate() checks isEnabled() before isBlocked()
+- Author Card hardcoded '/profile/'
+- Blog author URLs hardcoded '/profile/'
+- countWithMetaTitle() ran a query and discarded the result
+- AiKeyGrant::replaceFor() does DELETE then INSERT with no transaction
+- ActivityLog: Raw PDO queries in service, put in model
+- BrokenLinks: Fix recheck and scan
+- Everything uses full URLs from users
+- Comments: guest_website is stored raw
+- Comments: store() gates only on isTypeEnabled()
+- Comments: HTMLPurifier absence falls back to returning raw comment HTML
+- Comments: parent_id is validated for depth only
+- Comments: rate limiter check() and hit() are separate
+- Comments: rate limiter hit() fires before the insert
+- Comments: createRecord() mass-assigns arbitrary keys
+- Comments: CommentService uses static \Flight::db()/get() calls inside an otherwise DI service
+- Comments: flattenComments/recentCommentsBlock instantiate the FlightShield User model directly, N+1
+- Forms: Honeypot field is named "website", so a legitimate form field fails
+- Forms: status is not validated against draft/published on create/update
+- Media: Stored mime_type comes from $file['type'] (browser-supplied) and the finfo-detected $actualMime validateUpload() computed is discarded
+- Forms: a field named after the captcha post field is still a live collision
+- Profiles: Admin show() has no not-found guard
+- SocialLinks: sort_order assigned as count(all()) after a deletion can collide with an existing row
+- Search: SearchService.php with no lower clamp, so a future published_at yields a negative $ageDays
+- Fix/Find/Drop tests for code that has moved but still passed for some reason
+- Blog: Make the prefix a required constructor arg, so a missing value is a type error at construction rather than a silently wrong URL
+- Deleting the superadmin group has no guard and demotes its members to the 'user' group
+- plugins.manage not enforced
+- navigation.edit not enforced
+- update() discards updateProfile()'s Result and flashes "User updated." unconditionally
+- Nested repeatable-group textarea values skip HTMLPurifier
+- recheckByFolder() had no ../ filtering
+- The FORCE_HTTPS 308 Location is built from raw $_SERVER['HTTP_HOST']
+- Fix: Support/helpers.php... moved to it's proper place
+- A cleared malicious-list finding is force-re-asked forever
+- getBaseUrl() falls back to HTTP_HOST + HTTP_X_FORWARDED_PROTO
+- Old identity is deleted before the new email is sent.
+- Every forgot-password POST writes the raw submitted email into auth_logins
+- auth_logins failure rows count toward Shield's per-IP login lockout
+- An oversized submitted email 500s instead of failing validation
+- countByStatus() loads every row into PHP via findAll() just to count
+- Docblock claims HSTS is a default header
+- ETag generated without quotes and compared raw against If-None-Match
+- Last-Modified/If-Modified-Since is not honored
+- error logging now in php's error log. May the odds be ever in your favor.
+- BlogService::authorItemsForIds: The profiles half instantiates the Profiles plugin model directly
+- BlogPublicController::getAuthor(): builds a raw FlightShield User via static \Flight::db()
+- Profiles leak username
+- Profiles didn't provide profile author info
+- Blog instantiated Profiles concerns in Plugin.php causing routePrefix fallback issues. 
+- Blog feed N+1:** rss()/atom() loop 20 items and per item call getPostCategories + getPostTags + getAuthor
+- relatedPostsBlock N+1: for each of up to 20 candidate posts it calls getPostTagNames + getPostCategoryIds individually
+- Scheduled publish dates unvalidated: store()/update() pass published_at through untouched for scheduled posts
+- some runway commands either threw exceptions or errored. 
 
 
 
