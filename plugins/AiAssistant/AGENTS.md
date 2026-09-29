@@ -130,7 +130,7 @@ Grants are deny-all and per key. A request that needs an ungranted permission fa
 | `posts.update` | `POST /api/ai/posts/{id}/update` |
 | `posts.delete` | `POST /api/ai/posts/{id}/delete` |
 | `posts.publish` | status `published` on create/update, and removing it (published -> draft) on update |
-| `posts.schedule` | status `scheduled` + a future `publish_on` on create/update, and cancelling it (scheduled -> draft) on update |
+| `posts.schedule` | status `scheduled` + a future `publish_on` on create/update, moving an existing schedule's date, and cancelling it (scheduled -> draft) on update |
 | `posts.tags.read` | `GET /api/ai/posts/tags` |
 | `posts.categories.read` | `GET /api/ai/posts/categories` |
 | `pages.read` | `GET /api/ai/pages` lists pages; `GET /api/ai/pages/{slug}` fetches one with full content |
@@ -225,7 +225,7 @@ Steps that go beyond the repo-wide style, derived from the existing code:
 4. Every new permission must be added to `helpCatalog()` (`AiService.php:330`) with its route group, label, summary, and endpoints. The catalog drives `/api/ai/help`, the admin help page, and grant-form rendering, so it is the point of truth for grants.
 5. All API reads return display-safe arrays; HTML content is served as Markdown and never raw. Serializers (`serializePost`, `serializePage`, `serializeComment`, `serializeRedirect`, `serializeNavigationItem`) must stay in `AiService`.
 6. Keep pagination bounded: `per_page` is clamped to `[1, 100]` and `page` to `>= 1` for every list endpoint (`AiPostsApiController.php:30`). Do not introduce an unbounded list.
-7. Grant-check before acting: posting a `published` status requires the `publish` grant, not the bare create/update grant. Do not publish or schedule under the write grant alone. State changes gate both ways: demoting a live item (`published`/`scheduled` -> `draft`) takes the grant for the state being torn down (`AiService::demoteGrant()`), and omitting `status` on an update leaves the current state untouched.
+7. Grant-check before acting: posting a `published` status requires the `publish` grant, not the bare create/update grant. Do not publish or schedule under the write grant alone; moving an existing schedule's date takes `posts.schedule` too. State changes gate both ways: demoting a live item (`published`/`scheduled` -> `draft`) takes the grant for the state being torn down (`AiService::demoteGrant()`), and omitting `status` on an update leaves the current state untouched.
 8. Use the tolerant `svc()` wrapper for peer services and the tolerant `saveSeo()` for optional SEO, so missing peer plugins degrade to a 503 or a no-op instead of a hard crash.
 9. Do not hard-code the `/ai` URL prefix; use `$this->path()` and `routePrefix('pubvana/ai')` the way the existing code does.
 

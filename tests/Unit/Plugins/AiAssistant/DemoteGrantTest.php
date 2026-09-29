@@ -145,12 +145,13 @@ final class DemoteGrantTest extends TestCase
 
     public function testOmittedStatusKeepsScheduledStateWithoutScheduleGrant(): void
     {
-        $post = $this->post(11, 'scheduled', '2026-12-01 09:00:00');
+        $date = date('Y-m-d H:i:s', time() + 3600);
+        $post = $this->post(11, 'scheduled', $date);
         $controller = $this->controller(['posts.update']);
 
         $result = $this->invoke($controller, 'resolvePostStatus', [$this->key(), ['title' => 'Retitle'], $post]);
 
-        self::assertSame(['scheduled', '2026-12-01 09:00:00'], $result);
+        self::assertSame(['scheduled', $date], $result);
     }
 
     public function testReApplyingPublishedWithoutGrantIsNotATransition(): void
@@ -247,7 +248,7 @@ final class DemoteGrantTest extends TestCase
     public function testReSchedulingWithPastPublishOnFails422(): void
     {
         $post = $this->post(11, 'scheduled', date('Y-m-d H:i:s', time() + 3600));
-        $controller = $this->controller(['posts.update']);
+        $controller = $this->controller(['posts.update', 'posts.schedule']);
 
         try {
             $this->invoke($controller, 'resolvePostStatus', [
@@ -274,6 +275,60 @@ final class DemoteGrantTest extends TestCase
         ]);
 
         self::assertSame(['scheduled', $future], $result);
+    }
+
+    // -----------------------------------------------------------------
+    // Posts: moving a schedule takes the grant
+    // -----------------------------------------------------------------
+
+    public function testUpdateOnlyKeyCannotMoveScheduledDate(): void
+    {
+        $post = $this->post(11, 'scheduled', date('Y-m-d H:i:s', time() + 3600));
+        $controller = $this->controller(['posts.update']);
+
+        try {
+            $this->invoke($controller, 'resolvePostStatus', [
+                $this->key(),
+                ['status' => 'scheduled', 'publish_on' => date('Y-m-d H:i:s', time() + 7200)],
+                $post,
+            ]);
+            self::fail('Moving a scheduled date must require posts.schedule.');
+        } catch (GrantDenied $denied) {
+            self::assertSame(403, $denied->status);
+            self::assertStringContainsString('posts.schedule', $denied->getMessage());
+        }
+    }
+
+    public function testOmittedStatusDateChangeNeedsScheduleGrant(): void
+    {
+        $post = $this->post(11, 'scheduled', date('Y-m-d H:i:s', time() + 3600));
+        $controller = $this->controller(['posts.update']);
+
+        try {
+            $this->invoke($controller, 'resolvePostStatus', [
+                $this->key(),
+                ['publish_on' => date('Y-m-d H:i:s', time() + 7200)],
+                $post,
+            ]);
+            self::fail('Moving a scheduled date must require posts.schedule.');
+        } catch (GrantDenied $denied) {
+            self::assertSame(403, $denied->status);
+        }
+    }
+
+    public function testSameDateEchoBackNeedsNoScheduleGrant(): void
+    {
+        $date = date('Y-m-d H:i:s', time() + 3600);
+        $post = $this->post(11, 'scheduled', $date);
+        $controller = $this->controller(['posts.update']);
+
+        $result = $this->invoke($controller, 'resolvePostStatus', [
+            $this->key(),
+            ['status' => 'scheduled', 'publish_on' => $date],
+            $post,
+        ]);
+
+        self::assertSame(['scheduled', $date], $result);
     }
 
     public function testCreateDefaultsToDraftWithoutPublishGrant(): void

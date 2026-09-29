@@ -293,7 +293,8 @@ class AiPostsApiController extends AiApiController
      * State changes are gated both ways: moving to published/scheduled
      * needs the matching grant, and moving out of a live state down to
      * draft takes the grant for the state being left. A draft that stays
-     * draft needs nothing.
+     * draft needs nothing. Moving an existing schedule's date takes
+     * posts.schedule; re-applying the current date does not.
      *
      * @param array<string, mixed> $payload Posted payload
      * @param \Pubvana\Plugins\Blog\Models\Post|null $existing Post being updated, or null when creating
@@ -329,6 +330,13 @@ class AiPostsApiController extends AiApiController
             }
             $ts = strtotime($publishOn);
             $publishedAt = $ts !== false ? date('Y-m-d H:i:s', $ts) : null;
+
+            // Moving an existing schedule takes the grant too; re-applying
+            // the current date is not a change.
+            if (!$transition && $existing !== null && (string) ($existing->published_at ?? '') !== (string) $publishedAt) {
+                $this->requireGrant($key, 'posts.schedule');
+            }
+
             // The scheduler publishes due posts on its next run, so a past
             // date would publish immediately. Same rule as the admin form.
             if (!$this->svc('blog')->isFuturePublishDate($publishedAt)) {
