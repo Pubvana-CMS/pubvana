@@ -43,20 +43,6 @@ final class StubTrustClient
     }
 
     /**
-     * @return array{type: string, slug: string, version: string, author: string, origin: string}
-     */
-    public function coreItem(string $version): array
-    {
-        return [
-            'type'    => 'plugin',
-            'slug'    => 'pubvana/pubvana',
-            'version' => $version,
-            'author'  => 'pubvana',
-            'origin'  => 'composer',
-        ];
-    }
-
-    /**
      * @return array{status: string, warning: ?string, checked_at: string}|null
      */
     public function getCachedStatus(string $type, string $slug, string $version, string $author): ?array
@@ -399,7 +385,7 @@ final class UpdateApplyServiceTest extends TestCase
     }
 
     // ------------------------------------------------------------------
-    // Trust gate (applyRefusal): same posture as the activation gates
+    // Check cache bust on apply
     // ------------------------------------------------------------------
 
     private function gateDir(): string
@@ -409,102 +395,6 @@ final class UpdateApplyServiceTest extends TestCase
         return $dir;
     }
 
-    private function makeService(StubTrustClient $client, string $dir): UpdateApplyService
-    {
-        $app = $this->app([
-            'trustClient' => fn (): StubTrustClient => $client,
-        ]);
-
-        return new UpdateApplyService($app, ['updates_path' => $dir]);
-    }
-
-    public function testMaliciousReleaseIsRefused(): void
-    {
-        $dir = $this->gateDir();
-        try {
-            $service = $this->makeService(new StubTrustClient([
-                'status'     => 'malicious',
-                'warning'    => 'backdoor found',
-                'checked_at' => date('Y-m-d H:i:s'),
-            ]), $dir);
-
-            $result = $service->apply('9.9.9', 'cli', true);
-
-            self::assertFalse($result);
-            $progress = (new UpdateProgress($dir))->read();
-            $error = (string) ($progress['error'] ?? '');
-            self::assertStringContainsString('malicious', $error);
-            self::assertStringContainsString('backdoor found', $error);
-        } finally {
-            UpdateApplyService::removeDirectory($dir);
-        }
-    }
-
-    public function testUnEvaluatedReleaseRefusedForAutomaticRuns(): void
-    {
-        $dir = $this->gateDir();
-        try {
-            $service = $this->makeService(new StubTrustClient([
-                'status'     => 'unknown',
-                'warning'    => null,
-                'checked_at' => date('Y-m-d H:i:s'),
-            ]), $dir);
-
-            $result = $service->apply('9.9.9', 'cron', false);
-
-            self::assertFalse($result);
-            $progress = (new UpdateProgress($dir))->read();
-            $error = (string) ($progress['error'] ?? '');
-            self::assertStringContainsString('not evaluated', $error);
-        } finally {
-            UpdateApplyService::removeDirectory($dir);
-        }
-    }
-
-    public function testUnEvaluatedReleaseAllowedForManualRuns(): void
-    {
-        $dir = $this->gateDir();
-        try {
-            $service = $this->makeService(new StubTrustClient([
-                'status'     => 'unknown',
-                'warning'    => null,
-                'checked_at' => date('Y-m-d H:i:s'),
-            ]), $dir);
-
-            $service->apply('9.9.9', 'cli', true);
-
-            // The run gets past the trust gate and dies in preflight (no
-            // Backups plugin in the stand-in app). The error must not be a
-            // trust refusal.
-            $progress = (new UpdateProgress($dir))->read();
-            $error = (string) ($progress['error'] ?? '');
-            self::assertStringNotContainsString('trust service', $error);
-            self::assertStringNotContainsString('malicious', $error);
-        } finally {
-            UpdateApplyService::removeDirectory($dir);
-        }
-    }
-
-    public function testTrustOutageDoesNotBlockManualUpdate(): void
-    {
-        $dir = $this->gateDir();
-        try {
-            $service = $this->makeService(new StubTrustClient(null, [], true), $dir);
-
-            $service->apply('9.9.9', 'cli', true);
-
-            $progress = (new UpdateProgress($dir))->read();
-            $error = (string) ($progress['error'] ?? '');
-            self::assertStringNotContainsString('trust service', $error);
-        } finally {
-            UpdateApplyService::removeDirectory($dir);
-        }
-    }
-
-    // ------------------------------------------------------------------
-    // Check cache bust on apply
-    // ------------------------------------------------------------------
-
     public function testFailedRunLeavesTheCheckCacheAlone(): void
     {
         $dir      = $this->gateDir();
@@ -512,7 +402,6 @@ final class UpdateApplyServiceTest extends TestCase
 
         try {
             $app = $this->app([
-                'trustClient' => fn (): StubTrustClient => new StubTrustClient(null),
                 'settings'    => fn (): ApplySettingsStub => $settings,
             ]);
 

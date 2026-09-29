@@ -73,34 +73,13 @@ final class UpdatesAdminController extends AdminController
 
         $targetVersion = (string) ($state['target_version'] ?? '');
 
-        // The target release's standing in the trust cache, shown next to
-        // the Update button and restated in the confirm modal. Cache reads
-        // only: the live ask happens on the apply request and on the
-        // "Check for updates" action. One map read answers every lookup
-        // on this page; a trust-layer failure degrades to 'not checked'.
-        $trust = ['status' => 'none', 'warning' => null];
+        // Addon trust standings come from one cache read; a trust-layer
+        // failure degrades every row to 'not checked'.
         $statusMap = [];
         try {
             $statusMap = $this->app->trustClient()->statusesForAll();
         } catch (Throwable) {
             $statusMap = [];
-        }
-
-        if ($targetVersion !== '') {
-            try {
-                $item = $this->app->trustClient()->coreItem($targetVersion);
-                $cached = $statusMap[TrustCache::compositeKey(
-                    $item['type'],
-                    $item['slug'],
-                    $item['version'],
-                    $item['author']
-                )] ?? null;
-                if ($cached !== null) {
-                    $trust = ['status' => $cached['status'], 'warning' => $cached['warning']];
-                }
-            } catch (Throwable) {
-                $trust = ['status' => 'none', 'warning' => null];
-            }
         }
 
         // Stamp each addon inventory row with its trust standing (cache
@@ -153,7 +132,6 @@ final class UpdatesAdminController extends AdminController
             'is_locked'            => $this->isLocked(),
             'changelog_url'        => $this->changelogUrl(),
             'adminBase'            => $this->adminBase(),
-            'trust'                => $trust,
             'marketplaceConnected' => $addons['marketplaceConnected'],
             'marketplaceAdmin'     => $marketplaceAdmin,
         ]);
@@ -230,13 +208,11 @@ final class UpdatesAdminController extends AdminController
         try {
             $state = $this->service()->check(true);
 
-            // Same action refreshes trust standings: the target release
-            // (named by the fresh state) plus every installed addon, one
-            // batch. A trust outage must not mask the feed result.
+            // Same action refreshes addon trust standings, one batch. A
+            // trust outage must not mask the feed result.
             if ($state['status'] !== 'error') {
                 try {
-                    $target = (string) ($state['target_version'] ?? '');
-                    $this->app->trustClient()->recheckAll($target !== '' ? $target : null);
+                    $this->app->trustClient()->recheckAll();
                 } catch (Throwable) {
                     // Page re-renders with the previous or 'not checked' badges.
                 }
@@ -285,32 +261,6 @@ final class UpdatesAdminController extends AdminController
 
         if ($target === '') {
             $this->app->json(['status' => 'error', 'message' => 'No update is available to apply.']);
-            return;
-        }
-
-        // Trust gate, same posture as the activation gates in core: trusted
-        // proceeds, unknown needs the admin's modal confirmation (force_trust
-        // on the confirmed resubmit), malicious is refused outright.
-        $isAjax = ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest';
-
-        try {
-            $item = $this->app->trustClient()->coreItem($target);
-        } catch (Throwable) {
-            // Nothing could be asked, so there is no identity to gate on.
-            // trustGate() reads null as nothing to check and lets the run
-            // proceed; the apply service re-checks what it can.
-            $item = null;
-        }
-
-        $refusal = $this->trustGate(
-            $item,
-            'core',
-            ['name' => 'Pubvana', 'version' => $target],
-            isset($data['force_trust']),
-            $isAjax
-        );
-        if ($refusal !== null) {
-            $this->app->json(['status' => 'error', 'message' => 'Update ' . $refusal]);
             return;
         }
 

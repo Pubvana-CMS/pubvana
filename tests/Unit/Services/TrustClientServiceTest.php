@@ -329,46 +329,35 @@ final class TrustClientServiceTest extends TestCase
         self::assertSame([], $state['processed']);
     }
 
-    public function testRecheckAllBatchesCoreAndInstalledAddons(): void
+    public function testRecheckAllBatchesInstalledAddons(): void
     {
         $this->service->bodies[] = (string) json_encode([
             'results' => [
-                ['type' => 'plugin', 'slug' => 'pubvana/pubvana', 'version' => '2.0.0', 'status' => 'trusted', 'warning' => null],
+                ['type' => 'plugin', 'slug' => 'blog', 'version' => '1.0.0', 'status' => 'trusted', 'warning' => null],
             ],
         ]);
 
-        $outcome = $this->service->recheckAll('2.0.0');
+        $outcome = $this->service->recheckAll();
 
         self::assertTrue($outcome['ok']);
         self::assertCount(1, $this->service->requests);
 
-        // The core release identity rides along with every installed addon
-        // (2 local plugins, 1 vendor package, 1 theme = 5 items).
-        $items = $this->service->requests[0]['items'] ?? [];
-        self::assertCount(5, $items);
-        $slugs = array_column($items, 'slug');
-        self::assertContains('pubvana/pubvana', $slugs);
-        self::assertContains('blog', $slugs);
-        self::assertContains('default', $slugs);
-    }
-
-    public function testRecheckAllSkipsCoreWithoutTarget(): void
-    {
-        $this->service->bodies[] = (string) json_encode(['results' => []]);
-
-        $outcome = $this->service->recheckAll(null);
-
-        self::assertTrue($outcome['ok']);
+        // Every installed addon rides in one batch (2 local plugins,
+        // 1 vendor package, 1 theme = 4 items). Core is not an addon and
+        // is never asked about.
         $items = $this->service->requests[0]['items'] ?? [];
         self::assertCount(4, $items);
-        self::assertNotContains('pubvana/pubvana', array_column($items, 'slug'));
+        $slugs = array_column($items, 'slug');
+        self::assertContains('blog', $slugs);
+        self::assertContains('default', $slugs);
+        self::assertNotContains('pubvana/pubvana', $slugs);
     }
 
     public function testRecheckAllFailureReturnsNotOkAndCachesNothing(): void
     {
         $this->service->bodies[] = null; // transport failure
 
-        $outcome = $this->service->recheckAll('2.0.0');
+        $outcome = $this->service->recheckAll();
 
         self::assertFalse($outcome['ok']);
         self::assertNull($this->service->getCachedStatus('plugin', 'blog', '1.0.0', 'pubvana'));
@@ -381,7 +370,7 @@ final class TrustClientServiceTest extends TestCase
             'malicious' => [['type' => 'plugin', 'slug' => 'acme']],
         ]);
 
-        $this->service->recheckAll(null);
+        $this->service->recheckAll();
 
         $state = $this->service->maliciousListRead();
         self::assertSame([['type' => 'plugin', 'slug' => 'acme']], $state['current']);

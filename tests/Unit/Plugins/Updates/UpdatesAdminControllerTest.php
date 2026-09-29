@@ -22,8 +22,8 @@ use const JSON_THROW_ON_ERROR;
  * UpdatesAdminController over a canned UpdateService subclass.
  *
  * apply() happy paths shell out to a background runway process, so only
- * the early JSON branches (lock, no target, breaking confirm, trust
- * refusal) are exercised here; the exec and sync paths belong to the
+ * the early JSON branches (lock, no target, breaking confirm) are
+ * exercised here; the exec and sync paths belong to the
  * UpdateApplyService tests.
  */
 #[CoversClass(UpdatesAdminController::class)]
@@ -164,37 +164,6 @@ final class UpdatesAdminControllerTest extends TestCase
 
         (new UpdatesAdminController($this->engine()))->apply();
 
-        self::assertSame([[
-            'status' => 'confirm_breaking',
-            'message' => 'This update path contains breaking changes. Review them and confirm to apply.',
-        ]], $this->jsons);
-    }
-
-    public function testApplyRefusesCachedMaliciousVerdict(): void
-    {
-        $this->updates()->lastCheckResult = ['target_version' => '3.1.0'];
-        $this->trust->cached = ['status' => 'malicious', 'warning' => 'bad code', 'checked_at' => '2026-01-01'];
-
-        (new UpdatesAdminController($this->engine()))->apply();
-
-        self::assertSame([['status' => 'error', 'message' => 'Update has been found malicious by the Pubvana trust service']], $this->jsons);
-    }
-
-    public function testApplySurvivesTrustClientOutage(): void
-    {
-        $this->updates()->lastCheckResult = [
-            'target_version'   => '3.1.0',
-            'breaking_changes' => ['thing changed'],
-        ];
-
-        $app = $this->engine();
-        $app->map('trustClient', static function (): object {
-            throw new \RuntimeException('trust down');
-        });
-
-        (new UpdatesAdminController($app))->apply();
-
-        // No throw: the request reaches the next gate and keeps its JSON shape.
         self::assertSame([[
             'status' => 'confirm_breaking',
             'message' => 'This update path contains breaking changes. Review them and confirm to apply.',
@@ -641,21 +610,11 @@ final class FakeUpdates extends UpdateService
 final class FakeTrustClient
 {
     public bool $rechecked = false;
-    /** @var array{status: string, warning: ?string, checked_at: string}|null */
-    public ?array $cached = null;
 
     /** @return array<string, array{status: string, warning: ?string, checked_at: string}> */
     public function statusesForAll(): array
     {
         return [];
-    }
-
-    /**
-     * @return array{type: string, slug: string, version: string, author: string, origin: string}
-     */
-    public function coreItem(string $version): array
-    {
-        return ['type' => 'core', 'slug' => 'pubvana', 'version' => $version, 'author' => 'pubvana', 'origin' => 'core'];
     }
 
     public function themeItem(string $folder): ?array
@@ -668,16 +627,8 @@ final class FakeTrustClient
         return null;
     }
 
-    public function recheckAll(?string $target = null): void
+    public function recheckAll(): void
     {
         $this->rechecked = true;
-    }
-
-    /**
-     * @return array{status: string, warning: ?string, checked_at: string}|null
-     */
-    public function getCachedStatus(string $type, string $slug, string $version, string $author): ?array
-    {
-        return $this->cached;
     }
 }

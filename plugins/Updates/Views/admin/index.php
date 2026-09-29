@@ -147,9 +147,9 @@ $renderSkipped = static function () use ($skipped, $adminBase): void {
             </div>
             <div class="col-md-4">
                 <label class="d-block fw-bold small mb-1">Cron</label>
-                <code class="d-block bg-secondary-lt p-2 rounded small user-select-all mb-1">* * * * *    /usr/local/bin/php <?= htmlspecialchars(PROJECT_ROOT) ?>/cron 1m</code>
-                <code class="d-block bg-secondary-lt p-2 rounded small user-select-all mb-1">7 */4 * * *  /usr/local/bin/php <?= htmlspecialchars(PROJECT_ROOT) ?>/cron 4h</code>
-                <code class="d-block bg-secondary-lt p-2 rounded small user-select-all">15 3 * * *   /usr/local/bin/php <?= htmlspecialchars(PROJECT_ROOT) ?>/cron 24h</code>
+                <code class="d-block bg-secondary-lt p-2 rounded small user-select-all mb-1">* * * * *    /usr/local/bin/php <?= htmlspecialchars(PROJECT_ROOT) ?>/cron 1m >/dev/null 2>&1</code>
+                <code class="d-block bg-secondary-lt p-2 rounded small user-select-all mb-1">7 */4 * * *  /usr/local/bin/php <?= htmlspecialchars(PROJECT_ROOT) ?>/cron 4h >/dev/null 2>&1</code>
+                <code class="d-block bg-secondary-lt p-2 rounded small user-select-all">15 3 * * *   /usr/local/bin/php <?= htmlspecialchars(PROJECT_ROOT) ?>/cron 24h >/dev/null 2>&1</code>
                 <small class="form-text text-muted d-block">
                     Add these lines to your server's crontab to run Pubvana's cron tasks. <b>Highly Recommended</b>
                 </small>
@@ -278,19 +278,7 @@ $renderSkipped = static function () use ($skipped, $adminBase): void {
             <?= (!$allHardPass || $is_locked) ? 'disabled' : '' ?>>
         <i class="ti ti-rocket me-1"></i> Update to version <?= htmlspecialchars($target) ?>
     </button>
-    <span class="d-inline-flex align-items-center gap-1" title="What the Pubvana trust service thinks of this version">
-        <?php
-        $badgeStatus  = $trust['status'] ?? 'none';
-        $badgeWarning = $trust['warning'] ?? null;
-        include __DIR__ . '/_trust_badge.php';
-        ?>
-    </span>
 </div>
-<?php if (($trust['status'] ?? 'none') === 'unknown'): ?>
-<p class="text-warning small mb-2">
-    This release hasn't been evaluated by the Pubvana trust service yet. Applying it will ask for a confirmation.
-</p>
-<?php endif; ?>
 <?php if (!$allHardPass): ?>
 <p class="text-danger small">Preflight checks failed.</p>
 <?php endif; ?>
@@ -479,14 +467,6 @@ foreach ($addonSections as $addonLabel => $addonRows): ?>
             </div>
             <div class="modal-body">
                 <p>This will backup your site, download the update, and apply it.</p>
-                <p class="d-flex align-items-center gap-2 mb-1">
-                    Trust standing:
-                    <?php
-                    $badgeStatus  = $trust['status'] ?? 'none';
-                    $badgeWarning = $trust['warning'] ?? null;
-                    include __DIR__ . '/_trust_badge.php';
-                    ?>
-                </p>
                 <p class="small text-muted mb-0">
                     Your <code>.env</code> and <code>app/config/shield.php</code> are never overwritten.
                 </p>
@@ -505,60 +485,6 @@ foreach ($addonSections as $addonLabel => $addonRows): ?>
     </div>
 </div>
 <div class="modal-backdrop fade" id="confirm-update-backdrop" style="display:none"></div>
-
-<!-- Trust confirmation modal: applying a release the Pubvana trust service
-     has not evaluated. Confirming resubmits the apply request with force_trust=1. -->
-<div class="modal modal-blur fade" id="trust-confirm-modal" tabindex="-1" style="display:none" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Apply without an evaluation?</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>
-                    <strong>Pubvana</strong>
-                    <span id="trust-confirm-version" class="text-muted"></span>
-                    hasn't been evaluated by the Pubvana trust service.
-                </p>
-                <p class="small text-muted mb-0">Apply anyway?</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="trust-apply-anyway">
-                    <i class="ti ti-rocket me-1"></i> Apply Anyway
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="modal-backdrop fade" id="trust-confirm-backdrop" style="display:none"></div>
-
-<!-- Trust blocked modal: the trust service found the release malicious. No
-     proceed path on purpose. -->
-<div class="modal modal-blur fade" id="trust-blocked-modal" tabindex="-1" style="display:none" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="ti ti-alert-triangle text-danger me-2"></i>
-                    Update blocked
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p class="mb-1">
-                    <strong>Pubvana</strong> has been evaluated by the Pubvana trust service and found to be malicious.
-                </p>
-                <p id="trust-blocked-warning" class="mb-0"></p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="modal-backdrop fade" id="trust-blocked-backdrop" style="display:none"></div>
 
 <script>
 (function () {
@@ -629,12 +555,9 @@ foreach ($addonSections as $addonLabel => $addonRows): ?>
 
     // ------------------------------------------------------------------
     // Apply: button opens the confirmation modal; confirm starts the run.
-    // Gate order is trust first, then breaking changes. The first apply
-    // request carries no confirm_breaking: when the server refuses with
-    // confirm_breaking, the modal shows the breaking warning and the next
-    // confirm sends it. The trust answer arrives as needsConfirm (show the
-    // modal, resubmit with force_trust) or blocked (show the reason, no
-    // proceed).
+    // The first apply request carries no confirm_breaking: when the server
+    // refuses with confirm_breaking, the modal shows the breaking warning
+    // and the next confirm sends it.
     // ------------------------------------------------------------------
     var applyBtn        = document.getElementById('apply-btn');
     var modal           = document.getElementById('confirm-update-modal');
@@ -666,14 +589,7 @@ foreach ($addonSections as $addonLabel => $addonRows): ?>
         hideModal(modal, backdrop);
     }
 
-    var trustModal      = document.getElementById('trust-confirm-modal');
-    var trustBackdrop   = document.getElementById('trust-confirm-backdrop');
-    var trustAnywayBtn  = document.getElementById('trust-apply-anyway');
-    var blockedModal    = document.getElementById('trust-blocked-modal');
-    var blockedBackdrop = document.getElementById('trust-blocked-backdrop');
-
-    var breakingConfirmed    = false;
-    var forceTrustRequested  = false;
+    var breakingConfirmed = false;
 
     function startApply() {
         if (applyStarted) { return; }
@@ -682,7 +598,6 @@ foreach ($addonSections as $addonLabel => $addonRows): ?>
         var body = new FormData();
         body.append('_csrf_token', '<?= csrf_token() ?>');
         if (breakingConfirmed) { body.append('confirm_breaking', '1'); }
-        if (forceTrustRequested) { body.append('force_trust', '1'); }
 
         fetch('<?= $adminBase ?>/apply', {
             method: 'POST',
@@ -705,16 +620,6 @@ foreach ($addonSections as $addonLabel => $addonRows): ?>
                     var warn = document.getElementById('confirm-update-warning');
                     if (warn) { warn.style.display = 'block'; }
                     openModal();
-                    return;
-                }
-                if (data.needsConfirm) {
-                    document.getElementById('trust-confirm-version').textContent = (data.core && data.core.version) ? 'v' + data.core.version : '';
-                    showModal(trustModal, trustBackdrop);
-                    return;
-                }
-                if (data.blocked) {
-                    document.getElementById('trust-blocked-warning').textContent = data.warning || 'No reason provided.';
-                    showModal(blockedModal, blockedBackdrop);
                     return;
                 }
                 label.textContent = 'Could not start';
@@ -745,30 +650,14 @@ foreach ($addonSections as $addonLabel => $addonRows): ?>
             startApply();
         });
     }
-    if (trustAnywayBtn) {
-        trustAnywayBtn.addEventListener('click', function () {
-            hideModal(trustModal, trustBackdrop);
-            forceTrustRequested = true;
-            startApply();
-        });
-    }
     if (modal) {
         modal.querySelectorAll('[data-bs-dismiss="modal"]').forEach(function (el) {
             el.addEventListener('click', closeModal);
         });
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape' && modal.style.display === 'block') { closeModal(); }
-            if (event.key === 'Escape' && trustModal.style.display === 'block') { hideModal(trustModal, trustBackdrop); }
-            if (event.key === 'Escape' && blockedModal.style.display === 'block') { hideModal(blockedModal, blockedBackdrop); }
         });
     }
-    [[trustModal, trustBackdrop], [blockedModal, blockedBackdrop]].forEach(function (pair) {
-        pair[0].querySelectorAll('[data-bs-dismiss="modal"]').forEach(function (el) {
-            el.addEventListener('click', function () {
-                hideModal(pair[0], pair[1]);
-            });
-        });
-    });
 
     // ------------------------------------------------------------------
     // Settings save: inline confirmation, no page reload (v2 pattern).

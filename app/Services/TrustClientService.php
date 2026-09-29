@@ -306,19 +306,15 @@ class TrustClientService
     }
 
     /**
-     * Manual full recheck: every installed addon plus, when a target core
-     * release is known, the core release identity in the same batch, then
-     * the malicious-list write. The explicit ask overrides the trusted-skip;
+     * Manual full recheck: every installed addon in one batch, then the
+     * malicious-list write. The explicit ask overrides the trusted-skip;
      * used by the Updates screen's "Check for updates" action.
      *
      * @return array{ok: bool, results: list<array{type: string, slug: string, version: string, status: string, warning: ?string}>, malicious: list<array{type: string, slug: string}>}
      */
-    public function recheckAll(?string $coreVersion = null): array
+    public function recheckAll(): array
     {
         $items = $this->collectInstalledAddons();
-        if ($coreVersion !== null && $coreVersion !== '') {
-            $items[] = $this->coreItem($coreVersion);
-        }
 
         $outcome = $this->checkAddons($items);
 
@@ -437,24 +433,6 @@ class TrustClientService
             'version' => $version,
             'author'  => $author,
             'origin'  => self::ORIGIN_LOCAL,
-        ];
-    }
-
-    /**
-     * The check identity for the Pubvana core release being applied by the
-     * Updates plugin. The trust API types everything as plugin or theme, so
-     * core reports as the composer-style root package.
-     *
-     * @return array{type: string, slug: string, version: string, author: string, origin: string}
-     */
-    public function coreItem(string $version): array
-    {
-        return [
-            'type'    => self::TYPE_PLUGIN,
-            'slug'    => 'pubvana/pubvana',
-            'version' => $version,
-            'author'  => 'pubvana',
-            'origin'  => self::ORIGIN_COMPOSER,
         ];
     }
 
