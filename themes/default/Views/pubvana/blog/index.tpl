@@ -15,6 +15,3 @@
 {# Else branch: nothing published yet. #}
 <p>No posts yet.</p>
 {% endif %}
-
-{# Region: content blocks placed below the post list. #}
-{% region 'after-content' %}

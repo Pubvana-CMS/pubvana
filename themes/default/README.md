@@ -16,21 +16,19 @@ Options are managed in **Admin > Appearance > Themes > Options**. They are group
 
 | Group | Option | Type | Default | Purpose |
 |-------|--------|------|---------|---------|
-| Layout | Homepage Layout | select | `full-width` | Layout of the homepage when it is a static page: `full-width`, `sidebar-right`, `sidebar-left` |
-| Layout | Blog Layout | select | `sidebar-right` | Sidebar placement on all blog listings and single posts: `sidebar-right`, `sidebar-left` |
+| Layout | Blog Layout | select | `sidebar-right` | Sidebar side on all blog listings and single posts: `sidebar-right`, `sidebar-left` |
 | Layout | Show Sidebar On | select | `not_home` | Which pages show the sidebar region: `not_home`, `home`, `none` |
 | Breadcrumbs | Show Breadcrumbs | toggle | on | Show the auto-generated breadcrumb trail on subpages |
 | Hero | Show Hero | toggle | off | Show the hero section below the navbar |
 | Hero | Background Image | media | (none) | Background image for the hero section |
 | Hero | Title | input | (none) | Title text displayed in the hero |
-| Footer Bottom | Footer Bottom | toggle | off | Show the bottom strip of the footer with the copyright line and `<hr>` |
+| Footer Bottom | Footer Bottom | toggle | on | Show the bottom strip of the footer with the copyright line and `<hr>` |
 | Footer Bottom | Footer Text | input | (none) | Custom copyright/site text; falls back to the site copyright setting when blank |
 
 ### Layout behavior
 
-- **Homepage Layout** applies only when the site homepage is set to a static page. A blog-list homepage always follows **Blog Layout** instead.
-- **Blog Layout** governs every blog page: the blog homepage, `/blog`, single posts, archives, category and tag listings.
-- Standalone (non-homepage) static pages always render full width.
+- **Blog Layout** sets which side the sidebar renders on: left or right.
+- **Show Sidebar On** decides whether the sidebar renders at all: all pages except home, home only, or nowhere. Static pages follow this option like any other page; there is no separate static-page layout setting.
 
 ## Regions
 
@@ -43,7 +41,7 @@ Regions are where site owners place content blocks. Managed in **Admin > Appeara
 | `footer-col-2` | Footer Column 2 | Second column of the footer |
 | `footer-col-3` | Footer Column 3 | Third column of the footer |
 
-The theme also uses the platform regions (`navbar`, `header`, `before-content`, `after-content`, `footer`) provided by the core.
+The theme also uses the platform regions (`before-content`, `after-content`, `footer`) provided by the core.
 
 ## Templates
 
@@ -62,7 +60,7 @@ The theme includes a template for every public view. Templates are Vision `.tpl`
 | `pubvana/search/search.tpl` | Search results |
 | `pubvana/profiles/profile.tpl` | Public user profile |
 | `pubvana/profiles/profile_edit.tpl` | Profile editing form |
-| `partials/` | Reusable fragments: navbar, footer, hero, breadcrumbs, pagination, post list |
+| `partials/` | Reusable fragments: navbar, footer, hero, breadcrumbs, pagination, post list, alerts |
 | `pubvana/blog/public/blocks/` | Block template overrides: Recent Posts, Categories, Tags |
 | `pubvana/core-blocks/public/blocks/` | Block template overrides: Text, HTML content blocks |
 | `enlivenapp/flight-shield/` | Auth screen overrides: Shield login/register/2FA/activation/magic-link pages, auth email bodies, and the forgot/reset password pages (`auth/`) |
@@ -74,7 +72,3 @@ The theme includes a template for every public view. Templates are Vision `.tpl`
 - Icon: `icon.svg` (shown in the admin theme picker)
 
 Assets are served by the AssetService at `/assets/theme/default/{path}`; they are read from the theme's `assets/` folder and never copied into `public/`.
-
-## See Also
-
-- `docs/` — build and extension documentation, including **docs/Themes.md** for creating a new theme.

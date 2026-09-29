@@ -50,11 +50,17 @@
             <div class="col-lg-8">
                 {# Raw output: the page content, assembled by PublicController. #}
                 {! content !}
+                
+                {# Region: content blocks placed below the docs, inside the content column. #}
+                {% region 'after-content' %}
             </div>
             {% else %}
             <div class="col-lg-8">
                 {# Raw output: the page content, assembled by PublicController. #}
                 {! content !}
+
+                {# Region: content blocks placed below the docs, inside the content column. #}
+                {% region 'after-content' %}
             </div>
             <div class="col-lg-4">
                 {% region 'sidebar' %}

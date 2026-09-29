@@ -19,6 +19,3 @@
 {# Else branch: no categories exist yet. #}
 <p>No categories found.</p>
 {% endif %}
-
-{# Region: content blocks placed below the category list, inside the content column. #}
-{% region 'after-content' %}

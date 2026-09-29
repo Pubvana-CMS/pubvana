@@ -47,6 +47,3 @@
 
 {# Raw output: the rendered comment thread (empty string when the Comments plugin is off). #}
 {! comments_html !}
-
-{# Region: content blocks placed below the post, inside the content column. #}
-{% region 'after-content' %}

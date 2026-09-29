@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 - moved core updates out of Trust reporting
+- after-content in all the Default theme files moved to layout where it should be.
+- Default theme + to v 1.4.13 
 
 
 ## [3.0.0-beta.5] - 2026-09-28

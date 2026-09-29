@@ -67,6 +67,3 @@
         </div>
     </form>
 </div>
-
-{# Region: content blocks placed below the form, inside the content column. #}
-{% region 'after-content' %}

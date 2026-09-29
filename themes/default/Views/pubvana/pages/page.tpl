@@ -24,6 +24,3 @@
 
 {# Raw output: the rendered comment thread (empty string when comments are off for pages). #}
 {! comments_html !}
-
-{# Region: content blocks placed below the page, inside the content column. #}
-{% region 'after-content' %}
