@@ -10,4 +10,6 @@ return [
     'webp_quality'      => 85,
     'thumb_width'       => 300,
     'medium_width'      => 768,
+    'avatar_path'       => 'uploads/avatars',
+    'avatar_size'       => 256,
 ];

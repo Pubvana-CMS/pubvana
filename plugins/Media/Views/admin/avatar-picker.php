@@ -6,6 +6,7 @@
  * @var string $currentValue Current image path
  * @var string $pickerId     Unique ID for this picker instance
  * @var string $adminBase    Admin URL base for this plugin's admin routes
+ * @var string $uploadUrl    Endpoint the file is posted to
  */
 $hasImage = !empty($currentValue);
 $previewSrc = $hasImage ? '/' . ltrim($currentValue, '/') : '';
@@ -50,8 +51,10 @@ $previewSrc = $hasImage ? '/' . ltrim($currentValue, '/') : '';
     var hidden   = document.getElementById('<?= $pickerId ?>-input');
     var zone     = document.getElementById('<?= $pickerId ?>-zone');
     var fileInput = zone.querySelector('input[type="file"]');
-    var csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-    var adminBase = '<?= $adminBase ?>';
+    var csrfToken = document.querySelector('meta[name="csrf-token"]')?.content
+                 || wrap.querySelector('input[name="_csrf_token"]')?.value
+                 || '';
+    var uploadUrl = '<?= $uploadUrl ?>';
 
     zone.addEventListener('click', function(e) {
         if (e.target.closest('input')) return;
@@ -78,13 +81,17 @@ $previewSrc = $hasImage ? '/' . ltrim($currentValue, '/') : '';
         var fd = new FormData();
         fd.append('file', file);
         fd.append('_csrf_token', csrfToken);
-        fetch(adminBase + '/upload/image', { method: 'POST', body: fd })
+        fetch(uploadUrl, { method: 'POST', body: fd })
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (data.error) { alert(data.error); return; }
-                var url = data.medium_url || data.url || '';
-                hidden.value = url;
-                preview.innerHTML = '<img src="' + url + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">';
+                var url = data.url || data.medium_url || '';
+                hidden.value = data.path || url;
+                // The filename is the user id, so a replacement writes the
+                // same path. Bust the cache or the preview shows the old
+                // image until the page reloads.
+                var bust = url + (url.indexOf('?') === -1 ? '?' : '&') + 't=' + Date.now();
+                preview.innerHTML = '<img src="' + bust + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">';
                 ensureRemoveBtn();
             })
             .catch(function() { alert('Upload failed.'); });

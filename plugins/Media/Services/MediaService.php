@@ -432,12 +432,18 @@ class MediaService
     }
 
     /**
+     * The general media image picker for admin forms (theme options, SEO
+     * images). Renders the offcanvas-backed picker that posts to this
+     * plugin's admin endpoints.
+     *
+     * @param string $inputName    Form input name
+     * @param string $currentValue Current image path
      * @return string Rendered block HTML
     */
     public function picker(string $inputName, string $currentValue = ''): string
     {
         static $counter = 0;
-        $pickerId = 'media-picker-' . (++$counter);
+        $pickerId  = 'media-picker-' . (++$counter);
         $adminBase = $this->adminBase();
 
         ob_start();
@@ -446,17 +452,134 @@ class MediaService
     }
 
     /**
+     * @param string $uploadUrl Where the picker's JS posts the file. Defaults
+     *                          to this plugin's admin image endpoint; the
+     *                          profile pages pass their own public route.
      * @return string Rendered block HTML
     */
-    public function avatarPicker(string $inputName, string $currentValue = ''): string
+    public function avatarPicker(string $inputName, string $currentValue = '', string $uploadUrl = ''): string
     {
         static $counter = 0;
-        $pickerId = 'avatar-picker-' . (++$counter);
+        $pickerId  = 'avatar-picker-' . (++$counter);
         $adminBase = $this->adminBase();
+        $uploadUrl = $uploadUrl !== '' ? $uploadUrl : $adminBase . '/upload/image';
 
         ob_start();
         include __DIR__ . '/../Views/admin/avatar-picker.php';
         return is_string($html = ob_get_clean()) ? $html : '';
+    }
+
+    /**
+     * The public avatar picker for a profile form. Same markup as the admin
+     * variant, posted to the profile's own upload route instead of the
+     * admin-only media endpoints.
+     *
+     * @param string $inputName    Form input name
+     * @param string $currentValue Stored avatar path
+     * @param string $uploadUrl    Public route that accepts the file
+     */
+    public function publicAvatarPicker(string $inputName, string $currentValue, string $uploadUrl): string
+    {
+        return $this->avatarPicker($inputName, $currentValue, $uploadUrl);
+    }
+
+    // ── Avatars ────────────────────────────────────────────────
+
+    /**
+     * Store one square avatar per user and return its relative path.
+     *
+     * The filename comes from the user id, so a replacement overwrites the
+     * previous file and nothing accumulates. Avatars live outside the media
+     * library: no `media` row, no originals, no derivatives.
+     *
+     * @param array{name: string, type: string, tmp_name: string, error: int, size: int} $file $_FILES entry
+     * @return string Relative path, e.g. 'uploads/avatars/7.webp'
+     * @throws \InvalidArgumentException When the upload fails validation.
+     */
+    public function storeAvatar(int $userId, array $file): string
+    {
+        if ($userId <= 0) {
+            throw new \InvalidArgumentException('Cannot store an avatar without a user.');
+        }
+
+        $this->validateUpload($file, 'image');
+
+        $relDir = (string) ($this->config['avatar_path'] ?? 'uploads/avatars');
+        $absDir = $this->publicPath . '/' . $relDir;
+        $this->ensureDirectory($absDir);
+
+        $relPath = $relDir . '/' . $userId . '.webp';
+        $absPath = $this->publicPath . '/' . $relPath;
+
+        $size    = (int) ($this->config['avatar_size'] ?? 256);
+        $quality = (int) ($this->config['webp_quality'] ?? 85);
+
+        $info = $this->processor->getInfo($file['tmp_name']);
+        $side = min((int) $info['width'], (int) $info['height']);
+        $x    = (int) floor(((int) $info['width'] - $side) / 2);
+        $y    = (int) floor(((int) $info['height'] - $side) / 2);
+
+        $this->processor
+            ->load($file['tmp_name'])
+            ->crop($x, $y, $side, $side)
+            ->resize($size)
+            ->toWebp($absPath, $quality);
+
+        return $relPath;
+    }
+
+    /**
+     * Delete a user's stored avatar file. Returns true when a file was
+     * removed. Only paths under the avatar directory are touched, so a
+     * stray value can never delete a library file.
+     */
+    public function deleteAvatarFile(string $relativePath): bool
+    {
+        $prefix = (string) ($this->config['avatar_path'] ?? 'uploads/avatars') . '/';
+        if ($relativePath === '' || !str_starts_with($relativePath, $prefix)) {
+            return false;
+        }
+
+        $abs = $this->publicPath . '/' . ltrim($relativePath, '/');
+        if (!is_file($abs)) {
+            return false;
+        }
+
+        return unlink($abs);
+    }
+
+    /**
+     * Remove a legacy avatar that points into the media library. Only acts
+     * when the row was uploaded by this user and no other media row still
+     * uses the same path. Profile references cannot be checked here: the
+     * Media plugin does not know about the profiles table.
+     */
+    public function deleteLegacyAvatar(int $userId, string $oldPath): void
+    {
+        $prefix = (string) ($this->config['avatar_path'] ?? 'uploads/avatars') . '/';
+        if ($oldPath === '' || str_starts_with($oldPath, $prefix)) {
+            return;
+        }
+
+        $path = ltrim($oldPath, '/');
+
+        $candidate = new Media($this->model->getDatabaseConnection());
+        $candidate->eq('path', $path)->find();
+        if (!$candidate->isHydrated()) {
+            return;
+        }
+
+        if ((int) ($candidate->uploaded_by ?? 0) !== $userId) {
+            return;
+        }
+
+        $other = new Media($this->model->getDatabaseConnection());
+        $other->eq('path', $path)->notEqual('id', (int) $candidate->id)->find();
+        if ($other->isHydrated()) {
+            return;
+        }
+
+        $this->delete((int) $candidate->id);
     }
 
     /**

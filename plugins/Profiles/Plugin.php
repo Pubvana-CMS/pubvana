@@ -41,13 +41,15 @@ class Plugin implements PluginInterface
             ['GET',  $prefix,                  [ProfilesAdminController::class, 'index'],  []],
             ['GET',  $prefix . '/@userId',     [ProfilesAdminController::class, 'show'],   []],
             ['POST', $prefix . '/@userId/update', [ProfilesAdminController::class, 'update'], []],
+            ['POST', $prefix . '/@userId/avatar', [ProfilesAdminController::class, 'avatar'], []],
         ], 'pubvana.profiles');
 
         // Public routes
         $adext->addRoutes('public', [
-            ['GET',  $prefix . '/@id',       [ProfilesPublicController::class, 'show']],
-            ['GET',  $prefix . '/@id/edit',  [ProfilesPublicController::class, 'edit']],
-            ['POST', $prefix . '/@id/update', [ProfilesPublicController::class, 'update']],
+            ['GET',  $prefix . '/@id',           [ProfilesPublicController::class, 'show']],
+            ['GET',  $prefix . '/@id/edit',      [ProfilesPublicController::class, 'edit']],
+            ['POST', $prefix . '/@id/update',    [ProfilesPublicController::class, 'update']],
+            ['POST', $prefix . '/@id/avatar',    [ProfilesPublicController::class, 'avatar']],
         ], 'pubvana.profiles');
 
         // Public CSS

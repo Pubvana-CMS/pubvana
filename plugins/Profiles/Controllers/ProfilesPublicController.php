@@ -79,12 +79,96 @@ class ProfilesPublicController extends PublicController
 
         $profile = $this->app->profiles()->findOrCreate((int) $user->id);
 
+        try {
+            $avatarPicker = $this->app->media()->publicAvatarPicker(
+                'avatar',
+                (string) ($profile->avatar ?? ''),
+                $this->profileBase() . '/' . (int) $user->id . '/avatar'
+            );
+        } catch (\Throwable) {
+            // Media plugin disabled: the form renders without a picker.
+            $avatarPicker = '';
+        }
+
         $this->render('pubvana/profiles/profile_edit', [
-            'title'       => 'Edit Profile',
-            'profileBase' => $this->profileBase(),
-            'profile'     => $profile,
-            'user'        => $user,
+            'title'          => 'Edit Profile',
+            'profileBase'    => $this->profileBase(),
+            'profile'        => $profile,
+            'user'           => $user,
+            'avatarUploadUrl' => $this->profileBase() . '/' . (int) $user->id . '/avatar',
+            'avatarPicker'   => $avatarPicker,
         ]);
+    }
+
+    /**
+     * Accept an avatar upload from the owner's edit form. Stores one file
+     * per user under the Media plugin's avatar directory; a new upload
+     * replaces the old file. Returns JSON for the picker's fetch call.
+     */
+    public function avatar(string $id): void
+    {
+        $user = $this->findUser($id);
+        if ($user === null) {
+            $this->app->halt(404, 'User not found');
+            return;
+        }
+
+        if ((int) ($this->app->auth()->user()?->id) !== (int) $user->id) {
+            $this->app->halt(403, 'You can only change your own avatar.');
+            return;
+        }
+
+        $file = $this->app->request()->files->file ?? null;
+        if (!$this->isUploadedFile($file)) {
+            $this->app->json(['error' => 'No file uploaded or upload error.'], 400);
+            return;
+        }
+
+        $oldPath = (string) ($this->app->profiles()->findOrCreate((int) $user->id)->avatar ?? '');
+
+        try {
+            $path = $this->app->media()->storeAvatar((int) $user->id, $file);
+        } catch (\InvalidArgumentException $e) {
+            $this->app->json(['error' => $e->getMessage()], 422);
+            return;
+        }
+
+        // One image per user: drop the previous file, including a legacy
+        // path that points into the shared media library.
+        if ($oldPath !== '' && $oldPath !== $path) {
+            if (!$this->app->media()->deleteAvatarFile($oldPath)) {
+                $this->app->media()->deleteLegacyAvatar((int) $user->id, $oldPath);
+            }
+        }
+
+        $url = '/' . ltrim($path, '/');
+        $this->app->json(['success' => true, 'url' => $url, 'path' => $path]);
+    }
+
+    /**
+     * Whether the request carried a complete, successful file upload.
+     *
+     * storeAvatar() reads tmp_name, size and name directly, so the shape is
+     * checked here: a malformed entry becomes a 400, not an undefined key.
+     *
+     * @param mixed $file Raw value from the request's files collection
+     * @return bool True when $file is a usable $_FILES entry
+     */
+    private function isUploadedFile(mixed $file): bool
+    {
+        if (!is_array($file)) {
+            return false;
+        }
+
+        foreach (['name', 'tmp_name', 'error', 'size'] as $key) {
+            if (!array_key_exists($key, $file)) {
+                return false;
+            }
+        }
+
+        return (int) $file['error'] === UPLOAD_ERR_OK
+            && is_string($file['tmp_name'])
+            && $file['tmp_name'] !== '';
     }
 
     public function update(string $id): void

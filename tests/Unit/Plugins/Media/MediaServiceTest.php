@@ -358,19 +358,36 @@ final class MediaServiceTest extends TestCase
     {
         $service = $this->service();
 
+        // The picker ids come from a per-process static counter, so assert
+        // the id shape and the per-call increment, not an absolute number.
         $picker = $service->picker('image', '/uploads/x.png');
-        self::assertStringContainsString('media-picker-1', $picker);
+        self::assertMatchesRegularExpression('/media-picker-\d+/', $picker);
         self::assertStringContainsString('name="image"', $picker);
 
         $picker2 = $service->picker('image2');
-        self::assertStringContainsString('media-picker-2', $picker2);
+        self::assertMatchesRegularExpression('/media-picker-\d+/', $picker2);
+        self::assertNotSame(
+            $this->pickerId($picker),
+            $this->pickerId($picker2),
+            'each picker gets its own id'
+        );
 
         $avatar = $service->avatarPicker('avatar');
-        self::assertStringContainsString('avatar-picker-1', $avatar);
+        self::assertMatchesRegularExpression('/avatar-picker-\d+/', $avatar);
 
         $jodit = $service->joditInit('#body');
-        self::assertStringContainsString('jodit-media-1', $jodit);
+        self::assertMatchesRegularExpression('/jodit-media-\d+/', $jodit);
         self::assertStringContainsString('#body', $jodit);
+    }
+
+    /**
+     * The numeric suffix of a rendered picker id.
+     */
+    private function pickerId(string $html): string
+    {
+        self::assertSame(1, preg_match('/media-picker-(\d+)/', $html, $m));
+
+        return $m[1];
     }
 
     public function testVideoThumbnailUnavailableWithoutFfmpeg(): void

@@ -18,7 +18,11 @@ class ProfilesAdminController extends AdminController
         }
 
         $profile = $this->app->profiles()->findOrCreate((int) $user->id);
-        $avatarPicker = $this->app->media()->avatarPicker('avatar', $profile->avatar ?? '');
+        $avatarPicker = $this->app->media()->avatarPicker(
+            'avatar',
+            (string) ($profile->avatar ?? ''),
+            $this->adminBase() . '/' . (int) $user->id . '/avatar'
+        );
 
         $this->render('pubvana/profiles/admin/profile/index', [
             'pageTitle'    => 'My Profile',
@@ -53,7 +57,11 @@ class ProfilesAdminController extends AdminController
         }
 
         $profile    = $this->app->profiles()->findOrCreate((int) $userId);
-        $avatarPicker = $this->app->media()->avatarPicker('avatar', $profile->avatar ?? '');
+        $avatarPicker = $this->app->media()->avatarPicker(
+            'avatar',
+            (string) ($profile->avatar ?? ''),
+            $this->adminBase() . '/' . (int) $userId . '/avatar'
+        );
 
         $this->render('pubvana/profiles/admin/profile/index', [
             'pageTitle'    => 'Edit Profile — ' . htmlspecialchars((string) ($user->username ?? '')),
@@ -86,6 +94,72 @@ class ProfilesAdminController extends AdminController
 
         $this->app->session()->flash('success', 'Profile updated.');
         $this->app->redirect($this->app->url()->sameSite($postedReturn, $this->adminBase()));
+    }
+
+    /**
+     * Accept an avatar upload from the admin profile form's picker. Stores
+     * one file per user under the Media plugin's avatar directory; a new
+     * upload replaces the old file. JSON response for the picker's fetch.
+     */
+    public function avatar(string $userId): void
+    {
+        $currentUser = $this->app->auth()->user();
+        if ((int) ($currentUser?->id) !== (int) $userId && !$currentUser?->can('profile.edit.any')) {
+            $this->app->halt(403, 'You do not have permission to edit this profile.');
+            return;
+        }
+
+        $file = $this->app->request()->files->file ?? null;
+        if (!$this->isUploadedFile($file)) {
+            $this->app->json(['error' => 'No file uploaded or upload error.'], 400);
+            return;
+        }
+
+        $oldPath = (string) ($this->app->profiles()->findOrCreate((int) $userId)->avatar ?? '');
+
+        try {
+            $path = $this->app->media()->storeAvatar((int) $userId, $file);
+        } catch (\InvalidArgumentException $e) {
+            $this->app->json(['error' => $e->getMessage()], 422);
+            return;
+        }
+
+        // One image per user: drop the previous file, including a legacy
+        // path that points into the shared media library.
+        if ($oldPath !== '' && $oldPath !== $path) {
+            if (!$this->app->media()->deleteAvatarFile($oldPath)) {
+                $this->app->media()->deleteLegacyAvatar((int) $userId, $oldPath);
+            }
+        }
+
+        $url = '/' . ltrim($path, '/');
+        $this->app->json(['success' => true, 'url' => $url, 'path' => $path]);
+    }
+
+    /**
+     * Whether the request carried a complete, successful file upload.
+     *
+     * storeAvatar() reads tmp_name, size and name directly, so the shape is
+     * checked here: a malformed entry becomes a 400, not an undefined key.
+     *
+     * @param mixed $file Raw value from the request's files collection
+     * @return bool True when $file is a usable $_FILES entry
+     */
+    private function isUploadedFile(mixed $file): bool
+    {
+        if (!is_array($file)) {
+            return false;
+        }
+
+        foreach (['name', 'tmp_name', 'error', 'size'] as $key) {
+            if (!array_key_exists($key, $file)) {
+                return false;
+            }
+        }
+
+        return (int) $file['error'] === UPLOAD_ERR_OK
+            && is_string($file['tmp_name'])
+            && $file['tmp_name'] !== '';
     }
 
     private function adminBase(): string

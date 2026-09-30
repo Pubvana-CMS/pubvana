@@ -40,6 +40,9 @@ class PluginView extends View
     /** @var \Enlivenapp\Vision\Engine|null Vision template engine instance (lazy-loaded) */
     private ?\Enlivenapp\Vision\Engine $visionEngine = null;
 
+    /** @var array<string, mixed> Data from the render in progress, for tags that need it */
+    private array $lastRenderData = [];
+
     /**
      * Register a plugin's Views/ directory for template resolution.
      *
@@ -166,6 +169,33 @@ class PluginView extends View
                 return '';
             }
         });
+
+        // The Media plugin's avatar picker for a profile form. Arguments are
+        // the field name and the stored path; the upload endpoint comes from
+        // the template's avatarUploadUrl variable. Empty when Media is off.
+        // Usage: {% media_picker 'avatar' profile.avatar %}
+        $this->visionEngine->tags()->register('media_picker', function (string $inputName, mixed $currentValue) use ($app): string {
+            $uploadUrl = '';
+            $appVars = $app->get('vars');
+            foreach ([$this->lastRenderData, is_array($appVars) ? $appVars : [], $this->vars] as $scope) {
+                if (isset($scope['avatarUploadUrl']) && is_string($scope['avatarUploadUrl'])) {
+                    $uploadUrl = $scope['avatarUploadUrl'];
+                    break;
+                }
+            }
+            if ($uploadUrl === '') {
+                return '';
+            }
+            try {
+                return $app->media()->publicAvatarPicker(
+                    $inputName,
+                    is_string($currentValue) ? $currentValue : '',
+                    $uploadUrl
+                );
+            } catch (\Throwable $e) {
+                return '';
+            }
+        });
     }
 
     /**
@@ -204,14 +234,24 @@ class PluginView extends View
         return false;
     }
 
-    public function fetch(string $file, ?array $data = null): string
+    /**
+     * Resolve data for a Vision render: global vars merged with the call's
+     * data. Mirrors the merge that native View::render() does through
+     * extract(), including preserveVars.
+     *
+     * @param array<string, mixed>|null $templateData
+     * @return array<string, mixed>
+     */
+    private function mergeVisionData(?array $templateData): array
     {
-        if (!$this->hasVision() || $this->isNativeRender()) {
-            $this->extension = '.php';
-        } else {
-            $this->extension = '.tpl';
+        $data = $this->vars;
+        if (is_array($templateData)) {
+            $data = array_merge($this->vars, $templateData);
+            if ($this->preserveVars) {
+                $this->vars = array_merge($this->vars, $templateData);
+            }
         }
-        return parent::fetch($file, $data);
+        return $data;
     }
 
     /**
@@ -241,12 +281,26 @@ class PluginView extends View
             throw new \Exception("Template not found: {$template}");
         }
 
-        $data = $this->vars;
-        if (is_array($templateData)) {
-            $data = array_merge($data, $templateData);
-            if ($this->preserveVars) {
-                $this->vars = array_merge($this->vars, $templateData);
-            }
+        $data = $this->mergeVisionData($templateData);
+
+        echo $this->renderVisionTemplate($template, $data);
+    }
+
+    /**
+     * Render a Vision .tpl template and return its HTML.
+     *
+     * Custom tags that need more than their arguments (media_picker reads
+     * `avatarUploadUrl`) resolve against this data, so every Vision entry
+     * point records it first.
+     *
+     * @param string $template Absolute path to the .tpl file
+     * @param array<string, mixed> $data
+     */
+    private function renderVisionTemplate(string $template, array $data): string
+    {
+        $vision = $this->vision();
+        if ($vision === null) {
+            return '';
         }
 
         // Theme's Views/ as basePath so includes/extends resolve through the theme
@@ -254,7 +308,32 @@ class PluginView extends View
             ? ($this->themePath . DIRECTORY_SEPARATOR)
             : (dirname($template) . '/');
 
-        echo $vision->render($template, $data, $basePath);
+        $this->lastRenderData = $data;
+        return $vision->render($template, $data, $basePath);
+    }
+
+    /**
+     * Fetch a template as a string using the engine for the current request.
+     *
+     * PublicController::render() calls this for both the content template
+     * and the theme layout, so Vision rendering must be handled here too.
+     */
+    public function fetch(string $file, ?array $data = null): string
+    {
+        $vision = $this->vision();
+        if (!$vision || $this->isNativeRender()) {
+            $this->extension = '.php';
+            return parent::fetch($file, $data);
+        }
+
+        $this->extension = '.tpl';
+        $template = $this->getTemplate($file);
+
+        if (!file_exists($template)) {
+            throw new \Exception("Template not found: {$template}");
+        }
+
+        return $this->renderVisionTemplate($template, $this->mergeVisionData($data));
     }
 
     /**
