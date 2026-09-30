@@ -535,16 +535,12 @@ $app->set('migrations', $pluginLoader->getMigrationConfig());
 // they authenticate with per-request bearer keys or gateway signatures and
 // cannot present a session CSRF token. Admin child pages still start with
 // /admin and remain protected.
+//
+// A registration carries either a 'prefix' (path prefix) or a 'pattern'
+// (PCRE, for routes whose variable sits mid-path). See
+// ExtensionRegistry::isCsrfExempt().
 $requestPath = (string) parse_url($app->request()->url ?? '/', PHP_URL_PATH);
-$csrfExempt = false;
-foreach ($app->adext()->get('csrf.exempt', 'default') as $exempt) {
-    $prefix = $exempt['prefix'] ?? '';
-    if ($prefix !== '' && str_starts_with($requestPath, $prefix)) {
-        $csrfExempt = true;
-        break;
-    }
-}
-if (!$csrfExempt) {
+if (!$app->adext()->isCsrfExempt($requestPath)) {
     $csrf->before();
 }
 

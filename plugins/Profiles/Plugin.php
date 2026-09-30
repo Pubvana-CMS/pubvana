@@ -52,6 +52,18 @@ class Plugin implements PluginInterface
             ['POST', $prefix . '/@id/avatar',    [ProfilesPublicController::class, 'avatar']],
         ], 'pubvana.profiles');
 
+        // The avatar upload endpoint is a file POST from an authenticated
+        // user's own edit form. It carries the CSRF token in the hidden input
+        // emitted by {% csrf_field %}, not in a meta tag, so the core CSRF
+        // middleware must skip it (the controller validates ownership itself).
+        //
+        // The user id sits mid-path, so a prefix cannot isolate this route
+        // without also exempting /profile/{id}/update. Match the one path.
+        $adext->register('csrf.exempt', 'default', 'pubvana.profiles.avatar', [
+            'pattern' => '#^' . preg_quote($prefix, '#') . '/\d+/avatar$#',
+            'label'   => 'Profile avatar uploads',
+        ]);
+
         // Public CSS
         $adext->register('public.css', 'default', 'pubvana.profiles', [
             'url'      => '/assets/plugin/Profiles/css/profiles.css',

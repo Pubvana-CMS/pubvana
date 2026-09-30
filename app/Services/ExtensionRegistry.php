@@ -411,11 +411,21 @@ class ExtensionRegistry
         | The prefix must be a path prefix ending in '/' unless the
         | exemption targets one exact path. Admin child pages must not be
         | registered here; they start with /admin and stay protected.
+        |
+        | A prefix cannot isolate a route whose variable sits mid-path, e.g.
+        | /profile/{id}/avatar. Those register a 'pattern' instead: a PCRE
+        | the gate matches against the request path. When both keys are
+        | given, pattern wins. Anchor the pattern yourself.
+        |
+        |   $adext->register('csrf.exempt', 'default', 'pubvana.profiles.avatar', [
+        |       'pattern' => '#^/profile/\d+/avatar$#',
+        |       'label'   => 'Profile avatar uploads',
+        |   ]);
         */
         'csrf.exempt' => [
             'slots'    => ['default'],
-            'required' => ['prefix'],
-            'optional' => ['label', 'description', 'priority'],
+            'required' => [],
+            'optional' => ['prefix', 'pattern', 'label', 'description', 'priority'],
         ],
     ];
 
@@ -654,7 +664,7 @@ class ExtensionRegistry
     {
         $problems = [];
 
-        foreach (['url', 'prefix'] as $key) {
+        foreach (['url', 'prefix', 'pattern'] as $key) {
             if (isset($config[$key]) && !is_string($config[$key])) {
                 $problems[] = "'{$key}' must be a string";
             }
@@ -744,6 +754,38 @@ class ExtensionRegistry
         unset($item);
 
         return $items;
+    }
+
+    /**
+     * Whether a request path is exempt from the core CSRF gate.
+     *
+     * A registration carries either a 'pattern' (PCRE, for routes whose
+     * variable sits mid-path) or a 'prefix' (matched with str_starts_with).
+     * Pattern wins when both are present. A registration with neither is
+     * ignored rather than treated as a match-everything.
+     *
+     * @param string $requestPath Path portion of the request URL
+     *
+     * @return bool True when the path is exempt
+     */
+    public function isCsrfExempt(string $requestPath): bool
+    {
+        foreach ($this->get('csrf.exempt', 'default') as $exempt) {
+            $pattern = $exempt['pattern'] ?? '';
+            if (is_string($pattern) && $pattern !== '') {
+                if (preg_match($pattern, $requestPath) === 1) {
+                    return true;
+                }
+                continue;
+            }
+
+            $prefix = $exempt['prefix'] ?? '';
+            if (is_string($prefix) && $prefix !== '' && str_starts_with($requestPath, $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -55,9 +55,25 @@ final class ProfilesPluginTest extends TestCase
         self::assertContains('admin GET /profile', $handlers);
         self::assertContains('admin GET /profile/@userId', $handlers);
         self::assertContains('admin POST /profile/@userId/update', $handlers);
+        self::assertContains('admin POST /profile/@userId/avatar', $handlers);
         self::assertContains('public GET /profile/@id', $handlers);
         self::assertContains('public GET /profile/@id/edit', $handlers);
         self::assertContains('public POST /profile/@id/update', $handlers);
+        self::assertContains('public POST /profile/@id/avatar', $handlers);
+
+        // The avatar upload is a file POST from the owner's own form. It
+        // carries the CSRF token in the form's hidden input, not a meta tag,
+        // so the core gate skips it and the controller checks ownership.
+        // The pattern must match the avatar route only: the id sits mid-path,
+        // so a prefix would also exempt /profile/{id}/update.
+        $exempt = $adext->get('csrf.exempt', 'default');
+        self::assertArrayHasKey('pubvana.profiles.avatar', $exempt);
+        $pattern = $exempt['pubvana.profiles.avatar']['pattern'];
+        self::assertIsString($pattern);
+        self::assertSame(1, preg_match($pattern, '/profile/7/avatar'));
+        self::assertSame(0, preg_match($pattern, '/profile/7/update'));
+        self::assertSame(0, preg_match($pattern, '/profile/7'));
+        self::assertSame(0, preg_match($pattern, '/profile/7/avatar/extra'));
 
         $blocks = $adext->get('block', 'available');
         self::assertArrayHasKey('pubvana.profiles.author-card', $blocks);
