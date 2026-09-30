@@ -18,6 +18,10 @@ namespace Pubvana\Plugins\Redirects\Models;
  * @method self eq(string $field, mixed $value, string $operator = 'AND')
  * @method self isNull(string $field, string $operator = 'AND')
  * @method self order(string $field)
+ * @method self select(string $field, string ...$fields)
+ * @method self limit(int $limit)
+ * @method self offset(int $offset)
+ * @property int $cnt Aggregate alias from COUNT(*) selects
  */
 class Redirect extends \Pubvana\Models\AbstractModel
 {
@@ -69,5 +73,31 @@ class Redirect extends \Pubvana\Models\AbstractModel
             ->find();
 
         return $query->isHydrated() ? $query : null;
+    }
+
+    /**
+     * Paginated redirects, newest first.
+     *
+     * @return array<int, self>
+     */
+    public function paginate(int $page = 1, int $perPage = 25): array
+    {
+        $query = new self($this->getDatabaseConnection());
+        return $query->order('id DESC')
+            ->limit($perPage)
+            ->offset(($page - 1) * $perPage)
+            ->findAll();
+    }
+
+    /**
+     * Count all redirects.
+     *
+     * @return int
+     */
+    public function countAll(): int
+    {
+        $query = new self($this->getDatabaseConnection());
+        $result = $query->select('COUNT(*) as cnt')->find();
+        return (int) $result->cnt;
     }
 }

@@ -38,6 +38,21 @@ class RedirectLinksService
     }
 
     /**
+     * Paginated entries by status.
+     *
+     * @return array{items: array<int, RedirectLink>, total: int, page: int, per_page: int}
+     */
+    public function paginate(string $status = 'active', int $page = 1, int $perPage = 25): array
+    {
+        return [
+            'items'    => $this->model()->paginate($status, $page, $perPage),
+            'total'    => $this->model()->countByStatus($status),
+            'page'     => $page,
+            'per_page' => $perPage,
+        ];
+    }
+
+    /**
      * Find an entry by ID.
      *
      * @param int $id
@@ -56,7 +71,7 @@ class RedirectLinksService
      */
     public function count(string $status = 'active'): int
     {
-        return count($this->all($status));
+        return $this->model()->countByStatus($status);
     }
 
     /**

@@ -41,6 +41,21 @@ class RedirectsService
     }
 
     /**
+     * Paginated redirects.
+     *
+     * @return array{items: array<int, Redirect>, total: int, page: int, per_page: int}
+     */
+    public function paginate(int $page = 1, int $perPage = 25): array
+    {
+        return [
+            'items'    => $this->model()->paginate($page, $perPage),
+            'total'    => $this->model()->countAll(),
+            'page'     => $page,
+            'per_page' => $perPage,
+        ];
+    }
+
+    /**
      * Find a redirect by ID.
      *
      * @param int $id
@@ -58,7 +73,7 @@ class RedirectsService
      */
     public function countAll(): int
     {
-        return count($this->all());
+        return $this->model()->countAll();
     }
 
     /**

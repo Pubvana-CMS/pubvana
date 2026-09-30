@@ -21,9 +21,17 @@ class RedirectLinksAdminController extends AdminController
             $status = 'active';
         }
 
+        $page = (int) ($this->app->request()->query->page ?? 1);
+        $perPage = 25;
+
+        $pagination = $this->app->redirectLinks()->paginate($status, $page, $perPage);
+
         $this->render('pubvana/redirects/admin/incoming-404s', [
             'pageTitle' => '404 Manager',
-            'entries'   => $this->app->redirectLinks()->all($status),
+            'entries'   => $pagination['items'],
+            'total'     => $pagination['total'],
+            'page'      => $pagination['page'],
+            'perPage'   => $pagination['per_page'],
             'status'    => $status,
             'adminBase' => $this->adminBase(),
         ]);

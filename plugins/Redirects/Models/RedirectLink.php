@@ -18,7 +18,12 @@ namespace Pubvana\Plugins\Redirects\Models;
  * @property string|null $last_seen_at
  * @method self eq(string $field, mixed $value, string $operator = 'AND')
  * @method self isNull(string $field, string $operator = 'AND')
+ * @method self notNull(string $field, string $operator = 'AND')
  * @method self order(string $field)
+ * @method self select(string $field, string ...$fields)
+ * @method self limit(int $limit)
+ * @method self offset(int $offset)
+ * @property int $cnt Aggregate alias from COUNT(*) selects
  */
 class RedirectLink extends \Pubvana\Models\AbstractModel
 {
@@ -77,5 +82,51 @@ class RedirectLink extends \Pubvana\Models\AbstractModel
         $query = new self($this->getDatabaseConnection());
         $query->eq('source_path', $sourcePath)->find();
         return $query->isHydrated() ? $query : null;
+    }
+
+    /**
+     * Paginated entries by status, newest first.
+     *
+     * @return array<int, self>
+     */
+    public function paginate(string $status = 'active', int $page = 1, int $perPage = 25): array
+    {
+        $query = new self($this->getDatabaseConnection());
+
+        if ($status === 'active') {
+            $query->eq('ignored', 0)->isNull('resolved_redirect_id');
+        } elseif ($status === 'ignored') {
+            $query->eq('ignored', 1);
+        } elseif ($status === 'resolved') {
+            $query->notNull('resolved_redirect_id');
+        }
+
+        return $query
+            ->order('last_seen_at DESC')
+            ->limit($perPage)
+            ->offset(($page - 1) * $perPage)
+            ->findAll();
+    }
+
+    /**
+     * Count entries by status.
+     *
+     * @param string $status One of 'active', 'ignored', 'resolved', 'all'
+     * @return int
+     */
+    public function countByStatus(string $status = 'active'): int
+    {
+        $query = new self($this->getDatabaseConnection());
+
+        if ($status === 'active') {
+            $query->eq('ignored', 0)->isNull('resolved_redirect_id');
+        } elseif ($status === 'ignored') {
+            $query->eq('ignored', 1);
+        } elseif ($status === 'resolved') {
+            $query->notNull('resolved_redirect_id');
+        }
+
+        $result = $query->select('COUNT(*) as cnt')->find();
+        return (int) $result->cnt;
     }
 }
