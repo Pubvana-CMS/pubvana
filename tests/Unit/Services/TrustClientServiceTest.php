@@ -102,7 +102,7 @@ final class TrustClientServiceTest extends TestCase
                 public function discover(): array
                 {
                     return [
-                        ['folder' => 'default', 'semver' => '1.4.12', 'author' => 'pubvana'],
+                        ['folder' => 'default', 'semver' => '1.4.13', 'author' => 'pubvana'],
                         ['folder' => 'noversion'],
                     ];
                 }
@@ -200,7 +200,7 @@ final class TrustClientServiceTest extends TestCase
             ['type' => 'plugin', 'slug' => 'blog', 'version' => '1.0.0', 'author' => 'pubvana', 'origin' => 'local'],
             ['type' => 'plugin', 'slug' => 'orphan', 'version' => '2.0.0', 'author' => 'jane', 'origin' => 'local'],
             ['type' => 'plugin', 'slug' => 'flight-shield', 'version' => '1.2.3', 'author' => 'enlivenapp', 'origin' => 'composer'],
-            ['type' => 'theme', 'slug' => 'default', 'version' => '1.4.12', 'author' => 'pubvana', 'origin' => 'local'],
+            ['type' => 'theme', 'slug' => 'default', 'version' => '1.4.13', 'author' => 'pubvana', 'origin' => 'local'],
         ], $addons);
     }
 
@@ -403,7 +403,7 @@ final class TrustClientServiceTest extends TestCase
                 ['type' => 'plugin', 'slug' => 'blog', 'version' => '1.0.0', 'status' => 'trusted', 'warning' => null],
                 ['type' => 'plugin', 'slug' => 'orphan', 'version' => '2.0.0', 'status' => 'unknown', 'warning' => null],
                 ['type' => 'plugin', 'slug' => 'flight-shield', 'version' => '1.2.3', 'status' => 'malicious', 'warning' => 'bad'],
-                ['type' => 'theme', 'slug' => 'default', 'version' => '1.4.12', 'status' => 'trusted', 'warning' => null],
+                ['type' => 'theme', 'slug' => 'default', 'version' => '1.4.13', 'status' => 'trusted', 'warning' => null],
             ],
         ]);
 
@@ -518,7 +518,7 @@ final class TrustClientServiceTest extends TestCase
         $this->cachePut('plugin', 'blog', '1.0.0', 'pubvana', 'trusted');
         $this->cachePut('plugin', 'orphan', '2.0.0', 'jane', 'trusted');
         $this->cachePut('plugin', 'flight-shield', '1.2.3', 'enlivenapp', 'trusted');
-        $this->cachePut('theme', 'default', '1.4.12', 'pubvana', 'trusted');
+        $this->cachePut('theme', 'default', '1.4.13', 'pubvana', 'trusted');
         // TTL expired
         $this->settings->store[TrustClientService::LAST_CHECK_KEY] = date('c', time() - 86400 * 2);
         // Blog is on the home-site list; already processed (so no immediate
@@ -552,7 +552,7 @@ final class TrustClientServiceTest extends TestCase
         $this->cachePut('plugin', 'blog', '1.0.0', 'pubvana', 'trusted');
         $this->cachePut('plugin', 'orphan', '2.0.0', 'jane', 'trusted');
         $this->cachePut('plugin', 'flight-shield', '1.2.3', 'enlivenapp', 'trusted');
-        $this->cachePut('theme', 'default', '1.4.12', 'pubvana', 'trusted');
+        $this->cachePut('theme', 'default', '1.4.13', 'pubvana', 'trusted');
         $this->settings->store[TrustClientService::LAST_CHECK_KEY] = date('c');
 
         $this->service->checkIfDue();

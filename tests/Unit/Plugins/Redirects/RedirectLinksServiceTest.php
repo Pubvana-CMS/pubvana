@@ -45,10 +45,15 @@ final class RedirectLinksServiceTest extends TestCase
         self::assertNotNull((new Redirect($this->pdo))->findById(1));
         self::assertNull((new Redirect($this->pdo))->findById(99999));
 
-        // Only enabled rows match.
-        self::assertNotNull((new Redirect($this->pdo))->findActiveBySourcePath('/b'));
-        self::assertNull((new Redirect($this->pdo))->findActiveBySourcePath('/a'));
-        self::assertNull((new Redirect($this->pdo))->findActiveBySourcePath('/missing'));
+        // Only enabled rows match. The finder returns the redirect plus any
+        // wildcard captures, so a miss is a null redirect, not a null result.
+        $hit = (new Redirect($this->pdo))->findActiveBySourcePath('/b');
+        self::assertNotNull($hit['redirect']);
+        self::assertSame('/b', $hit['redirect']->source_path);
+        self::assertSame([], $hit['captures']);
+
+        self::assertNull((new Redirect($this->pdo))->findActiveBySourcePath('/a')['redirect']);
+        self::assertNull((new Redirect($this->pdo))->findActiveBySourcePath('/missing')['redirect']);
     }
 
     public function testAllCountRecent(): void
