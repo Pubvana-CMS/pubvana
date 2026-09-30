@@ -227,15 +227,16 @@ class RedirectsService
             return;
         }
 
-        $redirect = $this->model()->findActiveBySourcePath($path);
+        $result = $this->model()->findActiveBySourcePath($path);
+        $redirect = $result['redirect'];
         if ($redirect === null) {
             return;
         }
 
         // Handle wildcard substitution
         $targetUrl = (string) $redirect->target_url;
-        if (isset($redirect->_wildcard_captures)) {
-            $captures = $redirect->_wildcard_captures;
+        $captures = $result['captures'];
+        if (!empty($captures)) {
             // Replace $1, $2, etc. with captured groups
             for ($i = 1; $i < count($captures); $i++) {
                 $targetUrl = str_replace('$' . $i, $captures[$i], $targetUrl);
@@ -382,8 +383,7 @@ class RedirectsService
     /**
      * Validate wildcard pattern rules.
      * - Wildcards can only be trailing * in source_path
-     * - If source has *, target must have at least one $N placeholder
-     * - Only $1 through $9 are allowed as placeholders
+     * - If target has $N placeholders, source must have *
      *
      * @throws \InvalidArgumentException When the pattern is invalid
      */
@@ -391,10 +391,6 @@ class RedirectsService
     {
         $isWildcardSource = str_ends_with($sourcePath, '*');
         $hasPlaceholder = preg_match('/\$[1-9]/', $targetUrl) === 1;
-
-        if ($isWildcardSource && !$hasPlaceholder) {
-            throw new \InvalidArgumentException('Wildcard source path (*) requires a $1, $2, etc. placeholder in the target URL.');
-        }
 
         if (!$isWildcardSource && $hasPlaceholder) {
             throw new \InvalidArgumentException('Target URL contains placeholders ($1, $2, etc.) but source path is not a wildcard pattern (must end with *).');

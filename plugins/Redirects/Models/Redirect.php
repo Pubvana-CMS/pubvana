@@ -63,9 +63,9 @@ class Redirect extends \Pubvana\Models\AbstractModel
      * Checks exact matches first, then wildcard patterns.
      *
      * @param string $sourcePath
-     * @return self|null
+     * @return array{redirect: self|null, captures: array<int, string>}
      */
-    public function findActiveBySourcePath(string $sourcePath): ?self
+    public function findActiveBySourcePath(string $sourcePath): array
     {
         // Try exact match first
         $query = new self($this->getDatabaseConnection());
@@ -74,7 +74,7 @@ class Redirect extends \Pubvana\Models\AbstractModel
             ->find();
 
         if ($query->isHydrated()) {
-            return $query;
+            return ['redirect' => $query, 'captures' => []];
         }
 
         // No exact match, try wildcard patterns
@@ -86,9 +86,9 @@ class Redirect extends \Pubvana\Models\AbstractModel
      * Wildcard patterns end with * and use $1, $2, etc. in target_url for captured groups.
      *
      * @param string $sourcePath
-     * @return self|null
+     * @return array{redirect: self|null, captures: array<int, string>}
      */
-    private function findWildcardMatch(string $sourcePath): ?self
+    private function findWildcardMatch(string $sourcePath): array
     {
         $allRedirects = $this->allOrdered();
         
@@ -107,13 +107,11 @@ class Redirect extends \Pubvana\Models\AbstractModel
             $regexPattern = '^' . preg_quote(substr($pattern, 0, -1), '/') . '(.*)$';
             
             if (preg_match('#' . $regexPattern . '#', $sourcePath, $matches)) {
-                // Store captured groups for later substitution
-                $redirect->_wildcard_captures = $matches;
-                return $redirect;
+                return ['redirect' => $redirect, 'captures' => $matches];
             }
         }
 
-        return null;
+        return ['redirect' => null, 'captures' => []];
     }
 
     /**
