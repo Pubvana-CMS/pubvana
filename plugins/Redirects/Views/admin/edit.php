@@ -30,7 +30,7 @@
                         <label class="form-label" for="source_path">Source Path</label>
                         <input type="text" name="source_path" id="source_path" class="form-control" required
                                value="<?= htmlspecialchars($redirect->source_path) ?>">
-                        <div class="form-hint">Exact-path match only. Query strings are ignored when matching.</div>
+                        <div class="form-hint">Exact match or wildcard with trailing * (e.g., /pvdocs/v2/*). Query strings are ignored when matching.</div>
                     </div>
 
                     <?php if (!empty($targetSuggestions)): ?>
@@ -63,6 +63,7 @@
                         <label class="form-label" for="target_url">Target URL or Path</label>
                         <input type="text" name="target_url" id="target_url" class="form-control" required
                                value="<?= htmlspecialchars($redirect->target_url) ?>">
+                        <div class="form-hint">Use $1 to insert the captured wildcard portion.</div>
                     </div>
 
                     <div class="mb-0">

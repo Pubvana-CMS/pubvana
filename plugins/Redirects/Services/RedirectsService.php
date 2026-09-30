@@ -95,6 +95,7 @@ class RedirectsService
     public function create(array $data): Redirect
     {
         $this->assertSafeTarget((string) ($data['target_url'] ?? ''));
+        $this->validateWildcardPattern((string) ($data['source_path'] ?? ''), (string) ($data['target_url'] ?? ''));
 
         $now = $this->now();
         $redirect = $this->model();
@@ -129,6 +130,10 @@ class RedirectsService
         }
 
         $this->assertSafeTarget((string) ($data['target_url'] ?? ''));
+        $this->validateWildcardPattern(
+            (string) ($data['source_path'] ?? $redirect->source_path),
+            (string) ($data['target_url'] ?? $redirect->target_url)
+        );
 
         $payload = $this->preparePayload($data);
         $redirect->source_path = $payload['source_path'];
@@ -227,7 +232,17 @@ class RedirectsService
             return;
         }
 
-        $location = $this->buildRedirectLocation($redirect->target_url);
+        // Handle wildcard substitution
+        $targetUrl = (string) $redirect->target_url;
+        if (isset($redirect->_wildcard_captures)) {
+            $captures = $redirect->_wildcard_captures;
+            // Replace $1, $2, etc. with captured groups
+            for ($i = 1; $i < count($captures); $i++) {
+                $targetUrl = str_replace('$' . $i, $captures[$i], $targetUrl);
+            }
+        }
+
+        $location = $this->buildRedirectLocation($targetUrl);
         if ($this->isSelfRedirect($location, $path, $request->host)) {
             return;
         }
@@ -315,7 +330,8 @@ class RedirectsService
 
         $path = preg_replace('#/+#', '/', $path) ?? $path;
 
-        if ($path !== '/') {
+        // Allow trailing * for wildcards, otherwise strip trailing slash
+        if (!str_ends_with($path, '*') && $path !== '/') {
             $path = rtrim($path, '/');
         }
 
@@ -361,6 +377,28 @@ class RedirectsService
 
         $separator = str_contains($targetUrl, '?') ? '&' : '?';
         return $targetUrl . $separator . $query;
+    }
+
+    /**
+     * Validate wildcard pattern rules.
+     * - Wildcards can only be trailing * in source_path
+     * - If source has *, target must have at least one $N placeholder
+     * - Only $1 through $9 are allowed as placeholders
+     *
+     * @throws \InvalidArgumentException When the pattern is invalid
+     */
+    private function validateWildcardPattern(string $sourcePath, string $targetUrl): void
+    {
+        $isWildcardSource = str_ends_with($sourcePath, '*');
+        $hasPlaceholder = preg_match('/\$[1-9]/', $targetUrl) === 1;
+
+        if ($isWildcardSource && !$hasPlaceholder) {
+            throw new \InvalidArgumentException('Wildcard source path (*) requires a $1, $2, etc. placeholder in the target URL.');
+        }
+
+        if (!$isWildcardSource && $hasPlaceholder) {
+            throw new \InvalidArgumentException('Target URL contains placeholders ($1, $2, etc.) but source path is not a wildcard pattern (must end with *).');
+        }
     }
 
     private function shouldSkipPath(string $path): bool

@@ -60,19 +60,60 @@ class Redirect extends \Pubvana\Models\AbstractModel
 
     /**
      * Find an enabled redirect matching the given source path.
+     * Checks exact matches first, then wildcard patterns.
      *
      * @param string $sourcePath
      * @return self|null
      */
     public function findActiveBySourcePath(string $sourcePath): ?self
     {
-        // Fresh instance: see findById() for why $this cannot be reused.
+        // Try exact match first
         $query = new self($this->getDatabaseConnection());
         $query->eq('source_path', $sourcePath)
             ->eq('enabled', 1)
             ->find();
 
-        return $query->isHydrated() ? $query : null;
+        if ($query->isHydrated()) {
+            return $query;
+        }
+
+        // No exact match, try wildcard patterns
+        return $this->findWildcardMatch($sourcePath);
+    }
+
+    /**
+     * Find a wildcard redirect that matches the given source path.
+     * Wildcard patterns end with * and use $1, $2, etc. in target_url for captured groups.
+     *
+     * @param string $sourcePath
+     * @return self|null
+     */
+    private function findWildcardMatch(string $sourcePath): ?self
+    {
+        $allRedirects = $this->allOrdered();
+        
+        foreach ($allRedirects as $redirect) {
+            if ((int) $redirect->enabled !== 1) {
+                continue;
+            }
+
+            $pattern = (string) $redirect->source_path;
+            if (!str_ends_with($pattern, '*')) {
+                continue;
+            }
+
+            // Convert wildcard pattern to regex
+            // /pvdocs/v2/* becomes ^/pvdocs/v2/(.*)$
+            $regexPattern = '^' . preg_quote(substr($pattern, 0, -1), '/') . '(.*)$';
+            
+            if (preg_match('#' . $regexPattern . '#', $sourcePath, $matches)) {
+                // Store captured groups for later substitution
+                $redirect->_wildcard_captures = $matches;
+                return $redirect;
+            }
+        }
+
+        return null;
     }
 
     /**

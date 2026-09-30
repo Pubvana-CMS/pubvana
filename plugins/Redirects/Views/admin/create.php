@@ -25,8 +25,8 @@
                     <div class="mb-3">
                         <label class="form-label" for="source_path">Source Path</label>
                         <input type="text" name="source_path" id="source_path" class="form-control" required
-                               placeholder="/old-url" value="<?= htmlspecialchars($prefillSourcePath) ?>">
-                        <div class="form-hint">Exact-path match only. Query strings are ignored when matching.</div>
+                               placeholder="/old-url or /old-path/*" value="<?= htmlspecialchars($prefillSourcePath) ?>">
+                        <div class="form-hint">Exact match or wildcard with trailing * (e.g., /pvdocs/v2/*). Query strings are ignored when matching.</div>
                     </div>
 
                     <?php if (!empty($targetSuggestions)): ?>
@@ -57,8 +57,8 @@
 
                     <div class="mb-3">
                         <label class="form-label" for="target_url">Target URL or Path</label>
-                        <input type="text" name="target_url" id="target_url" class="form-control" required placeholder="/new-url or https://example.com/new-url">
-                        <div class="form-hint">Accepts internal paths or full external URLs.</div>
+                        <input type="text" name="target_url" id="target_url" class="form-control" required placeholder="/new-url, https://example.com/new-url, or /docs/v2/$1">
+                        <div class="form-hint">Use $1 to insert the captured wildcard portion.</div>
                     </div>
 
                     <div class="mb-0">
