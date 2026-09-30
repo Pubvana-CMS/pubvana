@@ -28,6 +28,12 @@ namespace Pubvana\Middleware;
  *   - 'unsafe-eval': required for the standard Alpine.js build (expressions
  *     compile with new Function); switch to the CSP-safe Alpine build to
  *     drop it
+ *   - hcaptcha.com / *.hcaptcha.com and google.com/recaptcha/,
+ *     gstatic.com/recaptcha/, recaptcha.google.com: the captcha providers.
+ *     CaptchaService::snippet() inlines the provider's own api.js, so the
+ *     widget's script, challenge iframe, styles, and XHR all have to be
+ *     allowed. Without these the div renders and the browser blocks the
+ *     script, leaving an empty box that looks like a missing field.
  *   - object-src 'none' and base-uri 'self': standard hardening, nothing
  *     in the app loads plugins, applets, or a different base URI
  *
@@ -64,11 +70,19 @@ class SecurityHeadersMiddleware
         // Build Content-Security-Policy from allowed sources
         $cspParts = [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
-            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net"
+                . ' https://hcaptcha.com https://*.hcaptcha.com'
+                . ' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/',
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com"
+                . ' https://hcaptcha.com https://*.hcaptcha.com https://www.google.com/recaptcha/',
             "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
-            "img-src 'self' data: blob:",
-            "connect-src 'self' https://cdn.jsdelivr.net",
+            "img-src 'self' data: blob:"
+                . ' https://hcaptcha.com https://*.hcaptcha.com https://www.google.com/recaptcha/',
+            "connect-src 'self' https://cdn.jsdelivr.net"
+                . ' https://hcaptcha.com https://*.hcaptcha.com https://www.google.com/recaptcha/',
+            "frame-src 'self'"
+                . ' https://hcaptcha.com https://*.hcaptcha.com'
+                . ' https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/',
             "object-src 'none'",
             "base-uri 'self'",
             "frame-ancestors 'self'",
