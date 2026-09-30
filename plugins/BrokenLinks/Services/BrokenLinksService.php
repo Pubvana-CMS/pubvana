@@ -406,6 +406,12 @@ class BrokenLinksService
     /**
      * Extract unique external URLs from HTML or Markdown content.
      *
+     * Three passes: HTML anchors, Markdown links, then bare URLs in text. The
+     * bare-URL pass runs against content with code samples blanked, so an
+     * example URL inside a snippet stays text. Every candidate is trimmed of
+     * trailing punctuation before it is used as a key, so one link yields one
+     * result.
+     *
      * @return string[]
      */
     public function extractLinks(string $content): array
@@ -414,7 +420,8 @@ class BrokenLinksService
             return [];
         }
 
-        $urls = [];
+        /** @var list<string> $candidates */
+        $candidates = [];
         $siteHost = strtolower((string) parse_url(
             (string) ($this->app->get('siteUrl') ?? ''),
             PHP_URL_HOST
@@ -427,27 +434,33 @@ class BrokenLinksService
         foreach ($doc->getElementsByTagName('a') as $node) {
             $href = trim($node->getAttribute('href'));
             if ($href !== '') {
-                $urls[$href] = true;
+                $candidates[] = $href;
             }
         }
 
         // Markdown [text](url) links
         if (preg_match_all('/\[(?:[^\]]*)\]\((https?:\/\/[^\s\)]+)\)/', $content, $matches)) {
             foreach ($matches[1] as $href) {
-                $urls[$href] = true;
+                $candidates[] = $href;
             }
         }
 
-        // Bare URLs not inside markup
-        if (preg_match_all('/(?<!["\(=])(https?:\/\/[^\s<>\)\"]+)/', $content, $matches)) {
+        // Bare URLs, read from content with code samples blanked: a URL inside
+        // a snippet is text about a link, not a link.
+        if (preg_match_all('/(?<!["\(=])(https?:\/\/[^\s<>\)\"]+)/', $this->stripCodeRegions($content), $matches)) {
             foreach ($matches[1] as $href) {
-                $urls[$href] = true;
+                $candidates[] = $href;
             }
         }
 
         // Filter: external, checkable URLs only
         $filtered = [];
-        foreach (array_keys($urls) as $href) {
+        foreach ($candidates as $raw) {
+            $href = $this->trimUrlPunctuation(trim($raw));
+
+            if ($href === '') {
+                continue;
+            }
             if (preg_match('/^(#|mailto:|tel:|javascript:|data:)/i', $href)) {
                 continue;
             }
@@ -456,7 +469,12 @@ class BrokenLinksService
             }
 
             $host = strtolower((string) parse_url($href, PHP_URL_HOST));
-            if ($host !== '' && $host === $siteHost) {
+            // No host means nothing to resolve, e.g. a bare "http://" left by
+            // a link written as text with no address after it.
+            if ($host === '') {
+                continue;
+            }
+            if ($host === $siteHost) {
                 continue;
             }
 
@@ -464,6 +482,39 @@ class BrokenLinksService
         }
 
         return array_keys($filtered);
+    }
+
+    /**
+     * Blank out code samples so their example URLs are not read as links.
+     *
+     * Documentation pages carry code samples full of example URLs. A URL
+     * between <pre> or <code> tags, in a fenced block, or in an inline code
+     * span is text about a link, not a link. Anchors and Markdown links are
+     * markup, so those passes read the original content.
+     */
+    protected function stripCodeRegions(string $content): string
+    {
+        // HTML code containers, attributes included.
+        $stripped = (string) preg_replace('#<(pre|code)\b[^>]*>.*?</\1\s*>#is', ' ', $content);
+
+        // Markdown fenced blocks, then inline code spans.
+        $stripped = (string) preg_replace('/`{3,}.*?`{3,}/s', ' ', $stripped);
+        $stripped = (string) preg_replace('/~{3,}.*?~{3,}/s', ' ', $stripped);
+
+        return (string) preg_replace('/`[^`]*`/', ' ', $stripped);
+    }
+
+    /**
+     * Drop punctuation that belongs to the surrounding text, not the URL.
+     *
+     * A URL written in prose or a sample arrives with its closing quote,
+     * comma, or backtick attached: 'https://example.com/x', reads as
+     * "https://example.com/x',". Trimming first means the URL is checked and
+     * hashed once, not once per quote style.
+     */
+    protected function trimUrlPunctuation(string $url): string
+    {
+        return rtrim($url, ".,;:!?'\"`*");
     }
 
     /**

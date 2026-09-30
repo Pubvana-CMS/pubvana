@@ -413,6 +413,71 @@ final class BrokenLinksServiceCoverageTest extends TestCase
         self::assertSame(1, $counts['https://example.com/dup'] ?? 0);
     }
 
+    public function testExtractLinksSkipsHtmlCodeSamples(): void
+    {
+        $registry = null;
+        $service = $this->makeService('', [], $registry);
+
+        $links = $service->extractLinks(
+            '<p>See the sample:</p>' .
+            "<pre><code>return \$app->redirect('https://example.com/sample');</code></pre>" .
+            '<p>Inline <code>https://example.com/inline</code> too.</p>' .
+            '<p>Real link: <a href="https://example.com/real">real</a></p>'
+        );
+
+        self::assertSame(['https://example.com/real'], $links);
+    }
+
+    public function testExtractLinksSkipsMarkdownCodeSamples(): void
+    {
+        $registry = null;
+        $service = $this->makeService('', [], $registry);
+
+        $content = "Run this:\n\n```php\n\$url = 'https://example.com/fenced';\n```\n\n" .
+            "Inline `https://example.com/span` stays text.\n\n" .
+            "A real link: [docs](https://example.com/docs)\n";
+
+        $links = $service->extractLinks($content);
+
+        self::assertSame(['https://example.com/docs'], $links);
+    }
+
+    public function testExtractLinksTrimsSurroundingPunctuation(): void
+    {
+        $registry = null;
+        $service = $this->makeService('', [], $registry);
+
+        $links = $service->extractLinks(
+            "Sample: 'url' => 'https://example.com/post/one', and 'https://example.com/post/two'."
+        );
+
+        self::assertContains('https://example.com/post/one', $links);
+        self::assertContains('https://example.com/post/two', $links);
+    }
+
+    public function testExtractLinksDedupesTrimmedVariants(): void
+    {
+        $registry = null;
+        $service = $this->makeService('', [], $registry);
+
+        $links = $service->extractLinks(
+            '<a href="https://example.com/post/slug">a</a>' .
+            " and the sample: 'https://example.com/post/slug',"
+        );
+
+        self::assertSame(['https://example.com/post/slug'], $links);
+    }
+
+    public function testExtractLinksDropsUrlsWithNoHost(): void
+    {
+        $registry = null;
+        $service = $this->makeService('', [], $registry);
+
+        $links = $service->extractLinks("Write 'http://' or 'https://' and https://example.com/ok");
+
+        self::assertSame(['https://example.com/ok'], $links);
+    }
+
     public function testCollectSourcesSkipsBadContributions(): void
     {
         $registry = null;

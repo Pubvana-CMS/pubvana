@@ -5,6 +5,13 @@ All notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+
+## [Unreleased] - 2026-
+
+### Changed
+- BrokenLinks ignores code samples, trims punctuation off URLs, and links each source to its real editor.
+
+
 ## [3.0.0-beta.6] - 2026-09-30
 
 ### Changed

@@ -24,6 +24,7 @@ class BrokenLinksAdminController extends AdminController
             'total'          => $this->app->brokenLinks()->countBroken(),
             'showDismissed'  => $showDismissed,
             'adminBase'      => $this->adminBase(),
+            'editBase'       => $this->editBase(),
         ]);
     }
 
@@ -34,6 +35,23 @@ class BrokenLinksAdminController extends AdminController
     private function adminBase(): string
     {
         return '/admin' . rtrim((string) $this->app->pluginLoader()->routePrefix('pubvana/brokenlinks'), '/');
+    }
+
+    /**
+     * Admin editor base per content source type, for the links in the report.
+     *
+     * Each value comes from the owning plugin's own route prefix. Pages
+     * registers 'page' (singular, plugins/Pages/Config/Config.php), so a
+     * hardcoded '/admin/pages' would build a URL with no route behind it.
+     *
+     * @return array<string, string> Source type => admin URL base, no trailing slash
+     */
+    private function editBase(): array
+    {
+        return [
+            'post' => '/admin' . rtrim((string) $this->app->pluginLoader()->routePrefix('pubvana/blog'), '/'),
+            'page' => '/admin' . rtrim((string) $this->app->pluginLoader()->routePrefix('pubvana/pages'), '/'),
+        ];
     }
 
     /**

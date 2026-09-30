@@ -7,12 +7,27 @@
  * @var int    $total
  * @var bool   $showDismissed
  * @var string $adminBase
+ * @var array<string, string> $editBase Editor URL base per source type
  */
 
-$editUrl = function (string $sourceType, int $sourceId): string {
-    return $sourceType === 'post'
-        ? '/admin/blog/' . $sourceId . '/edit'
-        : '/admin/pages/' . $sourceId . '/edit';
+/**
+ * Editor URL for a source, or null when no plugin claims that source type.
+ * A type with no owner renders as plain text rather than a link to the
+ * wrong record.
+ */
+$editUrl = function (string $sourceType, int $sourceId) use ($editBase): ?string {
+    return isset($editBase[$sourceType])
+        ? $editBase[$sourceType] . '/' . $sourceId . '/edit'
+        : null;
+};
+
+/** Badge text for a source type. */
+$sourceLabel = function (string $sourceType): string {
+    return match ($sourceType) {
+        'post'  => 'Post',
+        'page'  => 'Page',
+        default => ucfirst($sourceType),
+    };
 };
 ?>
 
@@ -61,12 +76,16 @@ $editUrl = function (string $sourceType, int $sourceId): string {
         <div class="card-header py-2 d-flex align-items-center justify-content-between">
             <div>
                 <span class="badge bg-<?= $group['source_type'] === 'post' ? 'blue-lt' : 'secondary-lt' ?> me-2">
-                    <?= $group['source_type'] === 'post' ? 'Post' : 'Page' ?>
+                    <?= htmlspecialchars($sourceLabel((string) $group['source_type'])) ?>
                 </span>
-                <a href="<?= htmlspecialchars($editUrl($group['source_type'], $group['source_id'])) ?>"
-                   class="fw-bold text-dark">
-                    <?= htmlspecialchars($group['source_title']) ?>
-                </a>
+                <?php $sourceUrl = $editUrl((string) $group['source_type'], (int) $group['source_id']); ?>
+                <?php if ($sourceUrl !== null): ?>
+                    <a href="<?= htmlspecialchars($sourceUrl) ?>" class="fw-bold text-dark">
+                        <?= htmlspecialchars($group['source_title']) ?>
+                    </a>
+                <?php else: ?>
+                    <span class="fw-bold text-dark"><?= htmlspecialchars($group['source_title']) ?></span>
+                <?php endif; ?>
             </div>
             <span class="badge bg-red-lt">
                 <?= count($group['links']) ?> broken
