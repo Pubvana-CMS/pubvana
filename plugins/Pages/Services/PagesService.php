@@ -6,6 +6,7 @@ namespace Pubvana\Plugins\Pages\Services;
 
 use Pubvana\Plugins\Pages\Models\Page;
 use Pubvana\Plugins\Pages\Models\PageRevision;
+use Pubvana\Services\HtmlPurifierFactory;
 
 /**
  * Service layer for pages — CRUD, published lookups, and host integrations.
@@ -79,7 +80,7 @@ class PagesService
     {
         $page = $this->pageModel->createPage(
             (string) ($data['title'] ?? ''),
-            (string) ($data['content'] ?? ''),
+            $this->purifyContent((string) ($data['content'] ?? '')),
             $userId,
             !empty($data['ai_generated']) ? 1 : 0
         );
@@ -110,7 +111,7 @@ class PagesService
 
         $page->updatePage([
             'title'          => $data['title'] ?? $page->title,
-            'content'        => $data['content'] ?? $page->content,
+            'content'        => isset($data['content']) ? $this->purifyContent((string) $data['content']) : $page->content,
             'status'         => $data['status'] ?? $page->status,
             'allow_comments' => !empty($data['allow_comments']) ? 1 : 0,
         ]);
@@ -172,6 +173,23 @@ class PagesService
     {
         $max = $this->config['max_revisions'] ?? 15;
         $this->revisionModel->pruneForPage($pageId, $max);
+    }
+
+    /**
+     * Sanitize page HTML through the application's shared purifier config.
+     *
+     * Content arrives from the Jodit editor, so it is stored sanitized the
+     * same way blog posts and comments are (Models/Page.php documents this
+     * contract). A missing library returns the input unchanged: stripping
+     * tags would destroy every page's markup.
+     */
+    private function purifyContent(string $html): string
+    {
+        if (!class_exists(\HTMLPurifier_Config::class)) {
+            return $html;
+        }
+
+        return (new \HTMLPurifier(HtmlPurifierFactory::create()))->purify($html);
     }
 
     /**

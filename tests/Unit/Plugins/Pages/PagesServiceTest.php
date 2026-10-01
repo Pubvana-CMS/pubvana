@@ -101,6 +101,19 @@ final class PagesServiceTest extends TestCase
         self::assertSame(0, (int) $plain->ai_generated);
     }
 
+    public function testCreatePageSanitizesContentAndKeepsLinkTargets(): void
+    {
+        $page = $this->service->createPage([
+            'title'   => 'Sanitized',
+            'content' => '<p>Hi</p><script>evil()</script><a href="https://example.com" target="_blank">x</a>',
+            'status'  => 'published',
+        ], 1);
+
+        $content = (string) $page->content;
+        self::assertStringNotContainsString('<script>', $content);
+        self::assertStringContainsString('target="_blank"', $content);
+    }
+
     public function testUpdatePageSnapshotsBeforeAndPrunesAfter(): void
     {
         $page = $this->service->createPage(['title' => 'V1', 'status' => 'draft'], 5);
@@ -122,6 +135,29 @@ final class PagesServiceTest extends TestCase
         self::assertNotNull($fallback);
         $revisions = $this->service->getRevisions($id);
         self::assertSame(5, (int) $revisions[0]->author_id);
+    }
+
+    public function testUpdatePageSanitizesContent(): void
+    {
+        $page = $this->service->createPage(['title' => 'U', 'content' => '<p>one</p>', 'status' => 'draft'], 1);
+        $id = (int) $page->id;
+
+        $updated = $this->service->updatePage($id, ['content' => '<p>two</p><script>evil()</script>'], 1);
+
+        self::assertNotNull($updated);
+        self::assertStringContainsString('<p>two</p>', (string) $updated->content);
+        self::assertStringNotContainsString('<script>', (string) $updated->content);
+    }
+
+    public function testUpdatePageWithoutContentKeepsStoredContent(): void
+    {
+        $page = $this->service->createPage(['title' => 'Keep', 'content' => '<p>keep</p>', 'status' => 'draft'], 1);
+        $id = (int) $page->id;
+
+        $updated = $this->service->updatePage($id, ['title' => 'Kept'], 1);
+
+        self::assertNotNull($updated);
+        self::assertSame('<p>keep</p>', (string) $updated->content);
     }
 
     public function testDeletePage(): void

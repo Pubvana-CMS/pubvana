@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 - BrokenLinks ignores code samples, trims punctuation off URLs, and links each source to its real editor.
+- HTML sanitizer stripping safe tags from anchors
 
 
 ## [3.0.0-beta.6] - 2026-09-30

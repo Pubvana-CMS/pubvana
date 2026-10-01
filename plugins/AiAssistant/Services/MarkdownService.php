@@ -8,6 +8,7 @@ use League\CommonMark\Environment\Environment;
 use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
 use League\CommonMark\MarkdownConverter;
 use League\HTMLToMarkdown\HtmlConverter;
+use Pubvana\Services\HtmlPurifierFactory;
 
 /**
  * MarkdownService - Converts Markdown to sanitized HTML.
@@ -65,7 +66,6 @@ class MarkdownService
         if (!class_exists(\HTMLPurifier_Config::class)) {
             return $html;
         }
-        $config = \HTMLPurifier_Config::create(\Flight::get('html_purifier') ?? []);
-        return (new \HTMLPurifier($config))->purify($html);
+        return (new \HTMLPurifier(HtmlPurifierFactory::create()))->purify($html);
     }
 }

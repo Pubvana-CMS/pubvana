@@ -338,6 +338,25 @@ final class ThemesControllerTest extends TestCase
         self::assertSame('<i>L</i>', $items[0]['label'] ?? null);
     }
 
+    public function testSaveBlockValuesKeepsLinkTargetsAndMedia(): void
+    {
+        $pid = $this->seedPlacement('sidebar', 'core/html');
+        $this->regions->blocks = ['core/html' => ['options' => ['body' => ['type' => 'textarea']]]];
+        $app = $this->engine(data: [
+            'placement_id' => (string) $pid,
+            'values' => [
+                'body' => '<p><a href="https://example.com" target="_blank" rel="noopener">x</a></p>'
+                    . '<video controls src="/storage/a.mp4"></video><script>x</script>',
+            ],
+        ]);
+        (new ThemesController($app))->saveBlockValues();
+
+        $body = (string) ($this->regions->savedValues['body'] ?? '');
+        self::assertStringContainsString('target="_blank"', $body);
+        self::assertStringContainsString('<video controls', $body);
+        self::assertStringNotContainsString('<script>', $body);
+    }
+
     private function seedTheme(string $name, string $folder, int $active): int
     {
         $pdo = Sqlite::connection();

@@ -6,6 +6,7 @@ namespace Pubvana\Plugins\Comments\Services;
 
 use Pubvana\Plugins\Comments\Models\Comment;
 use Enlivenapp\FlightShield\Models\User;
+use Pubvana\Services\HtmlPurifierFactory;
 use Pubvana\Services\RateLimiter;
 use Pubvana\Services\UrlService;
 use flight\Engine;
@@ -756,8 +757,7 @@ class CommentService
         if (!class_exists(\HTMLPurifier_Config::class)) {
             return strip_tags($html);
         }
-        $config = \HTMLPurifier_Config::create($this->app->get('html_purifier') ?? []);
-        return (new \HTMLPurifier($config))->purify($html);
+        return (new \HTMLPurifier(HtmlPurifierFactory::create()))->purify($html);
     }
 
     /**

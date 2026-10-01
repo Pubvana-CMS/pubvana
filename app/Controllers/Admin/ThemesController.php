@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Pubvana\Controllers\Admin;
 
 use Pubvana\Models\TrustCache;
+use Pubvana\Services\HtmlPurifierFactory;
 use Pubvana\Services\RegionManager;
 use Pubvana\Services\ThemeService;
 use Pubvana\Models\Theme;
@@ -522,8 +523,7 @@ class ThemesController extends AdminController
      */
     private function purifyHtml(string $html): string
     {
-        $config = \HTMLPurifier_Config::createDefault();
-        return (new \HTMLPurifier($config))->purify($html);
+        return (new \HTMLPurifier(HtmlPurifierFactory::create()))->purify($html);
     }
 
     /**

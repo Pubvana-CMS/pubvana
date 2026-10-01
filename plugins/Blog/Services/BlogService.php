@@ -11,6 +11,7 @@ use Pubvana\Plugins\Blog\Models\PostCategory;
 use Pubvana\Plugins\Blog\Models\PostTag;
 use Pubvana\Plugins\Blog\Models\PostRevision;
 use Enlivenapp\FlightShield\Models\User;
+use Pubvana\Services\HtmlPurifierFactory;
 use flight\Engine;
 use Flight;
 
@@ -1024,8 +1025,7 @@ class BlogService
         if (!class_exists(\HTMLPurifier_Config::class)) {
             return $html;
         }
-        $config = \HTMLPurifier_Config::create(Flight::get('html_purifier') ?? []);
-        return (new \HTMLPurifier($config))->purify($html);
+        return (new \HTMLPurifier(HtmlPurifierFactory::create()))->purify($html);
     }
 
     /**
