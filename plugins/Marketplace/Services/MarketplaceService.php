@@ -624,6 +624,15 @@ class MarketplaceService
      */
     public function installFromPackage(string $packageId): array
     {
+        // A store record with no identity at all is a catalogue problem, not
+        // a malformed id from a caller. Say which it is.
+        if ($packageId === '') {
+            return [
+                'ok'      => false,
+                'reason'  => 'The store listed this item without a package identity, so it cannot be installed from here.',
+                'version' => null,
+            ];
+        }
         if (!preg_match('/^[a-zA-Z0-9][a-zA-Z0-9\/_\-\.]*$/', $packageId)) {
             return ['ok' => false, 'reason' => 'Invalid package.', 'version' => null];
         }

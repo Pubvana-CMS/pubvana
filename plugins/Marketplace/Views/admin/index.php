@@ -92,6 +92,13 @@
             <?php foreach ($groupItems as $item):
                 $id = (int) ($item['id'] ?? 0);
                 $package = (string) ($item['package'] ?? '');
+                // Store records written before the addon toggle was on carry no
+                // package identity, and an empty value can only be rejected.
+                // The slug is accepted everywhere the package id is (the
+                // free endpoint takes it, and installFreePackage matches on
+                // either), so fall back to it, the same way the update paths
+                // in MarketplaceService already do.
+                $packageId = $package !== '' ? $package : (string) ($item['slug'] ?? '');
                 // Free to install anywhere: fully free, any free tier, or a
                 // package with no license scope. Mirrors the check the
                 // install-free path makes.
@@ -101,7 +108,7 @@
                 // Addons physically on this site, from the local manifest
                 // scan: covers Marketplace installs, core-shipped, and
                 // manual uploads alike.
-                $installedInfo = $installed[$package] ?? null;
+                $installedInfo = $installed[$packageId] ?? null;
                 $installedHere = $installedInfo !== null;
                 $price = (float) ($item['price'] ?? 0);
                 $priceMulti = isset($item['price_multi']) && $item['price_multi'] !== null ? (float) $item['price_multi'] : null;
@@ -142,7 +149,7 @@
                                 <span class="badge bg-orange-lt">Update to v<?= htmlspecialchars((string) $item['version']) ?></span>
                                 <form method="POST" action="<?= $adminBase ?>/install-free" class="d-inline">
                                     <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
-                                    <input type="hidden" name="package" value="<?= htmlspecialchars($package) ?>">
+                                    <input type="hidden" name="package" value="<?= htmlspecialchars($packageId) ?>">
                                     <button class="btn btn-primary">Update</button>
                                 </form>
                             </div>
@@ -152,14 +159,14 @@
                                     <strong>Free</strong>
                                     <form method="POST" action="<?= $adminBase ?>/install-free" class="d-inline">
                                         <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
-                                        <input type="hidden" name="package" value="<?= htmlspecialchars($package) ?>">
+                                        <input type="hidden" name="package" value="<?= htmlspecialchars($packageId) ?>">
                                         <button class="btn btn-primary">Download &amp; install</button>
                                     </form>
                                 <?php elseif ($price <= 0 && $priceMulti !== null && $priceMulti > 0): ?>
                                     <div class="btn-group">
                                         <form method="POST" action="<?= $adminBase ?>/install-free" class="d-inline">
                                             <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
-                                            <input type="hidden" name="package" value="<?= htmlspecialchars($package) ?>">
+                                            <input type="hidden" name="package" value="<?= htmlspecialchars($packageId) ?>">
                                             <button class="btn btn-success">Free download</button>
                                         </form>
                                         <button type="button" class="btn btn-primary"
