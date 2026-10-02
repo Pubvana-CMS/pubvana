@@ -39,13 +39,18 @@ class MarketplaceAdminController extends AdminController
         // so catalog cards can show what is already here regardless of how
         // it got installed (Marketplace, core shipped, manual upload).
         $installed = $svc->localPackageVersions();
+        $connected = $svc->connected();
+        $categories = $connected ? $svc->categories() : [];
+        // items() runs last so catalogError() reflects the catalog call.
+        $items = $connected ? $svc->items() : [];
         $this->render('pubvana/marketplace/admin/index', [
             'pageTitle'    => 'Marketplace',
-            'connected'    => $svc->connected(),
+            'connected'    => $connected,
             'accountEmail' => $svc->accountEmail(),
             'prefillEmail' => $this->currentUserEmail(),
-            'categories'   => $svc->connected() ? $svc->categories() : [],
-            'items'        => $svc->connected() ? $svc->items() : [],
+            'categories'   => $categories,
+            'items'        => $items,
+            'catalogError' => $svc->catalogError(),
             'installed'    => $installed,
             'adminBase'    => $this->adminBase(),
         ]);

@@ -9,6 +9,7 @@
  * @var array<int, array<string, mixed>> $categories
  * @var array<int, array<string, mixed>> $items
  * @var string $adminBase
+ * @var string|null $catalogError
  */
 ?>
 
@@ -216,7 +217,11 @@
             </p>
         </div>
     <?php else: ?>
-        <p class="text-secondary">The catalog is empty or the store is unreachable.</p>
+        <?php if (!empty($catalogError)): ?>
+            <p class="text-secondary"><?= htmlspecialchars((string) $catalogError) ?></p>
+        <?php else: ?>
+            <p class="text-secondary">The catalog is empty or the store is unreachable.</p>
+        <?php endif; ?>
     <?php endif; ?>
 
     <script>

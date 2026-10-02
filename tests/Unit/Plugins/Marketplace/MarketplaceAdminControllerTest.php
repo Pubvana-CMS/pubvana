@@ -77,6 +77,21 @@ final class MarketplaceAdminControllerTest extends TestCase
         self::assertSame('admin@example.com', $data['prefillEmail']);
         self::assertCount(1, $data['categories']);
         self::assertCount(1, $data['items']);
+        self::assertNull($data['catalogError']);
+    }
+
+    public function testIndexPassesTheStoreReasonThrough(): void
+    {
+        $this->marketplace->connected = true;
+        $this->marketplace->items = [];
+        $this->marketplace->catalogError = 'This site is not connected to a Pubvana account. Connect it from the Marketplace, then try again.';
+
+        (new MarketplaceAdminController($this->engine()))->index();
+
+        self::assertSame(
+            'This site is not connected to a Pubvana account. Connect it from the Marketplace, then try again.',
+            $this->fetches[0]['data']['catalogError']
+        );
     }
 
     public function testConnectWithoutEmail(): void
@@ -387,10 +402,16 @@ final class FakeMarketplace
     /** @var array<string, mixed> */
     public array $reinstallResult = ['ok' => 0, 'skipped' => 0, 'failed' => []];
     public string $checkout = '';
+    public ?string $catalogError = null;
 
     public function connected(): bool
     {
         return $this->connected;
+    }
+
+    public function catalogError(): ?string
+    {
+        return $this->catalogError;
     }
 
     public function accountEmail(): string

@@ -132,6 +132,21 @@ class MarketplaceService
     private const MAX_ZIP_BYTES = 26214400;
 
     /**
+     * The store's own explanation for the most recent failed catalog call,
+     * null when the last response was a success or never arrived. The
+     * catalog screen prints this verbatim instead of guessing at a cause.
+     */
+    protected ?string $catalogError = null;
+
+    /**
+     * The store's message for the last catalog failure, null when none.
+     */
+    public function catalogError(): ?string
+    {
+        return $this->catalogError;
+    }
+
+    /**
      * The last moment the cached catalog was declared stale by a user
      * action ("Check all" on the Updates screen). Cache entries generated
      * before this moment are treated as expired even inside their TTL.
@@ -148,12 +163,14 @@ class MarketplaceService
      */
     public function categories(): array
     {
+        $this->catalogError = null;
         if (!$this->withToken()) {
             return [];
         }
         return $this->getCachedCatalog('categories', function () {
             $data = $this->decode($this->httpGet($this->apiUrl('categories')));
-            if (!is_array($data) || empty($data['ok']) || !is_array($data['categories'])) {
+            if (!is_array($data) || empty($data['ok']) || !is_array($data['categories'] ?? null)) {
+                $this->catalogError = $this->storeFailure($data, 'The store could not be reached.');
                 return [];
             }
             return $data['categories'];
@@ -167,6 +184,7 @@ class MarketplaceService
      */
     public function items(string $currency = 'USD'): array
     {
+        $this->catalogError = null;
         if (!$this->withToken()) {
             return [];
         }
@@ -178,7 +196,8 @@ class MarketplaceService
             $url = $this->apiUrl('items') . '?currency=' . urlencode($currency)
                 . ($pubvanaVersion !== '' ? '&pubvana_version=' . urlencode($pubvanaVersion) : '');
             $data = $this->decode($this->httpGet($url));
-            if (!is_array($data) || empty($data['ok']) || !is_array($data['items'])) {
+            if (!is_array($data) || empty($data['ok']) || !is_array($data['items'] ?? null)) {
+                $this->catalogError = $this->storeFailure($data, 'The store could not be reached.');
                 return [];
             }
             return $data['items'];
@@ -279,8 +298,12 @@ class MarketplaceService
         $domain = $this->siteDomain();
         $url = $this->apiUrl('purchases') . '?domain=' . urlencode($domain);
         $data = $this->decode($this->httpGet($url));
-        if (!is_array($data) || empty($data['ok']) || !is_array($data['purchases'])) {
-            return ['ok' => false, 'reason' => 'The store could not be reached. Try again in a moment.', 'purchases' => []];
+        if (!is_array($data) || empty($data['ok']) || !is_array($data['purchases'] ?? null)) {
+            return [
+                'ok'        => false,
+                'reason'    => $this->storeFailure($data, 'The store could not be reached. Try again in a moment.'),
+                'purchases' => [],
+            ];
         }
 
         /** @var array<int, array<string, mixed>> $purchases */
@@ -1495,6 +1518,19 @@ class MarketplaceService
     protected function environment(): string
     {
         return (string) ($this->app->get('environment') ?? 'production');
+    }
+
+    /**
+     * The store's failure sentence from a decoded response, or the fallback
+     * when no response arrived or it carried no reason.
+     *
+     * @param array<string, mixed>|null $data
+     */
+    private function storeFailure(?array $data, string $fallback): string
+    {
+        $reason = $data === null ? '' : trim((string) ($data['reason'] ?? ''));
+
+        return $reason !== '' ? $reason : $fallback;
     }
 
     /**

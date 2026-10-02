@@ -142,6 +142,38 @@ final class MarketplaceServiceTest extends TestCase
         self::assertFalse($items[0]['is_free']);
     }
 
+    public function testItemsSurfaceTheStoreReasonWhenTheCatalogFails(): void
+    {
+        $this->settings->data['Marketplace.account_token'] = 'abc:xyz';
+        $this->service->getResponses = [
+            '{"ok":false,"reason":"This site\'s store connection was replaced by a newer sign-in. Reconnect it from the Marketplace."}',
+        ];
+
+        self::assertSame([], $this->service->items('USD'));
+        self::assertSame(
+            'This site\'s store connection was replaced by a newer sign-in. Reconnect it from the Marketplace.',
+            $this->service->catalogError()
+        );
+    }
+
+    public function testItemsFallBackWhenTheStoreIsUnreachable(): void
+    {
+        $this->settings->data['Marketplace.account_token'] = 'abc:xyz';
+        $this->service->getResponses = [null];
+
+        self::assertSame([], $this->service->items('USD'));
+        self::assertSame('The store could not be reached.', $this->service->catalogError());
+    }
+
+    public function testItemsClearTheCatalogErrorOnSuccess(): void
+    {
+        $this->settings->data['Marketplace.account_token'] = 'abc:xyz';
+        $this->service->getResponses = ['{"ok":true,"items":[{"id":1,"name":"Demo"}]}'];
+
+        self::assertCount(1, $this->service->items('USD'));
+        self::assertNull($this->service->catalogError());
+    }
+
     // -----------------------------------------------------------------
     // License domain + verification
     // -----------------------------------------------------------------
@@ -186,6 +218,22 @@ final class MarketplaceServiceTest extends TestCase
         self::assertFalse($result['ok']);
         self::assertSame([], $result['purchases']);
         self::assertStringContainsString('could not be reached', $result['reason']);
+    }
+
+    public function testVerifyPurchasesSurfacesTheStoreReason(): void
+    {
+        $this->settings->data['Marketplace.account_token'] = 'abc:xyz';
+        $this->service->getResponses = [
+            '{"ok":false,"reason":"This site is not connected to a Pubvana account. Connect it from the Marketplace, then try again."}',
+        ];
+
+        $result = $this->service->verifyPurchases();
+
+        self::assertFalse($result['ok']);
+        self::assertSame(
+            'This site is not connected to a Pubvana account. Connect it from the Marketplace, then try again.',
+            $result['reason']
+        );
     }
 
     public function testVerifyPurchasesReconcilesAndReportsSuccess(): void
