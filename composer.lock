@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "512ad308d3ca7fcb11e836986c96283e",
+    "content-hash": "9ea71e66e34e721944b0b777ec033564",
     "packages": [
         {
             "name": "adhocore/cli",
@@ -322,16 +322,16 @@
         },
         {
             "name": "enlivenapp/flight-shield",
-            "version": "0.4.3",
+            "version": "0.5.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/enlivenapp/FlightPHP-Shield.git",
-                "reference": "0d3496d3c712c17550b4cba2722b1bc2aa8adf6e"
+                "reference": "9449a5fc0e44bf350f3589781867899dc4171e7f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/enlivenapp/FlightPHP-Shield/zipball/0d3496d3c712c17550b4cba2722b1bc2aa8adf6e",
-                "reference": "0d3496d3c712c17550b4cba2722b1bc2aa8adf6e",
+                "url": "https://api.github.com/repos/enlivenapp/FlightPHP-Shield/zipball/9449a5fc0e44bf350f3589781867899dc4171e7f",
+                "reference": "9449a5fc0e44bf350f3589781867899dc4171e7f",
                 "shasum": ""
             },
             "require": {
@@ -371,9 +371,9 @@
             "description": "Authentication and authorization for FlightPHP, ported from CodeIgniter Shield",
             "support": {
                 "issues": "https://github.com/enlivenapp/FlightPHP-Shield/issues",
-                "source": "https://github.com/enlivenapp/FlightPHP-Shield/tree/0.4.3"
+                "source": "https://github.com/enlivenapp/FlightPHP-Shield/tree/0.5.0"
             },
-            "time": "2026-09-22T02:13:07+00:00"
+            "time": "2026-10-02T23:05:28+00:00"
         },
         {
             "name": "enlivenapp/migrations",
