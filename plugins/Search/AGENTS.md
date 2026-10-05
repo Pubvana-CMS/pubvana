@@ -11,7 +11,7 @@ Search aggregates content matches from content plugins (Blog, Pages, and future 
 - **PHP floor:** not declared in the plugin; the main project requires PHP `^8.2` (repo `composer.json`), and the code stays within that floor (`mixed` parameter at `Services/SearchService.php:249`; `str_contains`/`str_starts_with` throughout `scoreItem()`, `Services/SearchService.php:280-364`)
 - **Namespace:** `Pubvana\Plugins\Search` (`Plugin.php:5`), with `Controllers` and `Services` sub-namespaces
 - **Runtime dependencies (declared at the app level, not in the plugin):** no third-party packages and no database; only core services `$app->adext()`, `settings()`, `request()`, `session()`, `render`/`redirect`, plus the `mb_*` string functions
-- **Config:** `Config/Config.php`: `routePrepend` (empty string, so the public route lives at root-level `/search`)
+- **Config:** `Config/Config.php`: `routePrepend` (empty string, so the public route is at root-level `/search`)
 - **Docs:** `README.md`
 
 ## Project guidelines

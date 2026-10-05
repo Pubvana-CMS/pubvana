@@ -137,7 +137,7 @@ Coverage: the suite covers the built-in checks, the service and controller, and 
 
 - This is an in-tree application plugin, not a Composer package; no `composer.json` and nothing for Packagist.
 - Purely advisory: results and remediation snippets are guidance; nothing is auto-fixed or self-healing. `POST /site-health/rerun` only recomputes diagnostics.
-- No public endpoints; everything lives under the admin group and the tools-scoped dashboard card.
+- No public endpoints; everything is under the admin group and the tools-scoped dashboard card.
 - No scheduled runs, email alerts, or history/trend tracking; the page and card reflect the current cached pass only.
 - The plugin cannot certify security; it only reports signals like `display_errors`, `.env` permissions, and HTTPS posture.
 - Known cosmetic inconsistencies to reconcile, not fixed here:

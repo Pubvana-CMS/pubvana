@@ -23,7 +23,7 @@ The 5 `ignoreErrors` entries in `phpstan.neon` are required for our framework. `
 composer psalm          # psalm --no-progress --taint-analysis
 ```
 
-Psalm 6.4.0 is pinned in `require-dev` because newer versions need PHP >= 8.3.16; the minimum is PHP ^8.2 and the build image ships 8.3.6. Before bumping Psalm, confirm it runs on the build PHP.
+Psalm 6.4.0 is pinned in `require-dev` because newer versions need PHP >= 8.3.16; the minimum is PHP ^8.2 and the build image runs 8.3.6. Before bumping Psalm, confirm it runs on the build PHP.
 
 Taint analysis is enabled in `psalm.xml` (`runTaintAnalysis="true"`). `psalm-stubs.php` declares the Flight request accessors as taint sources so user input arriving through Flight's abstraction (not `$_GET`/`$_POST`) is traced. We use `@psalm-taint-source input` and only valid taint kinds; an invalid kind silently disables the annotation.
 

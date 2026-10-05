@@ -40,7 +40,7 @@ composer install
 
 ## File & Folder Permissions
 
-The release `.zip` ships the `writable/` tree and `public/uploads/` with empty `.gitkeep` marker files so the folders exist after extraction. Git does not record file ownership, so everything you extract is owned by your account, not the web server. The web server (typically `www-data`) needs write access to `writable/` and `public/uploads/` at runtime.
+The release `.zip` includes the `writable/` tree and `public/uploads/` with empty `.gitkeep` marker files so the folders exist after extraction. Git does not record file ownership, so everything you extract is owned by your account, not the web server. The web server (typically `www-data`) needs write access to `writable/` and `public/uploads/` at runtime.
 
 If your shell user is a member of the web server's group (for example `rob` in the `www-data` group), group-write is the simplest scheme:
 

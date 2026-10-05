@@ -1,17 +1,36 @@
 # Changelog
 
-All notable changes to Pubvana will be documented in this file.
+Notable changes to Pubvana will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 
-## [Unreleased] - 2026-
+## [3.0.0-beta.7] - 2026-10-04
+
+### Added
+- Marketplace catalog tabs for plugins, themes, and sale items, with search, a free/paid filter, and paging
+- Separate sign-in and create-account forms on the Marketplace connect screen
+- Trust standing of the target release on the Updates screen
+- A confirmation step before applying a release the trust service has not evaluated
 
 ### Changed
 - BrokenLinks ignores code samples, trims punctuation off URLs, and links each source to its real editor.
-- HTML sanitizer stripping safe tags from anchors
+- HTML sanitizer stripping safe tags from anchors, with a shared purifier config used by Themes, Comments, Blog, AI Assistant, and Pages
+- Pages sanitizes content on store and update
 - Free downloads wouldn't install in Marketplace
+- Marketplace reads its catalog from the store on each view
+- Marketplace update checks page through the whole catalog
+- Marketplace shows the store's reason when it cannot serve the catalog, such as maintenance or throttling
+- A malicious release cannot be applied
+- An automatic update skips a release the trust service has not evaluated
+- A trust service outage does not block an update
+- Updated flight-shield to 0.6.0, flight-sessions to 0.1.4, migrations to 0.4.1, and PHPStan to 2.2.16
+- all plugins/themes README and CHANGELOG updated.
+
+### Removed
+- Marketplace catalog caching
+- started pulling many of the "I've noticed..." messages. things have settled down a lot and we're getting pretty close to a decent thing to release
 
 
 ## [3.0.0-beta.6] - 2026-09-30
@@ -138,7 +157,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 - Blog and Pages follow MVC, and register their menus and homepage options with adext
 - All 17 plugin models return a new object from their finders
-- Search ranking lives in `SearchService`: constant weights, `maxScore()` per search
+- Search ranking is in `SearchService`: constant weights, `maxScore()` per search
 - Blog and Pages send their text with the markup stripped
 - `enlivenapp/flight-csrf` to `^1.0`, plus updates to `enlivenapp/flight-shield` and `enlivenapp/vision`
 - `ThemeService` reads a theme's required Pubvana versions from its `pubvana.json`
@@ -156,7 +175,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [3.0.0-beta.2] - 2026-09-18
 
 ### Added
-- Release zip now ships `writable/` and `cron`, so a GitHub release installs out of the box
+- Release zip now includes `writable/` and `cron`, so a GitHub release installs out of the box
 - `.gitkeep` whitelists for `writable/store`, `writable/tmp`, `writable/trust`, and `public/uploads`
 - INSTALL.md: File & Folder Permissions section documenting the chgrp/chmod scheme for shared hosts
 

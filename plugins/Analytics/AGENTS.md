@@ -114,7 +114,7 @@ vendor/bin/phpunit tests/Unit/Plugins/Analytics
 
 - View the report at `/admin/analytics` and confirm the range buttons (7d/30d/90d/180d/1y/All) redraw the chart and tables through `/admin/analytics/data`.
 - Confirm the tracking toggle persists and that a disabled state stops new rows.
-- Visit a public page and confirm one row lands in `analytics_page_views`, then confirm an admin path, a bot user agent, and a `.css` request do not.
+- Visit a public page and confirm one row goes into `analytics_page_views`, then confirm an admin path, a bot user agent, and a `.css` request do not.
 - Confirm the 404 path is not counted (the listener only fires on dispatched routes).
 - Coverage: the unit suite covers `AnalyticsService` reporting and helpers, `PageView` and `AnalyticsAdminController` helpers, the rollup upsert SQL (MySQL vs MariaDB forms), and the report view's inline JSON escaping. `<!-- TODO: add [coverage target] -->`
 
