@@ -28,7 +28,7 @@ final class RateLimiter
      */
     public function __construct(?string $cacheDir = null)
     {
-        $root = defined('PROJECT_ROOT') ? PROJECT_ROOT : dirname(__DIR__, 2);
+        $root = PROJECT_ROOT;
         $this->cacheDir = rtrim($cacheDir ?? ($root . '/writable/cache/ratelimit'), '/');
     }
 

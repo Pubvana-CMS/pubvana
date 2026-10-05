@@ -14,7 +14,7 @@ use Throwable;
  * services.php, so plugins load and register their tasks through adext)
  * and hands one interval to run(). System crontabs call that script on
  * three schedules: every minute, every 4 hours, and every 24 hours.
- * There are no public routes and no runway commands; the script only
+ * There are no public routes and no pubvana commands; the script only
  * runs from the command line and is unreachable from the web (the
  * docroot is public/).
  *
@@ -80,7 +80,7 @@ class CronService
     public function __construct(Engine $app, ?string $lockDir = null)
     {
         $this->app = $app;
-        $writable = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'writable';
+        $writable = PROJECT_ROOT . DIRECTORY_SEPARATOR . 'writable';
         $this->lockDir = $lockDir ?? $writable . DIRECTORY_SEPARATOR . 'cache';
     }
 

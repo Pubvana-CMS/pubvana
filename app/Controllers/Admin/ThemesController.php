@@ -556,7 +556,7 @@ class ThemesController extends AdminController
      */
     private function readThemeInfo(string $folder): array
     {
-        $root = defined('PROJECT_ROOT') ? PROJECT_ROOT : dirname(__DIR__, 2);
+        $root = PROJECT_ROOT;
         $path = rtrim($root, '/') . '/themes/' . $folder . '/pubvana.json';
 
         if (!is_file($path)) {

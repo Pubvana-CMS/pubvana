@@ -471,7 +471,7 @@ class UpdateService
 
     private function projectRoot(): string
     {
-        return defined('PROJECT_ROOT') ? PROJECT_ROOT : dirname(__DIR__, 3);
+        return PROJECT_ROOT;
     }
 
     /**
@@ -665,7 +665,7 @@ class UpdateService
 
         $targets = [];
         foreach (['app', 'public', 'vendor', 'plugins', 'themes'] as $dir) {
-            $path = $root . '/' . $dir;
+            $path = $dir === 'public' ? PUBLIC_PATH : $root . '/' . $dir;
             $targets[] = [
                 'label' => $dir . '/',
                 'ok'    => is_dir($path) && is_writable($path),

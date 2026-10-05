@@ -307,7 +307,10 @@ final class UpdateApplyService
             }
 
             $from = $source . '/' . $item;
-            $to   = $this->projectRoot() . '/' . $item;
+            // The release ships public/, but in a split layout the served
+            // folder is not PROJECT_ROOT/public, so that item goes to
+            // PUBLIC_PATH instead of beside the app tree.
+            $to   = $item === 'public' ? $this->publicPath() : $this->projectRoot() . '/' . $item;
 
             if (is_link($from)) {
                 // Never follow a release symlink into a copy: replicate the
@@ -349,7 +352,7 @@ final class UpdateApplyService
     /**
      * Run pending migrations for the freshly copied code.
      *
-     * Primary: a fresh `runway migrate` process (correct boot, sees new
+     * Primary: a fresh `pubvana migrate` process (correct boot, sees new
      * plugins). Fallback on no-exec hosts: the migrations package runner
      * in-process against the live module set. A migration failure does
      * not abort the update (files are already in place); it is reported
@@ -363,16 +366,16 @@ final class UpdateApplyService
             $cmd = sprintf(
                 'cd %s && php %s migrate 2>&1',
                 escapeshellarg($this->projectRoot()),
-                escapeshellarg($this->projectRoot() . '/runway')
+                escapeshellarg($this->projectRoot() . '/pubvana')
             );
             exec($cmd, $output, $code);
 
             if ($code === 0) {
-                $reporter->detail('Migrations applied via runway.');
+                $reporter->detail('Migrations applied via pubvana.');
                 return null;
             }
 
-            return 'runway migrate exited with code ' . $code . '. Run "php runway migrate" manually.';
+            return 'pubvana migrate exited with code ' . $code . '. Run "php pubvana migrate" manually.';
         }
 
         try {
@@ -385,7 +388,7 @@ final class UpdateApplyService
 
             return null;
         } catch (Throwable $e) {
-            return 'Migrations need a manual run ("php runway migrate"): ' . $e->getMessage();
+            return 'Migrations need a manual run ("php pubvana migrate"): ' . $e->getMessage();
         }
     }
 
@@ -752,7 +755,7 @@ final class UpdateApplyService
      */
     public static function defaultProtectedPaths(): array
     {
-        return ['.env', 'app/config/shield.php', 'writable'];
+        return ['.env', 'app/config/shield.php', 'writable', 'public/index.php'];
     }
 
     // ------------------------------------------------------------------
@@ -766,7 +769,12 @@ final class UpdateApplyService
 
     private function projectRoot(): string
     {
-        return defined('PROJECT_ROOT') ? PROJECT_ROOT : dirname(__DIR__, 3);
+        return PROJECT_ROOT;
+    }
+
+    private function publicPath(): string
+    {
+        return PUBLIC_PATH;
     }
 
     private function execAvailable(): bool

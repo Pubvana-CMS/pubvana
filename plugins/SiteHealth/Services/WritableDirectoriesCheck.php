@@ -11,10 +11,10 @@ class WritableDirectoriesCheck implements CheckInterface
     /** @var array<string, string> */
     private array $directories;
 
-    public function __construct(string $projectRoot)
+    public function __construct(string $projectRoot, string $publicPath)
     {
         $this->directories = [
-            'uploads' => $projectRoot . '/public/uploads',
+            'uploads' => $publicPath . '/uploads',
             'cache'   => $projectRoot . '/writable/cache',
             'logs'    => $projectRoot . '/writable/logs',
         ];

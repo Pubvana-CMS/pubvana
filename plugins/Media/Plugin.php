@@ -19,7 +19,7 @@ class Plugin implements PluginInterface
         $app->map('media', function () use ($app, $config) {
             static $instance = null;
             if ($instance === null) {
-                $publicPath = PROJECT_ROOT . '/public';
+                $publicPath = PUBLIC_PATH;
                 $instance = new Services\MediaService(
                     $app->db(),
                     $config,
@@ -83,18 +83,18 @@ class Plugin implements PluginInterface
                     $thumb  = null;
                     $thumbType = null;
                     if ($media->path) {
-                        $abs = PROJECT_ROOT . '/public/' . $media->path;
+                        $abs = PUBLIC_PATH . '/' . $media->path;
                         if ($media->type === 'image') {
                             $dir   = dirname($media->path);
                             $hex   = pathinfo($media->path, PATHINFO_FILENAME);
-                            $thumbAbs = PROJECT_ROOT . '/public/' . $dir . '/thumbs/' . $hex . '.webp';
+                            $thumbAbs = PUBLIC_PATH . '/' . $dir . '/thumbs/' . $hex . '.webp';
                             if (file_exists($thumbAbs)) {
                                 $thumb = '/' . $dir . '/thumbs/' . $hex . '.webp';
                             } elseif (file_exists($abs)) {
                                 $thumb = '/' . $media->path;
                             }
                         } elseif ($media->type === 'video' && $media->poster_path
-                                  && file_exists(PROJECT_ROOT . '/public/' . $media->poster_path)) {
+                                  && file_exists(PUBLIC_PATH . '/' . $media->poster_path)) {
                             $thumb = '/' . $media->poster_path;
                         }
                     }

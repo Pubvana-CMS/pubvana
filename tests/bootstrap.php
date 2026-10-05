@@ -6,7 +6,7 @@ declare(strict_types=1);
  * PHPUnit bootstrap for Pubvana.
  *
  * Loads the Composer autoloader and establishes the runtime constants the
- * application expects (PROJECT_ROOT). The SQLite in-memory database used by
+ * application expects (PROJECT_ROOT, PUBLIC_PATH). The SQLite in-memory database used by
  * DB-backed tests is created lazily through Pubvana\Tests\Support\Sqlite
  * rather than here, so fast, pure-logic unit tests never pay for schema
  * setup they do not need.
@@ -16,6 +16,10 @@ use Pubvana\Tests\Support\Sqlite;
 
 if (!defined('PROJECT_ROOT')) {
     define('PROJECT_ROOT', dirname(__DIR__));
+}
+
+if (!defined('PUBLIC_PATH')) {
+    define('PUBLIC_PATH', dirname(__DIR__) . '/public');
 }
 
 require __DIR__ . '/../vendor/autoload.php';

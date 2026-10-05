@@ -10,3 +10,7 @@
 if (!defined('PROJECT_ROOT')) {
     define('PROJECT_ROOT', '/var/www/html');
 }
+
+if (!defined('PUBLIC_PATH')) {
+    define('PUBLIC_PATH', '/var/www/html/public');
+}

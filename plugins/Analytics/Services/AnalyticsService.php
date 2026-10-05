@@ -833,7 +833,7 @@ class AnalyticsService
 
     private function rollupFlagPath(): string
     {
-        $root = defined('PROJECT_ROOT') ? PROJECT_ROOT : dirname(__DIR__, 3);
+        $root = PROJECT_ROOT;
         return $root . DIRECTORY_SEPARATOR . 'writable' . DIRECTORY_SEPARATOR . 'cache' . DIRECTORY_SEPARATOR . 'analytics_rollup';
     }
 

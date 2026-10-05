@@ -24,7 +24,7 @@ class HealthService
         private \PDO $pdo,
         private array $config = [],
     ) {
-        $projectRoot = defined('PROJECT_ROOT') ? PROJECT_ROOT : dirname(__DIR__, 5);
+        $projectRoot = PROJECT_ROOT;
         $this->cachePath = $projectRoot . '/writable/cache/sitehealth.json';
         $this->cacheTtl = (int) ($config['cache_ttl'] ?? 3600);
     }
@@ -192,7 +192,8 @@ class HealthService
      */
     private function getChecks(): array
     {
-        $projectRoot = defined('PROJECT_ROOT') ? PROJECT_ROOT : dirname(__DIR__, 5);
+        $projectRoot = PROJECT_ROOT;
+        $publicPath  = PUBLIC_PATH;
         $migrationConfig = (array) ($this->app->get('migrations') ?? []);
 
         $checks = [
@@ -200,7 +201,7 @@ class HealthService
             new PhpVersionCheck(),
             new PhpExtensionsCheck(),
             new DatabaseCheck($this->pdo),
-            new DiskSpaceCheck($projectRoot . '/public/uploads'),
+            new DiskSpaceCheck($publicPath . '/uploads'),
 
             // Security
             new HttpsCheck($this->app),
@@ -211,7 +212,7 @@ class HealthService
 
             // Configuration
             new RequiredSettingsCheck($this->app),
-            new WritableDirectoriesCheck($projectRoot),
+            new WritableDirectoriesCheck($projectRoot, $publicPath),
             new ConfigDefaultsCheck($projectRoot),
 
             // Plugins

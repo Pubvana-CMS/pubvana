@@ -102,7 +102,7 @@ class AssetService
         $path = str_replace(['../', '..\\'], '', $path);
 
         // Build file path based on type
-        $root = defined('PROJECT_ROOT') ? PROJECT_ROOT : dirname(__DIR__, 2);
+        $root = PROJECT_ROOT;
         $filePath = null;
 
         switch ($type) {

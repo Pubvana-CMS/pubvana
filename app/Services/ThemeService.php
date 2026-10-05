@@ -369,7 +369,7 @@ class ThemeService
 
     protected function getThemesPath(): string
     {
-        $root = defined('PROJECT_ROOT') ? PROJECT_ROOT : dirname(__DIR__, 2);
+        $root = PROJECT_ROOT;
         return rtrim($root, '/') . '/themes/';
     }
 

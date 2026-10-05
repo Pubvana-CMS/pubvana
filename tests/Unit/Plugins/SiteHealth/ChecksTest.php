@@ -296,7 +296,7 @@ final class ChecksTest extends TestCase
 
     public function testWritableDirsWarnsWhenMissing(): void
     {
-        $result = (new WritableDirectoriesCheck($this->tmpRoot))->run();
+        $result = (new WritableDirectoriesCheck($this->tmpRoot, $this->tmpRoot . '/public'))->run();
 
         self::assertSame(CheckResult::WARNING, $result->status);
         self::assertStringContainsString('do not exist', $result->message);
@@ -308,7 +308,7 @@ final class ChecksTest extends TestCase
         mkdir($this->tmpRoot . '/writable/cache', 0777, true);
         mkdir($this->tmpRoot . '/writable/logs', 0777, true);
 
-        $result = (new WritableDirectoriesCheck($this->tmpRoot))->run();
+        $result = (new WritableDirectoriesCheck($this->tmpRoot, $this->tmpRoot . '/public'))->run();
 
         self::assertSame(CheckResult::PASS, $result->status);
     }
