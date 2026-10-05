@@ -6,6 +6,7 @@ Site-wide search for Pubvana. Content plugins register themselves as search sour
 
 - Site-wide search across all content plugins
 - Ranked results with highlighted terms
+- The score and the best possible score shown on each result
 - Toggle each content source on or off
 - Search form block for any theme region
 - Paginated results

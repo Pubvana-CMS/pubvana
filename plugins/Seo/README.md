@@ -11,6 +11,7 @@ SEO management for Pubvana: meta tags, structured data, sitemaps, robots.txt, Op
 - robots.txt with per-crawler AI directives
 - LLMs.txt for AI discoverability
 - In-editor content analysis panel
+- Canonical, Open Graph, and JSON-LD URLs built from the configured site URL
 
 ## Usage
 

@@ -7,6 +7,7 @@ Back up your whole site and restore it later. One file holds your site files and
 - Restore from any backup. Your site is saved again before and after, so a restore can always be undone.
 - Keeps the newest backups up to your limit. The oldest ones drop off automatically.
 - Start a backup or restore from the admin screen, or from the command line.
+- A restore takes a pre-restore snapshot first, so the restore itself can be undone.
 
 ## Usage
 

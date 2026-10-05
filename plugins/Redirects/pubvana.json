@@ -6,7 +6,7 @@
     "pubver_min": "3.0.0",
     "pubver_max": "",
     "category": "tools",
-    "semver": "0.2.1",
+    "semver": "0.2.0",
     "provides": {
         "admin.menu": {
             "tools": {

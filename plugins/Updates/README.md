@@ -12,6 +12,7 @@ Keeps Pubvana current. Checks the release feed, tells you what is new, and appli
 - Automatic updates are opt-in and off by default, and never cross breaking changes
 - Skip list: pass over a troublesome release
 - Site Health check and a dashboard card report the local update state
+- Core updates are not reported through the trust service
 
 ## Usage
 
@@ -25,7 +26,7 @@ php runway updates:apply                # apply the safe target
 php runway updates:auto-update          # check, then apply when allowed
 ```
 
-A pre-update backup lands in Tools → Backups tagged `pre-update`. If an update fails partway, restore that snapshot to get back to a working site.
+A pre-update backup goes to Tools → Backups tagged `pre-update`. If an update fails partway, restore that snapshot to get back to a working site.
 
 Managing updates requires the updates.manage permission.
 

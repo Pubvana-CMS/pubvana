@@ -5,7 +5,7 @@
     "type": "plugin",
     "pubver_min": "3.0.0",
     "pubver_max": "",
-    "semver": "0.1.0",
+    "semver": "0.1.8",
     "category": "tools",
     "provides": {
         "admin.menu": {

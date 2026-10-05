@@ -9,6 +9,7 @@ Nested, moderated comments for your content. Visitors can reply in threads, and 
 - Guest posting, switchable on or off
 - Captcha on the comment form, controlled from the site-wide captcha settings
 - Recent comments block
+- Comment submission errors shown as a flash message
 
 ## Usage
 

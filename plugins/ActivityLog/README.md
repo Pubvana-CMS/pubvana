@@ -12,7 +12,7 @@ Keeps a record of admin changes so you can see who did what (and clear up confus
 
 ## Usage
 
-Open Tools then Activity Log to browse changes. Filter by user, action, item type, name, or date. You'll see when it happened and from which address. The dashboard card shows how many actions happened in the last 24 hours. Tracking stays on unless you turn off `track_admin_actions` in `plugins/ActivityLog/Config/Config.php`. Retention is set by `retention_days` in the same file.
+Open **Tools → Reports → Activity Log** to browse changes. Filter by user, action, item type, name, or date. You'll see when it happened and from which address. The dashboard card shows how many actions happened in the last 24 hours. Tracking stays on unless you turn off `track_admin_actions` in `plugins/ActivityLog/Config/Config.php`. Retention is set by `retention_days` in the same file.
 
 ## License
 

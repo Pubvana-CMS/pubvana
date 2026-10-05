@@ -10,6 +10,8 @@ The media library for Pubvana. Upload images and videos, edit them in the browse
 - Video posters
 - YouTube and Vimeo embeds
 - Media picker for featured images and avatars
+- Avatar uploads for admin and public profile editors
+- EXIF data is stripped on upload
 
 ## Usage
 

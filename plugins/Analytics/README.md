@@ -1,6 +1,6 @@
 # Analytics
 
-Traffic reports for your site: total views, top content, and referrers. Find them under Tools → Analytics.
+Traffic reports for your site: total views, top content, and referrers. Find them under **Tools → Reports → Analytics**.
 
 ## Features
 
@@ -13,7 +13,7 @@ Traffic reports for your site: total views, top content, and referrers. Find the
 
 ## Usage
 
-Open **Tools → Analytics**. Pick a range from the filter to redraw the chart and tables.
+Open **Tools → Reports → Analytics**. Pick a range from the filter to redraw the chart and tables.
 
 Tracking is on by default when the plugin is enabled. Flip the "Track page views" switch on the report page to turn it off. Individual hits are kept for 30 days, then consolidated once a day.
 

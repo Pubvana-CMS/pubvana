@@ -7,6 +7,8 @@ Scans outbound links in your posts and pages and reports the ones that are broke
 - Scans outbound links in published posts and pages
 - Recheck a single link, or run a full scan
 - Dismiss a link permanently so it never shows up again
+- Ignores code samples and trims punctuation off URLs
+- Links each finding to its real editor
 - Runs automatically once a day
 - Also runs from the command line
 

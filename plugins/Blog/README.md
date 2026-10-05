@@ -11,6 +11,7 @@ The content module for Pubvana. Write posts, organize them with categories and t
 - Search across posts
 - Blocks for recent posts, categories, tags, archive, and related posts
 - Comments on posts
+- Scheduled posts, published by the cron runner
 
 ## Usage
 

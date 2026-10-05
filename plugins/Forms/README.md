@@ -14,7 +14,6 @@ Form builder for Pubvana. Create forms in the admin, embed them on your site, an
 ## Usage
 
 Build and manage forms under **Content → Forms**. Submissions are under **Content → Forms → Submissions**.
-
 To put a form on a page, use the shortcode `{% forms slug 'contact' %}` (or by id), or add the Form block to a region.
 
 ## License

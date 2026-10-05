@@ -14,7 +14,6 @@ The AI Assistant lets an AI assistant you trust create and manage content on you
 ## Installation
 
 AI Assistant is included with Pubvana but disabled by default. Enable it under **Plugins → Manage**.
-
 ## Usage
 
 1. Under **Tools → AI Assistant**, create a key and give it a name.

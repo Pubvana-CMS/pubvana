@@ -9,6 +9,7 @@ Central management of your site's social profile links, rendered anywhere on the
 - Enable or disable each link, and reorder with up/down controls
 - A public "Social Links" block with an optional title, placed in any region
 - Icons are self-hosted Font Awesome 7 Free (no external CDN)
+- Reordering stays consistent after a link is deleted
 
 ## Usage
 

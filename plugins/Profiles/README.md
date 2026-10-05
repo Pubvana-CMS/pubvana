@@ -7,14 +7,15 @@ Public and admin profiles for Pubvana. Each user gets a browsable profile page (
 - One profile per user, created lazily on first visit
 - Self-service edit page in the admin for your own profile
 - Admin can edit any user's profile when granted `profile.edit.any`
-- Avatar picked from the Media library
+- Avatar picked from the Media library, or uploaded from the profile editor
 - Public profile page and edit form rendered through the active theme
+- Author Card block for the current post or page author
 - Cascades with the user: deleting an account removes its profile
 
 ## Usage
 
 - Your own profile: **Admin → Profile** (`/admin/profile`)
-- Anyone's public profile: `/profile/{username}`
+- Anyone's public profile: `/profile/{id}`
 - Edit your public profile: open your profile page and use the edit link, or use the admin profile page
 - Editing another user's profile requires the `profile.edit.any` permission
 

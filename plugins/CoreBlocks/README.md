@@ -7,6 +7,7 @@ Two generic blocks for Pubvana: a Text block and an HTML block. They work in any
 - Text block: title plus content, rendered as plain text
 - HTML block: title plus raw markup, for trusted admin content
 - Both appear in the standard block picker
+- Both take an optional title
 
 ## Usage
 

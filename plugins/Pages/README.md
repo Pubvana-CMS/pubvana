@@ -10,6 +10,7 @@ Static pages for Pubvana. Create About, Contact, Terms, and similar pages with S
 - Optional comments
 - Soft delete
 - Searchable and linkable in navigation
+- Can be offered as the site homepage
 
 ## Usage
 
