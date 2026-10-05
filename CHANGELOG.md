@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 
+## [3.0.0-beta.8] - 2026-10-05
+
+### Added
+- A Checkout button on the Marketplace catalog screen, beside Purchases and Disconnect.
+
+### Changed
+- Marketplace search and its controls sit above the catalog tabs.
+- Softaculous package size and download example updated.
+
+### Fixed
+- Marketplace catalog cards printed a block of PHP source as text.
+- Marketplace checkout opens the store's `/store/checkout`.
+
+### Removed
+- The Marketplace free and paid catalog filter.
+
+
 ## [3.0.0-beta.7] - 2026-10-04
 
 ### Added

@@ -5,6 +5,21 @@ All notable changes to the Marketplace plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.1] - 2026-10-05
+
+### Added
+- A Checkout button beside Purchases and Disconnect.
+
+### Changed
+- Search and its controls sit above the catalog tabs.
+
+### Fixed
+- Catalog cards printed a block of PHP source as text.
+- Checkout opens the store's `/store/checkout`.
+
+### Removed
+- The free and paid catalog filter.
+
 ## [0.3.0] - 2026-10-04
 
 ### Added

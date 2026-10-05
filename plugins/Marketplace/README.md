@@ -5,9 +5,9 @@ The companion app for the Pubvana Digital Store. Browse the catalog, buy on pubv
 ## Features
 
 - Connect a Pubvana account
-- Browse the store catalog with tabs for plugins, themes, and sale items, plus search, a free/paid filter, and paging
+- Browse the store catalog with tabs for plugins, themes, and sale items, plus search and paging
 - Add items to your cart
-- Purchase on pubvanacms.com, then install here
+- Checkout on pubvanacms.com, then install here
 - Reinstall every owned, licensed item at once
 - Move a license to a new domain
 - Feeds update availability to the Updates plugin
