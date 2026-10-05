@@ -32,10 +32,6 @@ use Pubvana\Services\PluginView;
 $app = $app ?? Flight::app();
 $ds = DIRECTORY_SEPARATOR;
 
-if (!defined('PROJECT_ROOT')) {
-    define('PROJECT_ROOT', dirname(__DIR__, 2));
-}
-
 // Ensure config values are loaded into the app. There is no single config
 // file anymore, so $config is never populated under either boot path;
 // values come from env-overrides.php below.
@@ -46,7 +42,7 @@ if ($app->get('database') === null && is_array($config ?? null)) {
 }
 
 // .env overrides + HTTPS policy derivation. Idempotent: under web boot
-// bootstrap.php already ran this; under CLI (runway) this is the one shot
+// bootstrap.php already ran this; under CLI (pubvana) this is the one shot
 // that keeps CLI config identical to web config (DB creds included).
 require(__DIR__ . $ds . 'env-overrides.php');
 
@@ -188,7 +184,7 @@ $csrf = new \Enlivenapp\FlightCsrf\Middlewares\CsrfMiddleware($app);
 |--------------------------------------------------------------------------
 | The enabled-gated migration set comes from $pluginLoader->getMigrationConfig()
 | (the single source of truth) and is registered below so both web and CLI
-| (runway loads this file) resolve it from the Flight store. app/config/
+| (pubvana loads this file) resolve it from the Flight store. app/config/
 | migrations.php remains only as a no-Flight fallback (core paths).
 */
 
@@ -458,7 +454,7 @@ $app->map('url', function () use ($app) {
 |--------------------------------------------------------------------------
 | app/config/shield.php is a full copy of the flight-shield package config
 | with Pubvana's defaults. Its hmac block is edited in place by the CLI
-| (php runway shield:hmac). Folded here into the plugins store so the
+| (php pubvana shield:hmac). Folded here into the plugins store so the
 | PluginLoader merges it over the package Config.php defaults.
 */
 $shieldConfigFile = __DIR__ . $ds . 'shield.php';
@@ -522,7 +518,7 @@ $pluginLoader = new \Pubvana\Services\PluginLoader(
 $app->map('pluginLoader', fn() => $pluginLoader);
 $pluginLoader->loadPlugins();
 
-// CLI tooling (runway) reads the enabled-gated migration set as an app
+// CLI tooling (pubvana) reads the enabled-gated migration set as an app
 // value via ConfigLoader, so disabled plugin migrations never run from the
 // command line either. Same set, web and CLI.
 $app->set('migrations', $pluginLoader->getMigrationConfig());

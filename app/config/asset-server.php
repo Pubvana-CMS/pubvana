@@ -17,10 +17,6 @@ declare(strict_types=1);
  * @package Pubvana\Config
  */
 
-if (!defined('PROJECT_ROOT')) {
-    define('PROJECT_ROOT', dirname(__DIR__, 2));
-}
-
 require(PROJECT_ROOT . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php');
 
 // HTTPS policy, same rule as app/config/env-overrides.php: only an explicit

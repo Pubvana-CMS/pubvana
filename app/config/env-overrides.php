@@ -5,7 +5,7 @@
  *
  * Included by:
  *   - app/config/bootstrap.php (web: public/index.php)
- *   - app/config/services.php  (CLI: the app's ./runway script requires it)
+ *   - app/config/services.php  (CLI: the app's ./pubvana script requires it)
  *
  * Responsibilities, in order:
  *   1. Load .env once per process
@@ -19,10 +19,6 @@
  *
  * @package Pubvana\Config
  */
-
-if (!defined('PROJECT_ROOT')) {
-    define('PROJECT_ROOT', dirname(__DIR__, 2));
-}
 
 // 1. .env loads once per process, into PHP's own variable tables.
 // Precedence ("real environment variables beat .env") is enforced by

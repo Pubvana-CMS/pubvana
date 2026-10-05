@@ -18,11 +18,6 @@
  * @package Pubvana\config
  */
 
-// Guarded: commands like `runway routes` include this bootstrap from within
-// a CLI process that already defined PROJECT_ROOT via services.php.
-if (!defined('PROJECT_ROOT')) {
-    define('PROJECT_ROOT', dirname(__DIR__, 2));
-}
 $ds = DIRECTORY_SEPARATOR;
 
 // Composer autoloader: PSR-4 namespacing plus every vendor package
