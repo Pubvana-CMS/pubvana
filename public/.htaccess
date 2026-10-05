@@ -1,3 +1,11 @@
+# Disable directory browsing
+Options -Indexes
+
+# Deny dotfiles
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
 RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

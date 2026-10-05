@@ -5,11 +5,11 @@ Options -Indexes
 # These work without rewrite and cover the repo-root-served fallback.
 # mod_alias RedirectMatch covers directories even with rewrite disabled.
 <IfModule mod_alias.c>
-    RedirectMatch 403 ^/(\.git|\.env|\.htaccess)(/|$)
+    RedirectMatch 403 ^/(\.git|\.env|\.htaccess|\.gitignore|\.runway-config\.json)(/|$)
     RedirectMatch 403 ^/(app|vendor|writable|plugins|themes|tests|node_modules)(/|$)
-    RedirectMatch 403 ^/(composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml|psalm.*|phpstan.*|runway|cron|releases\.json|pubvana\.json|\.migrations_installed)(/|$)
+    RedirectMatch 403 ^/(composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml|psalm.*|phpstan.*|runway|pubvana|cron|releases\.json|pubvana\.json|\.migrations_installed)(/|$)
 </IfModule>
-<FilesMatch "^(\.env|\.htaccess|\.gitignore|composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml|psalm.*|phpstan.*|releases\.json|pubvana\.json|\.migrations_installed|runway|cron)$">
+<FilesMatch "^(\.env|\.htaccess|\.gitignore|\.runway-config\.json|composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml|psalm.*|phpstan.*|releases\.json|pubvana\.json|\.migrations_installed|runway|pubvana|cron)$">
     Require all denied
 </FilesMatch>
 
@@ -22,7 +22,7 @@ Options -Indexes
     RewriteRule ^\. - [F,L]
 
     # Block sensitive files
-    RewriteRule ^(composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml|psalm.*|phpstan.*|runway|cron|releases\.json|pubvana\.json|\.migrations_installed) - [F,L]
+    RewriteRule ^(composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml|psalm.*|phpstan.*|runway|pubvana|cron|releases\.json|pubvana\.json|\.migrations_installed) - [F,L]
 
     # Deny access to sensitive directories
     RewriteRule ^(app|vendor|writable|plugins|themes|tests|node_modules)(/|$) - [F,L]
