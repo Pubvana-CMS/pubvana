@@ -1,69 +1,61 @@
 # Default Theme
 
-The default Pubvana theme. A clean Bootstrap 5 site theme built on the Bootswatch Flatly palette, providing a navbar, optional hero, breadcrumbs, a sidebar region, a multi-column footer, and full-page templates for every public content type.
+The default Pubvana theme. Bootstrap 5 Bootswatch Flatly, with a navbar, optional hero, breadcrumbs, a sidebar region, a multi-column footer, and a page template for every public content type.
 
-## What It Does
+## Overview
 
-- Renders all public content through a single master layout: navbar, hero (optional), breadcrumbs (optional), page content, sidebar blocks, and footer.
-- Provides a full set of page templates for the blog, static pages, search, categories, tags, and user profiles.
-- Exposes a configurable **sidebar** region and three **footer column** regions so site owners place blocks where they want.
-- Supplies its own Bootstrap 5 assets (CSS and JS), served automatically at `/assets/theme/default/...`.
-- Provides block template overrides for the blog blocks (Recent Posts, Categories, Tags) and the CoreBlocks Text and HTML blocks, used in the region system.
+- Renders public content through one master layout: navbar, hero, breadcrumbs, page content, sidebar blocks, footer.
+- Provides page templates for the blog, static pages, search, categories, tags, and user profiles.
+- Renders error pages, including 404, in the theme.
+- Exposes a **sidebar** region and three **footer column** regions for blocks.
+- Serves its own Bootstrap 5 assets at `/assets/theme/default/...`.
+- Overrides the block templates for all core and plugin blocks
+- Shows flash messages on the public side.
 
 ## Theme Options
 
-Options are managed in **Admin > Appearance > Themes > Options**. They are grouped in the admin form; the group name only affects the form layout, not how each option behaves.
+Manage options in **Admin > Appearance > Themes > Options**. The admin form groups them. The group name affects the form layout only.
 
 | Group | Option | Type | Default | Purpose |
 |-------|--------|------|---------|---------|
-| Layout | Blog Layout | select | `sidebar-right` | Sidebar side on all blog listings and single posts: `sidebar-right`, `sidebar-left` |
-| Layout | Show Sidebar On | select | `not_home` | Which pages show the sidebar region: `not_home`, `home`, `none` |
-| Breadcrumbs | Show Breadcrumbs | toggle | on | Show the auto-generated breadcrumb trail on subpages |
-| Hero | Show Hero | toggle | off | Show the hero section below the navbar |
-| Hero | Background Image | media | (none) | Background image for the hero section |
-| Hero | Title | input | (none) | Title text displayed in the hero |
-| Footer Bottom | Footer Bottom | toggle | on | Show the bottom strip of the footer with the copyright line and `<hr>` |
-| Footer Bottom | Footer Text | input | (none) | Custom copyright/site text; falls back to the site copyright setting when blank |
+| Layout | Blog Layout | select | `sidebar-right` | Sidebar side on blog listings and single posts: `sidebar-right`, `sidebar-left` |
+| Layout | Show Sidebar On | select | `not_home` | Pages that show the sidebar region: `not_home`, `home`, `none` |
+| Breadcrumbs | Show Breadcrumbs | toggle | on | Breadcrumb trail on subpages |
+| Hero | Show Hero | toggle | off | Hero section below the navbar |
+| Hero | Background Image | media | (none) | Hero background image |
+| Hero | Title | input | (none) | Hero title text |
+| Footer Bottom | Footer Bottom | toggle | on | Bottom strip of the footer with the copyright line and `<hr>` |
+| Footer Bottom | Footer Text | input | (none) | Copyright or site text, falls back to the site copyright setting when blank |
 
 ### Layout behavior
 
-- **Blog Layout** sets which side the sidebar renders on: left or right.
-- **Show Sidebar On** decides whether the sidebar renders at all: all pages except home, home only, or nowhere. Static pages follow this option like any other page; there is no separate static-page layout setting.
+- **Blog Layout** sets the sidebar side: left or right.
+- **Show Sidebar On** decides whether the sidebar renders: all pages except home, home only, or nowhere. Static pages follow this option like any other page.
 
 ## Regions
 
-Regions are where site owners place content blocks. Managed in **Admin > Appearance > Themes > Regions**.
+Place blocks in regions under **Admin > Appearance > Themes > Regions**.
 
 | Region ID | Label | Where it renders |
 |-----------|-------|------------------|
-| `sidebar` | Sidebar | Column next to the page content; shown per the Show Sidebar On layout option |
+| `sidebar` | Sidebar | Column next to the page content. Shown per the Show Sidebar On option |
 | `footer-col-1` | Footer Column 1 | First column of the footer |
 | `footer-col-2` | Footer Column 2 | Second column of the footer |
 | `footer-col-3` | Footer Column 3 | Third column of the footer |
 
-The theme also uses the platform regions (`before-content`, `after-content`, `footer`) provided by the core.
+The theme also uses the platform regions (`before-content`, `after-content`, `footer`) from the core.
 
 ## Templates
 
-The theme includes a template for every public view. Templates are Vision `.tpl` files and never execute PHP. `layout.tpl` is the whole page; page templates are content-only and `PublicController` injects their output as `content`.
+The theme includes a template for every public view and block. Templates are Vision `.tpl` files and can't execute PHP. `layout.tpl` is the main file that must be used. Other page templates hold content only, and `PublicController` injects their output as `content`.
 
-| Template | Used for |
-|----------|----------|
-| `layout.tpl` | Master page shell (html, head, navbar, hero, breadcrumbs, sidebar, content, footer). Nothing extends it. |
-| `pubvana/blog/home.tpl` | Blog-list homepage and `/blog` |
-| `pubvana/pages/page.tpl` | Static pages, including a page-based homepage |
-| `pubvana/blog/post.tpl` | Single blog post with comments |
-| `pubvana/blog/archive.tpl` | Blog category and tag archive listings |
-| `pubvana/blog/categories.tpl` | Category index |
-| `pubvana/blog/tags.tpl` | Tag index |
-| `pubvana/blog/index.tpl` | Minimal post list (reference example) |
-| `pubvana/search/search.tpl` | Search results |
-| `pubvana/profiles/profile.tpl` | Public user profile |
-| `pubvana/profiles/profile_edit.tpl` | Profile editing form |
-| `partials/` | Reusable fragments: navbar, footer, hero, breadcrumbs, pagination, post list, alerts |
-| `pubvana/blog/public/blocks/` | Block template overrides: Recent Posts, Categories, Tags |
-| `pubvana/core-blocks/public/blocks/` | Block template overrides: Text, HTML content blocks |
-| `enlivenapp/flight-shield/` | Auth screen overrides: Shield login/register/2FA/activation/magic-link pages, auth email bodies, and the forgot/reset password pages (`auth/`) |
+## Minimum Files
+
+A bare minimum theme can be created with only the two required files: `layout.tpl` and `pubvana.json`. 
+
+For further help creating themes you should find the [Theme Docs](https://pubvanacms.com/docs/dev/v/3.0/dev-for-pubvana/themes) helpful.
+
+
 
 ## Assets
 
@@ -71,4 +63,4 @@ The theme includes a template for every public view. Templates are Vision `.tpl`
 - JS: `assets/js/bootstrap.bundle.min.js`
 - Icon: `icon.svg` (shown in the admin theme picker)
 
-Assets are served by the AssetService at `/assets/theme/default/{path}`; they are read from the theme's `assets/` folder and never copied into `public/`.
+The AssetService serves these at `/assets/theme/default/{path}`. It reads them from the theme's `assets/` folder.

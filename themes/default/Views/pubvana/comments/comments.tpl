@@ -1,3 +1,10 @@
+{# Theme override for the Comments plugin's public thread.
+   Resolved by CommentService::resolveTemplate() as
+   themes/{active}/Views/pubvana/comments/comments.tpl.
+   Data comes from CommentService::dataFor(): comments, comments_enabled,
+   comments_open, comments_closed, comments_is_guest, comment_post_url,
+   max_nesting_depth, csrf_field. Each comment carries id, parent_id, depth,
+   author, body, created_at, children. #}
 {% if comments_enabled %}
 <hr>
 <section class="mt-4" id="comments">
@@ -5,13 +12,13 @@
 
     {% if comments %}
     {% for comment in comments %}
-    <div class="card mb-2" style="margin-left: {{ comment.margin_left }}" id="comment-{{ comment.id }}">
+    <div class="card mb-2 ms-{{ comment.depth * 3 }}" id="comment-{{ comment.id }}">
         <div class="card-body py-2 px-3">
             <strong>{{ comment.author }}</strong>
-            <span class="text-muted small ms-1">{{ comment.date | date('F j, Y') }}</span>
+            <span class="text-muted small ms-1">{{ comment.created_at | date('F j, Y g:ia') }}</span>
             <div class="mt-1">{! comment.body !}</div>
             {% if comments_open %}
-            <button type="button" class="btn btn-sm btn-link p-0 mt-1 comment-reply-btn" data-parent-id="{{ comment.id }}">Reply</button>
+            <button type="button" class="btn btn-sm btn-link p-0 mt-1 comment-reply-btn" data-parent-id="{{ comment.id }}" data-author="{{ comment.author }}">Reply</button>
             {% endif %}
         </div>
     </div>
@@ -24,7 +31,7 @@
     <div class="mt-4" id="comment-form-wrapper">
         <h5 id="comment-form-title">Leave a Comment</h5>
         <div id="reply-indicator" class="alert alert-info d-none mb-3">
-            Replying to a comment — <a href="#" id="cancel-reply">cancel</a>
+            Replying to <span id="reply-indicator-author"></span> — <a href="#" id="cancel-reply">cancel</a>
         </div>
         <form method="post" action="{{ comment_post_url }}" id="comment-form">
             {! csrf_field !}
@@ -65,12 +72,14 @@ document.addEventListener('DOMContentLoaded', function() {
     var btns = document.querySelectorAll('.comment-reply-btn');
     var parentInput = document.getElementById('comment-parent-id');
     var indicator = document.getElementById('reply-indicator');
+    var indicatorAuthor = document.getElementById('reply-indicator-author');
     var formTitle = document.getElementById('comment-form-title');
     var formWrapper = document.getElementById('comment-form-wrapper');
 
     btns.forEach(function(btn) {
         btn.addEventListener('click', function() {
             parentInput.value = this.getAttribute('data-parent-id');
+            if (indicatorAuthor) { indicatorAuthor.textContent = this.getAttribute('data-author') || ''; }
             indicator.classList.remove('d-none');
             formTitle.textContent = 'Reply';
             formWrapper.scrollIntoView({ behavior: 'smooth' });
