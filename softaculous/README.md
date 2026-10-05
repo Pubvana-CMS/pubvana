@@ -24,7 +24,7 @@ bundles `vendor/`, so no Composer step happens on the server.
 
 ```bash
 curl -L -o pubvana.zip \
-  https://github.com/Pubvana-CMS/pubvana/releases/download/3.0.0-beta.6/release.zip
+  https://github.com/Pubvana-CMS/pubvana/releases/download/3.0.0-beta.7/release.zip
 ```
 
 The folder it unzips to must match the top level entries in `fileindex.php`.
