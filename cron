@@ -3,24 +3,44 @@
 declare(strict_types=1);
 
 /**
- * Cron entry point. System crontabs call this script on three schedules
- * (every minute, every 4 hours, every 24 hours) and it runs the
- * plugin-registered tasks for the given interval. See build_docs/Cron.md for
- * the crontab lines.
+ * Cron entry point. System crontabs run this script on three schedules:
+ * every minute, every 4 hours, and every 24 hours. It runs the
+ * plugin-registered tasks for the interval you pass. 
+ * Users: see https://pubvanacms.com/docs/user/v/3.0/getting-started/cron
+ * Devs: see  https://pubvanacms.com/docs/dev/v/3.0/services/cron
  *
- * Boots the full application (plugins included, so their Plugin.php
- * register() calls can add tasks through adext), then hands the interval
- * to CronService. Not web-exposed: the docroot is public/.
+ * The script boots the full application (plugins included), so each
+ * Plugin.php register() call can add tasks through adext. Then it passes the
+ * interval to CronService. The docroot is public/, so the web cannot reach
+ * this script.
  *
- * Exit codes (from CronService): 0 tasks ran, 1 bad interval, 2 ran but
- * at least one task failed, 3 skipped because the previous run still
- * holds the lock.
+ * Exit codes (from CronService): 0 tasks ran, 1 bad interval, 2 ran but at
+ * least one task failed, 3 skipped because the previous run still holds the
+ * lock.
  */
 
 use Pubvana\Services\CronService;
 
-require __DIR__ . '/vendor/autoload.php';
-require __DIR__ . '/app/config/services.php';
+// set $publicPath if you've changed the default installation
+$publicPath = __DIR__ . '/public';
+
+// Folder that holds app/, vendor/, and writable/. This entry point sits in
+// the project root, so __DIR__ is the project root.
+if (!defined('PROJECT_ROOT')) {
+    define('PROJECT_ROOT', __DIR__);
+}
+
+// Folder the web server serves. Defaults to public/ beside the project.
+// Change it to the absolute served path when the web root sits outside the
+// install, for example '/var/www/html'.
+if (!defined('PUBLIC_PATH')) {
+    define('PUBLIC_PATH', $publicPath);
+}
+
+$ds = DIRECTORY_SEPARATOR;
+
+require PROJECT_ROOT . $ds . 'vendor' . $ds . 'autoload.php';
+require PROJECT_ROOT . $ds . 'app' . $ds . 'config' . $ds . 'services.php';
 
 $interval = $argv[1] ?? '';
 

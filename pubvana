@@ -1,0 +1,33 @@
+<?php
+
+/**
+ * CLI entry point. Run commands from the project root with `php pubvana`, or
+ * `php pubvana <command> --help` for one command's options. Runway discovers
+ * the commands from the app, its Composer packages, and its plugins.
+ *
+ * The script loads the Composer autoloader, then app/config/services.php. That
+ * file gives every command the database connection, plugin config, the
+ * settings store, and the plugin loader. Then it runs vendor/bin/runway.
+ */
+
+// set $publicPath if you've changed the default installation
+$publicPath = __DIR__ . '/public';
+
+// Folder that holds app/, vendor/, and writable/. This entry point sits in
+// the project root, so __DIR__ is the project root.
+if (!defined('PROJECT_ROOT')) {
+    define('PROJECT_ROOT', __DIR__);
+}
+
+// Folder the web server serves. Defaults to public/ beside the project.
+// Change it to the absolute served path when the web root sits outside the
+// install, for example '/var/www/html'.
+if (!defined('PUBLIC_PATH')) {
+    define('PUBLIC_PATH', $publicPath);
+}
+
+$ds = DIRECTORY_SEPARATOR;
+
+require PROJECT_ROOT . $ds . 'vendor' . $ds . 'autoload.php';
+require PROJECT_ROOT . $ds . 'app' . $ds . 'config' . $ds . 'services.php';
+require PROJECT_ROOT . $ds . 'vendor' . $ds . 'bin' . $ds . 'runway';
