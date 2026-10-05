@@ -15,6 +15,8 @@
  */
 ?>
 
+<a href="<?= $adminBase ?>" class="btn btn-sm btn-outline-secondary mb-3">Marketplace home</a>
+
 <?php if (!$connected): ?>
     <div class="row justify-content-center">
         <div class="col-lg-5">
