@@ -28,6 +28,7 @@ return [
         '.env',
         'app/config/shield.php',
         'writable',
+        'public/index.php',
     ],
 
     // Preflight: minimum free disk (MB) on the project partition.
