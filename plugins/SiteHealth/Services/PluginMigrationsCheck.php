@@ -37,7 +37,7 @@ class PluginMigrationsCheck implements CheckInterface
                 category: CheckResult::CAT_PLUGINS,
                 status: CheckResult::WARNING,
                 message: 'Could not check migration status: ' . $e->getMessage(),
-                remediation: 'Run pending migrations. Via command line: php runway migrate, or trigger from your deployment process.',
+                remediation: 'Run pending migrations. Via command line: php pubvana migrate, or trigger from your deployment process.',
             );
         }
 
@@ -50,7 +50,7 @@ class PluginMigrationsCheck implements CheckInterface
                 category: CheckResult::CAT_PLUGINS,
                 status: CheckResult::CRITICAL,
                 message: "{$count} pending migration(s) in: " . implode(', ', $modules),
-                remediation: 'Run pending migrations. Via command line: php runway migrate, or trigger from your deployment process.',
+                remediation: 'Run pending migrations. Via command line: php pubvana migrate, or trigger from your deployment process.',
             );
         }
 

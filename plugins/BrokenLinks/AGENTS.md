@@ -67,9 +67,9 @@ plugins/BrokenLinks/
 
 **Admin screen.** A single page under **Tools > Broken Links** shows results grouped by source (post/page badge + title as edit link). Actions: Run Scan (full), Recheck (single URL), Dismiss (permanent). A toggle shows/hides dismissed entries.
 
-**CLI.** `php runway broken-links:check` runs the same scan logic. Returns exit code 1 if any broken links found, 0 otherwise. Auto-discovered by Runway from `plugins/BrokenLinks/commands/`.
+**CLI.** `php pubvana broken-links:check` runs the same scan logic. Returns exit code 1 if any broken links found, 0 otherwise. Auto-discovered by Runway from `plugins/BrokenLinks/commands/`.
 
-**Cron.** The plugin registers a `24h` core cron task (`pubvana.brokenlinks`) that runs `scan()` daily. The task never throws; broken-link findings are informational and surfaced on the admin screen, so it stays quiet in the error log unless a real (uncaught) failure occurs. `BrokenLinksCronCommand` is a separate `broken-links:cron` runway command that runs the same scan on demand; both paths share `scan()`.
+**Cron.** The plugin registers a `24h` core cron task (`pubvana.brokenlinks`) that runs `scan()` daily. The task never throws; broken-link findings are informational and surfaced on the admin screen, so it stays quiet in the error log unless a real (uncaught) failure occurs. `BrokenLinksCronCommand` is a separate `broken-links:cron` pubvana command that runs the same scan on demand; both paths share `scan()`.
 
 ## Development and testing
 
@@ -86,7 +86,7 @@ This plugin has no `composer.json`. It is exercised through the full app and has
   - [ ] Recheck a broken link that is now reachable; confirm it is removed
   - [ ] Dismiss a broken link; confirm it no longer appears in the default view
   - [ ] Show dismissed entries; confirm dismissed links appear with muted styling
-  - [ ] Run `php runway broken-links:check` and confirm CLI output
+  - [ ] Run `php pubvana broken-links:check` and confirm CLI output
   - [ ] Run a scan twice; confirm no duplicate rows are created
   - [ ] Confirm a dismissed row is not updated when the same URL is found broken again
 

@@ -13,8 +13,8 @@ use Pubvana\Plugins\Updates\Services\UpdateService;
  * CLI: check the release feed and report the update state.
  *
  * Usage:
- *   php runway updates:check
- *   php runway updates:check --force
+ *   php pubvana updates:check
+ *   php pubvana updates:check --force
  *
  * @package  Pubvana\Plugins\Updates\commands
  * @copyright 2026 enlivenapp
@@ -29,8 +29,8 @@ class UpdatesCheckCommand extends AbstractBaseCommand
         $this
             ->option('--force', 'Bypass the 24-hour check cache', null, false)
             ->usage(
-                '<bold>  runway updates:check</end><eol/>' .
-                '<bold>  runway updates:check --force</end><eol/>'
+                '<bold>  pubvana updates:check</end><eol/>' .
+                '<bold>  pubvana updates:check --force</end><eol/>'
             );
     }
 
@@ -87,7 +87,7 @@ class UpdatesCheckCommand extends AbstractBaseCommand
             $io->info('Note: ' . $line, true);
         }
 
-        $io->info('Apply with: php runway updates:apply', true);
+        $io->info('Apply with: php pubvana updates:apply', true);
 
         return 0;
     }

@@ -29,6 +29,6 @@ if (!function_exists('__upgrade')) {
 
         $php = '/usr/local/bin/php';
 
-        __runCmd($php . ' ' . escapeshellarg($path . '/runway') . ' migrate:all', $path);
+        __runCmd($php . ' ' . escapeshellarg($path . '/pubvana') . ' migrate:all', $path);
     }
 }

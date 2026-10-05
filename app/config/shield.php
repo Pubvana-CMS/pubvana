@@ -7,7 +7,7 @@
  * Pubvana's defaults applied, so edits stay local to this application.
  * The hmac block starts blank; it is managed in place via:
  *
- *   php runway shield:hmac init|listkeys|addkey|removekey
+ *   php pubvana shield:hmac init|listkeys|addkey|removekey
  *
  * Downstream sites can change anything in this file.
  */
@@ -47,7 +47,7 @@ return [
         ],
     ],
 
-    // HMAC settings, managed via: runway shield:hmac
+    // HMAC settings, managed via: pubvana shield:hmac
     // Blank by default; init writes keys into this block.
     'hmac' => [
         'encryption_keys' => [ ],

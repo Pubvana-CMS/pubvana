@@ -58,7 +58,7 @@ if (!function_exists('__install')) {
         @chmod($path . '/.env', 0644);
 
         $php = '/usr/local/bin/php';
-        $migrateCmd = $php . ' ' . escapeshellarg($path . '/runway') . ' migrate:all';
+        $migrateCmd = $php . ' ' . escapeshellarg($path . '/pubvana') . ' migrate:all';
 
         if (!__runCmd($migrateCmd, $path)) {
             exit(1);
@@ -66,14 +66,14 @@ if (!function_exists('__install')) {
 
         $passInput = escapeshellarg($adminPass . "\n" . $adminPass);
         $userCmd = 'printf ' . $passInput . ' | ' . $php . ' '
-            . escapeshellarg($path . '/runway') . ' shield:user create'
+            . escapeshellarg($path . '/pubvana') . ' shield:user create'
             . ' -n ' . escapeshellarg($adminUser)
             . ' -e ' . escapeshellarg($adminEmail)
             . ' -g superadmin';
 
         __runCmd($userCmd, $path);
 
-        $checkCmd = $php . ' ' . escapeshellarg($path . '/runway') . ' shield:user show -n ' . escapeshellarg($adminUser);
+        $checkCmd = $php . ' ' . escapeshellarg($path . '/pubvana') . ' shield:user show -n ' . escapeshellarg($adminUser);
         $checkOut = __runCmd($checkCmd, $path);
 
         if (strpos($checkOut, $adminUser) === false) {

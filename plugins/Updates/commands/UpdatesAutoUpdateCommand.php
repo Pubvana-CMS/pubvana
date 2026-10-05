@@ -12,8 +12,8 @@ use Pubvana\Plugins\Updates\Services\UpdateService;
  * CLI: the automatic update chain (cron target).
  *
  * Usage:
- *   php runway updates:auto-update
- *   php runway updates:auto-update --user cron
+ *   php pubvana updates:auto-update
+ *   php pubvana updates:auto-update --user cron
  *
  * Runs UpdateService::runAutoUpdateChain(), the same implementation the
  * core cron task (24h slot) invokes: force-checks the release feed, then
@@ -39,8 +39,8 @@ class UpdatesAutoUpdateCommand extends AbstractBaseCommand
         $this
             ->option('--user', 'Username for backup attribution', null, 'cron')
             ->usage(
-                '<bold>  runway updates:auto-update</end><eol/>' .
-                '<bold>  runway updates:auto-update --user cron</end><eol/>'
+                '<bold>  pubvana updates:auto-update</end><eol/>' .
+                '<bold>  pubvana updates:auto-update --user cron</end><eol/>'
             );
     }
 

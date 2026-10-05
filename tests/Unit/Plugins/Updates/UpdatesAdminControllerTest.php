@@ -21,7 +21,7 @@ use const JSON_THROW_ON_ERROR;
 /**
  * UpdatesAdminController over a canned UpdateService subclass.
  *
- * apply() happy paths shell out to a background runway process, so only
+ * apply() happy paths shell out to a background pubvana process, so only
  * the early JSON branches (lock, no target, breaking confirm) are
  * exercised here; the exec and sync paths belong to the
  * UpdateApplyService tests.

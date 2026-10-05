@@ -19,7 +19,7 @@ Open **Tools → Broken Links**. From there you can run a scan, recheck a single
 From the command line:
 
 ```bash
-php runway broken-links:check
+php pubvana broken-links:check
 ```
 
 ## License

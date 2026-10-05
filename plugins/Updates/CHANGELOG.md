@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 - Error logging goes to the PHP error log.
-- Runway commands that threw exceptions or errored.
+- Pubvana commands that threw exceptions or errored.
 
 ## [0.2.11] - 2026-09-27
 
@@ -121,4 +121,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Mandatory pre-update backup through the Backups plugin; a failed backup aborts the update.
 - Safe-target capping: never jumps past a version blocked by an installed plugin or theme declaring min/max_pubvana_version.
 - Per-version skip list.
-- CLI commands: `runway updates:check`, `runway updates:apply`, `runway updates:auto-update`, with the auto-update chain registered as a daily task on the core cron system.
+- CLI commands: `pubvana updates:check`, `pubvana updates:apply`, `pubvana updates:auto-update`, with the auto-update chain registered as a daily task on the core cron system.

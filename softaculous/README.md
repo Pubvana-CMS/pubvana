@@ -57,8 +57,8 @@ The package lives under `/var/softaculous/pubvana/` on the Softaculous server:
   the zip.
 - The `<version>` value in `info.xml` must track `pubvana.json`. Softaculous
   uses it to decide when an upgrade is available for existing installs.
-- The install uses `ssh` realm CLI: `php runway migrate:all`, then
-  `printf "pass\npass\n" | php runway shield:user create -n ... -e ... -g superadmin`
+- The install uses `ssh` realm CLI: `php pubvana migrate:all`, then
+  `printf "pass\npass\n" | php pubvana shield:user create -n ... -e ... -g superadmin`
   (the CLI prompts for the password twice, hence the `printf` pipe).
 - The cron jobs call `/usr/local/bin/php -q [[softpath]]/cron {1m,4h,24h}`,
   matching the three intervals the app expects.

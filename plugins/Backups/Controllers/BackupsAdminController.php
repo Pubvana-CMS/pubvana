@@ -87,11 +87,11 @@ class BackupsAdminController extends AdminController
         $user        = $this->app->auth()->user();
         $triggeredBy = $user->username ?? 'unknown';
 
-        // Try exec (background process via runway)
+        // Try exec (background process via pubvana)
         if ($this->execAvailable()) {
             $cmd = sprintf(
                 'php %s backups:create --trigger manual --user %s > /dev/null 2>&1 &',
-                escapeshellarg(PROJECT_ROOT . '/runway'),
+                escapeshellarg(PROJECT_ROOT . '/pubvana'),
                 escapeshellarg($triggeredBy)
             );
             $launchedAt = time();
@@ -197,11 +197,11 @@ class BackupsAdminController extends AdminController
         $user        = $this->app->auth()->user();
         $triggeredBy = $user->username ?? 'unknown';
 
-        // Try exec (background process via runway)
+        // Try exec (background process via pubvana)
         if ($this->execAvailable()) {
             $cmd = sprintf(
                 'php %s backups:restore %s --user %s > /dev/null 2>&1 &',
-                escapeshellarg(PROJECT_ROOT . '/runway'),
+                escapeshellarg(PROJECT_ROOT . '/pubvana'),
                 escapeshellarg($filename),
                 escapeshellarg($triggeredBy)
             );
@@ -278,7 +278,7 @@ class BackupsAdminController extends AdminController
     }
 
     /**
-     * Wait for a backgrounded runway process to leave a trace of itself.
+     * Wait for a backgrounded pubvana process to leave a trace of itself.
      *
      * A child that dies on startup writes nothing, so the admin would poll
      * forever at "Starting...". The child takes the operation lock and

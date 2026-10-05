@@ -15,12 +15,12 @@ use flight\commands\AbstractBaseCommand;
 /**
  * Index command for the backups CLI group.
  *
- * Running `php runway backups` lists the available backup sub-commands with a
+ * Running `php pubvana backups` lists the available backup sub-commands with a
  * short description of each. The group name on its own is not a backup action,
  * so this only prints help.
  *
  * Usage:
- *   php runway backups
+ *   php pubvana backups
  */
 class BackupsCommand extends AbstractBaseCommand
 {

@@ -93,7 +93,7 @@ php -l <touched files>                 # lint
 composer phpstan                       # level 8, via composer
 composer psalm                         # taint analysis
 vendor/bin/phpunit                     # run the suite
-php runway cron 24h                    # exercise the cron task (graceful when not due)
+php pubvana cron 24h                    # exercise the cron task (graceful when not due)
 ```
 
 ## Coding standards

@@ -14,8 +14,8 @@ use Pubvana\Plugins\Updates\Services\UpdateService;
  * CLI: apply the pending update (manual path).
  *
  * Usage:
- *   php runway updates:apply
- *   php runway updates:apply --release 3.0.2 --user admin
+ *   php pubvana updates:apply
+ *   php pubvana updates:apply --release 3.0.2 --user admin
  *
  * Manual applies may cross breaking changes; the operator is expected to
  * have read them (they are printed by updates:check).
@@ -34,8 +34,8 @@ class UpdatesApplyCommand extends AbstractBaseCommand
             ->option('--release', 'Specific release version to apply (default: the safe target)', null, '')
             ->option('--user', 'Username for backup attribution', null, 'cli')
             ->usage(
-                '<bold>  runway updates:apply</end><eol/>' .
-                '<bold>  runway updates:apply --release 3.0.2 --user admin</end><eol/>'
+                '<bold>  pubvana updates:apply</end><eol/>' .
+                '<bold>  pubvana updates:apply --release 3.0.2 --user admin</end><eol/>'
             );
     }
 

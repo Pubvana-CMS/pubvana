@@ -4,7 +4,7 @@
  * CREDENTIALS fallback for enlivenapp/migrations.
  *
  * This is the ConfigLoader's lower, file-based cascade tier. Web requests and
- * the app's own ./runway script both load services.php (via app/config/
+ * the app's own ./pubvana script both load services.php (via app/config/
  * services.php), which registers a PDO as Flight::get('db') and the enabled-
  * gated migration set as Flight::get('migrations'). ConfigLoader prefers that
  * Flight tier, so THIS file is only reached as a fallback when Flight is not

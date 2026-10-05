@@ -19,8 +19,8 @@ use Flight;
  * CLI command to create a full-site backup.
  *
  * Usage:
- *   php runway backups:create
- *   php runway backups:create --trigger pre-update --user admin
+ *   php pubvana backups:create
+ *   php pubvana backups:create --trigger pre-update --user admin
  */
 class BackupsCreateCommand extends AbstractBaseCommand
 {
@@ -32,8 +32,8 @@ class BackupsCreateCommand extends AbstractBaseCommand
             ->option('--trigger', 'Trigger type: manual, pre-update, pre-rollback, post-rollback', null, 'manual')
             ->option('--user', 'Username of the admin who initiated the backup', null, 'cli')
             ->usage(
-                '<bold>  runway backups:create</end><eol/>' .
-                '<bold>  runway backups:create --trigger manual --user admin</end><eol/>'
+                '<bold>  pubvana backups:create</end><eol/>' .
+                '<bold>  pubvana backups:create --trigger manual --user admin</end><eol/>'
             );
     }
 

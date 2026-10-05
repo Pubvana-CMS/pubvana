@@ -15,12 +15,12 @@ use flight\commands\AbstractBaseCommand;
 /**
  * Index command for the updates CLI group.
  *
- * Running `php runway updates` lists the available update sub-commands with a
+ * Running `php pubvana updates` lists the available update sub-commands with a
  * short description of each. The group name on its own is not an update action,
  * so this only prints help.
  *
  * Usage:
- *   php runway updates
+ *   php pubvana updates
  */
 class UpdatesCommand extends AbstractBaseCommand
 {

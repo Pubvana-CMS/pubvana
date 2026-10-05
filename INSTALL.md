@@ -88,7 +88,7 @@ SESSION_ENCRYPTION_KEY=<64 hex characters>
 ## Initialize the Database
 
 ```bash
-php runway migrate:all
+php pubvana migrate:all
 ```
 
 This runs the foundation packages (sessions, Shield, CSRF), core migrations, and every enabled plugin's migrations and seeds.
@@ -98,8 +98,8 @@ This runs the foundation packages (sessions, Shield, CSRF), core migrations, and
 *Use caution with who is allowed access to your hosting account's terminal. Anyone with terminal access can find and run these commands.*
 
 ```bash
-php runway shield:user create -n yourusername -e you@example.com
-php runway shield:user addgroup -e you@example.com -g superadmin
+php pubvana shield:user create -n yourusername -e you@example.com
+php pubvana shield:user addgroup -e you@example.com -g superadmin
 ```
 
 ## Web Server
@@ -114,6 +114,6 @@ Visit `https://your-server/auth/login` and sign in with the admin credentials yo
 
 | Command | Description |
 |---------|-------------|
-| `php runway migrate:all` | Run all pending migrations and seeds |
-| `php runway shield:user create -n <name> -e <email>` | Create a user |
-| `php runway shield:user addgroup -e <email> -g <group>` | Assign a user to a group |
+| `php pubvana migrate:all` | Run all pending migrations and seeds |
+| `php pubvana shield:user create -n <name> -e <email>` | Create a user |
+| `php pubvana shield:user addgroup -e <email> -g <group>` | Assign a user to a group |

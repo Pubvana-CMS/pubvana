@@ -124,7 +124,7 @@ class PluginLoader
      */
     public function loadPlugins(): array
     {
-        // Re-entry guard: CLI tools (runway) may require services.php and then
+        // Re-entry guard: CLI tools (pubvana) may require services.php and then
         // include the front controller in one process, booting plugins twice.
         // Migrations, Plugin::register(), and session starts are not idempotent.
         if ($this->pluginsLoaded) {
@@ -143,7 +143,7 @@ class PluginLoader
         // seeds depend on (e.g. Shield's auth_permissions), which is why they run
         // before core.
         // Migration checks run only where they can do work: fresh installs
-        // (no marker file), CLI runway, and admin requests. Public page
+        // (no marker file), CLI pubvana, and admin requests. Public page
         // requests and cron runs skip all three migration tiers entirely.
         $foundation = array_filter(
             $all,
@@ -1066,7 +1066,7 @@ class PluginLoader
      * They only run where they can do work:
      *   - fresh install (no .migrations_installed marker): always, because
      *     the session/shield tables must exist before any page loads
-     *   - CLI: only for runway (RUNWAY_PROJECT_ROOT defined); cron skips
+     *   - CLI: only for pubvana (RUNWAY_PROJECT_ROOT defined); cron skips
      *   - web: admin requests only; public pages skip entirely
      */
     protected function shouldRunMigrationsOnThisRequest(): bool

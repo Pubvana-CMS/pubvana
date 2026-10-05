@@ -21,9 +21,9 @@ The Updates screen is at **Tools → Updates**. Check for updates, review the no
 Command line:
 
 ```bash
-php runway updates:check                # report the update state
-php runway updates:apply                # apply the safe target
-php runway updates:auto-update          # check, then apply when allowed
+php pubvana updates:check                # report the update state
+php pubvana updates:apply                # apply the safe target
+php pubvana updates:auto-update          # check, then apply when allowed
 ```
 
 A pre-update backup goes to Tools → Backups tagged `pre-update`. If an update fails partway, restore that snapshot to get back to a working site.

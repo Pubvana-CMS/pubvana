@@ -47,9 +47,9 @@ Updates/
 │   ├── UpdateApplyService.php            8-phase apply: preflight, backup, download, validate, extract, copy, migrate, cleanup
 │   └── UpdateProgress.php                Phase checklist + detail line JSON, flock operation lock
 ├── commands/
-│   ├── UpdatesCheckCommand.php           runway updates:check [--force]
-│   ├── UpdatesApplyCommand.php           runway updates:apply [--release X --user Y]
-│   └── UpdatesAutoUpdateCommand.php      runway updates:auto-update (cron target; shares the chain)
+│   ├── UpdatesCheckCommand.php           pubvana updates:check [--force]
+│   ├── UpdatesApplyCommand.php           pubvana updates:apply [--release X --user Y]
+│   └── UpdatesAutoUpdateCommand.php      pubvana updates:auto-update (cron target; shares the chain)
 ├── Database/
 │   └── Seeds/Seed.php                    Seeds updates.manage permission
 ├── Views/
@@ -68,13 +68,13 @@ Repo-level companions for this feature: root `releases.json` (machine feed, per-
 
 ### Apply flow (8 phases, `UpdateApplyService::apply()`)
 
-Lock → preflight (PHP floor from `min_php_version` across the range, disk, writables, Backups availability) → backup via `$app->backups()->createBackup('pre-update', ...)` while holding the Backups lock → download with byte-level progress → validate + detect wrapper dir → extract to `writable/updates/extract` → copy everything except protected paths (dirs 0755, per-directory counts; the cached check is dropped here, because the installed version has changed) → migrate (`php runway migrate` subprocess, `MigrationSetup` in-process fallback; failure is reported, never fatal at this point) → cleanup (zip, extract dir, `writable/cache` clear) → `complete()` with a structured result.
+Lock → preflight (PHP floor from `min_php_version` across the range, disk, writables, Backups availability) → backup via `$app->backups()->createBackup('pre-update', ...)` while holding the Backups lock → download with byte-level progress → validate + detect wrapper dir → extract to `writable/updates/extract` → copy everything except protected paths (dirs 0755, per-directory counts; the cached check is dropped here, because the installed version has changed) → migrate (`php pubvana migrate` subprocess, `MigrationSetup` in-process fallback; failure is reported, never fatal at this point) → cleanup (zip, extract dir, `writable/cache` clear) → `complete()` with a structured result.
 
-Migration failure does not abort the update: files are already in place, and the result carries `migrations_error` so the admin can run `php runway migrate` manually.
+Migration failure does not abort the update: files are already in place, and the result carries `migrations_error` so the admin can run `php pubvana migrate` manually.
 
 ### Automatic chain
 
-`UpdateService::runAutoUpdateChain()` is the single implementation: force-check, then apply only when `Updates.autoUpdate` is on, a target exists, and no breaking changes are in range. It returns `status` (ok|noop|refused|error), `message`, and `version`. Two consumers share it: the `updates:auto-update` command (prints, exit 1 on error) and the core cron task. The web equivalent is the index page: when the check is stale it refreshes; when auto is on and the target is clean, it backgrounds `php runway updates:auto-update --user {name}`. Both web paths are 24h cache-gated.
+`UpdateService::runAutoUpdateChain()` is the single implementation: force-check, then apply only when `Updates.autoUpdate` is on, a target exists, and no breaking changes are in range. It returns `status` (ok|noop|refused|error), `message`, and `version`. Two consumers share it: the `updates:auto-update` command (prints, exit 1 on error) and the core cron task. The web equivalent is the index page: when the check is stale it refreshes; when auto is on and the target is clean, it backgrounds `php pubvana updates:auto-update --user {name}`. Both web paths are 24h cache-gated.
 
 **Core cron wiring:** the plugin registers a `24h` task (`pubvana.updates`) with the core cron system (`docs/Cron.md`, `CronService`). The task callable throws only on `error`, so a real failure shows as FAILED in the error log and exits the run with code 2; `noop` and `refused` return quietly. Never register additional intervals; long-running update work belongs in `24h` only.
 
@@ -87,10 +87,10 @@ php -l <touched files>                 # lint
 composer phpstan                       # level 8
 composer psalm                         # taint analysis
 vendor/bin/phpunit                     # full suite
-php runway updates:check --force       # CLI exercise (graceful error until the feed is published)
+php pubvana updates:check --force       # CLI exercise (graceful error until the feed is published)
 ```
 
-Scratch end-to-end (done once for v1; repeat when changing the apply flow): copy the repo to /tmp, point `releases_url` at a local `releases.json` + zip (file:// URLs work), run `php runway updates:apply --user e2e`, verify version bump, backup zip, marker file, progress JSON `completed`, then `updates:check` reports up to date. Also verify: auto refused while setting off, auto refused through breaking changes, skip/unskip behavior, and the lock self-conflict does not reappear.
+Scratch end-to-end (done once for v1; repeat when changing the apply flow): copy the repo to /tmp, point `releases_url` at a local `releases.json` + zip (file:// URLs work), run `php pubvana updates:apply --user e2e`, verify version bump, backup zip, marker file, progress JSON `completed`, then `updates:check` reports up to date. Also verify: auto refused while setting off, auto refused through breaking changes, skip/unskip behavior, and the lock self-conflict does not reappear.
 
 ## Coding standards
 
@@ -123,7 +123,7 @@ Scratch end-to-end (done once for v1; repeat when changing the apply flow): copy
 | Tune safe-target behavior | `UpdateService::pickTarget()` (pure static, unit-tested) |
 | Protect another path from updates | `protected_paths` in `Config/Config.php` |
 | Change the feed | Repo root `releases.json`; the workflow requires an entry with `download_url` for each tag. `CHANGELOG.md` stays a human log, no workflow requirement |
-| Add a CLI flag | The matching `commands/` class; avoid `--version` (runway registers it globally) |
+| Add a CLI flag | The matching `commands/` class; avoid `--version` (pubvana registers it globally) |
 | Change admin UI | `Views/admin/index.php`; keep polling JS inline |
 
 ## PR / contribution checklist

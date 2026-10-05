@@ -654,11 +654,11 @@ final class PluginLoaderTest extends TestCase
         self::assertSame(['app/Database/Migrations' => 'pubvana/pubvana'], $config['module_names']);
     }
 
-    public function testMigrationChecksSkipCliRunsOutsideRunway(): void
+    public function testMigrationChecksSkipCliRunsOutsidePubvana(): void
     {
         // The repo marker is gitignored, so CI checkouts never have it.
         // Create it for the duration of this test instead of depending on
-        // repo state; the CLI is not runway, so no migrations run.
+        // repo state; the CLI is not pubvana, so no migrations run.
         $marker = PROJECT_ROOT . '/.migrations_installed';
         $existed = is_file($marker);
         if (!$existed) {

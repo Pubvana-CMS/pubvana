@@ -15,12 +15,12 @@ use flight\commands\AbstractBaseCommand;
 /**
  * Index command for the broken-links CLI group.
  *
- * Running `php runway broken-links` lists the available scan sub-commands with
+ * Running `php pubvana broken-links` lists the available scan sub-commands with
  * a short description of each. The group name on its own is not a scan, so this
  * only prints help.
  *
  * Usage:
- *   php runway broken-links
+ *   php pubvana broken-links
  */
 class BrokenLinksCommand extends AbstractBaseCommand
 {

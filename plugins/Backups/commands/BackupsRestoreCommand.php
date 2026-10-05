@@ -20,8 +20,8 @@ use Flight;
  * CLI command to restore from a backup.
  *
  * Usage:
- *   php runway backups:restore 2026-05-15_221300-full.zip
- *   php runway backups:restore 2026-05-15_221300-full.zip --user admin
+ *   php pubvana backups:restore 2026-05-15_221300-full.zip
+ *   php pubvana backups:restore 2026-05-15_221300-full.zip --user admin
  */
 class BackupsRestoreCommand extends AbstractBaseCommand
 {
@@ -33,8 +33,8 @@ class BackupsRestoreCommand extends AbstractBaseCommand
             ->argument('[filename]', 'Backup zip filename (e.g. 2026-05-15_221300-full.zip)')
             ->option('--user', 'Username of the admin who initiated the restore', null, 'cli')
             ->usage(
-                '<bold>  runway backups:restore 2026-05-15_221300-full.zip</end><eol/>' .
-                '<bold>  runway backups:restore 2026-05-15_221300-full.zip --user admin</end><eol/>'
+                '<bold>  pubvana backups:restore 2026-05-15_221300-full.zip</end><eol/>' .
+                '<bold>  pubvana backups:restore 2026-05-15_221300-full.zip --user admin</end><eol/>'
             );
     }
 

@@ -11,7 +11,7 @@ use flight\commands\AbstractBaseCommand;
  * Manual cron-style trigger for automated broken link scanning.
  *
  * Mirrors the 24h core cron task (registered in Plugin.php); both delegate
- * to the same scan logic. Kept as a standalone runway command so operators
+ * to the same scan logic. Kept as a standalone pubvana command so operators
  * can run the daily scan on demand without touching the scheduler.
  */
 class BrokenLinksCronCommand extends AbstractBaseCommand

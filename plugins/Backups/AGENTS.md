@@ -17,7 +17,7 @@ Guidance for AI agents contributing to this plugin, which is part of the main Pu
 
 ## Project guidelines
 
-1. **Keep all file-system and database work in the services.** The controller (`BackupsAdminController.php`) and the CLI commands exist only to trigger operations and report results. New operations belong in `BackupService`, `RestoreService`, or `ProgressReporter`. Reason: `restore` and `create` are callable from both the admin screen and `php runway`, and duplicating the logic in both entry points guarantees they drift apart.
+1. **Keep all file-system and database work in the services.** The controller (`BackupsAdminController.php`) and the CLI commands exist only to trigger operations and report results. New operations belong in `BackupService`, `RestoreService`, or `ProgressReporter`. Reason: `restore` and `create` are callable from both the admin screen and `php pubvana`, and duplicating the logic in both entry points guarantees they drift apart.
 2. **Stay dependency-free and environment-tolerant.** This plugin must run on shared hosting without shell access. No composer runtime dependencies, no required CLI tools. Reason: the pure-PHP fallbacks exist specifically for hosts that disable `exec`/`shell_exec` (`BackupService.php:212`, `RestoreService.php:101`).
 3. **Protect the live install during restores.** A restore must never overwrite `protected_configs` and must never follow `..` paths out of the extraction directory. Reason: both failures brick the site, and the second is a remote-write vulnerability.
 4. **Never run two backup or restore operations at once.** The `ProgressReporter` lock file is the single source of truth. Reason: concurrent operations corrupt the zip store and the progress files the admin UI polls.
@@ -39,8 +39,8 @@ Backups/
     RestoreService.php          # Restore orchestration: snapshot, extract, restore files + DB, snapshot again
     ProgressReporter.php        # JSON progress files and the single operation lock
   commands/
-    BackupsCreateCommand.php    # runway backups:create
-    BackupsRestoreCommand.php   # runway backups:restore [filename]
+    BackupsCreateCommand.php    # pubvana backups:create
+    BackupsRestoreCommand.php   # pubvana backups:restore [filename]
   Views/
     admin/index.php             # Backup listing screen with create/restore polling JS
 ```
@@ -77,7 +77,7 @@ Extraction (`RestoreService.php:101`) tries `ZipArchive`, then `exec unzip`, the
 
 Backup zip names come from `freshZipPath()` (`BackupService.php`): the timestamp format is fixed by the enforced filename regex, and a colliding name shifts one second until free, so two backups in the same second never overwrite each other.
 
-The admin screen posts to `/admin/backups/create` or `/admin/backups/restore/{filename}` and polls `/admin/backups/status`. When `exec` is available the controller backgrounds the runway command and returns `started` immediately; otherwise it runs synchronously with a 300 second time limit. Keep both branches behaving identically.
+The admin screen posts to `/admin/backups/create` or `/admin/backups/restore/{filename}` and polls `/admin/backups/status`. When `exec` is available the controller backgrounds the pubvana command and returns `started` immediately; otherwise it runs synchronously with a 300 second time limit. Keep both branches behaving identically.
 
 ## Development and testing
 
@@ -87,8 +87,8 @@ The unit suite is in `tests/Unit/Plugins/Backups/` and covers the SQL splitter, 
 php -l plugins/Backups/Config/Config.php           # lint syntax on every touched file
 php -l plugins/Backups/Plugin.php
 vendor/bin/phpunit tests/Unit/Plugins/Backups
-cd /var/www/html && php runway backups:create      # exercise the CLI create path
-php runway backups:restore 2026-01-01_000000-full.zip  # exercise the CLI restore path
+cd /var/www/html && php pubvana backups:create      # exercise the CLI create path
+php pubvana backups:restore 2026-01-01_000000-full.zip  # exercise the CLI restore path
 ```
 
 - Verify both the `exec` branch (background, polled) and the fallback branch (sync) on the create and restore routes from `/admin/backups`.
@@ -129,14 +129,14 @@ Steps that go beyond the repo-wide style, derived from the existing code:
 | Tweak the pure-PHP export | `dumpViaPHP()` at `BackupService.php:265` |
 | Change restore step order or labels | `RestoreService::restore()` at `RestoreService.php:36` |
 | Add an admin route | `Plugin.php:42` |
-| Add a runway flag or argument | `commands/BackupsCreateCommand.php` or `commands/BackupsRestoreCommand.php` |
+| Add a pubvana flag or argument | `commands/BackupsCreateCommand.php` or `commands/BackupsRestoreCommand.php` |
 | Change the progress JSON shape | `ProgressReporter.php:77` (`update`) and the polling JS in `Views/admin/index.php:163` |
 
 ## PR / contribution checklist
 
 - [ ] Changes fit the project guidelines (no new runtime deps, services own the logic)
 - [ ] `php -l` clean on every touched file
-- [ ] `php runway backups:create` and restore both exercised against a scratch install
+- [ ] `php pubvana backups:create` and restore both exercised against a scratch install
 - [ ] The no-shell fallback path still works when `exec` is disabled
 - [ ] A restore leaves `.env` and `protected_configs` untouched
 - [ ] Lock is acquired and released in `try/finally` for any new operation

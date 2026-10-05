@@ -237,7 +237,7 @@ final class UpdatesAdminController extends AdminController
     /**
      * Apply the pending update (POST, AJAX).
      *
-     * Prefers a backgrounded runway process; falls back to running
+     * Prefers a backgrounded pubvana process; falls back to running
      * synchronously when exec is unavailable.
      */
     public function apply(): void
@@ -275,7 +275,7 @@ final class UpdatesAdminController extends AdminController
         if ($this->execAvailable()) {
             $cmd = sprintf(
                 'php %s updates:apply --user %s > /dev/null 2>&1 &',
-                escapeshellarg(PROJECT_ROOT . '/runway'),
+                escapeshellarg(PROJECT_ROOT . '/pubvana'),
                 escapeshellarg($by)
             );
             exec($cmd);
@@ -555,7 +555,7 @@ final class UpdatesAdminController extends AdminController
     }
 
     /**
-     * Kick the auto-update chain as a background runway process.
+     * Kick the auto-update chain as a background pubvana process.
      */
     private function startBackgroundAutoUpdate(): void
     {
@@ -564,7 +564,7 @@ final class UpdatesAdminController extends AdminController
 
         $cmd = sprintf(
             'php %s updates:auto-update --user %s > /dev/null 2>&1 &',
-            escapeshellarg(PROJECT_ROOT . '/runway'),
+            escapeshellarg(PROJECT_ROOT . '/pubvana'),
             escapeshellarg($by)
         );
         exec($cmd);

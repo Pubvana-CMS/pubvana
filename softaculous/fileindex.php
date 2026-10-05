@@ -21,7 +21,7 @@ $files = [
     'pubvana.json',
     'public',
     'releases.json',
-    'runway',
+    'pubvana',
     'themes',
     'vendor',
     'writable',

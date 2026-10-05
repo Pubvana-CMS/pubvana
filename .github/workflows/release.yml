@@ -66,7 +66,7 @@ jobs:
             app public vendor plugins themes writable \
             pubvana.json releases.json CHANGELOG.md README.md INSTALL.md HARDENING.md \
             LICENSE SECURITY.md CODE_OF_CONDUCT.md CONTRIBUTING.md \
-            .env.example .htaccess runway cron \
+            .env.example .htaccess pubvana cron \
             composer.json composer.lock .runway-config.json \
             -x "*.DS_Store"
 
