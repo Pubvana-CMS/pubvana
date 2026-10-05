@@ -437,6 +437,49 @@ class TrustClientService
     }
 
     /**
+     * The check identity for a package that is not installed yet.
+     *
+     * Same rules as pluginItem() and themeItem(), read straight from a
+     * decoded pubvana.json, so a package can be asked about before it is
+     * copied into place. The install folder never enters the identity.
+     *
+     * @param array<string, mixed> $info Decoded pubvana.json
+     * @return array{type: string, slug: string, version: string, author: string, origin: string}|null
+     */
+    public function packageItem(array $info): ?array
+    {
+        $type = ($info['type'] ?? '') === self::TYPE_THEME ? self::TYPE_THEME : self::TYPE_PLUGIN;
+
+        $version = (string) ($info['semver'] ?? $info['version'] ?? '');
+        if ($version === '') {
+            return null;
+        }
+
+        if ($type === self::TYPE_THEME) {
+            $slug   = trim((string) ($info['slug'] ?? ''));
+            $author = trim((string) ($info['author'] ?? ''));
+        } else {
+            $identity = $this->splitName((string) ($info['name'] ?? ''));
+            if ($identity === null) {
+                return null;
+            }
+            [$author, $slug] = $identity;
+        }
+
+        if ($slug === '' || $author === '') {
+            return null;
+        }
+
+        return [
+            'type'    => $type,
+            'slug'    => $slug,
+            'version' => $version,
+            'author'  => $author,
+            'origin'  => self::ORIGIN_LOCAL,
+        ];
+    }
+
+    /**
      * Collect the identity of every installed addon: local plugins (dropped
      * into plugins/), composer packages, and themes.
      *
