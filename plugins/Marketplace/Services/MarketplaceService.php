@@ -148,7 +148,7 @@ class MarketplaceService
      * reason, so the screen can say so instead of rendering an empty
      * catalog. Nothing is cached: every view is the store's current answer.
      *
-     * @param array{type?: string, q?: string, price?: string, page?: int, per_page?: int, currency?: string} $params
+     * @param array{type?: string, q?: string, page?: int, per_page?: int, currency?: string} $params
      * @return array{ok: bool, reason: string, tabs: list<array{key: string, label: string}>, open_tab: string, items: array<int, array<string, mixed>>, total: int, page: int, per_page: int, pages: int}
      */
     public function catalog(array $params = []): array
@@ -176,8 +176,7 @@ class MarketplaceService
             (string) ($params['type'] ?? ''),
             (string) ($params['q'] ?? ''),
             $page,
-            $perPage,
-            (string) ($params['price'] ?? '')
+            $perPage
         );
 
         if ($json === null) {
@@ -238,7 +237,7 @@ class MarketplaceService
      *
      * @return array{tabs: list<array{key: string, label: string}>, open_tab: string, items: array<int, array<string, mixed>>, total: int, page: int, per_page: int, pages: int}|null
      */
-    protected function fetchCatalogPage(string $currency, string $type, string $q, int $page, int $perPage, string $price = ''): ?array
+    protected function fetchCatalogPage(string $currency, string $type, string $q, int $page, int $perPage): ?array
     {
         $query = ['currency' => $currency, 'page' => $page, 'per_page' => $perPage];
         if ($type !== '') {
@@ -246,9 +245,6 @@ class MarketplaceService
         }
         if ($q !== '') {
             $query['q'] = $q;
-        }
-        if ($price !== '') {
-            $query['price'] = $price;
         }
         $version = $this->sitePubvanaVersion();
         if ($version !== '') {
@@ -323,7 +319,7 @@ class MarketplaceService
      */
     public function checkoutUrl(): string
     {
-        return rtrim((string) ($this->config['store_url'] ?? ''), '/') . '/checkout';
+        return rtrim((string) ($this->config['store_url'] ?? ''), '/') . '/store/checkout';
     }
 
     // -----------------------------------------------------------------

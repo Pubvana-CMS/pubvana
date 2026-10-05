@@ -57,18 +57,16 @@ class MarketplaceAdminController extends AdminController
             'tabs'         => $catalog['tabs'] ?? [],
             'openTab'      => $catalog['open_tab'] ?? '',
             'searchQuery'  => (string) ($_GET['q'] ?? ''),
-            'priceFilter'  => (string) ($_GET['price'] ?? ''),
         ]);
     }
 
     /**
      * The catalog request the admin asked for, read off the query string.
      *
-     * A search drops the tab and the price filter: the store spans every
-     * addon category, free and paid alike, for a search. Sending either
-     * would narrow it back down.
+     * A search drops the tab: the store spans every addon category for a
+     * search, so sending a tab would narrow it back down.
      *
-     * @return array{tab?: string, page?: int, q?: string, price?: string}
+     * @return array{tab?: string, page?: int, q?: string}
      */
     private function catalogParams(): array
     {
@@ -81,10 +79,6 @@ class MarketplaceAdminController extends AdminController
             $tab = strtolower(trim((string) ($_GET['tab'] ?? '')));
             if (in_array($tab, ['plugins', 'themes', 'sale'], true)) {
                 $params['type'] = $tab;
-            }
-            $price = strtolower(trim((string) ($_GET['price'] ?? '')));
-            if ($price === 'free' || $price === 'paid') {
-                $params['price'] = $price;
             }
         }
 

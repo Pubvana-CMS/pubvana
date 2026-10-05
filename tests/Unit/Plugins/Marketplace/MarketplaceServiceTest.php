@@ -33,6 +33,11 @@ final class MarketplaceServiceTest extends TestCase
         );
     }
 
+    public function testCheckoutUrlPointsAtTheStoreCheckout(): void
+    {
+        self::assertSame('http://localhost/store/checkout', $this->service->checkoutUrl());
+    }
+
     public function testConnectAccountRejectsInvalidEmailWithoutCallingStore(): void
     {
         $result = $this->service->connectAccount('not-an-email', 'secret123', 'secret123');

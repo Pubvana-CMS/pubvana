@@ -6,9 +6,12 @@
  * @var bool $connected
  * @var string $accountEmail
  * @var string $prefillEmail
- * @var array<int, array<string, mixed>> $categories
- * @var array<int, array<string, mixed>> $items
+ * @var array<string, mixed> $installed
  * @var string $adminBase
+ * @var array<string, mixed>|null $catalog
+ * @var array<int, array<string, mixed>> $tabs
+ * @var string $openTab
+ * @var string $searchQuery
  */
 ?>
 
@@ -104,6 +107,7 @@
             <div>Connected as <code><?= htmlspecialchars($accountEmail) ?></code></div>
             <div>
                 <a href="<?= $adminBase ?>/purchases" class="btn btn-outline-primary">Purchases</a>
+                <a href="<?= $adminBase ?>/cart-open" target="_blank" rel="noopener" class="btn btn-outline-primary">Checkout <i class="ti ti-external-link"></i></a>
                 <form method="POST" action="<?= $adminBase ?>/disconnect" class="d-inline">
                     <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
                     <button class="btn btn-ghost-secondary">Disconnect</button>
@@ -124,9 +128,6 @@
     if ($searching) {
         $baseQuery['q'] = $searchQuery;
     }
-    if ($priceFilter !== '') {
-        $baseQuery['price'] = $priceFilter;
-    }
     $link = static function (array $overrides) use ($adminBase, $baseQuery): string {
         $query = array_filter(array_merge($baseQuery, $overrides), static fn ($v): bool => $v !== '' && $v !== null);
         return $adminBase . '?' . http_build_query($query);
@@ -140,6 +141,19 @@
             </div>
         </div>
     <?php else: ?>
+        <form method="GET" action="<?= $adminBase ?>" class="row g-2 align-items-end mb-3">
+            <?php if (!$searching): ?>
+            <input type="hidden" name="tab" value="<?= htmlspecialchars($tabKey) ?>">
+            <?php endif; ?>
+            <div class="col-md-5">
+                <label class="form-label" for="pv-q">Search</label>
+                <input type="text" id="pv-q" name="q" class="form-control" value="<?= htmlspecialchars($searchQuery) ?>" placeholder="Name or description">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100">Search</button>
+            </div>
+        </form>
+
         <?php if (!$searching): ?>
         <ul class="nav nav-tabs mb-3">
             <?php foreach ($tabs as $tab): ?>
@@ -151,29 +165,6 @@
         </ul>
         <?php endif; ?>
 
-        <form method="GET" action="<?= $adminBase ?>" class="row g-2 align-items-end mb-3">
-            <?php if (!$searching): ?>
-            <input type="hidden" name="tab" value="<?= htmlspecialchars($tabKey) ?>">
-            <?php endif; ?>
-            <div class="col-md-5">
-                <label class="form-label" for="pv-q">Search</label>
-                <input type="text" id="pv-q" name="q" class="form-control" value="<?= htmlspecialchars($searchQuery) ?>" placeholder="Name or description">
-            </div>
-            <?php if (!$searching): ?>
-            <div class="col-md-3">
-                <label class="form-label" for="pv-price">Price</label>
-                <select id="pv-price" name="price" class="form-select">
-                    <option value=""<?= $priceFilter === '' ? ' selected' : '' ?>>All</option>
-                    <option value="free"<?= $priceFilter === 'free' ? ' selected' : '' ?>>Free</option>
-                    <option value="paid"<?= $priceFilter === 'paid' ? ' selected' : '' ?>>Paid</option>
-                </select>
-            </div>
-            <?php endif; ?>
-            <div class="col-md-2">
-                <button class="btn btn-primary w-100">Search</button>
-            </div>
-        </form>
-
         <?php if ($items === []): ?>
             <div class="card">
                 <div class="card-body text-center py-5">
@@ -183,6 +174,7 @@
         <?php else: ?>
         <div class="row g-3">
             <?php foreach ($items as $item): ?>
+                <?php
                 $id = (int) ($item['id'] ?? 0);
                 $package = (string) ($item['package'] ?? '');
                 // Store records written before the addon toggle was on carry no
@@ -317,15 +309,6 @@
                 </ul>
             </nav>
         <?php endif; ?>
-
-        <div class="mt-4">
-            <a href="<?= $adminBase ?>/cart-open" target="_blank" class="btn btn-lg btn-success w-100">
-                Purchase on pubvanacms.com
-            </a>
-            <p class="text-secondary small text-center mt-2 mb-0">
-                Opens the Pubvana website checkout in a new tab with your cart already loaded.
-            </p>
-        </div>
     <?php endif; ?>
 
     <script>
