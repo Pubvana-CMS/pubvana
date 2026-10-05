@@ -68,6 +68,18 @@ final class Sqlite
     }
 
     /**
+     * Build the schema on a caller-owned connection.
+     *
+     * The shared connection is a singleton, so a test that needs to count
+     * the statements it issues must own its own PDO. It gets the same schema
+     * this way instead of duplicating the DDL.
+     */
+    public static function createSchemaOn(PDO $pdo): void
+    {
+        self::createSchema($pdo);
+    }
+
+    /**
      * Build the schema for every core table. Mirrors the column shapes
      * defined in app/Database/Migrations/*.
      */
@@ -378,7 +390,9 @@ final class Sqlite
                 id               INTEGER PRIMARY KEY AUTOINCREMENT,
                 group_alias      TEXT NOT NULL,
                 permission_alias TEXT NOT NULL,
-                created_at       TEXT
+                created_at       TEXT,
+                updated_at       TEXT,
+                UNIQUE (group_alias, permission_alias)
             )'
         );
 
@@ -414,31 +428,20 @@ final class Sqlite
 
         $pdo->exec(
             "CREATE TABLE trust_addon_versions (
-                id         INTEGER PRIMARY KEY AUTOINCREMENT,
-                addon_id   INTEGER NOT NULL,
-                version    TEXT NOT NULL,
-                status     TEXT NOT NULL,
-                warning    TEXT,
-                checked_at TEXT,
-                created_at TEXT,
-                updated_at TEXT,
-                UNIQUE (addon_id, version)
-            )"
-        );
-
-        $pdo->exec(
-            "CREATE TABLE trust_requests (
-                id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                type          TEXT NOT NULL,
-                slug          TEXT NOT NULL,
-                version       TEXT NOT NULL,
-                author        TEXT NOT NULL,
-                author_email  TEXT NOT NULL,
-                status        TEXT NOT NULL DEFAULT 'pending',
-                decision_note TEXT,
-                zip_path      TEXT NOT NULL,
-                created_at    TEXT,
-                updated_at    TEXT
+                id               INTEGER PRIMARY KEY AUTOINCREMENT,
+                addon_id         INTEGER,
+                version          TEXT,
+                store_release_id INTEGER,
+                store_product_id INTEGER,
+                status           TEXT NOT NULL,
+                warning          TEXT,
+                store_summary    TEXT,
+                checked_at       TEXT,
+                created_at       TEXT,
+                updated_at       TEXT,
+                UNIQUE (addon_id, version),
+                UNIQUE (store_release_id),
+                UNIQUE (store_product_id)
             )"
         );
 
@@ -474,7 +477,9 @@ final class Sqlite
                 name               TEXT NOT NULL,
                 slug               TEXT NOT NULL UNIQUE,
                 package            TEXT,
+                addon_type         TEXT,
                 description        TEXT,
+                image              TEXT,
                 price_single_site  REAL,
                 single_sale_price  REAL,
                 single_sale_starts TEXT,
@@ -486,6 +491,11 @@ final class Sqlite
                 update_policy      TEXT NOT NULL DEFAULT 'minor',
                 list_in            TEXT NOT NULL DEFAULT 'both',
                 is_active          INTEGER NOT NULL DEFAULT 1,
+                trust_hold         INTEGER NOT NULL DEFAULT 0,
+                trust_hold_reason  TEXT,
+                trust_hold_by      INTEGER,
+                trust_hold_at      TEXT,
+                download_count     INTEGER NOT NULL DEFAULT 0,
                 created_at         TEXT,
                 updated_at         TEXT
             )"
@@ -502,6 +512,7 @@ final class Sqlite
                 package_filename TEXT NOT NULL,
                 package_checksum TEXT NOT NULL,
                 package_size     INTEGER NOT NULL DEFAULT 0,
+                download_count   INTEGER NOT NULL DEFAULT 0,
                 created_at       TEXT,
                 UNIQUE (product_id, version)
             )"
@@ -519,6 +530,7 @@ final class Sqlite
                 registered_domain  TEXT,
                 registered_domains TEXT,
                 status             TEXT NOT NULL DEFAULT 'active',
+                revoked_at         TEXT,
                 expires_at         TEXT,
                 renews_at          TEXT,
                 is_lifetime        INTEGER NOT NULL DEFAULT 1,
@@ -539,6 +551,25 @@ final class Sqlite
                 expires_at    TEXT NOT NULL,
                 used_at       TEXT,
                 created_at    TEXT
+            )"
+        );
+
+        /*
+         * Store sellers. Column shapes mirror
+         * plugins/Pvstore/Database/Migrations/2026-09-06-102001_CreateStoreSellersTable.php.
+         * The storefront's name/author search joins against this table.
+         */
+        $pdo->exec(
+            "CREATE TABLE store_sellers (
+                id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id               INTEGER,
+                store_name            TEXT NOT NULL,
+                slug                  TEXT NOT NULL UNIQUE,
+                gateway_settings_json TEXT,
+                is_active             INTEGER NOT NULL DEFAULT 0,
+                is_approved           INTEGER NOT NULL DEFAULT 0,
+                created_at            TEXT,
+                updated_at            TEXT
             )"
         );
 
@@ -603,6 +634,58 @@ final class Sqlite
                 unit_price REAL NOT NULL DEFAULT 0,
                 quantity   INTEGER NOT NULL DEFAULT 1,
                 created_at TEXT
+            )"
+        );
+
+        $pdo->exec(
+            "CREATE TABLE store_transfer_pending (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                license_id INTEGER NOT NULL,
+                new_domain TEXT NOT NULL,
+                token      TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                created_at TEXT
+            )"
+        );
+
+        $pdo->exec(
+            "CREATE TABLE store_gateway_events (
+                id                INTEGER PRIMARY KEY AUTOINCREMENT,
+                gateway           TEXT NOT NULL,
+                event_type        TEXT NOT NULL,
+                order_id          INTEGER,
+                order_number      TEXT,
+                gateway_reference TEXT,
+                amount            TEXT,
+                currency          TEXT,
+                result            TEXT NOT NULL DEFAULT 'accepted',
+                message           TEXT,
+                created_at        TEXT
+            )"
+        );
+
+        // Mirrors plugins/Marketplace/Database/Migrations/
+        // 2026-09-17-104830_CreateMarketplaceInstallsTable.php.
+        $pdo->exec(
+            "CREATE TABLE marketplace_installs (
+                id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                store_product_id    INTEGER NOT NULL UNIQUE,
+                product_name        TEXT NOT NULL,
+                slug                TEXT,
+                item_type           TEXT NOT NULL DEFAULT 'plugin',
+                folder              TEXT,
+                installed_version   TEXT,
+                license_key         TEXT,
+                license_scope       TEXT NOT NULL DEFAULT 'single_site',
+                license_valid       INTEGER NOT NULL DEFAULT 0,
+                license_last_checked TEXT,
+                expires_at          TEXT,
+                renews_at           TEXT,
+                is_subscription     INTEGER NOT NULL DEFAULT 0,
+                registered_domain   TEXT,
+                package_id          TEXT,
+                created_at          TEXT,
+                updated_at          TEXT
             )"
         );
     }

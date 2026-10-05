@@ -22,7 +22,6 @@ final class MarketplaceInstallModelTest extends TestCase
     {
         parent::setUp();
         $this->pdo = Sqlite::recreate();
-        MarketplaceSchema::create($this->pdo);
     }
 
     public function testFindersHitAndMiss(): void

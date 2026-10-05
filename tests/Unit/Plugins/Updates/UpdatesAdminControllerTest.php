@@ -272,16 +272,11 @@ final class UpdatesAdminControllerTest extends TestCase
     {
         (new UpdatesAdminController($this->engine()))->addonCheck();
 
-        self::assertTrue($this->marketplaceRefreshed);
+        // The catalog is read live on every view, so this action no longer
+        // asks the Marketplace to refresh anything: it confirms and reloads.
+        self::assertFalse($this->marketplaceRefreshed);
         self::assertSame('Checked the Marketplace catalog for addon updates.', $this->flashes['success'][0]);
-
-        $this->flashes = [];
-        $app = $this->engine();
-        $app->map('marketplace', static function (): object {
-            throw new \RuntimeException('missing');
-        });
-        (new UpdatesAdminController($app))->addonCheck();
-        self::assertSame('The Marketplace is not available: missing', $this->flashes['danger'][0]);
+        self::assertSame(['/admin/updates'], $this->redirects);
     }
 
     public function testAddonUpdateAllWithNoUpdates(): void

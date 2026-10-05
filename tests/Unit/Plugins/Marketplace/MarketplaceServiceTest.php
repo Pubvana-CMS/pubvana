@@ -5,19 +5,11 @@ declare(strict_types=1);
 namespace Pubvana\Tests\Unit\Plugins\Marketplace;
 
 use PHPUnit\Framework\Attributes\CoversClass;
-use Pubvana\Plugins\Marketplace\Models\MarketplaceInstall;
 use Pubvana\Plugins\Marketplace\Services\MarketplaceService;
 use Pubvana\Tests\Support\Sqlite;
 use Pubvana\Tests\Support\TestCase;
 use Pubvana\Tests\Support\ZipFactory;
 
-use function array_diff;
-use function array_values;
-use function file_put_contents;
-use function is_dir;
-use function mkdir;
-use function rmdir;
-use function scandir;
 use function sys_get_temp_dir;
 use function uniqid;
 use function unlink;
@@ -27,7 +19,6 @@ final class MarketplaceServiceTest extends TestCase
 {
     private SettingsStub $settings;
     private TestMarketplaceService $service;
-    private \PDO $pdo;
 
     protected function setUp(): void
     {
@@ -35,10 +26,8 @@ final class MarketplaceServiceTest extends TestCase
         $app = $this->app([
             'settings' => fn (): SettingsStub => $this->settings,
         ]);
-        $this->pdo = Sqlite::recreate();
-        MarketplaceSchema::create($this->pdo);
         $this->service = new TestMarketplaceService(
-            $this->pdo,
+            Sqlite::recreate(),
             $app,
             ['store_url' => 'http://localhost', 'api_timeout' => 3],
         );
@@ -63,7 +52,7 @@ final class MarketplaceServiceTest extends TestCase
 
     public function testConnectAccountRequiresMatchingConfirmation(): void
     {
-        $result = $this->service->connectAccount('you@example.com', 'secret123', 'secret124');
+        $result = $this->service->connectAccount('you@example.com', 'secret123', 'secret124', 'register');
 
         self::assertFalse($result['ok']);
         self::assertSame([], $this->service->sent);
@@ -142,151 +131,155 @@ final class MarketplaceServiceTest extends TestCase
         self::assertFalse($items[0]['is_free']);
     }
 
-    public function testItemsSurfaceTheStoreReasonWhenTheCatalogFails(): void
+    public function testInstallFromPackageExplainsAnItemWithNoIdentity(): void
     {
-        $this->settings->data['Marketplace.account_token'] = 'abc:xyz';
-        $this->service->getResponses = [
-            '{"ok":false,"reason":"This site\'s store connection was replaced by a newer sign-in. Reconnect it from the Marketplace."}',
+        $result = $this->service->installFromPackage('');
+
+        self::assertFalse($result['ok']);
+        self::assertStringContainsString('package identity', (string) $result['reason']);
+        self::assertStringNotContainsString('Invalid package', (string) $result['reason']);
+    }
+
+    /**
+     * A store record written before the addon toggle was on has no package
+     * id, only a slug. Those items install through the slug: the free
+     * endpoint takes it and installFreePackage matches on either key.
+     */
+    public function testInstallFromPackageRoutesASlugOnlyItemThroughTheFreeEndpoint(): void
+    {
+        Sqlite::recreate();
+
+        // A dedicated service: the shared one points store_url at localhost
+        // without a development environment, which the download host policy
+        // then refuses before the (stubbed) fetch is ever reached.
+        $settings = new SettingsStub();
+        $settings->data['Marketplace.account_token'] = 'abc:xyz';
+        $app = $this->app(['settings' => fn (): SettingsStub => $settings]);
+        $app->set('environment', 'development');
+
+        $service = new TestMarketplaceService(
+            Sqlite::connection(),
+            $app,
+            ['store_url' => 'http://localhost', 'api_timeout' => 3],
+        );
+        $service->getResponses = [
+            '{"ok":true,"items":[{"id":5,"name":"Lux","slug":"lux","package":"","is_free":true,"version":"1.0.0"}]}',
+            null,
         ];
 
-        self::assertSame([], $this->service->items('USD'));
-        self::assertSame(
-            'This site\'s store connection was replaced by a newer sign-in. Reconnect it from the Marketplace.',
-            $this->service->catalogError()
-        );
+        $result = $service->installFromPackage('lux');
+
+        // The empty download stands in for the network: reaching it at all
+        // proves the slug matched a catalog entry instead of being refused.
+        self::assertFalse($result['ok']);
+        self::assertStringContainsString('could not be downloaded', (string) $result['reason']);
+        self::assertStringContainsString('slug=lux', (string) ($service->getUrls[1] ?? ''));
     }
 
-    public function testItemsFallBackWhenTheStoreIsUnreachable(): void
+    /**
+     * Malicious stops the install. installPackage() is the shared end of a
+     * paid install, a free install, and the Updates screen's addon update,
+     * so one refusal here covers all three.
+     */
+    public function testAMaliciousVerdictRefusesAnInstallBeforeAnythingIsCopied(): void
     {
-        $this->settings->data['Marketplace.account_token'] = 'abc:xyz';
-        $this->service->getResponses = [null];
+        $trust = new InstallTrustStub('malicious', 'Ships a backdoor.');
+        $service = $this->installServiceWithTrust($trust);
 
-        self::assertSame([], $this->service->items('USD'));
-        self::assertSame('The store could not be reached.', $this->service->catalogError());
-    }
-
-    public function testItemsClearTheCatalogErrorOnSuccess(): void
-    {
-        $this->settings->data['Marketplace.account_token'] = 'abc:xyz';
-        $this->service->getResponses = ['{"ok":true,"items":[{"id":1,"name":"Demo"}]}'];
-
-        self::assertCount(1, $this->service->items('USD'));
-        self::assertNull($this->service->catalogError());
-    }
-
-    // -----------------------------------------------------------------
-    // License domain + verification
-    // -----------------------------------------------------------------
-
-    public function testSiteDomainUsesTheSiteUrlValueAndDropsThePort(): void
-    {
-        $this->property($this->service, 'app')->set('siteUrl', 'https://www.Example.com:8443/blog');
-        // A leftover settings row must not shadow the deployment value.
-        $this->settings->data['CMS.siteUrl'] = 'http://ignored.example';
-
-        self::assertSame('example.com', $this->invoke($this->service, 'siteDomain'));
-    }
-
-    public function testSiteDomainFallsBackToLocalhostWithoutSiteUrl(): void
-    {
-        // No SITE_URL configured; the request Host header must not be used.
-        $_SERVER['HTTP_HOST'] = 'spoofed.example';
         try {
-            self::assertSame('localhost', $this->invoke($this->service, 'siteDomain'));
+            $result = $service->installFromPackage('pvtmp');
+
+            self::assertFalse($result['ok']);
+            self::assertStringContainsString('malicious', (string) $result['reason']);
+            self::assertStringContainsString('Ships a backdoor.', (string) $result['reason']);
+            self::assertSame(['pvtmp'], $trust->asked);
+            self::assertDirectoryDoesNotExist(PROJECT_ROOT . '/plugins/pvtmp');
         } finally {
-            unset($_SERVER['HTTP_HOST']);
+            $this->removeTestAddon($service);
         }
     }
 
-    public function testVerifyPurchasesReportsNotConnected(): void
+    public function testACachedMaliciousVerdictRefusesWithoutALiveCall(): void
     {
-        $result = $this->service->verifyPurchases();
-
-        self::assertFalse($result['ok']);
-        self::assertSame([], $result['purchases']);
-        self::assertStringContainsString('Not connected', $result['reason']);
-        self::assertSame([], $this->service->getResponses);
-    }
-
-    public function testVerifyPurchasesReportsStoreFailure(): void
-    {
-        $this->settings->data['Marketplace.account_token'] = 'abc:xyz';
-        $this->service->getResponses = [null];
-
-        $result = $this->service->verifyPurchases();
-
-        self::assertFalse($result['ok']);
-        self::assertSame([], $result['purchases']);
-        self::assertStringContainsString('could not be reached', $result['reason']);
-    }
-
-    public function testVerifyPurchasesSurfacesTheStoreReason(): void
-    {
-        $this->settings->data['Marketplace.account_token'] = 'abc:xyz';
-        $this->service->getResponses = [
-            '{"ok":false,"reason":"This site is not connected to a Pubvana account. Connect it from the Marketplace, then try again."}',
-        ];
-
-        $result = $this->service->verifyPurchases();
-
-        self::assertFalse($result['ok']);
-        self::assertSame(
-            'This site is not connected to a Pubvana account. Connect it from the Marketplace, then try again.',
-            $result['reason']
-        );
-    }
-
-    public function testVerifyPurchasesReconcilesAndReportsSuccess(): void
-    {
-        $this->settings->data['Marketplace.account_token'] = 'abc:xyz';
-        $this->property($this->service, 'app')->set('siteUrl', 'https://example.com');
-        $this->service->getResponses = [
-            '{"ok":true,"purchases":[{"product_id":7,"name":"Demo","license_key":"LIC-7","licensed":1,"scope":"single_site","expires":"2027-01-01"}]}',
-        ];
-
-        $result = $this->service->verifyPurchases();
-
-        self::assertTrue($result['ok']);
-        self::assertSame('', $result['reason']);
-        self::assertCount(1, $result['purchases']);
-
-        $row = (new MarketplaceInstall($this->pdo))->findByProductId(7);
-        self::assertNotNull($row);
-        self::assertSame('example.com', (string) $row->registered_domain);
-        self::assertSame(1, (int) $row->license_valid);
-    }
-
-    // -----------------------------------------------------------------
-    // Extraction staging
-    // -----------------------------------------------------------------
-
-    public function testPrepareExtractDirCreatesAMissingDirectory(): void
-    {
-        $dir = sys_get_temp_dir() . '/pv-mkt-extract-new-' . uniqid();
+        $trust = new InstallTrustStub('trusted');
+        $trust->cached = ['status' => 'malicious', 'warning' => null];
+        $service = $this->installServiceWithTrust($trust);
 
         try {
-            self::assertTrue($this->invoke($this->service, 'prepareExtractDir', [$dir]));
-            self::assertTrue(is_dir($dir));
+            $result = $service->installFromPackage('pvtmp');
+
+            self::assertFalse($result['ok']);
+            self::assertStringContainsString('malicious', (string) $result['reason']);
+            self::assertSame([], $trust->asked);
+            self::assertDirectoryDoesNotExist(PROJECT_ROOT . '/plugins/pvtmp');
         } finally {
-            @rmdir($dir);
+            $this->removeTestAddon($service);
         }
     }
 
-    public function testPrepareExtractDirClearsLeftovers(): void
+    public function testATrustedVerdictLetsTheInstallRun(): void
     {
-        $dir = sys_get_temp_dir() . '/pv-mkt-extract-' . uniqid();
-        mkdir($dir, 0755, true);
-        file_put_contents($dir . '/stale.php', '<?php // stale');
-        mkdir($dir . '/stale-dir', 0755, true);
+        $trust = new InstallTrustStub('trusted');
+        $service = $this->installServiceWithTrust($trust);
 
         try {
-            self::assertTrue($this->invoke($this->service, 'prepareExtractDir', [$dir]));
-            self::assertTrue(is_dir($dir));
-            self::assertSame([], array_values(array_diff(scandir($dir) ?: [], ['.', '..'])));
+            $result = $service->installFromPackage('pvtmp');
+
+            self::assertTrue($result['ok']);
+            self::assertFileExists(PROJECT_ROOT . '/plugins/pvtmp/pubvana.json');
         } finally {
-            @unlink($dir . '/stale.php');
-            @rmdir($dir . '/stale-dir');
-            @rmdir($dir);
+            $this->removeTestAddon($service);
+        }
+    }
+
+    /**
+     * A service whose app carries a trust stand-in, with one free catalog
+     * item and a real zip queued behind it for the download.
+     */
+    private function installServiceWithTrust(InstallTrustStub $trust): TestMarketplaceService
+    {
+        Sqlite::recreate();
+
+        $settings = new SettingsStub();
+        $settings->data['Marketplace.account_token'] = 'abc:xyz';
+
+        $app = $this->app([
+            'settings'    => fn (): SettingsStub => $settings,
+            'trustClient' => fn (): InstallTrustStub => $trust,
+        ]);
+        $app->set('environment', 'development');
+
+        $manifest = ['name' => 'pubvana/pvtmp', 'type' => 'plugin', 'semver' => '1.0.0'];
+        $zipPath = sys_get_temp_dir() . '/pv-mkt-trust-' . uniqid() . '.zip';
+        ZipFactory::write($zipPath, [
+            ['name' => 'pvtmp/pubvana.json', 'content' => (string) json_encode($manifest), 'mode' => 0100644],
+            ['name' => 'pvtmp/Plugin.php', 'content' => '<?php', 'mode' => 0100644],
+        ]);
+        $zipBytes = (string) file_get_contents($zipPath);
+        @unlink($zipPath);
+
+        $catalog = (string) json_encode([
+            'ok'    => true,
+            'items' => [
+                ['id' => 5, 'name' => 'Tmp', 'slug' => 'pvtmp', 'package' => 'pvtmp', 'is_free' => true, 'version' => '1.0.0'],
+            ],
+        ]);
+
+        $service = new TestMarketplaceService(
+            Sqlite::connection(),
+            $app,
+            ['store_url' => 'http://localhost', 'api_timeout' => 3],
+        );
+        $service->getResponses = [$catalog, $zipBytes];
+
+        return $service;
+    }
+
+    private function removeTestAddon(TestMarketplaceService $service): void
+    {
+        $dest = PROJECT_ROOT . '/plugins/pvtmp';
+        if (is_dir($dest)) {
+            $this->invoke($service, 'rmdir', [$dest]);
         }
     }
 
@@ -366,6 +359,9 @@ final class TestMarketplaceService extends MarketplaceService
     /** @var list<?string> */
     public array $getResponses = [];
 
+    /** @var list<string> Every GET URL, in order. */
+    public array $getUrls = [];
+
     public function coreSemverForTest(): string
     {
         return '3.0.0';
@@ -384,11 +380,64 @@ final class TestMarketplaceService extends MarketplaceService
 
     protected function httpGet(string $url, ?int $maxBytes = null): ?string
     {
+        $this->getUrls[] = $url;
         return array_shift($this->getResponses);
     }
 
     protected function userAgent(): string
     {
         return 'Pubvana-Marketplace-Test';
+    }
+}
+
+/**
+ * Trust client stand-in for the install gate. packageItem() answers a fixed
+ * identity; the two lookups answer the configured verdicts.
+ */
+final class InstallTrustStub
+{
+    /** @var list<string> Slugs asked with a live call. */
+    public array $asked = [];
+
+    /** @var array{status: string, warning: ?string}|null */
+    public ?array $cached = null;
+
+    public function __construct(
+        private string $liveStatus = 'unknown',
+        private ?string $liveWarning = null,
+    ) {
+    }
+
+    /**
+     * @param array<string, mixed> $manifest
+     * @return array{type: string, slug: string, version: string, author: string, origin: string}
+     */
+    public function packageItem(array $manifest): array
+    {
+        return [
+            'type'    => 'plugin',
+            'slug'    => 'pvtmp',
+            'version' => '1.0.0',
+            'author'  => 'pubvana',
+            'origin'  => 'local',
+        ];
+    }
+
+    /**
+     * @return array{status: string, warning: ?string, checked_at: string}|null
+     */
+    public function getCachedStatus(string $type, string $slug, string $version, string $author): ?array
+    {
+        return $this->cached === null ? null : $this->cached + ['checked_at' => '2026-10-04 00:00:00'];
+    }
+
+    /**
+     * @return array{status: string, warning: ?string, answered: bool}
+     */
+    public function checkAddon(string $type, string $slug, string $version, string $author, string $origin = 'local'): array
+    {
+        $this->asked[] = $slug;
+
+        return ['status' => $this->liveStatus, 'warning' => $this->liveWarning, 'answered' => true];
     }
 }

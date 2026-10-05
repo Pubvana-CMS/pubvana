@@ -102,7 +102,7 @@ final class TrustClientServiceTest extends TestCase
                 public function discover(): array
                 {
                     return [
-                        ['folder' => 'default', 'semver' => '1.4.13', 'author' => 'pubvana'],
+                        ['folder' => 'default', 'semver' => '1.4.26', 'author' => 'pubvana'],
                         ['folder' => 'noversion'],
                     ];
                 }
@@ -200,7 +200,7 @@ final class TrustClientServiceTest extends TestCase
             ['type' => 'plugin', 'slug' => 'blog', 'version' => '1.0.0', 'author' => 'pubvana', 'origin' => 'local'],
             ['type' => 'plugin', 'slug' => 'orphan', 'version' => '2.0.0', 'author' => 'jane', 'origin' => 'local'],
             ['type' => 'plugin', 'slug' => 'flight-shield', 'version' => '1.2.3', 'author' => 'enlivenapp', 'origin' => 'composer'],
-            ['type' => 'theme', 'slug' => 'default', 'version' => '1.4.13', 'author' => 'pubvana', 'origin' => 'local'],
+            ['type' => 'theme', 'slug' => 'default', 'version' => '1.4.26', 'author' => 'pubvana', 'origin' => 'local'],
         ], $addons);
     }
 
@@ -257,6 +257,53 @@ final class TrustClientServiceTest extends TestCase
         self::assertNull($this->service->themeItem('default/../../'));
         self::assertNull($this->service->themeItem('/etc'));
         self::assertNull($this->service->themeItem('nope'));
+    }
+
+    /**
+     * The install gate asks about a package before it is on disk, so the
+     * identity has to come out of the raw pubvana.json alone.
+     */
+    public function testPackageItemReadsAPluginManifest(): void
+    {
+        $item = $this->service->packageItem([
+            'name'   => 'pubvana/blog',
+            'type'   => 'plugin',
+            'semver' => '1.0.0',
+        ]);
+
+        self::assertSame([
+            'type'    => 'plugin',
+            'slug'    => 'blog',
+            'version' => '1.0.0',
+            'author'  => 'pubvana',
+            'origin'  => 'local',
+        ], $item);
+    }
+
+    public function testPackageItemReadsAThemeManifest(): void
+    {
+        $item = $this->service->packageItem([
+            'type'   => 'theme',
+            'slug'   => 'default',
+            'author' => 'pubvana',
+            'semver' => '1.4.13',
+        ]);
+
+        self::assertSame([
+            'type'    => 'theme',
+            'slug'    => 'default',
+            'version' => '1.4.13',
+            'author'  => 'pubvana',
+            'origin'  => 'local',
+        ], $item);
+    }
+
+    public function testPackageItemAnswersNullWhenTheManifestCannotNameTheAddon(): void
+    {
+        self::assertNull($this->service->packageItem(['name' => 'slugless', 'semver' => '1.0.0']));
+        self::assertNull($this->service->packageItem(['name' => 'pubvana/blog']));
+        self::assertNull($this->service->packageItem(['type' => 'theme', 'slug' => 'default', 'semver' => '1.0.0']));
+        self::assertNull($this->service->packageItem(['name' => 'pubvana/blog', 'semver' => '']));
     }
 
     // -----------------------------------------------------------------
@@ -403,7 +450,7 @@ final class TrustClientServiceTest extends TestCase
                 ['type' => 'plugin', 'slug' => 'blog', 'version' => '1.0.0', 'status' => 'trusted', 'warning' => null],
                 ['type' => 'plugin', 'slug' => 'orphan', 'version' => '2.0.0', 'status' => 'unknown', 'warning' => null],
                 ['type' => 'plugin', 'slug' => 'flight-shield', 'version' => '1.2.3', 'status' => 'malicious', 'warning' => 'bad'],
-                ['type' => 'theme', 'slug' => 'default', 'version' => '1.4.13', 'status' => 'trusted', 'warning' => null],
+                ['type' => 'theme', 'slug' => 'default', 'version' => '1.4.26', 'status' => 'trusted', 'warning' => null],
             ],
         ]);
 
@@ -518,7 +565,7 @@ final class TrustClientServiceTest extends TestCase
         $this->cachePut('plugin', 'blog', '1.0.0', 'pubvana', 'trusted');
         $this->cachePut('plugin', 'orphan', '2.0.0', 'jane', 'trusted');
         $this->cachePut('plugin', 'flight-shield', '1.2.3', 'enlivenapp', 'trusted');
-        $this->cachePut('theme', 'default', '1.4.13', 'pubvana', 'trusted');
+        $this->cachePut('theme', 'default', '1.4.26', 'pubvana', 'trusted');
         // TTL expired
         $this->settings->store[TrustClientService::LAST_CHECK_KEY] = date('c', time() - 86400 * 2);
         // Blog is on the home-site list; already processed (so no immediate
@@ -552,7 +599,7 @@ final class TrustClientServiceTest extends TestCase
         $this->cachePut('plugin', 'blog', '1.0.0', 'pubvana', 'trusted');
         $this->cachePut('plugin', 'orphan', '2.0.0', 'jane', 'trusted');
         $this->cachePut('plugin', 'flight-shield', '1.2.3', 'enlivenapp', 'trusted');
-        $this->cachePut('theme', 'default', '1.4.13', 'pubvana', 'trusted');
+        $this->cachePut('theme', 'default', '1.4.26', 'pubvana', 'trusted');
         $this->settings->store[TrustClientService::LAST_CHECK_KEY] = date('c');
 
         $this->service->checkIfDue();

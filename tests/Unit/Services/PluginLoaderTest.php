@@ -71,6 +71,15 @@ final class PluginLoaderTest extends TestCase
         foreach ($this->repoPaths as $path) {
             $this->deletePath(PROJECT_ROOT . '/' . $path);
         }
+        // The fixture dirs are created under the real repo root, and the
+        // leaf paths registered above leave their parents behind. Sweep the
+        // whole fixture tree so nothing survives the run.
+        foreach (glob(PROJECT_ROOT . '/plugins/_fx*') ?: [] as $leftover) {
+            $this->deletePath($leftover);
+        }
+        foreach (glob(PROJECT_ROOT . '/vendor/enlivenapp/_fx*') ?: [] as $leftover) {
+            $this->deletePath($leftover);
+        }
         unset($GLOBALS['fixture_register_log']);
         parent::tearDown();
     }
@@ -872,6 +881,11 @@ final class PluginLoaderTest extends TestCase
     {
         $path = PROJECT_ROOT . '/' . $relative;
         if (is_dir($path)) {
+            // Register it anyway: a run that died before tearDown left this
+            // behind, and the next run has to clean it up.
+            if (!in_array($relative, $this->repoPaths, true)) {
+                $this->repoPaths[] = $relative;
+            }
             return;
         }
         mkdir($path, 0777, true);

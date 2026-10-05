@@ -192,7 +192,9 @@ final class MarketplaceHttpSafetyTest extends TestCase
         self::assertSame(2, substr_count($src, "'follow_location' => 0"));
 
         // Callers fixed their query separator when the token query was dropped.
-        self::assertSame(1, substr_count($src, "'?currency='"));
+        // The catalog page query is assembled with http_build_query(), so no
+        // hand-built currency separator remains.
+        self::assertSame(0, substr_count($src, "'?currency='"));
         self::assertSame(1, substr_count($src, "'?domain='"));
         self::assertSame(1, substr_count($src, "'?slug='"));
         self::assertSame(0, substr_count($src, "'&currency='"));

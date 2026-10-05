@@ -32,7 +32,6 @@ final class MarketplacePluginTest extends TestCase
         $this->settings = [];
         $test = $this;
         $pdo = Sqlite::recreate();
-        MarketplaceSchema::create($pdo);
         $this->app = new Engine();
         $this->app->init();
         $this->app->map('adext', function (): ExtensionRegistry {

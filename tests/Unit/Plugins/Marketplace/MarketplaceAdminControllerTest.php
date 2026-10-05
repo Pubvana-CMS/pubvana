@@ -39,7 +39,6 @@ final class MarketplaceAdminControllerTest extends TestCase
     {
         parent::setUp();
         $this->pdo = Sqlite::recreate();
-        MarketplaceSchema::create($this->pdo);
         $this->fetches = [];
         $this->redirects = [];
         $this->flashes = [];
@@ -57,8 +56,9 @@ final class MarketplaceAdminControllerTest extends TestCase
         $data = $this->fetches[0]['data'];
         self::assertSame('Marketplace', $data['pageTitle']);
         self::assertFalse($data['connected']);
-        self::assertSame([], $data['categories']);
-        self::assertSame([], $data['items']);
+        self::assertNull($data['catalog']);
+        self::assertSame([], $data['tabs']);
+        self::assertSame('', $data['openTab']);
         self::assertSame('/admin/marketplace', $data['adminBase']);
     }
 
@@ -66,8 +66,17 @@ final class MarketplaceAdminControllerTest extends TestCase
     {
         $this->marketplace->connected = true;
         $this->marketplace->email = 'you@example.com';
-        $this->marketplace->categories = [['name' => 'Themes']];
-        $this->marketplace->items = [['name' => 'Demo']];
+        $this->marketplace->catalogResult = [
+            'ok'       => true,
+            'reason'   => '',
+            'tabs'     => [['key' => 'plugins', 'label' => 'Plugins']],
+            'open_tab' => 'plugins',
+            'items'    => [['name' => 'Demo']],
+            'total'    => 1,
+            'page'     => 1,
+            'per_page' => 24,
+            'pages'    => 1,
+        ];
 
         (new MarketplaceAdminController($this->engine(userEmail: 'admin@example.com')))->index();
 
@@ -75,22 +84,31 @@ final class MarketplaceAdminControllerTest extends TestCase
         self::assertTrue($data['connected']);
         self::assertSame('you@example.com', $data['accountEmail']);
         self::assertSame('admin@example.com', $data['prefillEmail']);
-        self::assertCount(1, $data['categories']);
-        self::assertCount(1, $data['items']);
-        self::assertNull($data['catalogError']);
+        self::assertCount(1, $data['tabs']);
+        self::assertCount(1, $data['catalog']['items']);
+        self::assertSame('plugins', $data['openTab']);
     }
 
     public function testIndexPassesTheStoreReasonThrough(): void
     {
         $this->marketplace->connected = true;
-        $this->marketplace->items = [];
-        $this->marketplace->catalogError = 'This site is not connected to a Pubvana account. Connect it from the Marketplace, then try again.';
+        $this->marketplace->catalogResult = [
+            'ok'       => false,
+            'reason'   => 'This site is not connected to a Pubvana account. Connect it from the Marketplace, then try again.',
+            'tabs'     => [],
+            'open_tab' => 'plugins',
+            'items'    => [],
+            'total'    => 0,
+            'page'     => 1,
+            'per_page' => 24,
+            'pages'    => 1,
+        ];
 
         (new MarketplaceAdminController($this->engine()))->index();
 
         self::assertSame(
             'This site is not connected to a Pubvana account. Connect it from the Marketplace, then try again.',
-            $this->fetches[0]['data']['catalogError']
+            $this->fetches[0]['data']['catalog']['reason']
         );
     }
 
@@ -375,10 +393,20 @@ final class FakeMarketplace
 {
     public bool $connected = false;
     public string $email = '';
-    /** @var array<int, array<string, mixed>> */
-    public array $categories = [];
-    /** @var array<int, array<string, mixed>> */
-    public array $items = [];
+    /** @var array<string, mixed> */
+    public array $catalogResult = [
+        'ok'       => true,
+        'reason'   => '',
+        'tabs'     => [],
+        'open_tab' => 'plugins',
+        'items'    => [],
+        'total'    => 0,
+        'page'     => 1,
+        'per_page' => 24,
+        'pages'    => 1,
+    ];
+    /** @var array<string, mixed> */
+    public array $catalogParams = [];
     /** @var array<int, array<string, mixed>> */
     public array $records = [];
     /** @var array<string, mixed> */
@@ -402,7 +430,6 @@ final class FakeMarketplace
     /** @var array<string, mixed> */
     public array $reinstallResult = ['ok' => 0, 'skipped' => 0, 'failed' => []];
     public string $checkout = '';
-    public ?string $catalogError = null;
 
     public function connected(): bool
     {
@@ -411,7 +438,7 @@ final class FakeMarketplace
 
     public function catalogError(): ?string
     {
-        return $this->catalogError;
+        return null;
     }
 
     public function accountEmail(): string
@@ -419,16 +446,15 @@ final class FakeMarketplace
         return $this->email;
     }
 
-    /** @return array<int, array<string, mixed>> */
-    public function categories(): array
+    /**
+     * @param array<string, mixed> $params
+     * @return array<string, mixed>
+     */
+    public function catalog(array $params = []): array
     {
-        return $this->categories;
-    }
+        $this->catalogParams = $params;
 
-    /** @return array<int, array<string, mixed>> */
-    public function items(): array
-    {
-        return $this->items;
+        return $this->catalogResult;
     }
 
     /** @return array<string, array{type: string, folder: string, version: string}> */
