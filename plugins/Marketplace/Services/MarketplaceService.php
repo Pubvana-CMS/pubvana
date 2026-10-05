@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pubvana\Plugins\Marketplace\Services;
 
+use Pubvana\Models\TrustCache;
 use Pubvana\Plugins\Marketplace\Models\MarketplaceInstall;
 use flight\Engine;
 
@@ -63,15 +64,16 @@ class MarketplaceService
     }
 
     /**
-     * Bind this site to a Pubvana account by signing in with the store email
-     * + password, or creating a new account (email activation) and returning
-     * the token that links this site to the account.
+     * Bind this site to a Pubvana account by asking the store to sign in or
+     * register through Shield. Shield owns the account; the store hands back
+     * the token that binds this site to it.
      *
      * Returns a result array with 'ok' and 'reason'.
      *
+     * @param string $action 'login' or 'register'
      * @return array{ok: bool, reason?: string}
      */
-    public function connectAccount(string $email, string $password, string $passwordConf): array
+    public function connectAccount(string $email, string $password, string $passwordConf, string $action = 'login'): array
     {
         $email = strtolower(trim($email));
         if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -80,11 +82,13 @@ class MarketplaceService
         if ($password === '') {
             return ['ok' => false, 'reason' => 'A password is required.'];
         }
-        if ($passwordConf === '' || $passwordConf !== $password) {
+        $action = $action === 'register' ? 'register' : 'login';
+        if ($action === 'register' && ($passwordConf === '' || $passwordConf !== $password)) {
             return ['ok' => false, 'reason' => 'The passwords do not match.'];
         }
 
         $body = $this->httpPostJson($this->apiUrl('auth/token'), [
+            'action'        => $action,
             'email'         => $email,
             'password'      => $password,
             'password_conf' => $passwordConf,
@@ -121,8 +125,6 @@ class MarketplaceService
     // Catalog
     // -----------------------------------------------------------------
 
-    private const SETTING_CATALOG_REFRESHED_AT = 'Marketplace.catalog_refreshed_at';
-
     private const MAX_REDIRECTS = 3;
 
     /** Default response-size cap for API/JSON fetches (bytes). */
@@ -132,118 +134,162 @@ class MarketplaceService
     private const MAX_ZIP_BYTES = 26214400;
 
     /**
-     * The store's own explanation for the most recent failed catalog call,
-     * null when the last response was a success or never arrived. The
-     * catalog screen prints this verbatim instead of guessing at a cause.
+     * The store's own refusal reason from the last catalog fetch, when it
+     * answered with one (maintenance, throttle). Empty when the store was
+     * unreachable or the last fetch succeeded.
      */
-    protected ?string $catalogError = null;
+    protected string $catalogReason = '';
 
     /**
-     * The store's message for the last catalog failure, null when none.
-     */
-    public function catalogError(): ?string
-    {
-        return $this->catalogError;
-    }
-
-    /**
-     * The last moment the cached catalog was declared stale by a user
-     * action ("Check all" on the Updates screen). Cache entries generated
-     * before this moment are treated as expired even inside their TTL.
-     */
-    public function refreshCatalog(): void
-    {
-        $this->app->settings()->set(self::SETTING_CATALOG_REFRESHED_AT, date('c'));
-    }
-
-    /**
-     * Fetch categories with their products from the store, cached.
+     * One page of the Marketplace catalog, with the tab set and pager totals
+     * the Browse screen needs.
      *
-     * @return array<int, array<string, mixed>>
+     * A store that cannot be reached comes back as ok=false with a plain
+     * reason, so the screen can say so instead of rendering an empty
+     * catalog. Nothing is cached: every view is the store's current answer.
+     *
+     * @param array{type?: string, q?: string, price?: string, page?: int, per_page?: int, currency?: string} $params
+     * @return array{ok: bool, reason: string, tabs: list<array{key: string, label: string}>, open_tab: string, items: array<int, array<string, mixed>>, total: int, page: int, per_page: int, pages: int}
      */
-    public function categories(): array
+    public function catalog(array $params = []): array
     {
-        $this->catalogError = null;
+        $empty = [
+            'ok'       => false,
+            'reason'   => '',
+            'tabs'     => [],
+            'open_tab' => 'plugins',
+            'items'    => [],
+            'total'    => 0,
+            'page'     => 1,
+            'per_page' => 24,
+            'pages'    => 1,
+        ];
+
         if (!$this->withToken()) {
-            return [];
+            return ['reason' => 'Not connected to a Pubvana account.'] + $empty;
         }
-        return $this->getCachedCatalog('categories', function () {
-            $data = $this->decode($this->httpGet($this->apiUrl('categories')));
-            if (!is_array($data) || empty($data['ok']) || !is_array($data['categories'] ?? null)) {
-                $this->catalogError = $this->storeFailure($data, 'The store could not be reached.');
-                return [];
-            }
-            return $data['categories'];
-        });
+
+        $page = max(1, (int) ($params['page'] ?? 1));
+        $perPage = max(1, min((int) ($params['per_page'] ?? 24), 60));
+        $json = $this->fetchCatalogPage(
+            (string) ($params['currency'] ?? 'USD'),
+            (string) ($params['type'] ?? ''),
+            (string) ($params['q'] ?? ''),
+            $page,
+            $perPage,
+            (string) ($params['price'] ?? '')
+        );
+
+        if ($json === null) {
+            return ['reason' => $this->catalogFailureReason()] + $empty;
+        }
+
+        return [
+            'ok'       => true,
+            'reason'   => '',
+            'tabs'     => $json['tabs'],
+            'open_tab' => $json['open_tab'],
+            'items'    => $json['items'],
+            'total'    => $json['total'],
+            'page'     => $json['page'],
+            'per_page' => $json['per_page'],
+            'pages'    => $json['pages'],
+        ];
     }
 
     /**
-     * Fetch the marketplace-listed item catalog.
+     * The whole Marketplace catalog, paging through the store.
+     *
+     * For the update checks, which need every listing to compare versions
+     * and find free or unlicensed packages. The Browse screen uses catalog(),
+     * which is one page. Returns [] when the store cannot be reached.
      *
      * @return array<int, array<string, mixed>>
      */
     public function items(string $currency = 'USD'): array
     {
-        $this->catalogError = null;
         if (!$this->withToken()) {
             return [];
         }
-        return $this->getCachedCatalog('items_' . $currency, function () use ($currency) {
-            // pubvana_version filters out items whose latest release does
-            // not support this site's Pubvana version (store-side compat
-            // check, see StoreApiController::items).
-            $pubvanaVersion = $this->sitePubvanaVersion();
-            $url = $this->apiUrl('items') . '?currency=' . urlencode($currency)
-                . ($pubvanaVersion !== '' ? '&pubvana_version=' . urlencode($pubvanaVersion) : '');
-            $data = $this->decode($this->httpGet($url));
-            if (!is_array($data) || empty($data['ok']) || !is_array($data['items'] ?? null)) {
-                $this->catalogError = $this->storeFailure($data, 'The store could not be reached.');
+
+        $out = [];
+        $page = 1;
+        do {
+            $batch = $this->fetchCatalogPage($currency, '', '', $page, 60);
+            if ($batch === null) {
                 return [];
             }
-            return $data['items'];
-        });
+            foreach ($batch['items'] as $item) {
+                $out[] = $item;
+            }
+            $page++;
+        } while ($page <= $batch['pages']);
+
+        return $out;
     }
 
     /**
-     * Get cached catalog data or fetch and cache it.
+     * The store's /items response for one page, or null when the store is
+     * unreachable or answered with something that is not a catalog page.
      *
-     * A cached entry is trusted only while its TTL runs AND it was written
-     * after the last explicit refresh; an older entry is refetched.
+     * A store that answered with a reason (maintenance, throttle) has that
+     * reason kept in $catalogReason, so the screen can show it instead of a
+     * generic line.
      *
-     * @param string   $key      Cache key
-     * @param callable $callback Callback to fetch fresh data
-     * @return array<int, array<string, mixed>>
+     * @return array{tabs: list<array{key: string, label: string}>, open_tab: string, items: array<int, array<string, mixed>>, total: int, page: int, per_page: int, pages: int}|null
      */
-    protected function getCachedCatalog(string $key, callable $callback): array
+    protected function fetchCatalogPage(string $currency, string $type, string $q, int $page, int $perPage, string $price = ''): ?array
     {
-        $cacheKey = 'Marketplace.catalog_cache.' . $key;
-        $ttl = (int) ($this->config['catalog_cache_ttl'] ?? 3600);
-        $now = time();
-        $refreshedAt = strtotime((string) ($this->app->settings()->get(self::SETTING_CATALOG_REFRESHED_AT) ?? ''));
+        $query = ['currency' => $currency, 'page' => $page, 'per_page' => $perPage];
+        if ($type !== '') {
+            $query['type'] = $type;
+        }
+        if ($q !== '') {
+            $query['q'] = $q;
+        }
+        if ($price !== '') {
+            $query['price'] = $price;
+        }
+        $version = $this->sitePubvanaVersion();
+        if ($version !== '') {
+            $query['pubvana_version'] = $version;
+        }
 
-        $cached = $this->app->settings()->get($cacheKey);
-        if (is_array($cached) && isset($cached['data'], $cached['expires']) && $cached['expires'] > $now) {
-            $data = $cached['data'];
-            $stillValid = !is_int($refreshedAt)
-                || (isset($cached['generated_at']) && is_int($cached['generated_at']) && $cached['generated_at'] >= $refreshedAt);
-            if (is_array($data) && $data !== [] && $stillValid) {
-                return $data;
+        $data = $this->decode($this->httpGet($this->apiUrl('items') . '?' . http_build_query($query)));
+        if (!is_array($data) || empty($data['ok']) || !is_array($data['items'] ?? null)) {
+            // The store answered but refused: keep its reason for the screen.
+            $reason = is_array($data) ? trim((string) ($data['reason'] ?? '')) : '';
+            if ($reason !== '') {
+                $this->catalogReason = $reason;
             }
+            return null;
         }
 
-        $data = $callback();
+        $this->catalogReason = '';
 
-        // Never cache a miss: an unreachable store must not look like an
-        // (empty) catalog for the whole TTL.
-        if ($data !== []) {
-            $this->app->settings()->set($cacheKey, [
-                'data'         => $data,
-                'expires'      => $now + $ttl,
-                'generated_at' => $now,
-            ]);
-        }
+        /** @var array<int, array<string, mixed>> $items */
+        $items = $data['items'];
 
-        return $data;
+        return [
+            'tabs'     => is_array($data['tabs'] ?? null) ? array_values($data['tabs']) : [],
+            'open_tab' => (string) ($data['open_tab'] ?? ''),
+            'items'    => $items,
+            'total'    => (int) ($data['total'] ?? 0),
+            'page'     => (int) ($data['page'] ?? $page),
+            'per_page' => (int) ($data['per_page'] ?? $perPage),
+            'pages'    => max(1, (int) ($data['pages'] ?? 1)),
+        ];
+    }
+
+    /**
+     * Why the catalog could not be shown: the store's own reason when it
+     * answered (maintenance, throttle), otherwise the unreachable line.
+     */
+    protected function catalogFailureReason(): string
+    {
+        return $this->catalogReason !== ''
+            ? $this->catalogReason
+            : 'The store could not be reached. Try again in a minute.';
     }
 
     // -----------------------------------------------------------------
@@ -298,12 +344,8 @@ class MarketplaceService
         $domain = $this->siteDomain();
         $url = $this->apiUrl('purchases') . '?domain=' . urlencode($domain);
         $data = $this->decode($this->httpGet($url));
-        if (!is_array($data) || empty($data['ok']) || !is_array($data['purchases'] ?? null)) {
-            return [
-                'ok'        => false,
-                'reason'    => $this->storeFailure($data, 'The store could not be reached. Try again in a moment.'),
-                'purchases' => [],
-            ];
+        if (!is_array($data) || empty($data['ok']) || !is_array($data['purchases'])) {
+            return ['ok' => false, 'reason' => 'The store could not be reached. Try again in a moment.', 'purchases' => []];
         }
 
         /** @var array<int, array<string, mixed>> $purchases */
@@ -985,6 +1027,15 @@ class MarketplaceService
             return $fail('Invalid package destination.');
         }
 
+        // Identity is known and nothing is written yet: the trust check runs
+        // here, so a malicious package never reaches the addon folder.
+        $refusal = $this->maliciousRefusal($info);
+        if ($refusal !== null) {
+            $this->rmdir($extractPath);
+            @unlink($zipPath);
+            return $fail($refusal);
+        }
+
         $destRoot = PROJECT_ROOT . \DIRECTORY_SEPARATOR . ($type === 'theme' ? 'themes' : 'plugins');
         $destDir = $destRoot . \DIRECTORY_SEPARATOR . $folder;
         if (is_dir($destDir) && !$this->rmdir($destDir)) {
@@ -1008,6 +1059,50 @@ class MarketplaceService
         @unlink($zipPath);
 
         return ['ok' => true, 'reason' => 'Installed.', 'type' => $type, 'folder' => $folder, 'package' => $package, 'version' => $version];
+    }
+
+    /**
+     * Refuse a package the trust service has marked malicious.
+     *
+     * Every install path ends in installPackage(): paid installs, free
+     * installs, and the Updates screen's one-click addon update. The check
+     * runs after pubvana.json is read and before a file is copied, so a
+     * malicious package never reaches the plugins or themes folder.
+     *
+     * A trust call that cannot be answered is not a verdict, so an outage
+     * does not stop an install.
+     *
+     * @param array<string, mixed> $info Decoded pubvana.json from the package
+     * @return string|null The refusal sentence, or null to proceed
+     */
+    private function maliciousRefusal(array $info): ?string
+    {
+        try {
+            $client = $this->app->trustClient();
+            $item = $client->packageItem($info);
+            if ($item === null) {
+                return null;
+            }
+
+            $cached = $client->getCachedStatus($item['type'], $item['slug'], $item['version'], $item['author']);
+            if ($cached !== null) {
+                $status  = $cached['status'];
+                $warning = $cached['warning'];
+            } else {
+                $answer  = $client->checkAddon($item['type'], $item['slug'], $item['version'], $item['author'], $item['origin']);
+                $status  = $answer['status'];
+                $warning = $answer['warning'];
+            }
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if ($status !== TrustCache::STATUS_MALICIOUS) {
+            return null;
+        }
+
+        return 'The Pubvana trust service found this package to be malicious'
+            . ($warning !== null && $warning !== '' ? ': ' . $warning : '.');
     }
 
     protected function zipEntriesAreSafe(\ZipArchive $archive): bool
@@ -1518,19 +1613,6 @@ class MarketplaceService
     protected function environment(): string
     {
         return (string) ($this->app->get('environment') ?? 'production');
-    }
-
-    /**
-     * The store's failure sentence from a decoded response, or the fallback
-     * when no response arrived or it carried no reason.
-     *
-     * @param array<string, mixed>|null $data
-     */
-    private function storeFailure(?array $data, string $fallback): string
-    {
-        $reason = $data === null ? '' : trim((string) ($data['reason'] ?? ''));
-
-        return $reason !== '' ? $reason : $fallback;
     }
 
     /**

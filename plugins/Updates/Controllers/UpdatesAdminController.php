@@ -427,7 +427,6 @@ final class UpdatesAdminController extends AdminController
         }
 
         try {
-            $this->app->marketplace()->refreshCatalog();
             $this->app->session()->flash('success', 'Checked the Marketplace catalog for addon updates.');
         } catch (Throwable $e) {
             $this->app->session()->flash('danger', 'The Marketplace is not available: ' . $e->getMessage());
@@ -461,7 +460,6 @@ final class UpdatesAdminController extends AdminController
             return;
         }
 
-        $marketplace->refreshCatalog();
         $updates = $marketplace->checkAddonUpdates();
 
         // Batch = exactly what rows offer the one-click Update button:

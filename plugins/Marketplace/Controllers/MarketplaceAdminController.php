@@ -39,21 +39,61 @@ class MarketplaceAdminController extends AdminController
         // so catalog cards can show what is already here regardless of how
         // it got installed (Marketplace, core shipped, manual upload).
         $installed = $svc->localPackageVersions();
+
+        // One call renders the whole first view: the store returns the tab
+        // set, which tab opens, and that tab's first page. Tab switches,
+        // search, and paging are their own calls.
         $connected = $svc->connected();
-        $categories = $connected ? $svc->categories() : [];
-        // items() runs last so catalogError() reflects the catalog call.
-        $items = $connected ? $svc->items() : [];
+        $catalog = $connected ? $svc->catalog($this->catalogParams()) : null;
+
         $this->render('pubvana/marketplace/admin/index', [
             'pageTitle'    => 'Marketplace',
             'connected'    => $connected,
             'accountEmail' => $svc->accountEmail(),
             'prefillEmail' => $this->currentUserEmail(),
-            'categories'   => $categories,
-            'items'        => $items,
-            'catalogError' => $svc->catalogError(),
             'installed'    => $installed,
             'adminBase'    => $this->adminBase(),
+            'catalog'      => $catalog,
+            'tabs'         => $catalog['tabs'] ?? [],
+            'openTab'      => $catalog['open_tab'] ?? '',
+            'searchQuery'  => (string) ($_GET['q'] ?? ''),
+            'priceFilter'  => (string) ($_GET['price'] ?? ''),
         ]);
+    }
+
+    /**
+     * The catalog request the admin asked for, read off the query string.
+     *
+     * A search drops the tab and the price filter: the store spans every
+     * addon category, free and paid alike, for a search. Sending either
+     * would narrow it back down.
+     *
+     * @return array{tab?: string, page?: int, q?: string, price?: string}
+     */
+    private function catalogParams(): array
+    {
+        $params = [];
+
+        $q = trim((string) ($_GET['q'] ?? ''));
+        if ($q !== '') {
+            $params['q'] = $q;
+        } else {
+            $tab = strtolower(trim((string) ($_GET['tab'] ?? '')));
+            if (in_array($tab, ['plugins', 'themes', 'sale'], true)) {
+                $params['type'] = $tab;
+            }
+            $price = strtolower(trim((string) ($_GET['price'] ?? '')));
+            if ($price === 'free' || $price === 'paid') {
+                $params['price'] = $price;
+            }
+        }
+
+        $page = (int) ($_GET['page'] ?? 1);
+        if ($page > 1) {
+            $params['page'] = $page;
+        }
+
+        return $params;
     }
 
     public function connect(): void
@@ -66,7 +106,8 @@ class MarketplaceAdminController extends AdminController
         }
         $password = (string) ($this->app->request()->data->password ?? '');
         $passwordConf = (string) ($this->app->request()->data->password_conf ?? '');
-        $result = $this->app->marketplace()->connectAccount($email, $password, $passwordConf);
+        $action = (string) ($this->app->request()->data->action ?? 'login');
+        $result = $this->app->marketplace()->connectAccount($email, $password, $passwordConf, $action);
         if (!empty($result['ok'])) {
             $this->app->session()->flash('success', 'Connected to the Pubvana account. Browse the catalog below.');
         } else {
