@@ -1,0 +1,126 @@
+# Sample Nginx + PHP-FPM config
+#
+# The web root is the public/ directory. Everything above it (app/, vendor/,
+# writable/, plugins/, themes/, .env) stays unreachable because it sits outside
+# the document root, so no deny rules are needed for the normal layout.
+#
+# Defaults below match a stock Debian/Ubuntu box: docroot /var/www/html and
+# PHP-FPM on 127.0.0.1:9000. Change root and server_name, then pick the
+# fastcgi_pass line that matches your PHP-FPM setup. Special cases (unix
+# socket, proxy headers, HTTPS) are commented and can be uncommented.
+
+server {
+    listen 80;
+    listen [::]:80;
+
+    # Change to your domain.
+    server_name example.com www.example.com;
+
+    # Must point at the public/ directory inside the install.
+    root /var/www/html/public;
+    index index.php;
+
+    # Match PHP's upload_max_filesize and post_max_size. Nginx defaults to 1m
+    # and answers 413 before PHP ever sees a media upload.
+    client_max_body_size 64m;
+
+    charset utf-8;
+    autoindex off;
+
+    # ------------------------------------------------------------------
+    # Front controller
+    # ------------------------------------------------------------------
+    # Real files (uploads, admin-assets, favicon) are served off disk.
+    # Every other path goes to index.php, which covers plugin routes and
+    # the generated /robots.txt, /sitemap.xml, /llms.txt, and
+    # /assets/{type}/{name}/{path} URLs.
+    location / {
+        try_files $uri /index.php?$query_string;
+    }
+
+    # Exact match, so it outranks the "block PHP" regex below.
+    location = /index.php {
+        include fastcgi_params;
+        # fastcgi.conf on some distros, use one or the other.
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param SCRIPT_NAME     /index.php;
+
+        # Works on a stock PHP-FPM everywhere (RHEL, Alpine, Docker images).
+        fastcgi_pass 127.0.0.1:9000;
+
+        # Special case: Debian/Ubuntu's php-fpm package listens on a unix
+        # socket instead. Comment the line above, uncomment below and set the
+        # version to match your PHP.
+        # fastcgi_pass unix:/run/php/php8.2-fpm.sock;   # 8.2
+        # fastcgi_pass unix:/run/php/php8.3-fpm.sock;   # 8.3
+        # fastcgi_pass unix:/run/php/php8.4-fpm.sock;   # 8.4
+
+        # The API reads $_SERVER['HTTP_AUTHORIZATION']. Nginx drops it until
+        # it is named here. Leave this in.
+        fastcgi_param HTTP_AUTHORIZATION $http_authorization;
+
+        # Special case: only when TLS ends at a proxy or load balancer. The
+        # app reads this to decide the request is secure. Left out behind a
+        # proxy, FORCE_HTTPS redirects to itself forever.
+        # fastcgi_param HTTP_X_FORWARDED_PROTO $http_x_forwarded_proto;
+    }
+
+    # No PHP anywhere but the front controller.
+    location ~ \.php$ {
+        return 403;
+    }
+
+    # Uploaded files are served, never executed. Nothing upstream stops a
+    # dropped .php from running, this is the only guard.
+    location ^~ /uploads/ {
+        location ~* \.(php|phtml|phar|php[0-9])$ {
+            return 403;
+        }
+    }
+
+    # ------------------------------------------------------------------
+    # Hardening
+    # ------------------------------------------------------------------
+    # No dotfiles. ACME challenges must stay reachable for renewal.
+    location ^~ /.well-known/acme-challenge/ {
+        allow all;
+    }
+
+    location ~ /\. {
+        deny all;
+    }
+
+    # Defense in depth. These live above the document root in a normal
+    # install. This only matters if someone points root at the repo.
+    location ~ ^/(app|vendor|writable|plugins|themes|tests|node_modules)/ {
+        return 404;
+    }
+
+    location ~* ^/(composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml|psalm.*|phpstan.*|releases\.json|pubvana\.json|\.migrations_installed)$ {
+        return 404;
+    }
+
+    # ------------------------------------------------------------------
+    # Static assets
+    # ------------------------------------------------------------------
+    location ~* \.(css|js|jpg|jpeg|png|gif|webp|avif|svg|ico|woff2?|ttf|eot)$ {
+        expires 30d;
+        add_header Cache-Control "public";
+        access_log off;
+        try_files $uri =404;
+    }
+
+    access_log /var/log/nginx/pubvana.access.log;
+    error_log  /var/log/nginx/pubvana.error.log;
+}
+
+# ----------------------------------------------------------------------
+# HTTPS
+#
+# Run certbot against the block above and it writes this for you, or copy
+# the server block and add the two ssl_certificate lines, the ssl_protocols
+# line, and change listen 80 to listen 443 ssl.
+#
+# The app redirects plain HTTP to SITE_URL on its own when FORCE_HTTPS=true,
+# so a separate http -> https redirect server block is optional.
+# ----------------------------------------------------------------------
