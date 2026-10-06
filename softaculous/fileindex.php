@@ -4,7 +4,6 @@ $files = [
     '.env',
     '.env.example',
     '.htaccess',
-    '.runway-config.json',
     'CHANGELOG.md',
     'CODE_OF_CONDUCT.md',
     'CONTRIBUTING.md',

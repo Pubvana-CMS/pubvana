@@ -2,32 +2,101 @@
 
 /**
  * CLI entry point. Run commands from the project root with `php pubvana`, or
- * `php pubvana <command> --help` for one command's options. Runway discovers
- * the commands from the app, its Composer packages, and its plugins.
+ * `php pubvana <command> --help` for one command's options.
  *
- * The script loads the Composer autoloader, then app/config/services.php. That
- * file gives every command the database connection, plugin config, the
- * settings store, and the plugin loader. Then it runs vendor/bin/runway.
+ * The script loads the Composer autoloader and app/config/services.php
+ * (database, settings, plugin loader), registers the commands it finds
+ * in the app, its Composer packages, and its plugins, and runs them through
+ * adhocore/cli. Command classes extend flight\commands\AbstractBaseCommand,
+ * which the flightphp/runway package provides.
  */
 
-// set $publicPath if you've changed the default installation
+// ***********************************************************
+// ****               Editable Variable                   **** //
+// ***********************************************************
+
+// If you move index.php that is included with Pubvana out of
+// PROJECT_ROOT/public/ then you must set that path here.
+
 $publicPath = __DIR__ . '/public';
 
-// Folder that holds app/, vendor/, and writable/. This entry point sits in
+
+
+
+// ***********************************************************
+// **** Do not edit below this line, things will break **** //
+// ***********************************************************
+
+// Console name and version.
+$appName = 'Pubvana CMS CLI';
+$version = '3.0.0';
+
+$ds = DIRECTORY_SEPARATOR;
+
+// Folder that holds app/, vendor/, and writable/. This file is always in
 // the project root, so __DIR__ is the project root.
 if (!defined('PROJECT_ROOT')) {
     define('PROJECT_ROOT', __DIR__);
 }
 
-// Folder the web server serves. Defaults to public/ beside the project.
-// Change it to the absolute served path when the web root sits outside the
-// install, for example '/var/www/html'.
+// Folder the web server serves. 
 if (!defined('PUBLIC_PATH')) {
     define('PUBLIC_PATH', $publicPath);
 }
 
-$ds = DIRECTORY_SEPARATOR;
+// Loop command folders, relative to the project root.
+// '*' wildcards work, specific files work
+$commandPaths = [
+    'plugins/*/commands/*.php',
+    'vendor/enlivenapp/migrations/src/commands/*.php',
+    'vendor/enlivenapp/flight-sessions/src/commands/*.php',
+    'vendor/enlivenapp/flight-shield/src/commands/*.php',
+];
 
+// require the autoloader and services
 require PROJECT_ROOT . $ds . 'vendor' . $ds . 'autoload.php';
 require PROJECT_ROOT . $ds . 'app' . $ds . 'config' . $ds . 'services.php';
-require PROJECT_ROOT . $ds . 'vendor' . $ds . 'bin' . $ds . 'runway';
+
+// Compatability with runway only installs: enlivenapp/migrations resolves 
+// the project root under CLI from this constant, and falls back to getcwd() 
+// when it is not defined.
+if (!defined('RUNWAY_PROJECT_ROOT')) {
+    define('RUNWAY_PROJECT_ROOT', PROJECT_ROOT);
+}
+
+// Command classes resolve paths relative to the working directory.
+chdir(PROJECT_ROOT);
+
+$consoleApp = new Ahc\Cli\Application($appName, $version);
+
+$added = [];
+foreach ($commandPaths as $commandPattern) {
+    foreach (glob(PROJECT_ROOT . '/' . ltrim($commandPattern, '/')) as $commandPath) {
+        // Command class is the file name under the file's namespace.
+        $contents = (string) file_get_contents($commandPath);
+        if (preg_match('/namespace (.*);/', $contents, $matches) !== 1) {
+            continue;
+        }
+        $class = $matches[1] . '\\' . basename($commandPath, '.php');
+
+        if (in_array($class, $added, true)) {
+            continue;
+        }
+        $added[] = $class;
+
+        require $commandPath;
+
+        // Skip anything that is not a constructible command class, such as the
+        // abstract base class or a test case.
+        if (!class_exists($class)
+            || !is_subclass_of($class, Ahc\Cli\Input\Command::class)
+            || !(new ReflectionClass($class))->isInstantiable()
+        ) {
+            continue;
+        }
+
+        $consoleApp->add(new $class([]));
+    }
+}
+
+$consoleApp->handle((array) $_SERVER['argv']);

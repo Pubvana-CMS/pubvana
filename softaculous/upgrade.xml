@@ -16,7 +16,6 @@
 	</settings>
 	<files>
 		<exclude>.env</exclude>
-		<exclude>.runway-config.json</exclude>
 		<exclude>writable</exclude>
 	</files>
 </softupgrade>
