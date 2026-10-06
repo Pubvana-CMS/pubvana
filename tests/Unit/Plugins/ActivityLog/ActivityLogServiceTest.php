@@ -201,16 +201,16 @@ final class ActivityLogServiceTest extends TestCase
         $service = $this->service();
         $service->setApp($this->engineApp('POST'));
 
-        $service->logFromRoute($this->route('/admin/pages/store', ['id' => '12', 'title' => 'About']));
+        $service->logFromRoute($this->route('/admin/page/@id/update', ['id' => '12', 'title' => 'About']));
 
         $rows = $this->rows();
         self::assertCount(1, $rows);
-        self::assertSame('create', $rows[0]['action']);
+        self::assertSame('update', $rows[0]['action']);
         self::assertSame('page', $rows[0]['entity_type']);
         self::assertSame(12, (int) $rows[0]['entity_id']);
         self::assertSame('About', $rows[0]['entity_name']);
         $details = json_decode((string) $rows[0]['details'], true);
-        self::assertSame('/admin/pages/store', $details['route']);
+        self::assertSame('/admin/page/@id/update', $details['route']);
         self::assertSame('POST', $details['method']);
     }
 
@@ -228,28 +228,27 @@ final class ActivityLogServiceTest extends TestCase
     {
         $service = $this->service();
 
-        // Toggle-style action embedded in the path (plugins map only
-        // lists toggle for POST, so it is reachable there; on /users the
-        // create => POST entry wins first-match-wins).
-        $service->setApp($this->engineApp('POST'));
-        $service->logFromRoute($this->route('/admin/plugins/toggle', []));
-        $rows = $this->rows();
-        self::assertSame('toggle', $rows[0]['action']);
-        self::assertSame('plugin', $rows[0]['entity_type']);
+        // Real admin mutations are POST with the verb in the path. Each row
+        // records the verb and the entity the route acts on.
+        $routes = [
+            '/admin/users/@id/toggle'            => ['toggle', 'user'],
+            '/admin/comments/@id/reject'         => ['reject', 'comment'],
+            '/admin/plugins/save'                => ['settings_change', 'plugin'],
+            '/admin/backups/restore/@filename'   => ['restore', 'backup'],
+            '/admin/themes/@id/activate'         => ['activate', 'theme'],
+            '/admin/blog/categories/@id/delete'  => ['delete', 'blog_category'],
+        ];
 
-        // PUT update on blog posts.
-        $service->setApp($this->engineApp('PUT'));
-        $service->logFromRoute($this->route('/admin/blog/posts/3/update', ['id' => '3']));
-        $rows = $this->rows();
-        self::assertSame('update', $rows[1]['action']);
-        self::assertSame('blog_post', $rows[1]['entity_type']);
+        foreach (array_keys($routes) as $pattern) {
+            $service->logFromRoute($this->route($pattern, []));
+        }
 
-        // DELETE on the 404 manager maps to redirect_link (longer prefix wins).
-        $service->setApp($this->engineApp('DELETE'));
-        $service->logFromRoute($this->route('/admin/redirects/404-manager/9/delete', ['id' => '9']));
         $rows = $this->rows();
-        self::assertSame('delete', $rows[2]['action']);
-        self::assertSame('redirect_link', $rows[2]['entity_type']);
+        self::assertCount(count($routes), $rows);
+        foreach (array_values($routes) as $i => $expected) {
+            self::assertSame($expected[0], $rows[$i]['action'], 'Action for ' . array_keys($routes)[$i]);
+            self::assertSame($expected[1], $rows[$i]['entity_type'], 'Entity for ' . array_keys($routes)[$i]);
+        }
     }
 
     public function testLogFromRouteFallsBackToEntityTypeName(): void
@@ -257,11 +256,11 @@ final class ActivityLogServiceTest extends TestCase
         $service = $this->service();
         $service->setApp($this->engineApp('POST'));
 
-        $service->logFromRoute($this->route('/admin/plugins/toggle', []));
+        $service->logFromRoute($this->route('/admin/page/@id/delete', []));
 
         $rows = $this->rows();
-        self::assertSame('toggle', $rows[0]['action']);
-        self::assertSame('plugin', $rows[0]['entity_name']);
+        self::assertSame('delete', $rows[0]['action']);
+        self::assertSame('page', $rows[0]['entity_name']);
         self::assertNull($rows[0]['entity_id']);
     }
 
@@ -365,24 +364,61 @@ final class ActivityLogServiceTest extends TestCase
 
         self::assertSame(5, $this->invoke($service, 'extractEntityId', [['post_id' => '5']]));
         self::assertSame(7, $this->invoke($service, 'extractEntityId', [['id' => '7']]));
+        self::assertSame(8, $this->invoke($service, 'extractEntityId', [['userId' => '8']]));
         self::assertNull($this->invoke($service, 'extractEntityId', [['id' => 'abc']]));
         self::assertNull($this->invoke($service, 'extractEntityId', [[]]));
 
         self::assertSame('About', $this->invoke($service, 'extractEntityName', [['title' => 'About'], 'page']));
+        self::assertSame('bundle.zip', $this->invoke($service, 'extractEntityName', [['filename' => 'bundle.zip'], 'backup']));
         self::assertSame('page', $this->invoke($service, 'extractEntityName', [[], 'page']));
         self::assertSame('page', $this->invoke($service, 'extractEntityName', [['title' => ''], 'page']));
     }
 
-    public function testMatchActionVariants(): void
+    /**
+     * Every admin mutation is POST with the verb in the path. The map is
+     * keyed on real route prefixes, not on PUT/PATCH/DELETE verbs.
+     */
+    public function testInferFromRouteActions(): void
     {
         $service = new ActivityLogService($this->pdo);
 
-        self::assertSame('create', $this->invoke($service, 'matchAction', ['POST', ['create' => 'POST'], '/admin/pages/store']));
-        self::assertSame('update', $this->invoke($service, 'matchAction', ['PATCH', ['update' => ['PUT', 'PATCH']], '/admin/pages/1/update']));
-        self::assertNull($this->invoke($service, 'matchAction', ['GET', ['create' => 'POST'], '/admin/pages/store']));
-        // Non-CRUD action requires the action word in the path.
-        self::assertSame('toggle', $this->invoke($service, 'matchAction', ['POST', ['toggle' => 'POST'], '/admin/users/1/toggle']));
-        self::assertSame('toggle', $this->invoke($service, 'matchAction', ['POST', ['toggle' => 'POST'], '/admin/users/1']));
+        $cases = [
+            '/admin/users/store'                      => ['create', 'user'],
+            '/admin/users/@id/update'                 => ['update', 'user'],
+            '/admin/users/@id/delete'                 => ['delete', 'user'],
+            '/admin/users/@id/force-reset'            => ['force_reset', 'user'],
+            '/admin/blog/store'                       => ['create', 'blog_post'],
+            '/admin/blog/@id/restore/@revisionId'     => ['restore', 'blog_post'],
+            '/admin/blog/categories/store'            => ['create', 'blog_category'],
+            '/admin/page/@id/delete'                  => ['delete', 'page'],
+            '/admin/profile/@userId/update'           => ['update', 'profile'],
+            '/admin/media/upload/image'               => ['create', 'media'],
+            '/admin/media/@id/edit'                   => ['update', 'media'],
+            '/admin/redirects/404-manager/@id/ignore' => ['ignore', 'redirect_link'],
+            '/admin/forms/submissions/@id/delete'     => ['delete', 'form_submission'],
+            '/admin/themes/regions/place'             => ['place', 'region'],
+            '/admin/themes/@id/recheck'               => ['recheck', 'theme'],
+            '/admin/plugins/save'                     => ['settings_change', 'plugin'],
+            '/admin/settings/save'                    => ['settings_change', 'setting'],
+            '/admin/seo'                              => ['settings_change', 'seo'],
+            '/admin/search'                           => ['settings_change', 'search_setting'],
+            '/admin/email/test'                       => ['test', 'email_setting'],
+            '/admin/ai/manage/keys'                   => ['create', 'ai_key'],
+            '/admin/ai/manage/keys/@id/grants'        => ['update', 'ai_key'],
+            '/admin/updates/addon-check'              => ['addon_check', 'update'],
+            '/admin/broken-links/@id/dismiss'         => ['dismiss', 'broken_link'],
+            '/admin/social-links/@id/reorder'         => ['reorder', 'social_link'],
+        ];
+
+        foreach ($cases as $pattern => $expected) {
+            $inferred = $this->invoke($service, 'inferFromRoute', [$pattern]);
+            self::assertIsArray($inferred, "No inference for {$pattern}");
+            self::assertSame($expected[0], $inferred['action'], "Action for {$pattern}");
+            self::assertSame($expected[1], $inferred['entity_type'], "Entity for {$pattern}");
+        }
+
+        // Unknown admin routes are skipped, not guessed.
+        self::assertNull($this->invoke($service, 'inferFromRoute', ['/admin/something-made-up/do']));
     }
 
     public function testShouldSkipRoute(): void

@@ -12,6 +12,28 @@
  * @var int    $totalPages
  * @var string $adminBase
  */
+
+// View-local helpers. Closures rather than global functions so they cannot
+// collide with another view rendered in the same request.
+$actionColor = static fn (string $action): string => match ($action) {
+    'create', 'publish', 'activate' => 'success',
+    'update', 'toggle' => 'info',
+    'delete' => 'danger',
+    'approve' => 'success',
+    'reject' => 'warning',
+    'restore' => 'primary',
+    default => 'secondary',
+};
+
+$pageUrl = static function (int $page) use ($filters, $adminBase): string {
+    $params = array_filter(
+        $filters,
+        static fn ($value): bool => $value !== '' && $value !== null
+    );
+    $params['page'] = $page;
+
+    return $adminBase . '?' . http_build_query($params);
+};
 ?>
 
 <div class="d-flex align-items-center justify-content-between mb-4">
@@ -110,7 +132,7 @@
                     <?php foreach ($logs as $log): ?>
                         <tr>
                             <td class="text-nowrap">
-                                <?= date('M j, Y H:i:s', strtotime($log->created_at)) ?>
+                                <?= $log->created_at !== null ? date('M j, Y H:i:s', (int) strtotime($log->created_at)) : '' ?>
                             </td>
                             <td>
                                 <?php if ($log->user_id): ?>
@@ -120,7 +142,7 @@
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <span class="badge bg-<?= actionColor($log->action) ?> text-capitalize">
+                                <span class="badge bg-<?= $actionColor($log->action) ?> text-capitalize">
                                     <?= htmlspecialchars($log->action) ?>
                                 </span>
                             </td>
@@ -152,7 +174,7 @@
                 <ul class="pagination pagination-sm mb-0 justify-content-center">
                     <?php if ($page > 1): ?>
                         <li class="page-item">
-                            <a class="page-link" href="<?= buildPageUrl($page - 1, $filters, $adminBase) ?>">&laquo; Previous</a>
+                            <a class="page-link" href="<?= $pageUrl($page - 1) ?>">&laquo; Previous</a>
                         </li>
                     <?php else: ?>
                         <li class="page-item disabled"><span class="page-link">&laquo; Previous</span></li>
@@ -164,13 +186,13 @@
                     for ($i = $start; $i <= $end; $i++):
                     ?>
                         <li class="page-item <?= $i === $page ? 'active' : '' ?>">
-                            <a class="page-link" href="<?= buildPageUrl($i, $filters, $adminBase) ?>"><?= $i ?></a>
+                            <a class="page-link" href="<?= $pageUrl($i) ?>"><?= $i ?></a>
                         </li>
                     <?php endfor; ?>
 
                     <?php if ($page < $totalPages): ?>
                         <li class="page-item">
-                            <a class="page-link" href="<?= buildPageUrl($page + 1, $filters, $adminBase) ?>">Next &raquo;</a>
+                            <a class="page-link" href="<?= $pageUrl($page + 1) ?>">Next &raquo;</a>
                         </li>
                     <?php else: ?>
                         <li class="page-item disabled"><span class="page-link">Next &raquo;</span></li>
@@ -200,32 +222,4 @@ document.getElementById('filterForm').addEventListener('submit', function(e) {
     e.preventDefault();
 });
 </script>
-
-<?php
-// Helper methods for the view
-function actionColor(string $action): string
-{
-    return match ($action) {
-        'create', 'publish', 'activate' => 'success',
-        'update', 'toggle' => 'info',
-        'delete' => 'danger',
-        'approve' => 'success',
-        'reject' => 'warning',
-        'restore' => 'primary',
-        'settings_change' => 'secondary',
-        default => 'secondary',
-    };
-}
-
-function buildPageUrl(int $page, array $filters, string $adminBase): string
-{
-    $params = [];
-    foreach ($filters as $key => $value) {
-        if ($value !== '' && $value !== null) {
-            $params[$key] = $value;
-        }
-    }
-    $params['page'] = $page;
-    return $adminBase . '?' . http_build_query($params);
-}
 ?>

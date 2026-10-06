@@ -66,9 +66,15 @@ class ActivityLogService
             $user = $this->app->auth()->user();
             $request = $this->app->request();
 
+            // Auth can be absent (cron, CLI, an unauthenticated action). Only
+            // read the properties when a user object came back, so a null user
+            // writes a system row instead of raising a warning on null.
+            $currentUserId = $user !== null && isset($user->id) ? (int) $user->id : null;
+            $currentUserName = $user !== null && isset($user->username) ? (string) $user->username : 'system';
+
             $log = new ActivityLog($this->pdo);
-            $log->user_id = $data['user_id'] ?? ($user->id ?? null);
-            $log->user_name = $data['user_name'] ?? ($user->username ?? 'system');
+            $log->user_id = $data['user_id'] ?? $currentUserId;
+            $log->user_name = $data['user_name'] ?? $currentUserName;
             $log->action = $data['action'] ?? 'unknown';
             $log->entity_type = $data['entity_type'] ?? 'unknown';
             $log->entity_id = $data['entity_id'] ?? null;
@@ -116,8 +122,8 @@ class ActivityLogService
             return;
         }
 
-        // Infer action and entity from route
-        $inferred = $this->inferFromRoute($pattern, $method);
+        // Infer action and entity from the route path
+        $inferred = $this->inferFromRoute($pattern);
         if ($inferred === null) {
             return;
         }
@@ -221,85 +227,117 @@ class ActivityLogService
     }
 
     /**
-     * Infer action and entity type from route pattern.
+     * Admin route prefixes mapped to the entity type they act on.
+     *
+     * Longest prefix wins, so a specific sub-resource sits before its
+     * parent. Keys are route paths with the /admin prefix stripped.
+     *
+     * @var array<string, string>
+     */
+    private const ENTITY_BY_PREFIX = [
+        '/themes/regions'        => 'region',
+        '/blog/categories'       => 'blog_category',
+        '/blog/tags'             => 'blog_tag',
+        '/redirects/404-manager' => 'redirect_link',
+        '/forms/submissions'     => 'form_submission',
+        '/comments/settings'     => 'comment_setting',
+        '/ai/manage/keys'        => 'ai_key',
+        '/ai/manage'             => 'ai_setting',
+        '/ai/fact-checks'        => 'ai_fact_check',
+        '/themes'                => 'theme',
+        '/blog'                  => 'blog_post',
+        '/page'                  => 'page',
+        '/media'                 => 'media',
+        '/redirects'             => 'redirect',
+        '/forms'                 => 'form',
+        '/users'                 => 'user',
+        '/groups'                => 'group',
+        '/permissions'           => 'permission',
+        '/settings'              => 'setting',
+        '/login-sec'             => 'login_setting',
+        '/captcha'               => 'captcha_setting',
+        '/email'                 => 'email_setting',
+        '/navigation'            => 'navigation_item',
+        '/plugins'               => 'plugin',
+        '/seo'                   => 'seo',
+        '/comments'              => 'comment',
+        '/profile'               => 'profile',
+        '/backups'               => 'backup',
+        '/analytics'             => 'analytics',
+        '/social-links'          => 'social_link',
+        '/search'                => 'search_setting',
+        '/ai'                    => 'ai',
+        '/broken-links'          => 'broken_link',
+        '/marketplace'           => 'marketplace',
+        '/site-health'           => 'site_health',
+        '/updates'               => 'update',
+    ];
+
+    /**
+     * Path segments that map to a canonical action. Any other segment is
+     * used as the action verbatim (dashes become underscores), so a new
+     * route is tracked without editing this list.
+     *
+     * @var array<string, string>
+     */
+    private const ACTION_ALIASES = [
+        'store'    => 'create',
+        'upload'   => 'create',
+        'embed'    => 'create',
+        'keys'     => 'create',
+        'update'   => 'update',
+        'edit'     => 'update',
+        'options'  => 'update',
+        'values'   => 'update',
+        'poster'   => 'update',
+        'revert'   => 'update',
+        'avatar'   => 'update',
+        'grants'   => 'update',
+        'terms'    => 'update',
+        'delete'   => 'delete',
+        'destroy'  => 'delete',
+        'save'     => 'settings_change',
+        'settings' => 'settings_change',
+        'meta'     => 'settings_change',
+        'author'   => 'settings_change',
+        'tracking' => 'toggle',
+    ];
+
+    /**
+     * Infer action and entity type from a route pattern.
+     *
+     * Admin mutations in this app are POST requests with the verb in the
+     * path (store, update, delete, toggle, ...), so the action comes from
+     * the path, not the HTTP method.
      *
      * @return array{action: string, entity_type: string, entity_id: int|null, entity_name: string}|null
      */
-    private function inferFromRoute(string $pattern, string $method): ?array
+    private function inferFromRoute(string $pattern): ?array
     {
         // Strip the /admin prefix, keep the leading slash (map keys are /-prefixed)
         $path = substr($pattern, strlen('/admin'));
 
-        // Common patterns
-        $patterns = [
-            // Blog
-            '/blog/posts'              => ['entity_type' => 'blog_post', 'actions' => ['create' => 'POST', 'update' => ['PUT', 'PATCH'], 'delete' => 'DELETE']],
-            '/blog/categories'         => ['entity_type' => 'blog_category', 'actions' => ['create' => 'POST', 'update' => ['PUT', 'PATCH'], 'delete' => 'DELETE']],
-            '/blog/tags'               => ['entity_type' => 'blog_tag', 'actions' => ['create' => 'POST', 'update' => ['PUT', 'PATCH'], 'delete' => 'DELETE']],
+        $prefix = $this->matchEntityPrefix($path);
+        if ($prefix === null) {
+            return null;
+        }
 
-            // Pages
-            '/pages'                   => ['entity_type' => 'page', 'actions' => ['create' => 'POST', 'update' => ['PUT', 'PATCH'], 'delete' => 'DELETE']],
-
-            // Media
-            '/media'                   => ['entity_type' => 'media', 'actions' => ['create' => 'POST', 'update' => ['PUT', 'PATCH'], 'delete' => 'DELETE']],
-
-            // Redirects (the 404 manager key must come first: matching is
-            // str_starts_with, so the longer path wins)
-            '/redirects/404-manager'   => ['entity_type' => 'redirect_link', 'actions' => ['update' => ['PUT', 'PATCH'], 'delete' => 'DELETE']],
-            '/redirects'               => ['entity_type' => 'redirect', 'actions' => ['create' => 'POST', 'update' => ['PUT', 'PATCH'], 'delete' => 'DELETE']],
-
-            // Forms
-            '/forms'                   => ['entity_type' => 'form', 'actions' => ['create' => 'POST', 'update' => ['PUT', 'PATCH'], 'delete' => 'DELETE']],
-            '/form-submissions'        => ['entity_type' => 'form_submission', 'actions' => ['delete' => 'DELETE']],
-
-            // Users/Groups/Permissions
-            '/users'                   => ['entity_type' => 'user', 'actions' => ['create' => 'POST', 'update' => ['PUT', 'PATCH'], 'delete' => 'DELETE', 'toggle' => 'POST']],
-            '/groups'                  => ['entity_type' => 'group', 'actions' => ['create' => 'POST', 'update' => ['PUT', 'PATCH'], 'delete' => 'DELETE']],
-            '/permissions'             => ['entity_type' => 'permission', 'actions' => ['create' => 'POST', 'update' => ['PUT', 'PATCH'], 'delete' => 'DELETE']],
-
-            // Settings
-            '/settings'                => ['entity_type' => 'setting', 'actions' => ['update' => ['PUT', 'PATCH', 'POST']]],
-
-            // Navigation
-            '/navigation'              => ['entity_type' => 'navigation_item', 'actions' => ['create' => 'POST', 'update' => ['PUT', 'PATCH'], 'delete' => 'DELETE']],
-
-            // Themes/Regions
-            '/themes'                  => ['entity_type' => 'theme', 'actions' => ['update' => ['PUT', 'PATCH'], 'activate' => 'POST']],
-            '/regions'                 => ['entity_type' => 'region', 'actions' => ['update' => ['PUT', 'PATCH']]],
-
-            // Plugins
-            '/plugins'                 => ['entity_type' => 'plugin', 'actions' => ['toggle' => 'POST']],
-
-            // SEO
-            '/seo'                     => ['entity_type' => 'seo', 'actions' => ['update' => ['PUT', 'PATCH', 'POST']]],
-
-            // Comments
-            '/comments'                => ['entity_type' => 'comment', 'actions' => ['update' => ['PUT', 'PATCH'], 'delete' => 'DELETE', 'approve' => 'POST', 'reject' => 'POST']],
-
-            // Profiles
-            '/profiles'                => ['entity_type' => 'profile', 'actions' => ['update' => ['PUT', 'PATCH']]],
-
-            // Backups
-            '/backups'                 => ['entity_type' => 'backup', 'actions' => ['create' => 'POST', 'delete' => 'DELETE', 'restore' => 'POST']],
-
-            // Analytics
-            '/analytics'               => ['entity_type' => 'analytics', 'actions' => ['toggle' => 'POST']],
-
-            // Social Links
-            '/social-links'            => ['entity_type' => 'social_link', 'actions' => ['create' => 'POST', 'update' => ['PUT', 'PATCH'], 'delete' => 'DELETE']],
+        return [
+            'action'      => $this->resolveAction($path, $prefix),
+            'entity_type' => self::ENTITY_BY_PREFIX[$prefix],
+            'entity_id'   => null,
+            'entity_name' => '',
         ];
+    }
 
-        foreach ($patterns as $routePrefix => $config) {
-            if (str_starts_with($path, $routePrefix)) {
-                $action = $this->matchAction($method, $config['actions'], $path);
-                if ($action !== null) {
-                    return [
-                        'action'      => $action,
-                        'entity_type' => $config['entity_type'],
-                        'entity_id'   => null,
-                        'entity_name' => '',
-                    ];
-                }
+    /**
+     * Return the longest entity prefix that matches the path, or null.
+     */
+    private function matchEntityPrefix(string $path): ?string
+    {
+        foreach (array_keys(self::ENTITY_BY_PREFIX) as $prefix) {
+            if (str_starts_with($path, $prefix)) {
+                return $prefix;
             }
         }
 
@@ -307,25 +345,43 @@ class ActivityLogService
     }
 
     /**
-     * Match HTTP method and path to an action.
+     * Pick the action from the literal path segments after the prefix.
      *
-     * @param array<string, string|string[]> $actions
+     * Scans right to left and skips route parameters (@id), so
+     * /users/@id/update resolves to update and /backups/restore/@filename
+     * resolves to restore. A known alias wins over the trailing segment, so
+     * /media/upload/image resolves to create.
      */
-    private function matchAction(string $method, array $actions, string $path): ?string
+    private function resolveAction(string $path, string $prefix): string
     {
-        foreach ($actions as $action => $methods) {
-            $methodList = is_array($methods) ? $methods : [$methods];
-            if (in_array($method, $methodList, true)) {
-                // Check for specific action in path (e.g., /toggle, /activate)
-                if ($action !== 'create' && $action !== 'update' && $action !== 'delete') {
-                    if (str_contains($path, '/' . $action)) {
-                        return $action;
-                    }
-                }
-                return $action;
+        $remainder = trim(substr($path, strlen($prefix)), '/');
+
+        // When the whole path was the prefix, look at the path itself so a
+        // POST to a sub-resource root such as /ai/manage/keys still finds
+        // the "keys" segment.
+        $segments = array_filter(
+            explode('/', $remainder === '' ? $path : $remainder),
+            static fn (string $segment): bool => $segment !== ''
+        );
+
+        $trailing = null;
+        foreach (array_reverse($segments) as $segment) {
+            if (str_starts_with($segment, '@')) {
+                continue;
             }
+            if (isset(self::ACTION_ALIASES[$segment])) {
+                return self::ACTION_ALIASES[$segment];
+            }
+            $trailing ??= $segment;
         }
-        return null;
+
+        // No action segment. A POST to a settings root (for example /seo)
+        // is a settings change; a POST to a bare parameter is an update.
+        if ($remainder === '') {
+            return 'settings_change';
+        }
+
+        return $trailing === null ? 'update' : str_replace('-', '_', $trailing);
     }
 
     /**
@@ -338,7 +394,7 @@ class ActivityLogService
      */
     private function extractEntityId(array $params): ?int
     {
-        foreach (['id', 'entity_id', 'post_id', 'page_id', 'redirect_id', 'form_id', 'user_id', 'group_id', 'permission_id', 'comment_id', 'media_id', 'category_id', 'tag_id', 'submission_id'] as $key) {
+        foreach (['id', 'entity_id', 'userId', 'post_id', 'page_id', 'redirect_id', 'form_id', 'user_id', 'group_id', 'permission_id', 'comment_id', 'media_id', 'category_id', 'tag_id', 'submission_id'] as $key) {
             if (isset($params[$key]) && is_numeric($params[$key])) {
                 return (int) $params[$key];
             }
@@ -353,7 +409,7 @@ class ActivityLogService
      */
     private function extractEntityName(array $params, string $entityType): string
     {
-        foreach (['name', 'title', 'slug', 'label', 'source_path', 'email', 'username'] as $key) {
+        foreach (['name', 'title', 'slug', 'label', 'source_path', 'filename', 'email', 'username'] as $key) {
             if (isset($params[$key]) && $params[$key] !== '') {
                 return $params[$key];
             }

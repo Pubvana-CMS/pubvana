@@ -5,6 +5,18 @@ All notable changes to the Activity Log plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.9] - 2026-10-05
+
+### Fixed
+- Action names come from the route path, so update, delete, toggle, restore, and other verbs record their own action.
+- Blog posts, pages, profiles, and the 404 manager are tracked.
+- A log entry with no signed-in user writes a system row.
+- The user filter lists each user once.
+- The dashboard card uses the singular for a single action.
+
+### Changed
+- Tracking covers email, login, captcha, search, AI, broken links, marketplace, site health, and updates.
+
 ## [0.1.8] - 2026-09-26
 
 ### Fixed

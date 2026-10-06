@@ -120,7 +120,7 @@ final class ActivityLogPluginTest extends TestCase
         $rows = $cards['pubvana.activity-log']['callable']([]);
         self::assertSame(1, $rows[0]['value']);
         self::assertSame('info', $rows[0]['tone']);
-        self::assertStringContainsString('1 admin actions', $rows[0]['description']);
+        self::assertSame('1 admin action in the last 24 hours.', $rows[0]['description']);
     }
 
     public function testConfigShape(): void

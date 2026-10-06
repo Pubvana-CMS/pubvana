@@ -13,11 +13,11 @@
 
 ## Project guidelines
 
-1. Do not let logging break the request. `log()` and `logFromRoute()` catch all failures (`Services/ActivityLogService.php:59`, `Services/ActivityLogService.php:90`). Reason: a logging error must never become an error page.
-2. Track mutations only. The listener checks POST, PUT, DELETE, PATCH on `/admin/*` (`Plugin.php:72`). Reason: reads would flood the table.
-3. Keep skip patterns together. Auth, assets, API, and self routes are skipped (`Plugin.php:92`, `Services/ActivityLogService.php:216`). Reason: avoids loops and noise.
-4. Do not store secrets in `details`. Only route, method, and params are stored (`Services/ActivityLogService.php:90`). Reason: logs are readable by staff and must not leak credentials.
-5. Keep action and entity_type names stable, snake_case, singular (`Services/ActivityLogService.php:239`). Reason: filter dropdowns and history depend on consistent values.
+1. Do not let logging break the request. `log()` and `logFromRoute()` catch all failures (`Services/ActivityLogService.php:59`, `Services/ActivityLogService.php:96`). Reason: a logging error must never become an error page.
+2. Track mutations only. The listener checks POST, PUT, DELETE, PATCH on `/admin/*` (`Plugin.php:74`). Reason: reads would flood the table.
+3. Keep skip patterns together. Auth, assets, API, and self routes are skipped in `shouldSkipRoute()` (`Services/ActivityLogService.php:211`). Reason: avoids loops and noise.
+4. Do not store secrets in `details`. Only route, method, and params are stored (`Services/ActivityLogService.php:96`). Reason: logs are readable by staff and must not leak credentials.
+5. Keep action and entity_type names stable, snake_case, singular (`Services/ActivityLogService.php:237`, `Services/ActivityLogService.php:283`). Reason: filter dropdowns and history depend on consistent values.
 6. Use bound parameters for all queries (`Models/ActivityLog.php:112`). Reason: request input reaches filters directly.
 
 ## Repository layout
@@ -47,21 +47,25 @@ No generated dirs in this plugin.
 
 ## Core architecture
 
-Entry point is `Plugin.php:24`. It maps `activityLog` to `ActivityLogService` (`Plugin.php:30`), adds `GET /admin/activity-log` with `activity_log.view` check (`Plugin.php:43`), adds a dashboard card (`Plugin.php:48`), and listens for `flight.route.executed` (`Plugin.php:72`).
+Entry point is `Plugin.php:24`. It maps `activityLog` to `ActivityLogService` (`Plugin.php:30`), adds `GET /admin/activity-log` with `activity_log.view` check (`Plugin.php:43`), adds a dashboard card (`Plugin.php:48`), and listens for `flight.route.executed` (`Plugin.php:74`).
 
-Data flow for auto tracking: listener checks config (`Plugin.php:74`), keeps only POST, PUT, DELETE, PATCH on `/admin/*`, skips auth, assets, API, and self routes (`Plugin.php:92`), then calls `logFromRoute()` (`Services/ActivityLogService.php:90`). That method checks config, skips non admin routes (`Services/ActivityLogService.php:216`), maps route to action and entity (`Services/ActivityLogService.php:239`), then calls `log()` (`Services/ActivityLogService.php:59`).
+Data flow for auto tracking: listener keeps only POST, PUT, DELETE, PATCH on `/admin/*` (`Plugin.php:74`), then calls `logFromRoute()` (`Services/ActivityLogService.php:96`). That method checks config, skips non admin routes and the auth, assets, API, and self routes (`Services/ActivityLogService.php:211`), maps the path to action and entity (`Services/ActivityLogService.php:315`), then calls `log()` (`Services/ActivityLogService.php:59`).
 
 Data flow for manual logging: any plugin calls `$app->activityLog()->log()` with action, entity_type, entity_id, entity_name, and details. The service fills user, IP, user agent, and timestamp, then saves through `Models/ActivityLog.php:56`.
 
-Data flow for reads: controller `index()` (`Controllers/ActivityLogAdminController.php:15`) reads query filters, calls `list()` (`Services/ActivityLogService.php:142`) and `count()` (`Services/ActivityLogService.php:153`), which use `filtered()` (`Models/ActivityLog.php:78`) and `countFiltered()` (`Models/ActivityLog.php:94`). Page size is 25.
+Data flow for reads: controller `index()` (`Controllers/ActivityLogAdminController.php:15`) reads query filters, calls `list()` (`Services/ActivityLogService.php:148`) and `count()` (`Services/ActivityLogService.php:159`), which use `filtered()` (`Models/ActivityLog.php:78`) and `countFiltered()` (`Models/ActivityLog.php:94`). Page size is 25.
 
 ### Route to action map
 
-`inferFromRoute()` (`Services/ActivityLogService.php:239`) strips `/admin` and matches by prefix, with longer paths first (for example `/redirects/404-manager` before `/redirects`). `matchAction()` (`Services/ActivityLogService.php:325`) picks the action by HTTP method and path. Entity ID comes from route params (`Services/ActivityLogService.php:350`). Entity name comes from route params or falls back to entity type (`Services/ActivityLogService.php:365`).
+`inferFromRoute()` (`Services/ActivityLogService.php:315`) strips `/admin` and matches the longest prefix in `ENTITY_BY_PREFIX` (`Services/ActivityLogService.php:237`), so `/themes/regions` wins over `/themes` and `/blog/categories` over `/blog`.
+
+Admin mutations in this app are POST with the verb in the path, so the action comes from the path, not the HTTP method. `resolveAction()` (`Services/ActivityLogService.php:355`) scans the path segments right to left, skips route parameters (`@id`), maps known segments through `ACTION_ALIASES` (`Services/ActivityLogService.php:283`), and uses any other segment as the action (dashes become underscores). A POST to the resource root, such as `/admin/seo`, records `settings_change`.
+
+Entity ID comes from route params (`Services/ActivityLogService.php:395`). Entity name comes from route params or falls back to entity type (`Services/ActivityLogService.php:410`).
 
 ### IP handling
 
-Only `$_SERVER['REMOTE_ADDR']` is used (`Services/ActivityLogService.php:385`). Reason: proxy headers can be forged. Do not add `X-Forwarded-For` handling here.
+Only `$_SERVER['REMOTE_ADDR']` is used (`Services/ActivityLogService.php:430`). Reason: proxy headers can be forged. Do not add `X-Forwarded-For` handling here.
 
 ## Development and testing
 
@@ -109,16 +113,16 @@ Manual check: visit `/admin/activity-log`, confirm filters, pages, and empty sta
 |----------|---------|
 | [README.md](./README.md) | User docs, what it does and where to click |
 | [Config/Config.php](./Config/Config.php) | Defaults for route prefix, tracking flag, retention |
-| [Services/ActivityLogService.php](./Services/ActivityLogService.php) | `log()` at line 59, `logFromRoute()` at line 90, `inferFromRoute()` at line 239 |
-| [Plugin.php](./Plugin.php) | Service setup at line 30, admin route at line 43, dashboard card at line 48, listener at line 72 |
+| [Services/ActivityLogService.php](./Services/ActivityLogService.php) | `log()` at line 59, `logFromRoute()` at line 96, `ENTITY_BY_PREFIX` at line 237, `inferFromRoute()` at line 315, `resolveAction()` at line 355 |
+| [Plugin.php](./Plugin.php) | Service setup at line 30, admin route at line 43, dashboard card at line 48, listener at line 74 |
 | [Models/ActivityLog.php](./Models/ActivityLog.php) | Filtered reads at line 78, counts at line 94, filter rules at line 112, dropdown queries at lines 156, 169, 185 |
 
 ## Common tasks
 
 | Goal | Where to look |
 |------|---------------|
-| Add a route to auto tracking | `inferFromRoute()` in `Services/ActivityLogService.php:239` |
-| Change skip patterns | `Plugin.php:92` and `shouldSkipRoute()` in `Services/ActivityLogService.php:216` |
+| Add a route to auto tracking | `ENTITY_BY_PREFIX` and `ACTION_ALIASES` in `Services/ActivityLogService.php:237` |
+| Change skip patterns | `shouldSkipRoute()` in `Services/ActivityLogService.php:211` |
 | Add a filter field | `applyFilters()` in `Models/ActivityLog.php:112`, `filtered()` in `Models/ActivityLog.php:78`, form in `Views/admin/index.php` |
 | Add or change a filter dropdown | `distinctActions()`, `distinctEntityTypes()`, `distinctUsers()` in `Models/ActivityLog.php:156` |
 | Change dashboard card | `Plugin.php:48` |

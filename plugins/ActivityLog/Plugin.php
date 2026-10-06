@@ -59,9 +59,11 @@ class Plugin implements PluginInterface
                         'tone'        => $count > 0 ? 'info' : 'secondary',
                         'group'       => 'tools',
                         'href'        => $prefix,
-                        'description' => $count > 0
-                            ? "{$count} admin actions in the last 24 hours."
-                            : 'No admin activity in the last 24 hours.',
+                        'description' => match (true) {
+                            $count === 0 => 'No admin activity in the last 24 hours.',
+                            $count === 1 => '1 admin action in the last 24 hours.',
+                            default      => "{$count} admin actions in the last 24 hours.",
+                        },
                     ],
                 ];
             },
@@ -69,32 +71,17 @@ class Plugin implements PluginInterface
 
         // ─── Auto-tracking via flight.route.executed ────────────────────
         // Only fires when a route actually dispatches successfully
-        $app->onEvent('flight.route.executed', function ($route, $executionTime) use ($app, $prefix) {
-            // Only admin routes with mutating methods. Route has no $method
-            // property, so read the actual request method.
+        $app->onEvent('flight.route.executed', function ($route, $executionTime) use ($app) {
+            // Cheap guard only. logFromRoute() re-checks the config, the
+            // method, the admin scope, and the shared skip patterns (auth,
+            // assets, API, self), so those stay in one place.
             $pattern = $route->pattern ?? '';
-            $method = $app->request()->method;
-
             if (!str_starts_with($pattern, '/admin/')) {
                 return;
             }
 
-            if (!in_array($method, ['POST', 'PUT', 'DELETE', 'PATCH'], true)) {
+            if (!in_array($app->request()->method, ['POST', 'PUT', 'DELETE', 'PATCH'], true)) {
                 return;
-            }
-
-            // Skip certain routes
-            $skipPatterns = [
-                '/admin/auth/',
-                '/admin/assets/',
-                '/admin/api/',
-                '/admin' . $prefix,
-            ];
-
-            foreach ($skipPatterns as $skip) {
-                if (str_starts_with($pattern, $skip)) {
-                    return;
-                }
             }
 
             $app->activityLog()->logFromRoute($route);

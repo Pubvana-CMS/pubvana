@@ -185,9 +185,10 @@ class ActivityLog extends \Pubvana\Models\AbstractModel
     public function distinctUsers(): array
     {
         // query() returns array|ActiveRecord depending on $single; this call
-        // is not single mode, so an array of rows is expected.
+        // is not single mode, so an array of rows is expected. Group by
+        // user_id so a user with renamed name snapshots appears once.
         $rows = $this->query(
-            'SELECT DISTINCT user_id, user_name FROM activity_logs WHERE user_id IS NOT NULL ORDER BY user_name',
+            'SELECT user_id, MAX(user_name) AS user_name FROM activity_logs WHERE user_id IS NOT NULL GROUP BY user_id ORDER BY user_name',
             []
         );
 
