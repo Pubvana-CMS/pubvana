@@ -5,6 +5,25 @@ All notable changes to the Forms plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.10] - 2026-10-06
+
+### Fixed
+- Typing into a form field lost focus after the first character.
+- The Required switch could not be turned off.
+- A form name produced a slug with the spaces removed and the letter s replaced by a hyphen.
+- The options box joined options with a literal `\n` instead of a new line.
+- A hidden field showed its label.
+- A required hidden field blocked the form.
+- A required checkbox group marked every box required.
+- The field Width setting had no effect.
+- Two submissions sent at the same time could both be stored.
+- A field with a blank name was dropped without an error.
+- Two fields could share the same name.
+
+### Changed
+- The builder's shortcode examples are titled Shortcodes.
+- README and AGENTS.md cover the hidden field and the width setting.
+
 ## [0.2.9] - 2026-09-26
 
 ### Fixed

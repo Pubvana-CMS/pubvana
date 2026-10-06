@@ -583,4 +583,72 @@ final class FormsServiceCoverageTest extends TestCase
         self::assertTrue($result['ok']);
         self::assertSame(2, $this->submissionCount());
     }
+
+    public function testRenderPublicFormWidthHiddenAndRequiredRules(): void
+    {
+        $app = $this->buildApp();
+        $service = $this->service($app);
+
+        $form = $this->makeForm($service, [
+            ['type' => 'hidden', 'name' => 'token', 'label' => 'Secret', 'required' => true, 'width' => 'full', 'options' => []],
+            ['type' => 'text', 'name' => 'city', 'label' => 'City', 'required' => false, 'width' => 'half', 'options' => []],
+            ['type' => 'checkbox', 'name' => 'likes', 'label' => 'Likes', 'required' => true, 'width' => 'full', 'options' => ['x', 'y']],
+            ['type' => 'radio', 'name' => 'pick', 'label' => 'Pick', 'required' => true, 'width' => 'full', 'options' => ['x', 'y']],
+        ]);
+
+        // An array posted to a scalar field must not reach the PHP string cast.
+        $html = $service->renderPublicForm($form, ['city' => ['sneaky']]);
+
+        self::assertStringContainsString('pv-form-field-half', $html);
+        self::assertStringNotContainsString('Secret', $html, 'a hidden field shows no label');
+        self::assertStringNotContainsString('name="token" value="" required', $html, 'a hidden field is never required');
+        self::assertDoesNotMatchRegularExpression('/name="likes\[\]"[^>]*required/', $html, 'a required checkbox group must not mark every box');
+        self::assertMatchesRegularExpression('/name="pick" value="x" required/', $html, 'a required radio group keeps the attribute');
+        self::assertStringNotContainsString('Array', $html, 'an array value renders empty, not "Array"');
+    }
+
+    public function testCreateRejectsBlankAndDuplicateFieldNames(): void
+    {
+        $app = $this->buildApp();
+        $service = $this->service($app);
+
+        try {
+            $service->createForm([
+                'name'              => 'Blank',
+                'slug'              => 'blank',
+                'field_definitions' => json_encode([
+                    ['type' => 'text', 'name' => '', 'label' => 'Nameless', 'required' => false, 'width' => 'full', 'options' => []],
+                ]),
+            ]);
+            self::fail('Expected a blank field name to be rejected.');
+        } catch (\InvalidArgumentException $e) {
+            self::assertStringContainsString('needs a name', $e->getMessage());
+        }
+
+        self::assertSame(0, $this->formCount(), 'a rejected field name must not create a form');
+
+        $this->expectException(\InvalidArgumentException::class);
+        $service->createForm([
+            'name'              => 'Dupes',
+            'slug'              => 'dupes',
+            'field_definitions' => json_encode([
+                ['type' => 'text', 'name' => 'same', 'label' => 'One', 'required' => false, 'width' => 'full', 'options' => []],
+                ['type' => 'text', 'name' => 'same', 'label' => 'Two', 'required' => false, 'width' => 'full', 'options' => []],
+            ]),
+        ]);
+    }
+
+    public function testRequiredHiddenFieldDoesNotBlockSubmission(): void
+    {
+        $app = $this->buildApp();
+        $service = $this->service($app);
+        $form = $this->makeForm($service, [
+            ['type' => 'hidden', 'name' => 'token', 'label' => 'Token', 'required' => true, 'width' => 'full', 'options' => []],
+        ]);
+
+        $result = $service->submitForm($form, [], ['ip_address' => '10.0.0.1']);
+
+        self::assertTrue($result['ok']);
+        self::assertSame(1, $this->submissionCount());
+    }
 }

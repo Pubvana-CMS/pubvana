@@ -6,7 +6,7 @@
     "pubver_min": "3.0.0",
     "pubver_max": "",
     "category": "content",
-    "semver": "0.2.9",
+    "semver": "0.2.10",
     "provides": {
         "admin.menu": {
             "content": {

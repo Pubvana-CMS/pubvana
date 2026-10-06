@@ -5,6 +5,13 @@
    can also replace this file entirely by shipping
    themes/{theme}/assets/Forms/css/forms.css (see docs/Themes.md). */
 .pv-form{display:grid;gap:1rem;}
+/* Half-width fields sit two per row on wider screens. Full-width fields and
+   every other direct child span the whole row. */
+@media (min-width:37.5rem){
+.pv-form{grid-template-columns:repeat(2,minmax(0,1fr));}
+.pv-form>*{grid-column:1/-1;}
+.pv-form-field-half{grid-column:span 1;}
+}
 .pv-form-field{display:grid;gap:.4rem;}
 .pv-form-label{font-size:.95rem;font-weight:600;}
 .pv-form-input,.pv-form-select,.pv-form-textarea{display:block;width:100%;padding:.5rem .65rem;font-size:1rem;line-height:1.5;color:#333;background-color:#fff;border:1px solid #ccc;border-radius:.25rem;appearance:none;}

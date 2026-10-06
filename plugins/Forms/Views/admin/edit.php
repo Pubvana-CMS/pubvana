@@ -83,7 +83,7 @@
                         <textarea name="success_message" id="success_message" class="form-control" rows="4"><?= htmlspecialchars($form->success_message ?? '') ?></textarea>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Template Tags</label>
+                        <label class="form-label">Shortcodes</label>
                         <input type="text" class="form-control mb-2" value="{% forms 'slug' '<?= htmlspecialchars($form->slug) ?>' %}" readonly>
                         <input type="text" class="form-control" value="{% forms 'id' <?= (int) $form->id ?> %}" readonly>
                     </div>
@@ -110,8 +110,8 @@ document.addEventListener('DOMContentLoaded', function () {
     function slugify(value) {
         return (value || '').toLowerCase().trim()
             .replace(/&/g, 'and')
-            .replace(/[^a-z0-9\\s-]/g, '')
-            .replace(/[\\s]+/g, '-')
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
             .replace(/-+/g, '-')
             .replace(/^-|-$/g, '');
     }
@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         </div>
                         <div class="col-12 mb-3 ${needsOptions(field.type) ? '' : 'd-none'}" data-options-wrap="${index}">
                             <label class="form-label">Options</label>
-                            <textarea class="form-control" rows="3" data-bind="options" data-index="${index}">${(field.options || []).join("\\n")}</textarea>
+                            <textarea class="form-control" rows="3" data-bind="options" data-index="${index}">${(field.options || []).join("\n")}</textarea>
                             <div class="form-hint">One option per line.</div>
                         </div>
                         <div class="col-12">
@@ -283,13 +283,26 @@ document.addEventListener('DOMContentLoaded', function () {
         render();
     }
 
+    function updateHeader(index) {
+        var card = fieldsRoot.children[index];
+        if (!card) return;
+        var strong = card.querySelector('.card-header strong');
+        if (!strong) return;
+        var field = fields[index] || {};
+        strong.textContent = field.label || field.name || ('Field ' + (index + 1));
+    }
+
     fieldsRoot.addEventListener('input', function (e) {
         var bind = e.target.dataset.bind;
         var index = Number(e.target.dataset.index);
         if (bind === undefined || Number.isNaN(index)) return;
 
+        // Required is a checkbox, written by the change handler below.
+        // Re-rendering here would drop the element before change can fire.
+        if (bind === 'required') return;
+
         if (bind === 'options') {
-            fields[index][bind] = e.target.value.split(/\\n/).map(function (item) {
+            fields[index][bind] = e.target.value.split(/\n/).map(function (item) {
                 return item.trim();
             }).filter(Boolean);
         } else {
@@ -303,7 +316,15 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         sync();
-        render();
+
+        // Only the type switch changes which controls a card shows, so it is
+        // the one edit that rebuilds the card. Every other edit writes through
+        // in place and leaves the focused field alone.
+        if (bind === 'type') {
+            render();
+        } else if (bind === 'label' || bind === 'name') {
+            updateHeader(index);
+        }
     });
 
     fieldsRoot.addEventListener('change', function (e) {

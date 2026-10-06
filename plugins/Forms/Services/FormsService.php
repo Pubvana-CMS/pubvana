@@ -100,7 +100,7 @@ class FormsService
      *
      * @param array<string, mixed> $data
      * @param array<int, array<string, mixed>> $fieldDefinitions
-     * @throws \InvalidArgumentException When a field name is reserved or the status is not a valid enum value.
+     * @throws \InvalidArgumentException When a field name is blank, duplicated or reserved, or the status is not a valid enum value.
      */
     private function assertWritable(array $data, array $fieldDefinitions): void
     {
@@ -108,12 +108,30 @@ class FormsService
         // protection can be switched on later, and a field that collides then
         // would start losing entries without anyone touching the form.
         $captchaField = $this->app->captcha()->postField();
+        $seenNames = [];
 
         foreach ($fieldDefinitions as $definition) {
+            $type = trim((string) ($definition['type'] ?? ''));
             $name = trim((string) ($definition['name'] ?? ''));
-            if ($name === '') {
+
+            // syncFields() ignores an entry with no type, so it never becomes
+            // a field. Only definitions a field is built from are checked.
+            if ($type === '') {
                 continue;
             }
+
+            if ($name === '') {
+                throw new \InvalidArgumentException('Every field needs a name.');
+            }
+
+            if (isset($seenNames[$name])) {
+                throw new \InvalidArgumentException(sprintf(
+                    '"%s" is used by more than one field. Field names must be unique.',
+                    $name
+                ));
+            }
+
+            $seenNames[$name] = true;
 
             if (in_array($name, self::RESERVED_FIELD_NAMES, true)) {
                 throw new \InvalidArgumentException(sprintf(
@@ -385,33 +403,53 @@ class FormsService
             $type = (string) $field->type;
             $label = (string) $field->label;
             $placeholder = (string) ($field->placeholder ?? '');
-            $required = (int) $field->is_required === 1;
+            $isHidden = $type === 'hidden';
+            // A hidden field cannot be filled in by a visitor, so a required
+            // flag on one would make the form impossible to submit.
+            $required = !$isHidden && (int) $field->is_required === 1;
             $value = $values[$name] ?? '';
+            // Only checkbox groups submit arrays; every other type takes a
+            // scalar, so a stray array value renders as empty instead of
+            // tripping the PHP array-to-string cast.
+            $scalarValue = is_scalar($value) ? (string) $value : '';
 
             if ($captchaField !== '' && $name === $captchaField) {
                 $shadowedFields[] = $label !== '' ? $label : $name;
                 continue;
             }
 
-            $html .= '<div class="pv-form-field pv-form-field-' . htmlspecialchars($type) . '">';
-            $html .= '<label class="pv-form-label" for="field-' . htmlspecialchars($name) . '">' . htmlspecialchars($label);
-            if ($required) {
-                $html .= ' *';
+            $widthClass = (string) ($field->width ?? 'full') === 'half' ? ' pv-form-field-half' : '';
+            $html .= '<div class="pv-form-field pv-form-field-' . htmlspecialchars($type) . $widthClass . '">';
+
+            if (!$isHidden) {
+                // A single control carries the label. A radio or checkbox group
+                // has one input per option, so its wrapper label has no for.
+                $labelFor = in_array($type, ['radio', 'checkbox'], true)
+                    ? ''
+                    : ' for="field-' . htmlspecialchars($name) . '"';
+                $html .= '<label class="pv-form-label"' . $labelFor . '>' . htmlspecialchars($label);
+                if ($required) {
+                    $html .= ' *';
+                }
+                $html .= '</label>';
             }
-            $html .= '</label>';
 
             if (in_array($type, ['textarea'], true)) {
                 $html .= '<textarea class="pv-form-textarea" id="field-' . htmlspecialchars($name) . '" name="' . htmlspecialchars($name) . '" rows="5"'
                     . ($required ? ' required' : '') . ' placeholder="' . htmlspecialchars($placeholder) . '">'
-                    . htmlspecialchars((string) $value) . '</textarea>';
+                    . htmlspecialchars($scalarValue) . '</textarea>';
             } elseif (in_array($type, ['select', 'radio', 'checkbox'], true)) {
                 $options = $this->decodeJsonArray($field->options_json);
+                // required on every checkbox would demand all boxes be ticked,
+                // so a required checkbox group only carries the attribute when
+                // it holds a single box.
+                $requiredAttr = $required && ($type !== 'checkbox' || count($options) <= 1) ? ' required' : '';
                 if ($type === 'select') {
                     $html .= '<select class="pv-form-select" id="field-' . htmlspecialchars($name) . '" name="' . htmlspecialchars($name) . '"'
                         . ($required ? ' required' : '') . '>';
                     $html .= '<option value="">Choose…</option>';
                     foreach ($options as $option) {
-                        $selected = (string) $value === (string) $option ? ' selected' : '';
+                        $selected = $scalarValue === (string) $option ? ' selected' : '';
                         $html .= '<option value="' . htmlspecialchars((string) $option) . '"' . $selected . '>' . htmlspecialchars((string) $option) . '</option>';
                     }
                     $html .= '</select>';
@@ -420,14 +458,14 @@ class FormsService
                     foreach ($options as $index => $option) {
                         $optionId = 'field-' . $name . '-' . $index;
                         $isChecked = $type === 'checkbox'
-                            ? (is_array($value) ? in_array((string) $option, array_map('strval', $value), true) : (string) $value === (string) $option)
-                            : (string) $value === (string) $option;
+                            ? (is_array($value) ? in_array((string) $option, array_map('strval', $value), true) : $scalarValue === (string) $option)
+                            : $scalarValue === (string) $option;
                         $checked = $isChecked ? ' checked' : '';
                         $inputName = $type === 'checkbox' ? $name . '[]' : $name;
                         $html .= '<label class="pv-form-choice">';
                         $html .= '<input class="pv-form-choice-input" type="' . ($type === 'radio' ? 'radio' : 'checkbox') . '" id="' . htmlspecialchars($optionId)
                             . '" name="' . htmlspecialchars($inputName) . '" value="' . htmlspecialchars((string) $option) . '"' . $checked
-                            . ($required ? ' required' : '') . '>';
+                            . $requiredAttr . '>';
                         $html .= '<span class="pv-form-choice-label">' . htmlspecialchars((string) $option) . '</span>';
                         $html .= '</label>';
                     }
@@ -441,15 +479,15 @@ class FormsService
                     default => 'text',
                 };
 
-                $inputClass = $inputType === 'hidden' ? ' class="pv-form-hidden"' : ' class="pv-form-input"';
+                $inputClass = $isHidden ? ' class="pv-form-hidden"' : ' class="pv-form-input"';
                 $html .= '<input type="' . $inputType . '" id="field-' . htmlspecialchars($name) . '" name="' . htmlspecialchars($name) . '"'
                     . $inputClass
-                    . ' value="' . htmlspecialchars((string) $value) . '"'
+                    . ' value="' . htmlspecialchars($scalarValue) . '"'
                     . ($required ? ' required' : '')
                     . ' placeholder="' . htmlspecialchars($placeholder) . '">';
             }
 
-            if (!empty($field->help_text) && $type !== 'hidden') {
+            if (!empty($field->help_text) && !$isHidden) {
                 $html .= '<div class="pv-form-help">' . htmlspecialchars((string) $field->help_text) . '</div>';
             }
 
@@ -543,8 +581,11 @@ class FormsService
         $ip = (string) ($requestMeta['ip_address'] ?? '');
         $rateKey = 'forms:form_' . (int) $form->id . ':' . $ip;
         $rateWindow = (int) ($this->config['rate_limit_seconds'] ?? 10);
+        $gateActive = $rateWindow > 0 && $ip !== '';
 
-        if (!$this->rateLimiter()->check($rateKey, 1, $rateWindow)) {
+        // Reserve the slot in one locked step so two posts from one address
+        // cannot both slip through. A failed attempt releases it again.
+        if ($gateActive && !$this->rateLimiter()->attempt($rateKey, 1, $rateWindow)) {
             return [
                 'ok'     => false,
                 'errors' => ['Please wait a moment before submitting again.'],
@@ -562,6 +603,10 @@ class FormsService
             unset($values[$postField]);
 
             if (!$captcha->verify($token, (string) ($requestMeta['ip_address'] ?? ''))) {
+                if ($gateActive) {
+                    $this->rateLimiter()->undo($rateKey);
+                }
+
                 return [
                     'ok'     => false,
                     'errors' => ['Captcha verification failed. Please try again.'],
@@ -577,7 +622,9 @@ class FormsService
         foreach ($fields as $field) {
             $name = (string) $field->name;
             $type = (string) $field->type;
-            $required = (int) $field->is_required === 1;
+            // A hidden field cannot be filled in, so a required flag on one
+            // would make the form impossible to submit.
+            $required = $type !== 'hidden' && (int) $field->is_required === 1;
             $value = $values[$name] ?? null;
             $options = $this->decodeJsonArray($field->options_json);
             $normalized = $this->sanitizeSubmittedValue($field, $value);
@@ -615,6 +662,10 @@ class FormsService
         }
 
         if (!empty($errors)) {
+            if ($gateActive) {
+                $this->rateLimiter()->undo($rateKey);
+            }
+
             return [
                 'ok'     => false,
                 'errors' => $errors,
@@ -631,9 +682,6 @@ class FormsService
             'payload_json' => json_encode($clean, JSON_UNESCAPED_SLASHES),
         ]);
 
-        if ($rateWindow > 0 && $ip !== '') {
-            $this->rateLimiter()->hit($rateKey, $rateWindow);
-        }
         $this->dispatchNotifications($form, $clean);
 
         return [

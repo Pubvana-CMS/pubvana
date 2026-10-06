@@ -4,7 +4,8 @@ Form builder for Pubvana. Create forms in the admin, embed them on your site, an
 
 ## Features
 
-- Build forms with text, email, phone, textarea, select, radio, and checkbox fields
+- Build forms with text, email, phone, textarea, select, radio, checkbox, and hidden fields
+- Lay fields out full width or two per row
 - Embed a form in content with a shortcode, or place it in a region as a block
 - Review submissions in the admin
 - Spam controls: honeypot, rate limit, and optional captcha
