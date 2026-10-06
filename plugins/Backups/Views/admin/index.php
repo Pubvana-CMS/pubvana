@@ -67,6 +67,7 @@
                         </a>
                         <button type="button" class="btn btn-sm btn-outline-warning restore-btn"
                                 data-filename="<?= htmlspecialchars($backup['filename']) ?>"
+                                <?= !empty($is_locked) ? 'disabled' : '' ?>
                                 title="Restore">
                             <i class="ti ti-rotate-2"></i>
                         </button>
@@ -75,7 +76,7 @@
                               class="d-inline"
                               onsubmit="return confirm('Delete this backup?')">
                             <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
-                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete" <?= !empty($is_locked) ? 'disabled' : '' ?>>
                                 <i class="ti ti-trash"></i>
                             </button>
                         </form>

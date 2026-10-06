@@ -74,20 +74,31 @@ class ProgressReporter
         fflush($handle);
 
         $this->lockHandle = $handle;
+
+        // Overwrite any progress left by an earlier run, so the admin poll
+        // never reads a stale 'completed' as the current operation.
+        $this->update(0, 0, 'Starting...');
+
         return true;
     }
 
     /**
      * Release the lock.
+     *
+     * The lock file itself is left on disk. Unlinking it after the flock is
+     * released is a race: another process can open the file between the
+     * unlock and the unlink, hold a lock on a deleted inode, and a third
+     * process then locks a fresh file, leaving two holders.
      */
     public function releaseLock(): void
     {
-        if ($this->lockHandle !== null) {
-            flock($this->lockHandle, LOCK_UN);
-            fclose($this->lockHandle);
-            $this->lockHandle = null;
+        if ($this->lockHandle === null) {
+            return;
         }
-        @unlink($this->lockFile);
+
+        flock($this->lockHandle, LOCK_UN);
+        fclose($this->lockHandle);
+        $this->lockHandle = null;
     }
 
     /**
@@ -162,6 +173,58 @@ class ProgressReporter
         $raw = file_get_contents($this->progressFile);
         $data = is_string($raw) ? json_decode($raw, true) : null;
         return is_array($data) ? $data : null;
+    }
+
+    /**
+     * The operation name of the live lock holder, or null when unlocked.
+     *
+     * acquireLock() resets the holder's progress file in the same breath it
+     * takes the lock, so when this returns a name that file is already the
+     * current run and never a stale record from a previous one.
+     */
+    public static function lockedOperation(string $storageDir): ?string
+    {
+        if (!self::isLocked($storageDir)) {
+            return null;
+        }
+
+        $file = rtrim($storageDir, '/') . '/operation.lock';
+        $raw  = @file_get_contents($file);
+        $data = is_string($raw) ? json_decode($raw, true) : null;
+
+        if (is_array($data) && isset($data['operation']) && is_string($data['operation'])) {
+            return $data['operation'];
+        }
+
+        return null;
+    }
+
+    /**
+     * Read the most recently written progress file in a storage dir.
+     *
+     * The admin polls one endpoint for backup and restore alike; the newest
+     * file is the operation that last reported.
+     *
+     * @return array<string, mixed>|null
+     */
+    public static function readLatest(string $storageDir): ?array
+    {
+        $files = glob(rtrim($storageDir, '/') . '/*_progress.json') ?: [];
+        if ($files === []) {
+            return null;
+        }
+
+        usort($files, static fn (string $a, string $b): int => (int) filemtime($b) <=> (int) filemtime($a));
+
+        foreach ($files as $file) {
+            $raw  = @file_get_contents($file);
+            $data = is_string($raw) ? json_decode($raw, true) : null;
+            if (is_array($data)) {
+                return $data;
+            }
+        }
+
+        return null;
     }
 
     /**

@@ -29,7 +29,7 @@ class RestoreService
     public function __construct(BackupService $backupService, array $config)
     {
         $this->backupService   = $backupService;
-        $this->restoreDirs     = $config['backup_dirs'] ?? ['app', 'public', 'vendor', 'themes'];
+        $this->restoreDirs     = $config['backup_dirs'] ?? ['app', 'plugins', 'public', 'vendor', 'themes'];
         $this->protectedConfigs = $config['protected_configs'] ?? ['app/config/services.php'];
     }
 
@@ -47,6 +47,10 @@ class RestoreService
             throw new \RuntimeException('Backup not found: ' . $backupFilename);
         }
 
+        // The caller holds the operation lock, so any extract dir on disk is
+        // left over from a run that died before its finally block ran.
+        $this->cleanStaleExtractDirs();
+
         $totalSteps = 5;
         $step = 0;
 
@@ -55,7 +59,7 @@ class RestoreService
         if ($onProgress) {
             $onProgress($step, $totalSteps, 'Backing up current state...', 'pre-rollback');
         }
-        $this->backupService->createBackup('pre-rollback', $triggeredBy);
+        $this->backupService->createBackup('pre-rollback', $triggeredBy, null, $backupPath);
 
         // Step 2: Extract the backup zip
         $step++;
@@ -63,11 +67,18 @@ class RestoreService
             $onProgress($step, $totalSteps, 'Extracting backup...', $backupFilename);
         }
         $extractDir = $this->backupService->getBackupDir() . 'restore_' . time() . '/';
-        if (!$this->extract($backupPath, $extractDir)) {
-            throw new \RuntimeException('Failed to extract backup zip.');
-        }
 
+        // The extraction directory is always removed, including when the
+        // archive is rejected before a single entry is written.
         try {
+            if (!$this->extract($backupPath, $extractDir)) {
+                throw new \RuntimeException('Failed to extract backup zip.');
+            }
+
+            // Fail before the first file is written rather than partway
+            // through and leaving a half-restored tree.
+            $this->assertTargetsWritable($extractDir);
+
             // Step 3: Restore files
             $step++;
             if ($onProgress) {
@@ -81,20 +92,21 @@ class RestoreService
                 $onProgress($step, $totalSteps, 'Restoring database...', '');
             }
             $sqlPath = $extractDir . 'database.sql';
-            if (is_file($sqlPath)) {
-                $sqlData = file_get_contents($sqlPath);
-                if ($sqlData === false) {
-                    throw new \RuntimeException('Unable to read database.sql from the archive.');
-                }
-                $this->backupService->restoreDatabase($sqlData);
+            if (!is_file($sqlPath)) {
+                throw new \RuntimeException('The backup archive has no database.sql.');
             }
+            $sqlData = file_get_contents($sqlPath);
+            if ($sqlData === false) {
+                throw new \RuntimeException('Unable to read database.sql from the archive.');
+            }
+            $this->backupService->restoreDatabase($sqlData);
 
             // Step 5: Backup restored state
             $step++;
             if ($onProgress) {
                 $onProgress($step, $totalSteps, 'Backing up restored state...', 'post-rollback');
             }
-            $this->backupService->createBackup('post-rollback', $triggeredBy);
+            $this->backupService->createBackup('post-rollback', $triggeredBy, null, $backupPath);
 
         } finally {
             $this->removeDirectory($extractDir);
@@ -272,11 +284,27 @@ class RestoreService
 
     private function copyDirectory(string $src, string $dest): void
     {
-        if (!is_dir($dest)) {
-            mkdir($dest, 0755, true);
+        if (!is_dir($dest) && !@mkdir($dest, 0755, true) && !is_dir($dest)) {
+            throw new \RuntimeException('Failed to create directory "' . $dest . '".');
         }
 
-        $items = array_diff(scandir($src), ['.', '..']);
+        $items    = array_values(array_diff(scandir($src) ?: [], ['.', '..']));
+        $inSource = array_flip($items);
+
+        // Remove live entries the snapshot does not contain, so a restore
+        // returns the tree to the snapshot instead of only overlaying it.
+        // Protected config files are never touched.
+        foreach (array_diff(scandir($dest) ?: [], ['.', '..']) as $stale) {
+            if (isset($inSource[$stale])) {
+                continue;
+            }
+            $stalePath = $dest . $stale;
+            if ($this->isProtectedConfig($stalePath)) {
+                continue;
+            }
+            $this->removePath($stalePath);
+        }
+
         foreach ($items as $item) {
             $srcPath  = $src . $item;
             $destPath = $dest . $item;
@@ -294,17 +322,121 @@ class RestoreService
 
             if (is_dir($srcPath)) {
                 $this->copyDirectory($srcPath . '/', $destPath . '/');
-            } else {
-                $relPath = str_replace(PROJECT_ROOT . '/', '', $destPath);
-                $normalized = str_replace('\\', '/', $relPath);
-                foreach ($this->protectedConfigs as $protected) {
-                    if ($normalized === $protected || str_ends_with($normalized, '/' . $protected)) {
-                        continue 2;
-                    }
-                }
-                copy($srcPath, $destPath);
+                continue;
+            }
+
+            if ($this->isProtectedConfig($destPath)) {
+                continue;
+            }
+
+            // A failed copy (unwritable target, full disk) stops the restore.
+            // Swallowing it leaves files silently un-restored.
+            if (!@copy($srcPath, $destPath)) {
+                throw new \RuntimeException(
+                    'Failed to write "' . $destPath . '". The web server user needs write access to the site files.'
+                );
             }
         }
+    }
+
+    /**
+     * Fail before touching the site when a file the snapshot must overwrite
+     * is not writable by the process running the restore.
+     */
+    private function assertTargetsWritable(string $extractDir): void
+    {
+        $blocked = [];
+
+        foreach ($this->restoreDirs as $dir) {
+            $srcRoot = $extractDir . $dir . '/';
+            if (!is_dir($srcRoot)) {
+                continue;
+            }
+
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($srcRoot, \FilesystemIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::SELF_FIRST
+            );
+
+            foreach ($iterator as $item) {
+                if ($item->isLink()) {
+                    continue;
+                }
+
+                $relative = substr($item->getPathname(), strlen($srcRoot));
+                if ($relative === '') {
+                    continue;
+                }
+
+                $target = PROJECT_ROOT . '/' . $dir . '/' . $relative;
+                if (file_exists($target) && !is_writable($target)) {
+                    $blocked[] = $dir . '/' . $relative;
+                }
+            }
+        }
+
+        if ($blocked === []) {
+            return;
+        }
+
+        $preview = implode(', ', array_slice($blocked, 0, 5));
+        $more    = count($blocked) > 5 ? ' (and ' . (count($blocked) - 5) . ' more)' : '';
+
+        throw new \RuntimeException(
+            'The restore was not started: the web server user cannot write to '
+            . $preview . $more
+            . '. Fix the file ownership (see INSTALL.md) or run the restore from the command line.'
+        );
+    }
+
+    /**
+     * Remove extraction directories left by a run that died before cleanup.
+     */
+    private function cleanStaleExtractDirs(): void
+    {
+        $pattern = rtrim($this->backupService->getBackupDir(), '/') . '/restore_*';
+
+        foreach (glob($pattern) ?: [] as $stale) {
+            if (is_dir($stale)) {
+                $this->removeDirectory(rtrim($stale, '/') . '/');
+            }
+        }
+    }
+
+    /**
+     * True when a destination path is one of the protected config files.
+     * Compared against the path relative to PROJECT_ROOT, so a protected
+     * file is skipped wherever the restore walk reaches it.
+     */
+    private function isProtectedConfig(string $destPath): bool
+    {
+        $relative = str_replace('\\', '/', str_replace(PROJECT_ROOT . '/', '', $destPath));
+
+        foreach ($this->protectedConfigs as $protected) {
+            if ($relative === $protected || str_ends_with($relative, '/' . $protected)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Remove a file, link, or directory without following links.
+     */
+    private function removePath(string $path): void
+    {
+        if (is_link($path)) {
+            @unlink($path);
+            return;
+        }
+
+        if (is_dir($path)) {
+            $this->removeDirectory($path . '/');
+            return;
+        }
+
+        @unlink($path);
     }
 
     private function removeDirectory(string $dir): void

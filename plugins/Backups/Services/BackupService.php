@@ -41,7 +41,7 @@ class BackupService
         $this->dbCredentials    = $dbCredentials;
         $this->backupDir        = rtrim($config['backup_path'] ?? (PROJECT_ROOT . '/writable/backups'), '/') . '/';
         $this->maxBackups       = (int) ($config['max_backups'] ?? 15);
-        $this->backupDirs       = $config['backup_dirs'] ?? ['app', 'public', 'vendor', 'themes'];
+        $this->backupDirs       = $config['backup_dirs'] ?? ['app', 'plugins', 'public', 'vendor', 'themes'];
         $this->protectedConfigs = $config['protected_configs'] ?? ['app/config/services.php'];
 
         if (!is_dir($this->backupDir)) {
@@ -60,9 +60,10 @@ class BackupService
      * @param string        $trigger     One of: manual, pre-update, pre-rollback, post-rollback
      * @param string        $triggeredBy Email/identifier of the admin who initiated it
      * @param callable|null $onProgress  fn(int $step, int $total, string $label, string $detail)
+     * @param string|null   $protectPath Zip a restore is reading; retention never deletes it
      * @return string Absolute path to the created zip file
      */
-    public function createBackup(string $trigger, string $triggeredBy, ?callable $onProgress = null): string
+    public function createBackup(string $trigger, string $triggeredBy, ?callable $onProgress = null, ?string $protectPath = null): string
     {
         $zipFile    = $this->freshZipPath();
         $totalSteps = count($this->backupDirs) + 3; // dirs + db dump + packaging + cleanup
@@ -107,14 +108,20 @@ class BackupService
         if ($onProgress) {
             $onProgress($step, $totalSteps, 'Packaging zip', '');
         }
-        $zip->close();
+        if (!$zip->close()) {
+            // A failed close means the archive on disk is truncated (disk
+            // full, write error). Reporting it as a backup would hand the
+            // user a file that cannot be restored.
+            @unlink($zipFile);
+            throw new \RuntimeException('Failed to finalize the backup archive: ' . $zipFile);
+        }
 
         // Retention cleanup
         $step++;
         if ($onProgress) {
             $onProgress($step, $totalSteps, 'Cleanup (retention check)', '');
         }
-        $this->enforceRetention();
+        $this->enforceRetention($protectPath);
 
         return $zipFile;
     }
@@ -270,10 +277,16 @@ class BackupService
     public function restoreDatabase(string $sqlData): void
     {
         if ($this->execAvailable()) {
-            $ok = $this->restoreViaMysql($sqlData);
-            if ($ok) {
+            $result = $this->restoreViaMysql($sqlData);
+            if ($result === true) {
                 return;
             }
+            if ($result === false) {
+                // The client ran and failed. Re-running the dump through PDO
+                // over a half-restored database would make it worse.
+                throw new \RuntimeException('The mysql client failed while restoring the database.');
+            }
+            // null: the client could not start; fall through to the PHP path.
         }
 
         $this->restoreViaPHP($sqlData);
@@ -327,12 +340,20 @@ class BackupService
             $sql .= $createSql . ";\n\n";
 
             $rows = $this->getAllRows($table);
-            if (!empty($rows)) {
-                $columns = '`' . implode('`, `', array_keys($rows[0])) . '`';
+            if (empty($rows)) {
+                continue;
+            }
+
+            $columns = '`' . implode('`, `', array_keys($rows[0])) . '`';
+
+            // Batch the rows. One INSERT per table is fine for small data
+            // but a whole large table in one statement can exceed
+            // max_allowed_packet and fail the restore.
+            foreach (array_chunk($rows, 500) as $chunk) {
                 $sql .= "INSERT INTO `{$table}` ({$columns}) VALUES\n";
 
-                $lastIdx = count($rows) - 1;
-                foreach ($rows as $i => $row) {
+                $lastIdx = count($chunk) - 1;
+                foreach ($chunk as $i => $row) {
                     $vals = array_map(function ($v): string {
                         if ($v === null) {
                             return 'NULL';
@@ -351,12 +372,14 @@ class BackupService
         return $sql;
     }
 
-    private function restoreViaMysql(string $sqlData): bool
+    private function restoreViaMysql(string $sqlData): ?bool
     {
         $c = $this->dbCredentials;
 
-        $tmpFile = $this->backupDir . 'restore_' . time() . '.sql';
-        file_put_contents($tmpFile, $sqlData);
+        $tmpFile = $this->backupDir . 'restore_' . bin2hex(random_bytes(8)) . '.sql';
+        if (file_put_contents($tmpFile, $sqlData) === false) {
+            return null;
+        }
 
         $argv = [
             'mysql',
@@ -368,8 +391,15 @@ class BackupService
 
         $stdout = null;
         $stderr = null;
-        $code = $this->runProc($argv, $this->mysqlEnv($c), $stdout, $stderr, $tmpFile);
-        @unlink($tmpFile);
+        try {
+            $code = $this->runProc($argv, $this->mysqlEnv($c), $stdout, $stderr, $tmpFile);
+        } finally {
+            @unlink($tmpFile);
+        }
+
+        if ($code === -1) {
+            return null; // the client could not be started
+        }
 
         return $code === 0;
     }
@@ -497,16 +527,24 @@ class BackupService
     // ------------------------------------------------------------------
 
     /**
-     * @return array<int, string>
+     * @return array<int, string> Base table names only. Views are skipped:
+     *                            their SHOW CREATE output is not a CREATE
+     *                            TABLE, and rows cannot be inserted into a
+     *                            view, so a dump that mixed them in would
+     *                            not restore.
      */
     private function getTableNames(): array
     {
         $tables = [];
-        $stmt = $this->pdo->query('SHOW TABLES');
+        $stmt = $this->pdo->query('SHOW FULL TABLES');
         if ($stmt === false) {
             throw new \RuntimeException('Unable to list database tables for backup.');
         }
         foreach ($stmt->fetchAll(\PDO::FETCH_NUM) as $row) {
+            $type = isset($row[1]) ? strtoupper((string) $row[1]) : '';
+            if ($type === 'VIEW') {
+                continue;
+            }
             $tables[] = (string) $row[0];
         }
         return $tables;
@@ -570,16 +608,24 @@ class BackupService
         }
     }
 
-    private function enforceRetention(): void
+    private function enforceRetention(?string $protectPath = null): void
     {
         $files = glob($this->backupDir . '*-full.zip') ?: [];
         usort($files, fn($a, $b) => filemtime($b) - filemtime($a));
 
-        while (count($files) > $this->maxBackups) {
-            $oldest = array_pop($files);
-            if ($oldest !== null) {
-                @unlink($oldest);
+        // A restore passes the zip it is reading so that a low retention
+        // count cannot delete the snapshot out from under the restore.
+        $deletable = $protectPath === null
+            ? $files
+            : array_values(array_filter($files, fn (string $file): bool => $file !== $protectPath));
+
+        $excess = count($files) - $this->maxBackups;
+        for ($i = 0; $i < $excess; $i++) {
+            $oldest = array_pop($deletable);
+            if ($oldest === null) {
+                break;
             }
+            @unlink($oldest);
         }
     }
 

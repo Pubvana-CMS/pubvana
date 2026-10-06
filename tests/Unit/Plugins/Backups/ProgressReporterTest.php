@@ -111,4 +111,47 @@ final class ProgressReporterTest extends TestCase
         self::assertFalse($reporter->acquireLock());
         $reporter->releaseLock();
     }
+
+    public function testAcquireResetsStaleProgressFromAnEarlierRun(): void
+    {
+        file_put_contents(
+            $this->dir . 'backup_progress.json',
+            (string) json_encode(['operation' => 'backup', 'status' => 'completed', 'step_label' => 'Complete'])
+        );
+
+        $reporter = new ProgressReporter('backup', $this->dir);
+        self::assertTrue($reporter->acquireLock());
+
+        $data = $reporter->read();
+        self::assertIsArray($data);
+        self::assertSame('in_progress', $data['status']);
+        self::assertSame('Starting...', $data['step_label']);
+
+        $reporter->releaseLock();
+    }
+
+    public function testLockedOperationReportsTheHolder(): void
+    {
+        self::assertNull(ProgressReporter::lockedOperation($this->dir));
+
+        $reporter = new ProgressReporter('rollback', $this->dir);
+        self::assertTrue($reporter->acquireLock());
+        self::assertSame('rollback', ProgressReporter::lockedOperation($this->dir));
+
+        $reporter->releaseLock();
+        self::assertNull(ProgressReporter::lockedOperation($this->dir));
+    }
+
+    public function testReadLatestReturnsTheNewestProgressFile(): void
+    {
+        (new ProgressReporter('backup', $this->dir))->update(1, 3, 'backup step');
+        (new ProgressReporter('rollback', $this->dir))->update(2, 5, 'rollback step');
+
+        touch($this->dir . 'backup_progress.json', time() - 100);
+        touch($this->dir . 'rollback_progress.json', time());
+
+        $latest = ProgressReporter::readLatest($this->dir);
+        self::assertIsArray($latest);
+        self::assertSame('rollback', $latest['operation']);
+    }
 }

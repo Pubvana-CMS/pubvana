@@ -146,10 +146,12 @@ class BackupsAdminController extends AdminController
             return;
         }
 
+        $size = filesize($path);
+
         $response = $this->app->response();
         $response->header('Content-Type', 'application/zip');
         $response->header('Content-Disposition', 'attachment; filename="' . basename($path) . '"');
-        $response->header('Content-Length', (string) filesize($path));
+        $response->header('Content-Length', (string) ($size === false ? 0 : $size));
 
         // Stream in chunks: a multi-gigabyte zip must never sit in memory.
         $handle = fopen($path, 'rb');
@@ -253,19 +255,35 @@ class BackupsAdminController extends AdminController
      */
     public function status(): void
     {
-        $reporter = new ProgressReporter('backup', $this->storageDir());
-        $data = $reporter->read();
+        $dir = $this->storageDir();
 
-        // Also check rollback progress
-        if ($data === null || ($data['status'] ?? '') === 'idle') {
-            $rollbackReporter = new ProgressReporter('rollback', $this->storageDir());
-            $rollbackData = $rollbackReporter->read();
-            if ($rollbackData !== null) {
-                $data = $rollbackData;
+        // A live operation is the authority: its progress file was reset when
+        // it took the lock, so it is never a record left by an earlier run.
+        $active = ProgressReporter::lockedOperation($dir);
+        if ($active !== null) {
+            $data = (new ProgressReporter($active, $dir))->read();
+            if ($data !== null) {
+                $this->app->json($data);
+                return;
             }
         }
 
-        $this->app->json($data ?? ['status' => 'idle']);
+        // No live operation: report whichever progress file last reported.
+        $data = ProgressReporter::readLatest($dir);
+        if ($data === null) {
+            $this->app->json(['status' => 'idle']);
+            return;
+        }
+
+        // No live lock holds the run, yet the last record is still
+        // in_progress: the process died (killed or fatal). Report it so the
+        // admin stops polling instead of waiting forever.
+        if (($data['status'] ?? '') === 'in_progress') {
+            $data['status'] = 'error';
+            $data['error']  = 'The operation stopped unexpectedly. Check the server error log.';
+        }
+
+        $this->app->json($data);
     }
 
     private function execAvailable(): bool

@@ -5,6 +5,28 @@ All notable changes to the Backups plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.13] - 2026-10-05
+
+### Changed
+- A full backup now includes the `plugins/` directory.
+- A restore removes files the snapshot does not contain, and keeps the protected configs.
+
+### Fixed
+- A restore showed the previous backup's completed progress instead of its own.
+- A backup or restore that died in the background left the progress screen on its last step.
+- A failed file copy during a restore was logged and skipped.
+- A restore that could not write the site files failed partway through the copy.
+- A restore that was killed left its extraction directory behind.
+- A backup whose zip could not be finalized was reported as created.
+- Retention could delete the snapshot a restore was reading.
+- A restore of an archive with no `database.sql` restored files only and reported success.
+- A mysql client failure mid-restore ran the whole dump again through PDO.
+- Releasing the operation lock unlinked the lock file, which could let two operations run at once.
+- The restore and delete buttons stayed active while an operation was running.
+- The pure-PHP dump included views in the table list.
+- The pure-PHP dump wrote one INSERT per table, which could fail on a large table.
+- The backup download built a Content-Length header from a failed `filesize()` call.
+
 ## [0.1.12] - 2026-09-28
 
 ### Fixed

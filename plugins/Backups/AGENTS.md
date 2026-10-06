@@ -4,7 +4,7 @@ Guidance for AI agents contributing to this plugin, which is part of the main Pu
 
 ## Overview
 
-**pubvana/backups** is a full-site backup and restore plugin for Pubvana CMS. It zips the app, public files, vendor, and themes, dumps the database, and can roll back to any snapshot.
+**pubvana/backups** is a full-site backup and restore plugin for Pubvana CMS. It zips the app, plugins, public files, vendor, and themes (`backup_dirs`), dumps the database, and can roll back to any snapshot.
 
 - **Package:** `pubvana/backups` (local plugin, no Packagist)
 - **License:** MIT, matching the main project (repo `composer.json` declares `"license": "MIT"`)
@@ -65,7 +65,9 @@ The CLI clients (`mysqldump`/`mysql`) run through `proc_open` with the full chil
 
 ### Restore flow
 
-`RestoreService::restore()` (`RestoreService.php:36`) is a 5-step reversible rollback: snapshot the current state as a `pre-rollback` backup, extract the zip, restore files, restore the database, then take a `post-rollback` backup of the restored state. The extraction directory is always removed in a `finally` block.
+`RestoreService::restore()` (`RestoreService.php:36`) is a 5-step reversible rollback: snapshot the current state as a `pre-rollback` backup, extract the zip, restore files, restore the database, then take a `post-rollback` backup of the restored state. The extraction directory is always removed in a `finally` block. Both snapshots pass the zip being restored to `createBackup()` as `$protectPath`, so retention never deletes the source mid-restore.
+
+The file restore is a sync, not an overlay: `copyDirectory()` removes live entries the snapshot does not contain, so the tree returns to the snapshot. `protected_configs` are skipped on both copy and delete, so config and env files survive a rollback.
 
 Extraction (`RestoreService.php:101`) tries `ZipArchive`, then `exec unzip`, then `PharData`, and only after `validateZipContents()` confirms no entry contains `..` (`RestoreService.php:157`). File restoration skips `protected_configs` (`RestoreService.php:215`), so config and env files survive a rollback.
 

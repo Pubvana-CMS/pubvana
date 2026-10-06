@@ -158,6 +158,66 @@ final class RestoreServiceZipSafetyTest extends TestCase
         $this->removeDir($outside);
     }
 
+    public function testCopyRemovesFilesTheSnapshotDoesNotHave(): void
+    {
+        $src = sys_get_temp_dir() . '/pv-sync-src-' . uniqid('', true) . '/';
+        mkdir($src, 0775, true);
+        file_put_contents($src . 'kept.txt', 'kept');
+
+        $dest = sys_get_temp_dir() . '/pv-sync-dest-' . uniqid('', true) . '/';
+        mkdir($dest, 0775, true);
+        file_put_contents($dest . 'kept.txt', 'old');
+        file_put_contents($dest . 'extra.txt', 'extra');
+        mkdir($dest . 'extradir', 0775, true);
+        file_put_contents($dest . 'extradir/nested.txt', 'nested');
+
+        $service = $this->service();
+        $method = new \ReflectionMethod($service, 'copyDirectory');
+        $method->setAccessible(true);
+        $method->invoke($service, $src, $dest);
+
+        self::assertSame('kept', (string) file_get_contents($dest . 'kept.txt'), 'matching files are overwritten');
+        self::assertFileDoesNotExist($dest . 'extra.txt', 'files absent from the snapshot are removed');
+        self::assertFileDoesNotExist($dest . 'extradir', 'directories absent from the snapshot are removed');
+
+        $this->removeDir($src);
+        $this->removeDir($dest);
+    }
+
+    public function testCopyFailsLoudlyWhenTheTargetIsNotWritable(): void
+    {
+        $src = sys_get_temp_dir() . '/pv-ro-src-' . uniqid('', true) . '/';
+        mkdir($src, 0775, true);
+        file_put_contents($src . 'locked.txt', 'new');
+
+        $dest = sys_get_temp_dir() . '/pv-ro-dest-' . uniqid('', true) . '/';
+        mkdir($dest, 0775, true);
+        file_put_contents($dest . 'locked.txt', 'old');
+        chmod($dest . 'locked.txt', 0444);
+
+        if (is_writable($dest . 'locked.txt')) {
+            @chmod($dest . 'locked.txt', 0644);
+            $this->removeDir($src);
+            $this->removeDir($dest);
+            self::markTestSkipped('file permissions are not enforced for this user');
+        }
+
+        $service = $this->service();
+        $method = new \ReflectionMethod($service, 'copyDirectory');
+        $method->setAccessible(true);
+
+        try {
+            $method->invoke($service, $src, $dest);
+            self::fail('a failed copy must not be swallowed');
+        } catch (\RuntimeException $e) {
+            self::assertStringContainsString('locked.txt', $e->getMessage());
+        } finally {
+            @chmod($dest . 'locked.txt', 0644);
+            $this->removeDir($src);
+            $this->removeDir($dest);
+        }
+    }
+
     public function testRemoveUnlinksALinkInsteadOfDeletingItsTarget(): void
     {
         $outside = sys_get_temp_dir() . '/pv-remove-outside-' . uniqid('', true);
