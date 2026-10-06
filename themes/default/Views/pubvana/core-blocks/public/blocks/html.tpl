@@ -3,7 +3,7 @@
 {# The data comes from the block's placement options entered in the admin. #}
 <div class="card mb-3">
     {# Conditional: the header renders only when the block has a title. #}
-    {% if title %}
+    {% if title != '' %}
     <div class="card-header">
         {# Escaped output: the block title. #}
         <h3 class="card-title h5 mb-0">{{ title }}</h3>
