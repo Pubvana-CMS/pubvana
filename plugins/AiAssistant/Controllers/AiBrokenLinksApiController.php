@@ -89,7 +89,10 @@ class AiBrokenLinksApiController extends AiApiController
 
         $result = $this->svc('brokenLinks')->recheck((int) $id);
 
-        if ($result['error'] === 'Entry not found.') {
+        // BrokenLinksService::recheck() has no find(); it signals a missing row
+        // with this exact message. A real check failure returns a transport
+        // error with a null status instead, so the two cannot be confused.
+        if ($result['status'] === null && $result['error'] === 'Entry not found.') {
             $this->log($key, 'error', 'broken_link', (int) $id, 'Entry not found.');
             $this->fail(404, 'Broken link entry not found.');
         }

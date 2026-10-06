@@ -73,7 +73,7 @@ AiAssistant/
 
 ### Plugin registration
 
-`Plugin.php:51` maps three singletons on the app engine: `ai` (an `AiService` wired to `$app->db()`, the engine, and the plugin config), `aiFactCheck` (a `FactCheckService` with the same wiring), and `aiMarkdown` (a `MarkdownService` with the plugin config). Admin routes are registered under `pubvana.ai` and gated by a `PermissionMiddleware` for the seeded `ai.manage` permission (`Plugin.php:84`). Public REST routes hang off `routePrefix('pubvana/ai')` so the URL prefix is configurable (`Plugin.php:47`).
+`Plugin.php:51` maps three singletons on the app engine: `ai` (an `AiService` wired to `$app->db()`, the engine, and the plugin config), `aiFactCheck` (a `FactCheckService` with the same wiring), and `aiMarkdown` (a `MarkdownService` with the plugin config). Admin routes are registered under `pubvana.ai` and gated by a `PermissionMiddleware` for the seeded `ai.manage` permission (`Plugin.php:84`). Public REST routes hang off `apiPrefix('pubvana/ai')` (for example `/api/ai`), and `Plugin.php` hands that same base to the services as the `route_prefix` config value, which they use for the help catalog and the fact-check error messages.
 
 The CSRF middleware skips `/api/ai/*` (noted at `Plugin.php:34`), because these endpoints carry no session; auth is per-request bearer keys instead.
 
@@ -227,7 +227,7 @@ Steps that go beyond the repo-wide style, derived from the existing code:
 6. Keep pagination bounded: `per_page` is clamped to `[1, 100]` and `page` to `>= 1` for every list endpoint (`AiPostsApiController.php:30`). Do not introduce an unbounded list.
 7. Grant-check before acting: posting a `published` status requires the `publish` grant, not the bare create/update grant. Do not publish or schedule under the write grant alone; moving an existing schedule's date takes `posts.schedule` too. State changes gate both ways: demoting a live item (`published`/`scheduled` -> `draft`) takes the grant for the state being torn down (`AiService::demoteGrant()`), and omitting `status` on an update leaves the current state untouched.
 8. Use the tolerant `svc()` wrapper for peer services and the tolerant `saveSeo()` for optional SEO, so missing peer plugins degrade to a 503 or a no-op instead of a hard crash.
-9. Do not hard-code the `/ai` URL prefix; use `$this->path()` and `routePrefix('pubvana/ai')` the way the existing code does.
+9. Do not hard-code the `/api/ai` prefix in a message or the catalog. Controllers read it from `apiPrefix('pubvana/ai')`; the services read it from the `route_prefix` config value.
 
 ## Documentation sources
 

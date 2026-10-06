@@ -55,12 +55,6 @@ class AiFactCheckAdminController extends AdminController
             'blockers'       => $factCheck->enableBlockers(),
             'reports'        => $reports,
             'total'          => $factCheck->countReports(),
-            'verdictTones'   => [
-                'supported'           => 'success',
-                'partially_supported' => 'warning',
-                'refuted'             => 'danger',
-                'unverifiable'        => 'secondary',
-            ],
         ]);
     }
 

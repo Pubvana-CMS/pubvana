@@ -17,6 +17,11 @@ namespace Pubvana\Plugins\AiAssistant\Models;
  *   permission  - Granted permission alias (e.g. 'posts.create')
  *
  * @package Pubvana\Plugins\AiAssistant\Models
+ *
+ * @property int    $id
+ * @property int    $key_id
+ * @property string $permission
+ *
  * @method self eq(string $field, mixed $value, string $operator = 'AND')
  * @method self like(string $field, mixed $value, string $operator = 'AND')
  * @method self isNull(string $field, string $operator = 'AND')
@@ -54,6 +59,29 @@ class AiKeyGrant extends \Pubvana\Models\AbstractModel
             }
         }
         return $permissions;
+    }
+
+    /**
+     * Every key's permission list, keyed by key id, in one query.
+     *
+     * listKeys() needs the grants for every key at once; asking per key
+     * would run one query per row.
+     *
+     * @return array<int, list<string>>
+     */
+    public function permissionsByKey(): array
+    {
+        $model = new self($this->getDatabaseConnection());
+        $rows = $model->order('permission ASC')->findAll();
+
+        $byKey = [];
+        foreach ($rows as $row) {
+            if (!isset($row->permission)) {
+                continue;
+            }
+            $byKey[(int) $row->key_id][] = (string) $row->permission;
+        }
+        return $byKey;
     }
 
     /**

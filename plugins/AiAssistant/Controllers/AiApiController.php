@@ -24,6 +24,9 @@ use Pubvana\Plugins\AiAssistant\Models\AiKey;
  */
 class AiApiController extends ApiBaseController
 {
+    /** @var AiKey|null The key authenticated for this request, for logging */
+    protected ?AiKey $currentKey = null;
+
     public function __construct(\flight\Engine $app)
     {
         parent::__construct($app, 'pubvana.ai');
@@ -124,6 +127,7 @@ class AiApiController extends ApiBaseController
             $this->fail(401, $auth['error'] ?? 'Authentication failed.');
         }
 
+        $this->currentKey = $auth['key'];
         return $auth['key'];
     }
 
@@ -151,7 +155,7 @@ class AiApiController extends ApiBaseController
         try {
             return $this->app->{$name}();
         } catch (\Throwable $e) {
-            $this->app->ai()->log($this->method(), $this->path(), 'error', null, null, null, "Unavailable service: {$name}");
+            $this->app->ai()->log($this->method(), $this->path(), 'error', $this->currentKey, null, null, "Unavailable service: {$name}");
             $this->fail(503, "The '{$name}' feature is not available right now.");
         }
     }

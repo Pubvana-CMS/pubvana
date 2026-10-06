@@ -50,7 +50,8 @@ class AiRedirectsApiController extends AiApiController
             'source_path' => $sourcePath,
             'target_url'  => $targetUrl,
             'status_code' => (int) ($payload['status_code'] ?? 301),
-            'enabled'     => !empty($payload['enabled']),
+            // Absent means enabled, matching the admin create form.
+            'enabled'     => array_key_exists('enabled', $payload) ? !empty($payload['enabled']) : true,
             'notes'       => $this->app->ai()->nullableString($payload['notes'] ?? null),
         ]);
 

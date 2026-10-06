@@ -78,7 +78,7 @@ final class AiRedirectsNotesTest extends TestCase
         $this->token = $created['plain'];
         $this->keyId = (int) $created['key']->id;
 
-        $this->service()->updateGrants($this->keyId, ['redirects.update']);
+        $this->service()->updateGrants($this->keyId, ['redirects.update', 'redirects.create']);
     }
 
     protected function tearDown(): void
@@ -150,6 +150,28 @@ final class AiRedirectsNotesTest extends TestCase
     }
 
     // -----------------------------------------------------------------
+    // create: the enabled default
+    // -----------------------------------------------------------------
+
+    public function testCreateDefaultsToEnabled(): void
+    {
+        $this->create(['source_path' => '/new', 'target_url' => 'https://example.com/target']);
+
+        self::assertSame(1, (int) $this->storedField(1, 'enabled'));
+    }
+
+    public function testCreateExplicitFalseDisablesIt(): void
+    {
+        $this->create([
+            'source_path' => '/new',
+            'target_url'  => 'https://example.com/target',
+            'enabled'     => false,
+        ]);
+
+        self::assertSame(0, (int) $this->storedField(1, 'enabled'));
+    }
+
+    // -----------------------------------------------------------------
     // Harness
     // -----------------------------------------------------------------
 
@@ -202,6 +224,48 @@ final class AiRedirectsNotesTest extends TestCase
         $app->map('ai', static fn(): AiService => $service);
 
         return $service;
+    }
+
+    /**
+     * Run createRedirect() end to end against the SQLite table.
+     *
+     * @param array<string, mixed> $payload
+     */
+    private function create(array $payload): void
+    {
+        $token = $this->token;
+        $pdo = $this->pdo;
+
+        $app = $this->app([
+            'request' => static fn(): object => new class($token, $payload) {
+                public string $method = 'POST';
+                public string $url = '/api/ai/redirects';
+                public Collection $data;
+
+                public function __construct(private string $token, array $payload)
+                {
+                    $this->data = new Collection($payload);
+                }
+
+                public function getHeader(string $n): string
+                {
+                    return $n === 'Authorization' ? 'Bearer ' . $this->token : '';
+                }
+            },
+        ]);
+
+        $app->map('ai', static fn(): AiService => new AiService($pdo, $app, self::AI_CONFIG));
+        $app->map('redirects', static fn(): RedirectsService => new RedirectsService($pdo, $app));
+        $app->map('jsonHalt', static function (mixed $d, int $c = 200): never {
+            throw new RedirectHalt();
+        });
+        \Flight::setEngine($app);
+
+        try {
+            (new RedirectsHarnessController($app))->createRedirect();
+        } catch (RedirectHalt) {
+            // ok() halts on success, which is the request finishing.
+        }
     }
 
     private function redirect(int $id, ?string $notes, int $enabled = 1): void

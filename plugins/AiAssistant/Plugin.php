@@ -45,8 +45,12 @@ class Plugin implements PluginInterface
     public function register(Engine $app, Router $router, array $config = []): void
     {
         $prefix = $app->pluginLoader()->routePrefix('pubvana/ai');
-        $config['route_prefix'] = $prefix;
         $apiPrefix = $app->pluginLoader()->apiPrefix('pubvana/ai');
+
+        // The services build the help catalog and the fact-check error
+        // messages from this value, so it has to be the /api base
+        // (for example /api/ai), not the public route prefix (/ai).
+        $config['route_prefix'] = $apiPrefix;
 
         $app->map('ai', function () use ($app, $config) {
             static $instance = null;

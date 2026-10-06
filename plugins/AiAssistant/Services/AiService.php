@@ -71,6 +71,7 @@ class AiService
     public function listKeys(): array
     {
         $keys = $this->model()->allOrdered();
+        $grantsByKey = $this->grantModel()->permissionsByKey();
 
         $result = [];
         foreach ($keys as $key) {
@@ -84,7 +85,7 @@ class AiService
                 'blocked_until'   => $key->blocked_until !== null ? (string) $key->blocked_until : null,
                 'last_used_at'    => $key->last_used_at !== null ? (string) $key->last_used_at : null,
                 'created_at'      => (string) $key->created_at,
-                'grants'          => $this->grantModel()->permissionsFor((int) $key->id),
+                'grants'          => $grantsByKey[(int) $key->id] ?? [],
             ];
         }
 
@@ -343,7 +344,7 @@ class AiService
      * so the catalog is a single source of truth. `label` is the plain
      * English name shown to site admins; `summary` is the one-liner.
      *
-     * @return array<string, array{method: string, path: string, group: string, label: string, summary: string}>
+     * @return array<string, array{method: string, path: string, group: string, label: string, summary: string, endpoints?: list<string>}>
      */
     public function helpCatalog(): array
     {
@@ -394,7 +395,7 @@ class AiService
     /**
      * Catalog grouped by resource, in display order.
      *
-     * @return array<string, array<string, array{method: string, path: string, summary: string}>>
+     * @return array<string, array<string, array{method: string, path: string, group: string, label: string, summary: string, endpoints?: list<string>}>>
      */
     public function helpGroups(): array
     {

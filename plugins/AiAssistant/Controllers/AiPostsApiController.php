@@ -126,7 +126,14 @@ class AiPostsApiController extends AiApiController
                 'ai_generated'     => 1,
                 'purify_content'   => true,
             ], $this->app->ai()->defaultAuthorId());
+        } catch (\Throwable $e) {
+            $this->log($key, 'error', 'post', null, $e->getMessage());
+            $this->fail(500, 'The post could not be created: ' . $e->getMessage());
+        }
 
+        // The post exists now. A taxonomy failure is logged, not reported as a
+        // failed create, so the caller does not retry and duplicate the post.
+        try {
             if ($categories !== []) {
                 $this->svc('blog')->syncPostCategories((int) $post->id, $categories);
             }
@@ -134,8 +141,7 @@ class AiPostsApiController extends AiApiController
                 $this->svc('blog')->syncPostTags((int) $post->id, $tags);
             }
         } catch (\Throwable $e) {
-            $this->log($key, 'error', 'post', null, $e->getMessage());
-            $this->fail(500, 'The post could not be created: ' . $e->getMessage());
+            $this->log($key, 'error', 'post', (int) $post->id, 'Post created but tags/categories failed: ' . $e->getMessage());
         }
 
         $this->app->ai()->saveSeo('post', (int) $post->id, $payload);
@@ -203,7 +209,13 @@ class AiPostsApiController extends AiApiController
 
         try {
             $post = $blog->updatePost((int) $id, $update, $this->app->ai()->defaultAuthorId());
+        } catch (\Throwable $e) {
+            $this->log($key, 'error', 'post', (int) $id, $e->getMessage());
+            $this->fail(500, 'The post could not be updated: ' . $e->getMessage());
+        }
 
+        // The update is committed. A taxonomy failure is logged on its own.
+        try {
             if (array_key_exists('categories', $payload)) {
                 $blog->syncPostCategories((int) $id, $this->app->ai()->categoryIds($payload['categories']));
             }
@@ -215,8 +227,7 @@ class AiPostsApiController extends AiApiController
                 $blog->syncPostTags((int) $id, (string) $tags);
             }
         } catch (\Throwable $e) {
-            $this->log($key, 'error', 'post', (int) $id, $e->getMessage());
-            $this->fail(500, 'The post could not be updated: ' . $e->getMessage());
+            $this->log($key, 'error', 'post', (int) $id, 'Post updated but tags/categories failed: ' . $e->getMessage());
         }
 
         $this->app->ai()->saveSeo('post', (int) $id, $payload);

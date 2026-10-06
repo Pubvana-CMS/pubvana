@@ -12,7 +12,6 @@
  * @var list<string> $blockers
  * @var list<array<string, mixed>> $reports  serializeReport() rows
  * @var int    $total
- * @var array<string, string> $verdictTones  verdict => badge tone
  */
 ?>
 
@@ -173,7 +172,7 @@
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <span class="badge bg-<?= htmlspecialchars($verdictTones[$report['overall_verdict']] ?? 'secondary') ?>-lt">
+                                <span class="badge bg-<?= htmlspecialchars(\Flight::app()->aiFactCheck()->verdictTone((string) $report['overall_verdict'])) ?>-lt">
                                     <?= htmlspecialchars((string) $report['overall_verdict_label']) ?>
                                 </span>
                             </td>

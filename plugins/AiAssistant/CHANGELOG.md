@@ -5,6 +5,18 @@ All notable changes to the AI Assistant plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.13] - 2026-10-05
+
+### Fixed
+- The help guide and the fact-check error messages showed incorrect addresses.
+- A page update switched comments off when the request omitted `allow_comments`.
+- A new redirect was created disabled when the request did not set `enabled`.
+- A tag or category failure was reported as a failed post write.
+
+### Changed
+- The key list loads every key's grants in one query.
+- A service failure is logged against the calling key.
+
 ## [0.3.12] - 2026-09-30
 
 ### Fixed

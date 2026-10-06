@@ -145,9 +145,12 @@ class AiPagesApiController extends AiApiController
             $update['content'] = $content;
         }
         $update['status'] = $status;
-        if (array_key_exists('allow_comments', $payload)) {
-            $update['allow_comments'] = !empty($payload['allow_comments']) ? 1 : 0;
-        }
+        // PagesService::updatePage always writes allow_comments, so a partial
+        // update that omits it has to carry the current value or comments get
+        // switched off.
+        $update['allow_comments'] = array_key_exists('allow_comments', $payload)
+            ? (!empty($payload['allow_comments']) ? 1 : 0)
+            : (int) $existing->allow_comments;
 
         $page = $pages->updatePage((int) $id, $update);
         $this->app->ai()->saveSeo('page', (int) $id, $payload);
@@ -196,14 +199,14 @@ class AiPagesApiController extends AiApiController
             if ($transition) {
                 $this->requireGrant($key, 'pages.publish');
             }
-} elseif ($status === 'draft') {
-                if ($explicit && $existing !== null && in_array((string) $existing->status, ['published', 'scheduled'], true)) {
-                    $grant = $this->app->ai()->demoteGrant('pages', (string) $existing->status);
-                    if ($grant !== null) {
-                        $this->requireGrant($key, $grant);
-                    }
+        } elseif ($status === 'draft') {
+            if ($explicit && $existing !== null && (string) $existing->status === 'published') {
+                $grant = $this->app->ai()->demoteGrant('pages', 'published');
+                if ($grant !== null) {
+                    $this->requireGrant($key, $grant);
                 }
-            } else {
+            }
+        } else {
             $this->log($key, 'error', 'page', $existing !== null ? (int) $existing->id : null, "Invalid status '{$status}'.");
             $this->fail(422, 'status must be one of: draft, published.');
         }
