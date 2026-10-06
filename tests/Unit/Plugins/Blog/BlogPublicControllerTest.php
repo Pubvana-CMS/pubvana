@@ -101,6 +101,30 @@ final class BlogPublicControllerTest extends TestCase
         self::assertNull($this->renders[0]['data']['pagination']);
     }
 
+    public function testPaginationWindowsLargePageCounts(): void
+    {
+        for ($i = 1; $i <= 250; $i++) {
+            $this->blog->createPost(['title' => "P{$i}", 'slug' => "p{$i}", 'status' => 'published'], 1);
+        }
+
+        // 250 posts at 10 per page = 25 pages. On the last page the list is
+        // the first page, a gap, then the three pages around the current one.
+        $this->controller($this->engine())->index('25');
+        $pagination = $this->renders[0]['data']['pagination'];
+
+        self::assertSame(25, $pagination['current']);
+        self::assertSame(25, $pagination['total']);
+
+        $numbers = array_column($pagination['pages'], 'number');
+        self::assertSame([1, '...', 23, 24, 25], $numbers);
+        self::assertCount(5, $pagination['pages'], 'the list is windowed, not one link per page');
+
+        self::assertTrue($pagination['pages'][1]['gap']);
+        self::assertSame('', $pagination['pages'][1]['url']);
+        self::assertFalse($pagination['pages'][2]['gap']);
+        self::assertTrue($pagination['pages'][4]['active']);
+    }
+
     public function testCategoriesAndTagsLists(): void
     {
         $this->blog->createCategory(['name' => 'News', 'slug' => 'news']);

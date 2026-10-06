@@ -12,11 +12,18 @@
         </li>
         {% endif %}
 
-        {# Loop: one item per page; the active flag appends the Bootstrap class. #}
+        {# Loop: one item per page. The active flag appends the Bootstrap class;
+           a gap item (pages omitted between two numbers) is a disabled filler. #}
         {% for page in pagination.pages %}
+        {% if page.gap %}
+        <li class="page-item disabled">
+            <span class="page-link">{{ page.number }}</span>
+        </li>
+        {% else %}
         <li class="page-item{% if page.active %} active{% endif %}">
             <a class="page-link" href="{{ page.url }}">{{ page.number }}</a>
         </li>
+        {% endif %}
         {% endfor %}
 
         {# Conditional: next link, or a disabled placeholder. #}

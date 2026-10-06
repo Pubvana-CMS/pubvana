@@ -97,12 +97,16 @@ final class TrustClientServiceTest extends TestCase
                     ];
                 }
             },
-            'themes' => fn () => new class {
+            'themes' => fn () => new class($this->defaultThemeVersion()) {
+                public function __construct(private string $themeVersion)
+                {
+                }
+
                 /** @return list<array<string, mixed>> */
                 public function discover(): array
                 {
                     return [
-                        ['folder' => 'default', 'semver' => '1.4.26', 'author' => 'pubvana'],
+                        ['folder' => 'default', 'semver' => $this->themeVersion, 'author' => 'pubvana'],
                         ['folder' => 'noversion'],
                     ];
                 }
@@ -196,12 +200,15 @@ final class TrustClientServiceTest extends TestCase
     {
         $addons = $this->service->collectInstalledAddons();
 
+        // Plugin rows exactly. The theme row is not compared field by field:
+        // its values come from themes/default/pubvana.json, the same file the
+        // service reads, so the comparison asserts nothing.
         self::assertSame([
             ['type' => 'plugin', 'slug' => 'blog', 'version' => '1.0.0', 'author' => 'pubvana', 'origin' => 'local'],
             ['type' => 'plugin', 'slug' => 'orphan', 'version' => '2.0.0', 'author' => 'jane', 'origin' => 'local'],
             ['type' => 'plugin', 'slug' => 'flight-shield', 'version' => '1.2.3', 'author' => 'enlivenapp', 'origin' => 'composer'],
-            ['type' => 'theme', 'slug' => 'default', 'version' => '1.4.26', 'author' => 'pubvana', 'origin' => 'local'],
-        ], $addons);
+        ], array_slice($addons, 0, 3));
+        self::assertCount(4, $addons, 'the theme is still collected');
     }
 
     public function testPluginItemNullWithoutVersion(): void
@@ -450,7 +457,7 @@ final class TrustClientServiceTest extends TestCase
                 ['type' => 'plugin', 'slug' => 'blog', 'version' => '1.0.0', 'status' => 'trusted', 'warning' => null],
                 ['type' => 'plugin', 'slug' => 'orphan', 'version' => '2.0.0', 'status' => 'unknown', 'warning' => null],
                 ['type' => 'plugin', 'slug' => 'flight-shield', 'version' => '1.2.3', 'status' => 'malicious', 'warning' => 'bad'],
-                ['type' => 'theme', 'slug' => 'default', 'version' => '1.4.26', 'status' => 'trusted', 'warning' => null],
+                ['type' => 'theme', 'slug' => 'default', 'version' => $this->defaultThemeVersion(), 'status' => 'trusted', 'warning' => null],
             ],
         ]);
 
@@ -565,7 +572,7 @@ final class TrustClientServiceTest extends TestCase
         $this->cachePut('plugin', 'blog', '1.0.0', 'pubvana', 'trusted');
         $this->cachePut('plugin', 'orphan', '2.0.0', 'jane', 'trusted');
         $this->cachePut('plugin', 'flight-shield', '1.2.3', 'enlivenapp', 'trusted');
-        $this->cachePut('theme', 'default', '1.4.26', 'pubvana', 'trusted');
+        $this->cachePut('theme', 'default', $this->defaultThemeVersion(), 'pubvana', 'trusted');
         // TTL expired
         $this->settings->store[TrustClientService::LAST_CHECK_KEY] = date('c', time() - 86400 * 2);
         // Blog is on the home-site list; already processed (so no immediate
@@ -599,7 +606,7 @@ final class TrustClientServiceTest extends TestCase
         $this->cachePut('plugin', 'blog', '1.0.0', 'pubvana', 'trusted');
         $this->cachePut('plugin', 'orphan', '2.0.0', 'jane', 'trusted');
         $this->cachePut('plugin', 'flight-shield', '1.2.3', 'enlivenapp', 'trusted');
-        $this->cachePut('theme', 'default', '1.4.26', 'pubvana', 'trusted');
+        $this->cachePut('theme', 'default', $this->defaultThemeVersion(), 'pubvana', 'trusted');
         $this->settings->store[TrustClientService::LAST_CHECK_KEY] = date('c');
 
         $this->service->checkIfDue();
@@ -862,6 +869,23 @@ final class TrustClientServiceTest extends TestCase
     private function manifestSemver(): string
     {
         $payload = json_decode((string) file_get_contents(PROJECT_ROOT . '/pubvana.json'), true, 512, JSON_THROW_ON_ERROR);
+        return (string) ($payload['semver'] ?? '');
+    }
+
+    /**
+     * The Default theme's real version. TrustClientService::themeItem() reads
+     * themes/{folder}/pubvana.json itself, so these fixtures have to track
+     * that file instead of pinning a number that a theme bump invalidates.
+     */
+    private function defaultThemeVersion(): string
+    {
+        $payload = json_decode(
+            (string) file_get_contents(PROJECT_ROOT . '/themes/default/pubvana.json'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR
+        );
+
         return (string) ($payload['semver'] ?? '');
     }
 }

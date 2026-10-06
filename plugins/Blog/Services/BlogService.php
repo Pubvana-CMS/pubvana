@@ -210,9 +210,18 @@ class BlogService
             return null;
         }
 
+        $wasPublished = $post->status === 'published';
+
         $this->revisionModel->createFromPost($post, $userId);
 
         $post->updateRecord($data);
+
+        // Publishing retires the draft preview link, so a token handed out
+        // before publish stops serving the post afterwards.
+        if (!$wasPublished && ($data['status'] ?? null) === 'published') {
+            $post->generatePreviewToken();
+        }
+
         $this->pruneRevisions($id);
 
         return $post;
@@ -298,6 +307,32 @@ class BlogService
         return $this->categoryModel->getAll();
     }
 
+    /**
+     * Published post count per category, for the public category list.
+     *
+     * @return array<int, int> category id => published post count
+     */
+    public function publishedPostCountsByCategory(): array
+    {
+        $stmt = $this->pdo->query(
+            "SELECT ptc.category_id AS category_id, COUNT(*) AS cnt
+             FROM posts_to_categories ptc
+             INNER JOIN posts p ON p.id = ptc.post_id
+             WHERE p.status = 'published' AND p.deleted_at IS NULL
+             GROUP BY ptc.category_id"
+        );
+        if ($stmt === false) {
+            return [];
+        }
+
+        $counts = [];
+        foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $row) {
+            $counts[(int) $row['category_id']] = (int) $row['cnt'];
+        }
+
+        return $counts;
+    }
+
     public function findCategory(int $id): ?Category
     {
         return $this->categoryModel->findById($id);
@@ -341,6 +376,12 @@ class BlogService
         if ($category === null) {
             return false;
         }
+
+        $parentId = $category->parent_id === null ? null : (int) $category->parent_id;
+
+        // Promote child categories to the deleted category's parent, so no
+        // row is left pointing at a category that no longer exists.
+        $this->categoryModel->reassignChildren($id, $parentId);
 
         $this->postCategoryModel->deleteForCategory($id);
         $category->delete();
@@ -631,7 +672,24 @@ class BlogService
      */
     public function syncPostCategories(int $postId, array $categoryIds): void
     {
-        $this->postCategoryModel->syncForPost($postId, $categoryIds);
+        // Delete-then-insert runs in one transaction: a failure between the
+        // two would otherwise leave the post with no categories at all.
+        $ownTransaction = !$this->pdo->inTransaction();
+        if ($ownTransaction) {
+            $this->pdo->beginTransaction();
+        }
+
+        try {
+            $this->postCategoryModel->syncForPost($postId, $categoryIds);
+            if ($ownTransaction) {
+                $this->pdo->commit();
+            }
+        } catch (\Throwable $e) {
+            if ($ownTransaction) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
+        }
     }
 
     public function syncPostTags(int $postId, string $tagsRaw): void
@@ -649,7 +707,24 @@ class BlogService
             $tagIds[(int) $tag->id] = true;
         }
 
-        $this->postTagModel->syncForPost($postId, array_keys($tagIds));
+        // Same reason as syncPostCategories(): the pivot is cleared then
+        // refilled, so the pair belongs in one transaction.
+        $ownTransaction = !$this->pdo->inTransaction();
+        if ($ownTransaction) {
+            $this->pdo->beginTransaction();
+        }
+
+        try {
+            $this->postTagModel->syncForPost($postId, array_keys($tagIds));
+            if ($ownTransaction) {
+                $this->pdo->commit();
+            }
+        } catch (\Throwable $e) {
+            if ($ownTransaction) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
+        }
     }
 
     // ─── Blocks ───────────────────────────────────────────────────────────
@@ -705,10 +780,6 @@ class BlogService
         $tags = $this->listTags();
         $list = [];
         foreach ($tags as $tag) {
-     /**
-     * @param array<string, mixed> $options
-     * @return array<int, array<string, mixed>>
-     */
             $list[] = [
                 'name' => $tag->name,
                 'slug' => $tag->slug,
@@ -876,7 +947,7 @@ class BlogService
     public function commentHostItems(string $urlPrefix): array
     {
         $items = [];
-        foreach ($this->postModel->findAllPublished() as $post) {
+        foreach ($this->postModel->findAllPublished(null, ['id', 'title', 'slug', 'allow_comments']) as $post) {
             $items[] = [
                 'type'           => 'blog',
                 'id'             => (int) $post->id,
@@ -897,7 +968,7 @@ class BlogService
     public function navLinkableItems(string $urlPrefix): array
     {
         $items = [];
-        foreach ($this->postModel->findAllPublished() as $post) {
+        foreach ($this->postModel->findAllPublished(null, ['id', 'title', 'slug']) as $post) {
             $items[] = [
                 'label' => (string) $post->title,
                 'url'   => $urlPrefix . '/' . (string) $post->slug,
@@ -914,7 +985,7 @@ class BlogService
     public function brokenLinksItems(): array
     {
         $items = [];
-        foreach ($this->postModel->findAllPublished() as $post) {
+        foreach ($this->postModel->findAllPublished(null, ['id', 'title', 'slug', 'content']) as $post) {
             $items[] = [
                 'type'    => 'post',
                 'id'      => (int) $post->id,
@@ -1022,8 +1093,11 @@ class BlogService
 
     private function purifyContent(string $html): string
     {
+        // When HTMLPurifier is unavailable, strip tags rather than returning
+        // the raw input: unpurified post HTML is stored XSS. CommentsService
+        // falls back the same way.
         if (!class_exists(\HTMLPurifier_Config::class)) {
-            return $html;
+            return strip_tags($html);
         }
         return (new \HTMLPurifier(HtmlPurifierFactory::create()))->purify($html);
     }

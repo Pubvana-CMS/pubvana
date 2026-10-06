@@ -158,12 +158,19 @@ class Post extends \Pubvana\Models\AbstractModel
      * contract, and the Broken Links scanner, so all three read the same
      * ordered set from one query shape.
      *
-     * @param int|null $limit Maximum results, null for every published post
+     * @param int|null          $limit   Maximum results, null for every published post
+     * @param list<string>|null $columns Column subset, null for every column
      * @return array<int, Post>
      */
-    public function findAllPublished(?int $limit = null): array
+    public function findAllPublished(?int $limit = null, ?array $columns = null): array
     {
         $query = new self($this->getDatabaseConnection());
+
+        if ($columns !== null && $columns !== []) {
+            $first = array_shift($columns);
+            $query->select($first, ...$columns);
+        }
+
         $query->eq('status', 'published')
               ->isNull('deleted_at')
               ->order('published_at DESC');
@@ -302,11 +309,21 @@ class Post extends \Pubvana\Models\AbstractModel
      */
     public function createRecord(array $data): self
     {
+        // Whitelisted like updateRecord(): never set arbitrary properties
+        // from a caller-supplied array.
+        $allowed = [
+            'title', 'slug', 'content', 'excerpt', 'status', 'featured_image',
+            'media_id', 'author_id', 'published_at', 'is_featured',
+            'allow_comments', 'ai_generated',
+        ];
+
         $now = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
         $record = new self($this->getDatabaseConnection());
 
-        foreach ($data as $key => $value) {
-            $record->$key = $value;
+        foreach ($allowed as $field) {
+            if (array_key_exists($field, $data)) {
+                $record->$field = $data[$field];
+            }
         }
 
         $record->created_at = $now;

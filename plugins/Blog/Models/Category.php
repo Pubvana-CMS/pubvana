@@ -79,11 +79,17 @@ class Category extends \Pubvana\Models\AbstractModel
      */
     public function createRecord(array $data): self
     {
+        // Whitelisted like updateRecord(): never set arbitrary properties
+        // from a caller-supplied array.
+        $allowed = ['name', 'slug', 'description', 'parent_id'];
+
         $now = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
         $record = new self($this->getDatabaseConnection());
 
-        foreach ($data as $key => $value) {
-            $record->$key = $value;
+        foreach ($allowed as $field) {
+            if (array_key_exists($field, $data)) {
+                $record->$field = $data[$field];
+            }
         }
 
         $record->created_at = $now;
@@ -91,6 +97,21 @@ class Category extends \Pubvana\Models\AbstractModel
         $record->insert();
 
         return $record;
+    }
+
+    /**
+     * Move a category's children to a new parent in one statement.
+     *
+     * Raw SQL: the fluent API can express a conditional read but not a bulk
+     * UPDATE ... WHERE, and hydrating every child just to re-save it would
+     * be a query per row. Used on delete to keep no child pointing at a
+     * category that no longer exists.
+     */
+    public function reassignChildren(int $parentId, ?int $newParentId): void
+    {
+        $pdo = $this->getDatabaseConnection();
+        $stmt = $pdo->prepare('UPDATE categories SET parent_id = :new WHERE parent_id = :old');
+        $stmt->execute([':new' => $newParentId, ':old' => $parentId]);
     }
 
     /**

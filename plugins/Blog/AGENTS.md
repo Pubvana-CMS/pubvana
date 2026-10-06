@@ -6,7 +6,7 @@ Guidance for AI agents contributing to this plugin, which is part of the main Pu
 
 Blog is the content module of Pubvana. It provides posts, categories, tags, revision history, preview links for drafts, RSS and Atom feeds, dashboard cards, five public blocks, a search provider, and a comments host.
 
-- **Package:** `pubvana/blog` (`pubvana.json:2`), semver `0.1.0`, category `content`
+- **Package:** `pubvana/blog` (`pubvana.json:2`), semver `0.3.7`, category `content`
 - **License:** MIT, matching the main project (repo `composer.json` declares `"license": "MIT"`)
 - **PHP floor:** not declared in the plugin; the main project requires PHP `^8.2` (repo `composer.json`), and the code stays within that floor (`match` at `Services/BlogService.php:561`, `str_starts_with` at `Controllers/BlogPublicController.php:377`, union type `int|bool` at `Controllers/BlogPublicController.php:387`)
 - **Namespace:** `Pubvana\Plugins\Blog` (`Plugin.php:5`), with `Controllers`, `Services`, `Models`, and `Database\Migrations` sub-namespaces
@@ -78,6 +78,7 @@ plugins/Blog/
 - `block.available`: recent-posts, categories, tags, archive, related-posts (`Plugin.php:109-164`), each with options schema and a block template under `Views/public/blocks/`.
 - `search.provider` for posts (`Plugin.php:168-171`). Supplies normalized content matches only: `title`, `url`, `excerpt`, stripped `content`, `content_type`, `published_at` and `id`, with no score of its own (`Services/BlogService.php:685-722`). Ranking belongs to the Search plugin's `SearchService::scoreItem()`, so do not reintroduce local relevance scoring here; a returning `relevance` field was removed precisely because the service ignored it.
 - `comments.host` content items `['type' => 'blog', 'id', ...]` (`Plugin.php:175-178`, `Services/BlogService.php:486-506`).
+- `brokenlinks` source: published posts as scan targets (`Plugin.php` `brokenlinks` registration, `Services/BlogService.php:brokenLinksItems()`).
 - `nav.linkable` default: published posts as navigation targets (`Plugin.php:182-197`).
 - `admin.css` stylesheet (`Plugin.php:201-204`).
 - `cron` task on the `1m` interval: publishes scheduled posts whose time has come (`Plugin.php:207-211`, `Services/BlogService.php:publishDuePosts()`, `Models/Post.php:publishDue()`). `updated_at` goes onto `published_at` so a post that goes live on schedule looks untouched until it is edited.

@@ -51,6 +51,7 @@ class BlogPublicController extends PublicController
     {
         $prefix = $this->app->pluginLoader()->routePrefix('pubvana/blog');
         $categories = $this->app->blog()->listCategories();
+        $counts = $this->app->blog()->publishedPostCountsByCategory();
         $list = [];
 
         foreach ($categories as $cat) {
@@ -58,7 +59,7 @@ class BlogPublicController extends PublicController
                 'name'       => $cat->name,
                 'slug'       => $cat->slug,
                 'url'        => $prefix . '/category/' . $cat->slug,
-                'post_count' => $cat->post_count ?? null,
+                'post_count' => $counts[(int) $cat->id] ?? 0,
             ];
         }
 
@@ -309,22 +310,8 @@ class BlogPublicController extends PublicController
     private function getPostCategories(int $postId, ?string $urlPrefix = null): array
     {
         $prefix = $urlPrefix ?? $this->app->pluginLoader()->routePrefix('pubvana/blog');
-        $all = $this->app->blog()->listCategories();
-        $ids = $this->app->blog()->getPostCategoryIds($postId);
-        $items = [];
 
-        foreach ($all as $category) {
-            if (in_array((int) $category->id, $ids, true)) {
-                $items[] = [
-                    'id'   => (int) $category->id,
-                    'name' => $category->name,
-                    'slug' => $category->slug,
-                    'url'  => $prefix . '/category/' . $category->slug,
-                ];
-            }
-        }
-
-        return $items;
+        return $this->app->blog()->categoryItemsForPostIds([$postId], $prefix)[$postId] ?? [];
     }
 
     /**
@@ -335,21 +322,8 @@ class BlogPublicController extends PublicController
     private function getPostTags(int $postId, ?string $urlPrefix = null): array
     {
         $prefix = $urlPrefix ?? $this->app->pluginLoader()->routePrefix('pubvana/blog');
-        $names = $this->app->blog()->getPostTagNames($postId);
-        $all = $this->app->blog()->listTags();
-        $items = [];
 
-        foreach ($all as $tag) {
-            if (in_array($tag->name, $names, true)) {
-                $items[] = [
-                    'name' => $tag->name,
-                    'slug' => $tag->slug,
-                    'url'  => $prefix . '/tag/' . $tag->slug,
-                ];
-            }
-        }
-
-        return $items;
+        return $this->app->blog()->tagItemsForPostIds([$postId], $prefix)[$postId] ?? [];
     }
 
     /**
@@ -380,13 +354,34 @@ class BlogPublicController extends PublicController
             return $n === 1 ? $baseUrl : $baseUrl . '/page/' . $n;
         };
 
+        // Show the current page plus two neighbours, and always the first and
+        // last page. A jump between shown numbers becomes a gap item, so a
+        // thousand-page archive does not emit a thousand links.
+        $numbers = [1 => true, $pages => true];
+        for ($n = max(1, $page - 2); $n <= min($pages, $page + 2); $n++) {
+            $numbers[$n] = true;
+        }
+        $numbers = array_keys($numbers);
+        sort($numbers);
+
         $items = [];
-        for ($n = 1; $n <= $pages; $n++) {
+        $previous = 0;
+        foreach ($numbers as $n) {
+            if ($previous > 0 && $n - $previous > 1) {
+                $items[] = [
+                    'number' => '...',
+                    'url'    => '',
+                    'active' => false,
+                    'gap'    => true,
+                ];
+            }
             $items[] = [
                 'number' => $n,
                 'url'    => $pageUrl($n),
                 'active' => $n === $page,
+                'gap'    => false,
             ];
+            $previous = $n;
         }
 
         return [

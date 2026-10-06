@@ -5,6 +5,21 @@ All notable changes to the Blog plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.7] - 2026-10-05
+
+### Fixed
+- The category list showed no post counts.
+- A category field posted as a single value instead of a list failed the save.
+- Post content was stored unpurified when HTMLPurifier was unavailable.
+- Category and tag saves cleared the existing links outside a transaction.
+- A post update, delete, or revision restore reported success when nothing changed.
+- Deleting a category left its children pointing at it.
+- A preview link kept working after the post was published.
+- A single post page loaded every category and tag.
+- The comments host, navigation, and broken-links lists loaded every post column.
+- `createRecord()` accepted arbitrary keys.
+- The post list printed one link for every page.
+
 ## [0.3.6] - 2026-09-30
 
 ### Fixed

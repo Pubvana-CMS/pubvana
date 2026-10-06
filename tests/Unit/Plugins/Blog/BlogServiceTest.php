@@ -423,6 +423,54 @@ final class BlogServiceTest extends TestCase
         self::assertSame([], $this->service->getPostTagNames(99999));
     }
 
+    public function testUpdatePostRotatesPreviewTokenWhenPublished(): void
+    {
+        $post = $this->service->createPost(['title' => 'Draft', 'slug' => 'draft', 'status' => 'draft'], 1);
+        $id = (int) $post->id;
+        $token = (string) $post->preview_token;
+
+        self::assertNotSame('', $token);
+        self::assertNotNull($this->service->findPostByPreviewToken($token));
+
+        $this->service->updatePost($id, ['status' => 'published', 'purify_content' => false], 1);
+
+        $fresh = $this->service->findPost($id);
+        self::assertNotNull($fresh);
+        self::assertNotSame($token, (string) $fresh->preview_token);
+        self::assertNull($this->service->findPostByPreviewToken($token));
+        self::assertNotNull($this->service->findPostByPreviewToken((string) $fresh->preview_token));
+    }
+
+    public function testDeleteCategoryPromotesChildren(): void
+    {
+        $parent = $this->service->createCategory(['name' => 'Parent', 'slug' => 'parent']);
+        $child = $this->service->createCategory([
+            'name'      => 'Child',
+            'slug'      => 'child',
+            'parent_id' => (int) $parent->id,
+        ]);
+
+        self::assertTrue($this->service->deleteCategory((int) $parent->id));
+
+        $reloaded = $this->service->findCategory((int) $child->id);
+        self::assertNotNull($reloaded);
+        self::assertNull($reloaded->parent_id, 'the child is promoted to the top level');
+    }
+
+    public function testPublishedPostCountsByCategoryIgnoresDrafts(): void
+    {
+        $cat = $this->service->createCategory(['name' => 'News', 'slug' => 'news']);
+
+        $published = $this->service->createPost(['title' => 'P', 'slug' => 'p', 'status' => 'published'], 1);
+        $draft = $this->service->createPost(['title' => 'D', 'slug' => 'd', 'status' => 'draft'], 1);
+
+        $this->service->syncPostCategories((int) $published->id, [(int) $cat->id]);
+        $this->service->syncPostCategories((int) $draft->id, [(int) $cat->id]);
+
+        $counts = $this->service->publishedPostCountsByCategory();
+        self::assertSame(1, $counts[(int) $cat->id] ?? 0, 'only published posts count');
+    }
+
     /**
      * Related Posts scores every candidate from one batched pass. Twenty
      * candidates would otherwise cost two lookups each.

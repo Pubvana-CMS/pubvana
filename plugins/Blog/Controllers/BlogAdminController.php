@@ -104,8 +104,8 @@ class BlogAdminController extends AdminController
             'purify_content'   => !empty($post['purify_content']),
         ], (int) ($user?->id));
 
-        $this->app->blog()->syncPostCategories((int) $newPost->id, $post['categories'] ?? []);
-        $this->app->blog()->syncPostTags((int) $newPost->id, $post['tags_raw'] ?? '');
+        $this->app->blog()->syncPostCategories((int) $newPost->id, $this->categoryIdsFrom($post['categories'] ?? null));
+        $this->app->blog()->syncPostTags((int) $newPost->id, $this->stringValue($post['tags_raw'] ?? ''));
 
         $this->app->session()->flash('success', 'Post created.');
         $this->app->redirect($this->adminBase() . '/' . $newPost->id . '/edit');
@@ -168,7 +168,7 @@ class BlogAdminController extends AdminController
             }
         }
 
-        $this->app->blog()->updatePost((int) $id, [
+        $updated = $this->app->blog()->updatePost((int) $id, [
             'title'            => $post['title'] ?? '',
             'content'          => $post['content'] ?? '',
             'excerpt'          => $post['excerpt'] ?? null,
@@ -181,8 +181,14 @@ class BlogAdminController extends AdminController
             'purify_content'   => !empty($post['purify_content']),
         ], (int) ($user?->id));
 
-        $this->app->blog()->syncPostCategories((int) $id, $post['categories'] ?? []);
-        $this->app->blog()->syncPostTags((int) $id, $post['tags_raw'] ?? '');
+        if ($updated === null) {
+            $this->app->session()->flash('error', 'Post not found.');
+            $this->app->redirect($this->adminBase());
+            return;
+        }
+
+        $this->app->blog()->syncPostCategories((int) $id, $this->categoryIdsFrom($post['categories'] ?? null));
+        $this->app->blog()->syncPostTags((int) $id, $this->stringValue($post['tags_raw'] ?? ''));
 
         $this->app->session()->flash('success', 'Post updated.');
         $this->app->redirect($this->adminBase() . '/' . $id . '/edit');
@@ -190,8 +196,11 @@ class BlogAdminController extends AdminController
 
     public function delete(string $id): void
     {
-        $this->app->blog()->deletePost((int) $id);
-        $this->app->session()->flash('success', 'Post deleted.');
+        if ($this->app->blog()->deletePost((int) $id)) {
+            $this->app->session()->flash('success', 'Post deleted.');
+        } else {
+            $this->app->session()->flash('error', 'Post not found.');
+        }
         $this->app->redirect($this->adminBase());
     }
 
@@ -217,8 +226,13 @@ class BlogAdminController extends AdminController
     public function restore(string $id, string $revisionId): void
     {
         $user = $this->app->auth()->user();
-        $this->app->blog()->restoreRevision((int) $id, (int) $revisionId, (int) ($user?->id));
-        $this->app->session()->flash('success', 'Revision restored.');
+        $restored = $this->app->blog()->restoreRevision((int) $id, (int) $revisionId, (int) ($user?->id));
+
+        if ($restored === null) {
+            $this->app->session()->flash('error', 'Revision not found.');
+        } else {
+            $this->app->session()->flash('success', 'Revision restored.');
+        }
         $this->app->redirect($this->adminBase() . '/' . $id . '/edit');
     }
 
@@ -339,5 +353,41 @@ class BlogAdminController extends AdminController
         $this->app->blog()->deleteTag((int) $id);
         $this->app->session()->flash('success', 'Tag deleted.');
         $this->app->redirect($this->adminBase() . '/tags');
+    }
+
+    // ─── Input helpers ────────────────────────────────────────────────────
+
+    /**
+     * Coerce the posted category field into a list of positive ints.
+     *
+     * A form posts categories[] as an array; anything else (a bare string,
+     * an absent field) is dropped here rather than handed to
+     * syncPostCategories(), whose second parameter is typed as array.
+     *
+     * @return list<int>
+     */
+    private function categoryIdsFrom(mixed $raw): array
+    {
+        if (!is_array($raw)) {
+            return [];
+        }
+
+        $ids = [];
+        foreach ($raw as $value) {
+            $id = (int) $value;
+            if ($id > 0) {
+                $ids[] = $id;
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
+     * The posted tag string, or '' when the field is missing or not a string.
+     */
+    private function stringValue(mixed $raw): string
+    {
+        return is_string($raw) ? $raw : '';
     }
 }

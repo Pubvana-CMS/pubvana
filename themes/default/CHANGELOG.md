@@ -5,6 +5,11 @@ All notable changes to the Default theme will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.4.27] - 2026-10-05
+
+### Fixed
+- The page list had no marker where page numbers were skipped.
+
 ## [1.4.26] - 2026-10-04
 
 ### Added

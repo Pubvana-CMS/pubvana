@@ -325,6 +325,21 @@ final class BlogAdminControllerTest extends TestCase
         self::assertSame(['/admin/blog/tags'], $this->redirects);
     }
 
+    public function testStoreWithNonArrayTaxonomyFieldsDoesNotTypeError(): void
+    {
+        // categories=1 (a bare string, not categories[]) and tags_raw[] (an
+        // array, not a string) must be coerced before they reach the service.
+        (new BlogAdminController($this->engine(data: [
+            'title'      => 'Guarded',
+            'slug'       => 'guarded',
+            'status'     => 'draft',
+            'categories' => '1',
+            'tags_raw'   => ['array-not-string'],
+        ])))->store();
+
+        self::assertSame('Post created.', $this->flashes['success'][0] ?? null);
+    }
+
     /**
      * @param array<string, mixed> $data
      * @param array<string, mixed> $query
