@@ -6,6 +6,6 @@
     "pubver_min": "3.0.0",
     "pubver_max": "",
     "category": "blocks",
-    "semver": "0.2.5",
+    "semver": "0.2.6",
     "provides": {}
 }

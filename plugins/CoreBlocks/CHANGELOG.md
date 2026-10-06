@@ -5,6 +5,11 @@ All notable changes to the CoreBlocks plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.6] - 2026-10-06
+
+### Fixed
+- A Text or HTML block with a title or content of "0" rendered nothing.
+
 ## [0.2.5] - 2026-09-26
 
 ### Changed

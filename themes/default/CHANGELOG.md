@@ -5,6 +5,11 @@ All notable changes to the Default theme will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.4.29] - 2026-10-06
+
+### Fixed
+- The Text and HTML block overrides dropped a title or content of "0".
+
 ## [1.4.28] - 2026-10-06
 
 ### Fixed
