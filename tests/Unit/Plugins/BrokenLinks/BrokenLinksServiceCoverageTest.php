@@ -364,7 +364,136 @@ final class BrokenLinksServiceCoverageTest extends TestCase
         $registry = null;
         $service = $this->makeService('', [], $registry);
 
-        self::assertSame(['total' => 0, 'broken' => 0, 'sources' => 0], $service->scan());
+        self::assertSame(['total' => 0, 'broken' => 0, 'sources' => 0, 'timed_out' => false], $service->scan());
+    }
+
+    public function testUpsertRefreshesSourceTitle(): void
+    {
+        $registry = null;
+        $service = $this->makeService('', [], $registry);
+
+        $service->upsert(['source_type' => 'post', 'source_id' => 1, 'source_title' => 'Old Title', 'url' => 'https://a.test/x', 'http_status' => 404, 'error_message' => null]);
+        $service->upsert(['source_type' => 'post', 'source_id' => 1, 'source_title' => 'New Title', 'url' => 'https://a.test/x', 'http_status' => 500, 'error_message' => null]);
+
+        $row = $this->fetchRow('https://a.test/x');
+        self::assertNotFalse($row);
+        self::assertSame('New Title', $row['source_title']);
+    }
+
+    public function testPruneMissingRemovesGoneLinksKeepsPresentAndDismissed(): void
+    {
+        $registry = null;
+        $service = $this->makeService('', [], $registry);
+
+        $service->upsert(['source_type' => 'post', 'source_id' => 1, 'source_title' => 'A', 'url' => 'https://a.test/present', 'http_status' => 404, 'error_message' => null]);
+        $service->upsert(['source_type' => 'post', 'source_id' => 1, 'source_title' => 'A', 'url' => 'https://a.test/gone', 'http_status' => 404, 'error_message' => null]);
+        $service->upsert(['source_type' => 'post', 'source_id' => 1, 'source_title' => 'A', 'url' => 'https://a.test/dismissed-gone', 'http_status' => 404, 'error_message' => null]);
+        $service->dismiss($this->firstIdForUrl('https://a.test/dismissed-gone'));
+        $service->upsert(['source_type' => 'post', 'source_id' => 2, 'source_title' => 'B', 'url' => 'https://a.test/other', 'http_status' => 404, 'error_message' => null]);
+
+        $service->pruneMissing('post', 1, [sha1('https://a.test/present')]);
+
+        self::assertNotFalse($this->fetchRow('https://a.test/present'));
+        self::assertFalse($this->fetchRow('https://a.test/gone'));
+        self::assertNotFalse($this->fetchRow('https://a.test/dismissed-gone'));
+        self::assertNotFalse($this->fetchRow('https://a.test/other'));
+    }
+
+    public function testPruneMissingWithNoLinksRemovesAllNonDismissedForSource(): void
+    {
+        $registry = null;
+        $service = $this->makeService('', [], $registry);
+
+        $service->upsert(['source_type' => 'post', 'source_id' => 1, 'source_title' => 'A', 'url' => 'https://a.test/1', 'http_status' => 404, 'error_message' => null]);
+        $service->upsert(['source_type' => 'post', 'source_id' => 1, 'source_title' => 'A', 'url' => 'https://a.test/2', 'http_status' => 404, 'error_message' => null]);
+        $service->upsert(['source_type' => 'post', 'source_id' => 2, 'source_title' => 'B', 'url' => 'https://a.test/3', 'http_status' => 404, 'error_message' => null]);
+
+        $service->pruneMissing('post', 1, []);
+
+        self::assertSame(1, $this->rowCount());
+        self::assertNotFalse($this->fetchRow('https://a.test/3'));
+    }
+
+    public function testScanPrunesLinksNoLongerPresent(): void
+    {
+        $registry = null;
+        $service = $this->makeService('', [
+            'https://example.com/still' => ['status' => 404, 'error' => null],
+        ], $registry);
+
+        $registry->register('brokenlinks', 'source', 'pubvana.test', [
+            'label' => 'Test',
+            'callable' => static fn (): array => [
+                ['type' => 'post', 'id' => 1, 'title' => 'One', 'content' => '<a href="https://example.com/still">s</a>'],
+            ],
+        ]);
+
+        // A row for a link that has since been removed from the content.
+        $stmt = $this->pdo->prepare(
+            "INSERT INTO broken_links (source_type, source_id, source_title, url, url_hash, http_status, dismissed) VALUES ('post', 1, 'One', ?, ?, 404, 0)"
+        );
+        $stmt->execute(['https://example.com/removed', sha1('https://example.com/removed')]);
+
+        $result = $service->scan();
+
+        self::assertSame(1, $result['total']);
+        self::assertFalse($result['timed_out']);
+        self::assertFalse($this->fetchRow('https://example.com/removed'));
+        self::assertNotFalse($this->fetchRow('https://example.com/still'));
+    }
+
+    public function testScanStopsAtTimeBudgetBeforeScanningAnySource(): void
+    {
+        $registry = null;
+        $service = $this->makeService('', [], $registry);
+        $service->clockNow = 1000.0;
+        $service->clockStep = 1.0;
+
+        $registry->register('brokenlinks', 'source', 'pubvana.test', [
+            'label' => 'Test',
+            'callable' => static fn (): array => [
+                ['type' => 'post', 'id' => 1, 'title' => 'One', 'content' => '<a href="https://example.com/one">1</a>'],
+            ],
+        ]);
+
+        $result = $service->scan(1);
+
+        self::assertTrue($result['timed_out']);
+        self::assertSame(0, $result['sources']);
+        self::assertSame(0, $result['total']);
+    }
+
+    public function testScanDoesNotPruneSourceCutShortByBudget(): void
+    {
+        $registry = null;
+        $service = $this->makeService('', [
+            'https://example.com/one' => ['status' => 404, 'error' => null],
+            'https://example.com/two' => ['status' => 404, 'error' => null],
+        ], $registry);
+        $service->clockNow = 1000.0;
+        $service->clockStep = 0.6;
+
+        $registry->register('brokenlinks', 'source', 'pubvana.test', [
+            'label' => 'Test',
+            'callable' => static fn (): array => [
+                ['type' => 'post', 'id' => 1, 'title' => 'One', 'content' => '<a href="https://example.com/one">1</a> <a href="https://example.com/two">2</a>'],
+            ],
+        ]);
+
+        // Row for the first link. The budget expires inside the link loop,
+        // before that link is checked and before the source is reconciled, so
+        // the row must survive even though the link is no longer processed.
+        $stmt = $this->pdo->prepare(
+            "INSERT INTO broken_links (source_type, source_id, source_title, url, url_hash, http_status, dismissed) VALUES ('post', 1, 'One', ?, ?, 404, 0)"
+        );
+        $stmt->execute(['https://example.com/one', sha1('https://example.com/one')]);
+
+        $result = $service->scan(1);
+
+        self::assertTrue($result['timed_out']);
+        self::assertSame(0, $result['sources']);
+        self::assertSame(0, $result['total']);
+        self::assertNotFalse($this->fetchRow('https://example.com/one'));
     }
 
     public function testExtractLinksExcludesSameHost(): void
@@ -620,6 +749,24 @@ final class TestableBrokenLinksService extends BrokenLinksService
 
     /** @var list<string> */
     public array $checked = [];
+
+    /** @var float Clock value returned by the next clock() call. */
+    public float $clockNow = 0.0;
+
+    /** @var float Amount clock() advances per call. 0 keeps the real clock. */
+    public float $clockStep = 0.0;
+
+    protected function clock(): float
+    {
+        if ($this->clockStep <= 0.0) {
+            return parent::clock();
+        }
+
+        $now = $this->clockNow;
+        $this->clockNow += $this->clockStep;
+
+        return $now;
+    }
 
     /**
      * @return array{status: int|null, error: string|null}

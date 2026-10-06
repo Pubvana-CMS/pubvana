@@ -59,21 +59,39 @@ class BrokenLinksAdminController extends AdminController
      */
     public function scan(): void
     {
-        $result = $this->app->brokenLinks()->scan();
+        $result = $this->app->brokenLinks()->scan($this->scanBudget());
 
-        $this->app->session()->flash(
-            'success',
-            sprintf(
-                'Scan complete: checked %d link%s across %d source%s. %d broken.',
-                $result['total'],
-                $result['total'] !== 1 ? 's' : '',
-                $result['sources'],
-                $result['sources'] !== 1 ? 's' : '',
-                $result['broken']
-            )
+        $summary = sprintf(
+            'checked %d link%s across %d source%s. %d broken.',
+            $result['total'],
+            $result['total'] !== 1 ? 's' : '',
+            $result['sources'],
+            $result['sources'] !== 1 ? 's' : '',
+            $result['broken']
         );
 
+        if ($result['timed_out']) {
+            $this->app->session()->flash(
+                'error',
+                'Scan reached the time limit and stopped partway: ' . $summary . ' Run it again to continue.'
+            );
+        } else {
+            $this->app->session()->flash('success', 'Scan complete: ' . $summary);
+        }
+
         $this->app->redirect($this->adminBase());
+    }
+
+    /**
+     * Seconds the web scan may run before stopping early, keeping a margin
+     * under PHP's execution limit so the request does not hard-time-out.
+     * Null when PHP has no limit (CLI-style), meaning scan the whole set.
+     */
+    private function scanBudget(): ?int
+    {
+        $limit = (int) ini_get('max_execution_time');
+
+        return $limit > 0 ? max(1, $limit - 5) : null;
     }
 
     /**

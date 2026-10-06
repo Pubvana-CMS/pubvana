@@ -6,6 +6,7 @@ namespace Pubvana\Plugins\BrokenLinks\commands;
 
 use Pubvana\Plugins\BrokenLinks\Services\BrokenLinksService;
 use flight\commands\AbstractBaseCommand;
+use Flight;
 
 /**
  * CLI command to scan all registered content sources for broken outbound links.
@@ -28,7 +29,7 @@ class BrokenLinksCheckCommand extends AbstractBaseCommand
         $this->io()->write(str_repeat('-', 60));
 
         /** @var BrokenLinksService $service */
-        $service = (new \flight\Engine())->brokenLinks();
+        $service = Flight::app()->brokenLinks();
         $result = $service->scan();
 
         $this->io()->write(str_repeat('-', 60));

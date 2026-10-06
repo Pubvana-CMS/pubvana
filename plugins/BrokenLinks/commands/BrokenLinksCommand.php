@@ -32,7 +32,6 @@ class BrokenLinksCommand extends AbstractBaseCommand
             '<bold>Available commands:</end><eol/>' .
             '<eol/>' .
             '<bold>  broken-links:check</end>  <comment>Scan all published content for broken outbound links.</end><eol/>' .
-            '<bold>  broken-links:cron</end>   <comment>Scan for broken links.</end><eol/>' .
             '<eol/>' .
             '<comment>Run any command without arguments to see its usage.</end>'
         );

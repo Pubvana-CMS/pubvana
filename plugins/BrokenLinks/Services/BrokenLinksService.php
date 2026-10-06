@@ -73,19 +73,44 @@ class BrokenLinksService
     /**
      * Run a full scan of all registered content sources.
      *
-     * @return array{total: int, broken: int, sources: int}
+     * Runs without a time limit by default (CLI and cron). Pass a budget to
+     * stop early, for web requests bounded by max_execution_time.
+     *
+     * @param int|null $maxSeconds Stop after roughly this many seconds, null for no limit
+     *
+     * @return array{total: int, broken: int, sources: int, timed_out: bool}
      */
-    public function scan(): array
+    public function scan(?int $maxSeconds = null): array
     {
         $sources = $this->collectSources();
         $totalLinks = 0;
         $brokenCount = 0;
+        $sourcesScanned = 0;
+        $timedOut = false;
+        $deadline = $maxSeconds !== null && $maxSeconds > 0
+            ? $this->clock() + $maxSeconds
+            : null;
 
         foreach ($sources as $source) {
+            if ($deadline !== null && $this->clock() >= $deadline) {
+                $timedOut = true;
+                break;
+            }
+
             $links = $this->extractLinks($source['content']);
+            /** @var array<string, true> $foundHashes url_hash => true for links still present */
+            $foundHashes = [];
+            $sourceComplete = true;
 
             foreach ($links as $url) {
+                if ($deadline !== null && $this->clock() >= $deadline) {
+                    $timedOut = true;
+                    $sourceComplete = false;
+                    break;
+                }
+
                 $totalLinks++;
+                $foundHashes[sha1($url)] = true;
                 $result = $this->checkUrl($url);
 
                 $this->upsert([
@@ -102,13 +127,23 @@ class BrokenLinksService
                 }
             }
 
+            // Reconcile only fully scanned sources: a source cut short by the
+            // time budget has links that were never checked, so pruning it
+            // would delete rows for links that are still present.
+            if (!$sourceComplete) {
+                break;
+            }
+
             $this->deleteOk($source['type'], $source['id']);
+            $this->pruneMissing($source['type'], $source['id'], array_keys($foundHashes));
+            $sourcesScanned++;
         }
 
         return [
-            'total'   => $totalLinks,
-            'broken'  => $brokenCount,
-            'sources' => count($sources),
+            'total'     => $totalLinks,
+            'broken'    => $brokenCount,
+            'sources'   => $sourcesScanned,
+            'timed_out' => $timedOut,
         ];
     }
 
@@ -240,6 +275,7 @@ class BrokenLinksService
                 return;
             }
 
+            $existing->source_title = mb_substr((string) ($data['source_title'] ?? ''), 0, 255);
             $existing->http_status = $httpStatus;
             $existing->error_message = $errorMessage;
             $existing->last_checked_at = $now;
@@ -303,6 +339,37 @@ class BrokenLinksService
             'DELETE FROM broken_links WHERE source_type = ? AND source_id = ? AND url_hash = ?'
         );
         $stmt->execute([$sourceType, $sourceId, $urlHash]);
+    }
+
+    /**
+     * Remove non-dismissed rows for a source whose URLs are no longer present
+     * in its content.
+     *
+     * A scan only upserts the URLs it still finds, and deleteOk() only drops
+     * rows that answer 2xx. Without this, a broken link deleted from the
+     * content (rather than fixed) stays listed forever. Dismissed rows are
+     * left alone: dismissal is permanent.
+     *
+     * @param list<string> $keepHashes url_hash values still present in the source
+     */
+    public function pruneMissing(string $sourceType, int $sourceId, array $keepHashes): void
+    {
+        $conn = $this->pdo;
+
+        if ($keepHashes === []) {
+            $stmt = $conn->prepare(
+                'DELETE FROM broken_links WHERE source_type = ? AND source_id = ? AND dismissed = 0'
+            );
+            $stmt->execute([$sourceType, $sourceId]);
+            return;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($keepHashes), '?'));
+        $stmt = $conn->prepare(
+            'DELETE FROM broken_links WHERE source_type = ? AND source_id = ? AND dismissed = 0'
+            . ' AND url_hash NOT IN (' . $placeholders . ')'
+        );
+        $stmt->execute(array_merge([$sourceType, $sourceId], array_values($keepHashes)));
     }
 
     /**
@@ -531,7 +598,9 @@ class BrokenLinksService
         try {
             $status = $this->doHttpRequest('HEAD', $url, $timeout, $maxRedirects, $userAgent);
 
-            if ($status === 405) {
+            // Some servers refuse HEAD outright (403/405/501) while serving GET
+            // normally. Re-probe with GET so a working link is not reported broken.
+            if (in_array($status, [403, 405, 501], true)) {
                 $status = $this->doHttpRequest('GET', $url, $timeout, $maxRedirects, $userAgent);
             }
 
@@ -686,15 +755,17 @@ class BrokenLinksService
         }
 
         if ($prereq && defined('CURLOPT_PREREQFUNCTION') && defined('CURLE_ABORTED_BY_CALLBACK')) {
+            // PHP invokes this as (handle, destination_ip, local_ip,
+            // destination_port, local_port). Vet the destination address: an
+            // abort makes curl drop a peer that resolveSafeHost() could not
+            // pre-check because PHP could not resolve the host.
             curl_setopt(
                 $ch,
                 (int) CURLOPT_PREREQFUNCTION,
-                function (mixed $handle, string $ip4, string $ip6, string $ipAddress): int {
-                    $ip = $ip4 !== '' ? $ip4 : $ip6;
-                    if ($ip === '') {
-                        $ip = $ipAddress;
-                    }
-                    return ($ip !== '' && !$this->isPublicIp($ip)) ? CURLE_ABORTED_BY_CALLBACK : CURLE_OK;
+                function (mixed $handle, string $destinationIp, string $localIp, int $destinationPort, int $localPort): int {
+                    return ($destinationIp !== '' && !$this->isPublicIp($destinationIp))
+                        ? CURLE_ABORTED_BY_CALLBACK
+                        : CURLE_OK;
                 }
             );
         }
@@ -971,6 +1042,15 @@ class BrokenLinksService
     private function now(): string
     {
         return (new \DateTimeImmutable())->format('Y-m-d H:i:s');
+    }
+
+    /**
+     * Wall clock used for the scan time budget. Separate so tests can advance
+     * it without sleeping.
+     */
+    protected function clock(): float
+    {
+        return microtime(true);
     }
 
     private function model(): BrokenLink

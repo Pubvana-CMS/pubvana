@@ -190,6 +190,42 @@ final class BrokenLinksSsrfTest extends TestCase
         self::assertSame(['HEAD', 'GET'], array_column($this->service->requests, 'method'));
     }
 
+    public function testHead403FallsBackToGet(): void
+    {
+        $this->service->responses = [
+            ['status' => 403, 'location' => null],
+            ['status' => 200, 'location' => null],
+        ];
+
+        $result = $this->service->checkUrl('http://example.com/a');
+
+        self::assertSame(200, $result['status']);
+        self::assertSame(['HEAD', 'GET'], array_column($this->service->requests, 'method'));
+    }
+
+    public function testHead501FallsBackToGet(): void
+    {
+        $this->service->responses = [
+            ['status' => 501, 'location' => null],
+            ['status' => 200, 'location' => null],
+        ];
+
+        $result = $this->service->checkUrl('http://example.com/a');
+
+        self::assertSame(200, $result['status']);
+        self::assertSame(['HEAD', 'GET'], array_column($this->service->requests, 'method'));
+    }
+
+    public function testHead404DoesNotFallBackToGet(): void
+    {
+        $this->service->responses = [['status' => 404, 'location' => null]];
+
+        $result = $this->service->checkUrl('http://example.com/a');
+
+        self::assertSame(404, $result['status']);
+        self::assertSame(['HEAD'], array_column($this->service->requests, 'method'));
+    }
+
     public function testRedirectFollowedAndEachHopReVettedAndPinned(): void
     {
         $this->service->responses = [

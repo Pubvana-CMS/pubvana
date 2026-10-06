@@ -119,7 +119,7 @@ $sourceLabel = function (string $sourceType): string {
                                     <?= $link->http_status ?>
                                 </span>
                             <?php else: ?>
-                                <span class="badge bg-secondary-lt">Timeout</span>
+                                <span class="badge bg-secondary-lt">Error</span>
                             <?php endif; ?>
                         </td>
                         <td class="small text-muted">

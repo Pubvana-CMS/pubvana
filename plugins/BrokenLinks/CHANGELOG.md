@@ -5,6 +5,22 @@ All notable changes to the Broken Links plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.15] - 2026-10-06
+
+### Fixed
+- `broken-links:check` threw an error on every run.
+- A broken link deleted from a post or page stayed in the report after a rescan.
+- A renamed post or page kept its old title in the report.
+- A link whose server refused the HEAD request was reported broken even when the link worked.
+- Checks without a status code showed "Timeout" whatever the cause.
+- The connect-time check that blocks private addresses did not run.
+
+### Changed
+- A scan from the admin screen stops at the PHP time limit and reports a partial run.
+
+### Removed
+- `broken-links:cron` CLI command.
+
 ## [0.1.14] - 2026-09-30
 
 ### Fixed
