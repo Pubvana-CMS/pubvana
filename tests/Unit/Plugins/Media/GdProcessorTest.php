@@ -153,6 +153,34 @@ final class GdProcessorTest extends TestCase
         self::assertFileExists($noop);
     }
 
+    public function testFlipMirrorsTheNamedAxis(): void
+    {
+        // One column, two rows: red on top, blue underneath.
+        $path  = $this->tmpDir . '/axis.png';
+        $image = imagecreatetruecolor(1, 2);
+        self::assertNotFalse($image);
+        $red  = imagecolorallocate($image, 255, 0, 0);
+        $blue = imagecolorallocate($image, 0, 0, 255);
+        self::assertNotFalse($red);
+        self::assertNotFalse($blue);
+        imagesetpixel($image, 0, 0, $red);
+        imagesetpixel($image, 0, 1, $blue);
+        imagepng($image, $path);
+        imagedestroy($image);
+
+        // Horizontal mirror leaves a top-to-bottom stack alone.
+        $horizontal = $this->tmpDir . '/h.png';
+        (new GdProcessor())->load($path)->flip('horizontal')->save($horizontal);
+        $top = imagecolorat(imagecreatefrompng($horizontal), 0, 0);
+        self::assertSame(255, ($top >> 16) & 0xFF, 'flip(horizontal) must not swap top and bottom');
+
+        // Vertical mirror swaps top and bottom.
+        $vertical = $this->tmpDir . '/v.png';
+        (new GdProcessor())->load($path)->flip('vertical')->save($vertical);
+        $top = imagecolorat(imagecreatefrompng($vertical), 0, 0);
+        self::assertSame(255, $top & 0xFF, 'flip(vertical) must swap top and bottom');
+    }
+
     public function testAutoOrientAndStripExifAreSafe(): void
     {
         $src = $this->fixture();

@@ -73,7 +73,17 @@ class MediaService
             throw new \RuntimeException('Failed to stage the uploaded image.');
         }
 
-        $this->generateDerivatives($absDir, $filename);
+        // A derivative failure must not leave the written files behind with no
+        // row to point at them.
+        try {
+            $this->generateDerivatives($absDir, $filename);
+        } catch (\Throwable $e) {
+            @unlink($originalPath);
+            @unlink($absDir . '/' . $filename);
+            @unlink($absDir . '/medium/' . $hex . '.webp');
+            @unlink($absDir . '/thumbs/' . $hex . '.webp');
+            throw $e;
+        }
 
         return $this->model->createRecord([
             'type'        => 'image',
@@ -165,18 +175,22 @@ class MediaService
 
         $this->ensureDirectory($absDir . '/thumbs');
 
-        if ($media->poster_path) {
-            $oldPoster = $this->publicPath . '/' . $media->poster_path;
-            if (file_exists($oldPoster)) {
-                unlink($oldPoster);
-            }
-        }
-
         $posterName = $hex . '_poster.webp';
+        $newPoster  = $absDir . '/thumbs/' . $posterName;
+
+        // Write the replacement before removing the old file, so a decode
+        // failure leaves the video's existing poster in place.
         $this->processor
             ->load($file['tmp_name'])
             ->resize($this->config['thumb_width'] ?? 300)
-            ->toWebp($absDir . '/thumbs/' . $posterName, $this->config['webp_quality'] ?? 85);
+            ->toWebp($newPoster, $this->config['webp_quality'] ?? 85);
+
+        if ($media->poster_path) {
+            $oldPoster = $this->publicPath . '/' . $media->poster_path;
+            if ($oldPoster !== $newPoster && file_exists($oldPoster)) {
+                unlink($oldPoster);
+            }
+        }
 
         $media->updateMeta([
             'poster_path' => $relDir . '/thumbs/' . $posterName,
@@ -202,9 +216,18 @@ class MediaService
             return null;
         }
 
+        // Every operation reads scalar parameters. Reject a nested value here
+        // so it cannot reach a typed processor method as a TypeError.
+        foreach ($params as $key => $value) {
+            if (!is_scalar($value)) {
+                throw new \InvalidArgumentException(sprintf('Invalid parameter "%s".', $key));
+            }
+        }
+
         $this->processor->load($workingPath);
 
         match ($operation) {
+            'resize'      => $this->processor->resize((int) ($params['width'] ?? 0)),
             'crop'        => $this->processor->crop(
                 (int) ($params['x'] ?? 0),
                 (int) ($params['y'] ?? 0),
@@ -212,7 +235,7 @@ class MediaService
                 (int) ($params['height'] ?? 0)
             ),
             'rotate'      => $this->processor->rotate((int) ($params['degrees'] ?? 90)),
-            'flip'        => $this->processor->flip($params['direction'] ?? 'horizontal'),
+            'flip'        => $this->processor->flip($this->flipDirection($params)),
             'sharpen'     => $this->processor->sharpen(),
             'brightness'  => $this->processor->brightness((int) ($params['level'] ?? 0)),
             'contrast'    => $this->processor->contrast((int) ($params['level'] ?? 0)),
@@ -232,6 +255,22 @@ class MediaService
         $media->save();
 
         return $media;
+    }
+
+    /**
+     * The flip direction as a string, defaulting to horizontal.
+     *
+     * @param array<string, mixed> $params
+     * @throws \InvalidArgumentException When the value is not a string.
+     */
+    private function flipDirection(array $params): string
+    {
+        $direction = $params['direction'] ?? 'horizontal';
+        if (!is_string($direction)) {
+            throw new \InvalidArgumentException('Invalid flip direction.');
+        }
+
+        return $direction;
     }
 
     public function revert(int $id): ?Media
@@ -377,8 +416,12 @@ class MediaService
         }
 
         if ($media->poster_path) {
-            $poster = $this->publicPath . '/' . $media->poster_path;
-            if (file_exists($poster)) {
+            // poster_path can be set through the metadata endpoint, so only
+            // unlink a file that resolves inside the public directory.
+            $publicRoot = realpath($this->publicPath);
+            $poster     = realpath($this->publicPath . '/' . ltrim($media->poster_path, '/'));
+            if ($publicRoot !== false && $poster !== false
+                && str_starts_with($poster, $publicRoot . DIRECTORY_SEPARATOR)) {
                 unlink($poster);
             }
         }

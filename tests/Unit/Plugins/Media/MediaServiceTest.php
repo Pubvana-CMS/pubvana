@@ -354,6 +354,68 @@ final class MediaServiceTest extends TestCase
         self::assertNull($service->find((int) $media->id));
     }
 
+    public function testApplyEditResizeUsesTheAdvertisedCapability(): void
+    {
+        if (!extension_loaded('gd')) {
+            self::markTestSkipped('GD extension not available.');
+        }
+        $service = $this->service();
+
+        $media   = $this->makeImage(['path' => 'uploads/2026/01/resize.png']);
+        $working = $this->writePng('uploads/2026/01/resize.png', 120, 80);
+        mkdir(dirname($working) . '/originals', 0777, true);
+        copy($working, dirname($working) . '/originals/resize.png');
+
+        self::assertContains('resize', $service->getCapabilities());
+
+        $edited = $service->applyEdit((int) $media->id, 'resize', ['width' => 40]);
+        self::assertNotNull($edited);
+
+        $info = $service->getImageInfo((int) $media->id);
+        self::assertNotNull($info);
+        self::assertSame(40, $info['width']);
+
+        // A missing width is rejected rather than ignored.
+        $this->expectException(\InvalidArgumentException::class);
+        $service->applyEdit((int) $media->id, 'resize', []);
+    }
+
+    public function testApplyEditRejectsANonScalarParameter(): void
+    {
+        if (!extension_loaded('gd')) {
+            self::markTestSkipped('GD extension not available.');
+        }
+        $service = $this->service();
+
+        $media   = $this->makeImage(['path' => 'uploads/2026/01/param.png']);
+        $working = $this->writePng('uploads/2026/01/param.png', 40, 30);
+        mkdir(dirname($working) . '/originals', 0777, true);
+        copy($working, dirname($working) . '/originals/param.png');
+
+        // A nested value used to reach flip(string) as an uncaught TypeError.
+        $this->expectException(\InvalidArgumentException::class);
+        $service->applyEdit((int) $media->id, 'flip', ['direction' => ['horizontal']]);
+    }
+
+    public function testDeleteLeavesFilesOutsideThePublicDirectory(): void
+    {
+        $service = $this->service();
+
+        $outsideName = 'pv-media-outside-' . uniqid('', true) . '.txt';
+        $outside     = dirname($this->publicPath) . '/' . $outsideName;
+        file_put_contents($outside, 'keep me');
+
+        $media = $this->makeImage([
+            'path'        => 'uploads/2026/01/none.png',
+            'poster_path' => '../' . $outsideName,
+        ]);
+
+        self::assertTrue($service->delete((int) $media->id));
+        self::assertFileExists($outside, 'a poster_path outside public/ must not be unlinked');
+
+        @unlink($outside);
+    }
+
     public function testPickerAvatarJoditRender(): void
     {
         $service = $this->service();

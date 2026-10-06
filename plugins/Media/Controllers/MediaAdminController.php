@@ -81,6 +81,8 @@ class MediaAdminController extends AdminController
             $this->app->json($this->mediaToArray($media), 201);
         } catch (\InvalidArgumentException $e) {
             $this->app->json(['error' => $e->getMessage()], 422);
+        } catch (\Throwable) {
+            $this->app->json(['error' => 'Upload failed.'], 500);
         }
     }
 
@@ -99,6 +101,8 @@ class MediaAdminController extends AdminController
             $this->app->json($this->mediaToArray($media), 201);
         } catch (\InvalidArgumentException $e) {
             $this->app->json(['error' => $e->getMessage()], 422);
+        } catch (\Throwable) {
+            $this->app->json(['error' => 'Upload failed.'], 500);
         }
     }
 
@@ -143,6 +147,8 @@ class MediaAdminController extends AdminController
             $this->app->json($this->mediaToArray($media));
         } catch (\InvalidArgumentException $e) {
             $this->app->json(['error' => $e->getMessage()], 422);
+        } catch (\Throwable) {
+            $this->app->json(['error' => 'Poster upload failed.'], 500);
         }
     }
 

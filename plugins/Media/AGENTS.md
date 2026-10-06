@@ -6,7 +6,7 @@ Guidance for AI agents contributing to this plugin, which is part of the main Pu
 
 Media is the media library for Pubvana: image and video uploads, DVD-style derivatives (original, working, medium, thumb), an in-browser image editor, video posters, embeds, and reusable admin code snippets. Other plugins use the `$app->media()` service facade to embed pickers and Jodit editors.
 
-- **Package:** `pubvana/media` (`pubvana.json:2`), semver `0.1.0`, category `content`
+- **Package:** `pubvana/media` (`pubvana.json:2`), semver `0.2.1`, category `content`
 - **License:** MIT, matching the main project (repo `composer.json` declares `"license": "MIT"`)
 - **PHP floor:** not declared in the plugin; the main project requires PHP `^8.2` (repo `composer.json`), and the code stays within that floor (`match` at `Services/MediaService.php:167` and `Services/GdProcessor.php:22`, `str_starts_with` at `Services/GdProcessor.php:245`, `static` return types on the processor interface at `Services/ImageProcessorInterface.php:9`, typed property `?\GdImage` at `Services/GdProcessor.php:9`)
 - **Namespace:** `Pubvana\Plugins\Media` (`Plugin.php:5`), with `Controllers`, `Services`, `Models`, and `Database\Migrations` sub-namespaces

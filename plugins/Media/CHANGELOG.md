@@ -5,6 +5,17 @@ All notable changes to the Media plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.1] - 2026-10-06
+
+### Fixed
+- Flip Horizontal and Flip Vertical were swapped.
+- The resize operation was listed as available but failed.
+- Replacing a video poster removed the old poster before the new one was written.
+- Deleting an item could remove a file outside the uploads directory.
+- An edit operation with a non-string value raised a server error.
+- A failed image derivative left the uploaded files on disk.
+- An upload failure returned a server error instead of a JSON error.
+
 ## [0.2.0] - 2026-09-30
 
 ### Added

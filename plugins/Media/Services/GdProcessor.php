@@ -112,7 +112,9 @@ class GdProcessor implements ImageProcessorInterface
 
     public function flip(string $direction): static
     {
-        $mode = ($direction === 'horizontal') ? IMG_FLIP_VERTICAL : IMG_FLIP_HORIZONTAL;
+        // IMG_FLIP_HORIZONTAL mirrors left to right; IMG_FLIP_VERTICAL mirrors
+        // top to bottom. "Flip horizontal" means the former.
+        $mode = ($direction === 'horizontal') ? IMG_FLIP_HORIZONTAL : IMG_FLIP_VERTICAL;
         imageflip($this->requireImage(), $mode);
         return $this;
     }

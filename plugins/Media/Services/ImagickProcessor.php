@@ -44,10 +44,12 @@ class ImagickProcessor implements ImageProcessorInterface
 
     public function flip(string $direction): static
     {
+        // flipImage() mirrors top to bottom; flopImage() mirrors left to right.
+        // "Flip horizontal" means the left-to-right mirror.
         if ($direction === 'horizontal') {
-            $this->image->flipImage();
-        } else {
             $this->image->flopImage();
+        } else {
+            $this->image->flipImage();
         }
         return $this;
     }
