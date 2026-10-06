@@ -216,6 +216,23 @@ $app->map('slugify', function (string $text): string {
 
 /*
 |--------------------------------------------------------------------------
+| Pagination
+|--------------------------------------------------------------------------
+| Windowed page lists: the first page, the last page, and the current page
+| plus two neighbours, with omitted runs collapsed into a gap marker. The
+| result is data, never markup, so the public side renders it through the
+| theme's pagination partial and the admin side through
+| app/Views/admin/_pagination.php.
+|
+| The URL shape is the caller's, passed as a callable: the public side pages
+| by path (/blog/page/3) and the admin side by query string (?page=3).
+|
+| Usage: $app->pagination()->build($page, $total, $perPage, fn(int $n) => $base . '?page=' . $n)
+*/
+$app->map('pagination', fn() => new \Pubvana\Services\PaginationService());
+
+/*
+|--------------------------------------------------------------------------
 | View System (PluginView)
 |--------------------------------------------------------------------------
 | Extends Flight's native View with 3-tier template resolution:

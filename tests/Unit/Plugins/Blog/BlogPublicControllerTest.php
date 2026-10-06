@@ -10,6 +10,7 @@ use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Pubvana\Plugins\Blog\Controllers\BlogPublicController;
 use Pubvana\Plugins\Blog\Services\BlogService;
+use Pubvana\Services\PaginationService;
 use Pubvana\Tests\Support\CountingPdo;
 use Pubvana\Tests\Support\Sqlite;
 use Pubvana\Tests\Support\TestCase;
@@ -428,6 +429,7 @@ final class BlogPublicControllerTest extends TestCase
             },
             'db' => fn(): PDO => $this->pdo,
             'blog' => static fn(): BlogService => $blog,
+            'pagination' => static fn(): PaginationService => new PaginationService(),
             'pluginLoader' => static fn(): object => new class {
                 public function routePrefix(string $id): string
                 {

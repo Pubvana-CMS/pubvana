@@ -10,6 +10,7 @@ use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Pubvana\Plugins\Pages\Controllers\PagesAdminController;
 use Pubvana\Plugins\Pages\Services\PagesService;
+use Pubvana\Services\PaginationService;
 use Pubvana\Tests\Support\Sqlite;
 use Pubvana\Tests\Support\TestCase;
 
@@ -54,22 +55,26 @@ final class PagesAdminControllerTest extends TestCase
 
     public function testIndexPaginates(): void
     {
-        for ($i = 1; $i <= 3; $i++) {
+        // 21 pages at 20 per page is two pages, so the pager renders.
+        for ($i = 1; $i <= 21; $i++) {
             $this->pages->createPage(['title' => "P{$i}", 'status' => 'draft'], 1);
         }
 
         (new PagesAdminController($this->engine()))->index();
+        $pagination = $this->fetches[0]['data']['pagination'];
         self::assertSame('pubvana/pages/admin/index', $this->fetches[0]['view']);
         self::assertSame('Pages', $this->fetches[0]['data']['pageTitle']);
-        self::assertSame(3, $this->fetches[0]['data']['total']);
-        self::assertSame(1, $this->fetches[0]['data']['page']);
+        self::assertSame(1, $pagination['current']);
+        self::assertSame(2, $pagination['total']);
+        self::assertSame('/admin/page?page=2', $pagination['next_url']);
+        self::assertNull($pagination['prev_url']);
         self::assertSame('/admin/page', $this->fetches[0]['data']['adminBase']);
         self::assertSame('/page', $this->fetches[0]['data']['publicBase']);
 
         // Page floor: ?page=0 becomes 1.
         $this->fetches = [];
         (new PagesAdminController($this->engine(query: ['page' => '0'])))->index();
-        self::assertSame(1, $this->fetches[0]['data']['page']);
+        self::assertSame(1, $this->fetches[0]['data']['pagination']['current']);
     }
 
     public function testCreateRendersForm(): void
@@ -240,6 +245,7 @@ final class PagesAdminControllerTest extends TestCase
                     return '/page';
                 }
             },
+            'pagination' => static fn(): PaginationService => new PaginationService(),
             'session' => static fn(): object => new class($test) {
                 public function __construct(private PagesAdminControllerTest $t)
                 {

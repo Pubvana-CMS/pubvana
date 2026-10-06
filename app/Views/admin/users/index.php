@@ -4,9 +4,7 @@
  *
  * @var string $pageTitle
  * @var \Enlivenapp\FlightShield\Models\User[] $users
- * @var int $total
- * @var int $page
- * @var int $perPage
+ * @var array{current: int, total: int, prev_url: string|null, next_url: string|null, pages: list<array{number: int|string, url: string, active: bool, gap: bool}>}|null $pagination
  */
 ?>
 
@@ -102,18 +100,7 @@
     </div>
 </div>
 
-<?php $totalPages = (int) ceil($total / $perPage); ?>
-<?php if ($totalPages > 1): ?>
-    <nav class="mt-3">
-        <ul class="pagination justify-content-center">
-            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                <li class="page-item <?= $i === $page ? 'active' : '' ?>">
-                    <a class="page-link" href="/admin/users?page=<?= $i ?>"><?= $i ?></a>
-                </li>
-            <?php endfor; ?>
-        </ul>
-    </nav>
-<?php endif; ?>
+<?php include __DIR__ . '/../_pagination.php'; ?>
 
 <div class="modal fade" id="inviteUserModal" tabindex="-1" role="dialog" aria-labelledby="inviteUserModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">

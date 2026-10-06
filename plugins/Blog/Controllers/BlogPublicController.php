@@ -329,68 +329,24 @@ class BlogPublicController extends PublicController
     /**
      * Build pagination data for the shared pagination.tpl partial.
      *
-     * URLs use clean, crawlable paths: /blog for page 1 and
-     * /blog/page/@page for subsequent pages. Returns prev_url,
-     * next_url and the page-number list expected by the partial.
-     */
-    /**
+     * The windowing rule lives in PaginationService so every listing shares
+     * it. The URL shape stays here: clean, crawlable paths, /blog for page 1
+     * and /blog/page/@page for the rest.
+     *
      * @param array<string, mixed> $result List result as returned by BlogService::listPosts()
-     * @return array<string, mixed>|null
+     *
+     * @return array{current: int, total: int, prev_url: string|null, next_url: string|null, pages: list<array{number: int|string, url: string, active: bool, gap: bool}>}|null
      */
     private function buildPagination(array $result, string $baseUrl): ?array
     {
-        $page = (int) ($result['page'] ?? 1);
-        $perPage = (int) ($result['per_page'] ?? 10);
-        $total = (int) ($result['total'] ?? 0);
-        $pages = (int) ceil($total / max($perPage, 1));
-
-        if ($pages <= 1) {
-            return null;
-        }
-
         $baseUrl = rtrim($baseUrl, '/') ?: '/';
 
-        $pageUrl = function (int $n) use ($baseUrl): string {
-            return $n === 1 ? $baseUrl : $baseUrl . '/page/' . $n;
-        };
-
-        // Show the current page plus two neighbours, and always the first and
-        // last page. A jump between shown numbers becomes a gap item, so a
-        // thousand-page archive does not emit a thousand links.
-        $numbers = [1 => true, $pages => true];
-        for ($n = max(1, $page - 2); $n <= min($pages, $page + 2); $n++) {
-            $numbers[$n] = true;
-        }
-        $numbers = array_keys($numbers);
-        sort($numbers);
-
-        $items = [];
-        $previous = 0;
-        foreach ($numbers as $n) {
-            if ($previous > 0 && $n - $previous > 1) {
-                $items[] = [
-                    'number' => '...',
-                    'url'    => '',
-                    'active' => false,
-                    'gap'    => true,
-                ];
-            }
-            $items[] = [
-                'number' => $n,
-                'url'    => $pageUrl($n),
-                'active' => $n === $page,
-                'gap'    => false,
-            ];
-            $previous = $n;
-        }
-
-        return [
-            'current'  => $page,
-            'total'    => $pages,
-            'prev_url' => $page > 1 ? $pageUrl($page - 1) : null,
-            'next_url' => $page < $pages ? $pageUrl($page + 1) : null,
-            'pages'    => $items,
-        ];
+        return $this->app->pagination()->build(
+            (int) ($result['page'] ?? 1),
+            (int) ($result['total'] ?? 0),
+            (int) ($result['per_page'] ?? 10),
+            fn(int $n): string => $n === 1 ? $baseUrl : $baseUrl . '/page/' . $n
+        );
     }
 
     /**

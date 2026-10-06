@@ -50,11 +50,14 @@ class UsersController extends AdminController
         $total = $this->app->auth()->users()->count($includeSuperadmins);
 
         $this->render('admin/users/index', [
-            'pageTitle' => 'Users',
-            'users'     => $users,
-            'total'     => $total,
-            'page'      => $page,
-            'perPage'   => $perPage,
+            'pageTitle'  => 'Users',
+            'users'      => $users,
+            'pagination' => $this->app->pagination()->build(
+                $page,
+                $total,
+                $perPage,
+                static fn(int $n): string => '/admin/users?page=' . $n
+            ),
         ]);
     }
 

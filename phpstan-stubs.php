@@ -87,6 +87,7 @@ namespace flight {
      * @phpstan-method \flight\database\PdoWrapper db()
      * @phpstan-method \Pubvana\Services\ExtensionRegistry adext()
      * @phpstan-method string slugify(string $text)
+     * @phpstan-method \Pubvana\Services\PaginationService pagination()
      * @phpstan-method \Pubvana\Services\ThemeService themes()
      * @phpstan-method \Pubvana\Services\RegionManager regions()
      * @phpstan-method \Pubvana\Services\NavigationService navigation()
@@ -251,6 +252,10 @@ namespace Pubvana\Services {
     }
 
     class PluginLoader
+    {
+    }
+
+    class PaginationService
     {
     }
 }

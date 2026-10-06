@@ -24,13 +24,18 @@ class PagesAdminController extends AdminController
         $perPage = 20;
 
         $result = $this->app->pages()->listPages($page, $perPage);
+        $adminBase = $this->adminBase();
+
         $this->render('pubvana/pages/admin/index', [
             'pageTitle'  => 'Pages',
             'pages'      => $result['items'],
-            'total'      => $result['total'],
-            'page'       => $page,
-            'perPage'    => $perPage,
-            'adminBase'  => $this->adminBase(),
+            'pagination' => $this->app->pagination()->build(
+                $page,
+                $result['total'],
+                $perPage,
+                fn(int $n): string => $adminBase . '?page=' . $n
+            ),
+            'adminBase'  => $adminBase,
             'publicBase' => $this->publicBase(),
         ]);
     }

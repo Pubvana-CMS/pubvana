@@ -10,6 +10,7 @@ use flight\Engine;
 use flight\util\Collection;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Pubvana\Controllers\Admin\UsersController;
+use Pubvana\Services\PaginationService;
 use Pubvana\Tests\Support\Sqlite;
 use Pubvana\Tests\Support\TestCase;
 
@@ -53,10 +54,11 @@ final class UsersControllerTest extends TestCase
         $this->controller($app)->index();
 
         self::assertSame('admin/users/index', $this->fetches[0]['view']);
-        self::assertSame(1, $this->fetches[0]['data']['page']);
-        self::assertSame(20, $this->fetches[0]['data']['perPage']);
+        self::assertSame(1, $this->usersSvc->lastPage);
+        self::assertSame(20, $this->usersSvc->lastPerPage);
         self::assertFalse($this->usersSvc->lastInclude);
-        self::assertSame(7, $this->fetches[0]['data']['total']);
+        // 7 users at 20 per page is one page, so there is nothing to page.
+        self::assertNull($this->fetches[0]['data']['pagination']);
     }
 
     public function testIndexSuperadminSeesAll(): void
@@ -64,7 +66,7 @@ final class UsersControllerTest extends TestCase
         $app = $this->engine(query: ['page' => '3'], viewerSuperadmin: true);
         $this->controller($app)->index();
 
-        self::assertSame(3, $this->fetches[0]['data']['page']);
+        self::assertSame(3, $this->usersSvc->lastPage);
         self::assertTrue($this->usersSvc->lastInclude);
     }
 
@@ -471,6 +473,7 @@ final class UsersControllerTest extends TestCase
                 }
             },
             'db' => static fn(): \PDO => Sqlite::connection(),
+            'pagination' => static fn(): PaginationService => new PaginationService(),
             'adext' => static fn(): object => new class {
                 /** @return array<string, mixed> */
                 public function get(string $t, string $s, array $c = []): array
@@ -565,6 +568,8 @@ final class FakeUsersSvc
 {
     public ?FakeUser $findResult = null;
     public bool $lastInclude = false;
+    public int $lastPage = 0;
+    public int $lastPerPage = 0;
     public ?string $email = null;
     /** @var array<string, mixed> */
     public array $lastProfile = [];
@@ -580,6 +585,8 @@ final class FakeUsersSvc
     public function paginated(int $page, int $perPage, bool $inc): array
     {
         $this->lastInclude = $inc;
+        $this->lastPage = $page;
+        $this->lastPerPage = $perPage;
 
         return [];
     }
