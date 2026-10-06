@@ -48,6 +48,22 @@ class CommentService
      */
     private ?array $hostTypeMapCache = null;
 
+    /**
+     * Per-request host catalog, resolved once from the registered
+     * 'comments.host' callables. See hostItems().
+     *
+     * @var array<int, array{type: string, id: int, title: string, url: string, allow_comments: bool}>|null
+     */
+    private ?array $hostItemsCache = null;
+
+    /**
+     * "type:id" => host item index over hostItems(), so hostItem() is a
+     * lookup rather than a rescan of every host for every call.
+     *
+     * @var array<string, array{type: string, id: int, title: string, url: string, allow_comments: bool}>|null
+     */
+    private ?array $hostItemIndexCache = null;
+
     /** Shared per-IP spam limiter, built lazily (tests may inject one). */
     private ?RateLimiter $rateLimiter = null;
 
@@ -223,6 +239,19 @@ class CommentService
 
             if ($this->model->getDepth($parentId) >= $this->maxNestingDepth()) {
                 throw new \InvalidArgumentException('Maximum comment nesting depth reached.');
+            }
+        }
+
+        // The item itself must exist and accept comments. The host hides the
+        // form for a closed item, but a crafted POST can still reach this
+        // write path, so the item is re-checked against the host catalog.
+        // Types owned by no registered host are left to the caller: the
+        // public controller already rejects them.
+        $commentableType = (string) ($data['commentable_type'] ?? '');
+        if ($this->hostKeyForType($commentableType) !== null) {
+            $item = $this->hostItem($commentableType, (int) ($data['commentable_id'] ?? 0));
+            if ($item === null || empty($item['allow_comments'])) {
+                throw new \InvalidArgumentException('Comments are closed for this item.');
             }
         }
 
@@ -412,7 +441,7 @@ class CommentService
      */
     public function dataFor(string $type, int $id, bool $allowComments = true): array
     {
-        if (!$this->isEnabled() || !$allowComments) {
+        if (!$this->isEnabled()) {
             return [];
         }
 
@@ -453,6 +482,10 @@ class CommentService
      */
     public function hostItems(): array
     {
+        if ($this->hostItemsCache !== null) {
+            return $this->hostItemsCache;
+        }
+
         $items = [];
 
         foreach ($this->app->adext()->get('comments.host', 'content') as $hostKey => $contribution) {
@@ -488,7 +521,7 @@ class CommentService
             }
         }
 
-        return $items;
+        return $this->hostItemsCache = $items;
     }
 
     /**
@@ -498,13 +531,15 @@ class CommentService
      */
     public function hostItem(string $type, int $id): ?array
     {
-        foreach ($this->hostItems() as $item) {
-            if ($item['type'] === $type && $item['id'] === $id) {
-                return $item;
+        if ($this->hostItemIndexCache === null) {
+            $index = [];
+            foreach ($this->hostItems() as $item) {
+                $index[$item['type'] . ':' . $item['id']] = $item;
             }
+            $this->hostItemIndexCache = $index;
         }
 
-        return null;
+        return $this->hostItemIndexCache[$type . ':' . $id] ?? null;
     }
 
     /**

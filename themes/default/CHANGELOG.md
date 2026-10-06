@@ -5,6 +5,12 @@ All notable changes to the Default theme will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.4.28] - 2026-10-06
+
+### Fixed
+- The comment thread template used arithmetic in a class name, which the template engine rejects.
+- Comment threads did not render.
+
 ## [1.4.27] - 2026-10-05
 
 ### Fixed

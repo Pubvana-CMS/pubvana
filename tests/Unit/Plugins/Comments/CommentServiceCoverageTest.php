@@ -266,6 +266,48 @@ final class CommentServiceCoverageTest extends TestCase
         }
     }
 
+    public function testCreateRejectsAClosedOrUnknownHostItem(): void
+    {
+        $app = $this->buildApp();
+        $service = $this->service($app);
+        $this->registerHost($app, 'pubvana.blog', 'blog', 1);
+        $service->setHostEnabled('pubvana.blog', true);
+        $service = $this->service($app);
+
+        // An id the host does not list: no such item.
+        try {
+            $service->create($this->payload(['commentable_id' => 2]));
+            self::fail('an item the host does not list must be rejected');
+        } catch (\InvalidArgumentException $e) {
+            self::assertSame('Comments are closed for this item.', $e->getMessage());
+        }
+
+        // A listed item with comments turned off.
+        $app->adext()->register('comments.host', 'content', 'pubvana.closed', [
+            'label' => 'Closed',
+            'callable' => static fn (): array => [[
+                'type' => 'closed',
+                'id' => 5,
+                'title' => 'Closed',
+                'url' => '/closed/5',
+                'allow_comments' => false,
+            ]],
+        ]);
+        $service->setHostEnabled('pubvana.closed', true);
+        $service = $this->service($app);
+
+        try {
+            $service->create($this->payload(['commentable_type' => 'closed', 'commentable_id' => 5]));
+            self::fail('a closed item must be rejected');
+        } catch (\InvalidArgumentException $e) {
+            self::assertSame('Comments are closed for this item.', $e->getMessage());
+        }
+
+        // A listed, open item still accepts.
+        $comment = $service->create($this->payload(['commentable_type' => 'blog', 'commentable_id' => 1]));
+        self::assertSame(1, (int) $comment->commentable_id);
+    }
+
     public function testCreateRejectsAnUnsafeGuestWebsite(): void
     {
         $app = $this->buildApp();
@@ -382,10 +424,13 @@ final class CommentServiceCoverageTest extends TestCase
         // Host not opted in.
         self::assertSame([], $service->dataFor('blog', 1));
 
-        // Opt in, item closed. Fresh service: enabledTypes() is cached per instance.
+        // Opt in, item closed: the thread and a closed notice render, no form.
         $service->setHostEnabled('pubvana.blog', true);
         $service = $this->service($app);
-        self::assertSame([], $service->dataFor('blog', 1, false));
+        $closed = $service->dataFor('blog', 1, false);
+        self::assertTrue($closed['comments_enabled']);
+        self::assertFalse($closed['comments_open']);
+        self::assertTrue($closed['comments_closed']);
 
         // Open thread for guests off: form closed but data present.
         $data = $service->dataFor('blog', 1);
@@ -446,8 +491,12 @@ final class CommentServiceCoverageTest extends TestCase
         self::assertStringContainsString('data-parent-id="' . (int) $root->id . '"', $html);
         self::assertStringContainsString('name="parent_id"', $html);
 
-        // A per-item opt-out renders nothing at all, controls included.
-        self::assertSame('', $service->render('blog', 1, false));
+        // A per-item opt-out renders the thread with a closed notice and no
+        // reply controls or form.
+        $closedHtml = $service->render('blog', 1, false);
+        self::assertStringContainsString('Comments are closed.', $closedHtml);
+        self::assertStringNotContainsString('class="pv-comment-reply"', $closedHtml);
+        self::assertStringNotContainsString('name="parent_id"', $closedHtml);
     }
 
     public function testUserAuthorsResolveInOneBatch(): void

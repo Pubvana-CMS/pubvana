@@ -12,7 +12,7 @@
 
     {% if comments %}
     {% for comment in comments %}
-    <div class="card mb-2 ms-{{ comment.depth * 3 }}" id="comment-{{ comment.id }}">
+    <div class="card mb-2 ms-{{ comment.depth }}" id="comment-{{ comment.id }}">
         <div class="card-body py-2 px-3">
             <strong>{{ comment.author }}</strong>
             <span class="text-muted small ms-1">{{ comment.created_at | date('F j, Y g:ia') }}</span>

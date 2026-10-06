@@ -5,6 +5,16 @@ All notable changes to the Comments plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.12] - 2026-10-06
+
+### Fixed
+- A comment could be posted to an item the host does not list, or lists with comments off.
+- The host catalog was rebuilt for every host lookup.
+
+### Changed
+- A thread with comments closed renders the approved comments and a "Comments are closed." notice.
+- Documentation updated.
+
 ## [0.2.11] - 2026-09-30
 
 ### Fixed

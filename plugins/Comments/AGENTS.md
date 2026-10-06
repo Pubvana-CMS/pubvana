@@ -6,22 +6,22 @@ Guidance for AI agents contributing to this plugin, which is part of the main Pu
 
 Comments provides nested, moderated site comments. Captcha on the comment form is delegated to the core CaptchaService (configured site-wide under Settings > Captcha, with the "Comment form" switch). Content plugins register themselves as comment hosts through the adext `comments.host` slot; this plugin renders a thread and reply form inside any host's public view.
 
-- **Package:** `pubvana/comments` (`pubvana.json:2`), semver `0.1.0`, category `content`
+- **Package:** `pubvana/comments` (`pubvana.json:2`), category `content`
 - **License:** MIT, matching the main project (repo `composer.json` declares `"license": "MIT"`)
-- **PHP floor:** not declared in the plugin; the main project requires PHP `^8.2` (repo `composer.json`), and the code stays within that floor (`str_contains` at `Controllers/CommentsPublicController.php:115`, `mixed` parameter/return types at `Services/CommentService.php:65`, arrow functions at `Plugin.php:121`)
+- **PHP floor:** not declared in the plugin; the main project requires PHP `^8.2` (repo `composer.json`), and the code stays within that floor (`str_contains` at `Controllers/CommentsPublicController.php:115`, `mixed` parameter/return types at `Services/CommentService.php:106`, arrow functions at `Plugin.php:121`)
 - **Namespace:** `Pubvana\Plugins\Comments` (`Plugin.php:5`), with `Controllers`, `Services`, `Models`, and `Database\Migrations` sub-namespaces
-- **Runtime dependencies (declared at the app level, not in the plugin):** `flightphp/active-record` (model base), `enlivenapp/migrations` (migration base), `enlivenapp/flight-shield` (`\Enlivenapp\FlightShield\Models\User` at `Services/CommentService.php:674, 793`), `ezyang/htmlpurifier` (optional, guarded by `class_exists` at `Services/CommentService.php:747`); core engine services used as `$app->comments()`, `db()`, `adext()`, `pluginLoader()`, `settings()`, `view()`, `request()`, `session()`, `captcha()`; core helper functions `user_id()` and `csrf_field()`; core class `\Pubvana\Services\PluginView` (`Services/CommentService.php:283`)
+- **Runtime dependencies (declared at the app level, not in the plugin):** `flightphp/active-record` (model base), `enlivenapp/migrations` (migration base), `enlivenapp/flight-shield` (`\Enlivenapp\FlightShield\Models\User` at `Services/CommentService.php:894`), `ezyang/htmlpurifier` (optional, guarded by `class_exists` at `Services/CommentService.php:792`); core engine services used as `$app->comments()`, `db()`, `adext()`, `pluginLoader()`, `settings()`, `view()`, `request()`, `session()`, `captcha()`; core helper functions `user_id()` and `csrf_field()`; core class `\Pubvana\Services\PluginView` (`Services/CommentService.php:375`)
 - **Settings storage:** database `settings` table under the `Comments.*` namespace, seeded in `Database/Seeds/Seed.php`
 - **Docs:** `README.md`
 
 ## Project guidelines
 
-1. **Only store comment bodies that have passed HTMLPurifier.** `create()` always purifies `body` before insert (`Services/CommentService.php:210-213`). Reason: comment text is untrusted visitor input and must not reach templates unsanitized.
-2. **Never hardcode a setting key in controllers or views.** Read all configuration through `CommentService::setting()` (which prefixes `Comments.`, `Services/CommentService.php:65-68`) and write it through `$app->settings()->set('Comments.*', ...)` in `settingsSave()`. Reason: settings are in the database and can be overridden; the `Comments.` prefix is the single source of truth.
-3. **Treat comment hosts as opt-in.** A host only renders when its adext key is in the `Comments.enabledHosts` JSON setting (`Services/CommentService.php:504-541`). New hosts start closed. Reason: hosts must be explicitly enabled by an admin before accepting visitor content.
-4. **Enforce the nesting limit on every reply.** `create()` checks `getDepth()` against `max_nesting_depth` (default 3) and throws before insert (`Services/CommentService.php:187-195`). Reason: unbounded threading makes threads unreadable and the model walk expensive.
-5. **Route all host lookups through the `comments.host` adext slot.** `hostItems()`, `hostItem()`, `hostTypeMap()`, and `enabledTypes()` all resolve hosts from registered `comments.host` contributions and cache them per request (`Services/CommentService.php:410-647`). Reason: hosts are other plugins by design; the adext registry is the only allowed discovery path and the caches stop per-comment SELECT storms.
-6. **Do not bypass the public gating chain in `dataFor()`.** A thread must render nothing when the system is disabled, the host type is not enabled, or the item disallows comments (`Services/CommentService.php:356-399`). Reason: an empty string is the signal hosts rely on to decide whether to inject anything.
+1. **Only store comment bodies that have passed HTMLPurifier.** `create()` always purifies `body` before insert (`Services/CommentService.php:285-287`). Reason: comment text is untrusted visitor input and must not reach templates unsanitized.
+2. **Never hardcode a setting key in controllers or views.** Read all configuration through `CommentService::setting()` (which prefixes `Comments.`, `Services/CommentService.php:106-109`) and write it through `$app->settings()->set('Comments.*', ...)` in `settingsSave()`. Reason: settings are in the database and can be overridden; the `Comments.` prefix is the single source of truth.
+3. **Treat comment hosts as opt-in.** A host only renders when its adext key is in the `Comments.enabledHosts` JSON setting (`Services/CommentService.php:561`). New hosts start closed. Reason: hosts must be explicitly enabled by an admin before accepting visitor content.
+4. **Enforce the nesting limit on every reply.** `create()` checks `getDepth()` against `max_nesting_depth` (default 3) and throws before insert (`Services/CommentService.php:240`). Reason: unbounded threading makes threads unreadable and the model walk expensive.
+5. **Route all host lookups through the `comments.host` adext slot.** `hostItems()`, `hostItem()`, `hostTypeMap()`, and `enabledTypes()` all resolve hosts from registered `comments.host` contributions and cache them per request (`Services/CommentService.php:483-744`); `hostItem()` reads a `type:id` index built once per request rather than rescanning every host. Reason: hosts are other plugins by design; the adext registry is the only allowed discovery path and the caches stop per-comment SELECT storms.
+6. **Enforce the item opt-in on the write path, and do not bypass the gating chain in `dataFor()`.** `create()` rejects a comment when the host owns the type but does not list the item, or lists it with `allow_comments` off (`Services/CommentService.php:230-241`). `dataFor()` returns nothing when the system is disabled or the host type is not enabled, but an item with comments closed still returns the approved thread plus a `comments_closed` flag (`Services/CommentService.php:442-481`), so the partial can show the existing thread and a "Comments are closed." notice with no form. Reason: the form is hidden on a closed item, but the write path is the only place a crafted POST can be stopped; the closed state is still shown to visitors.
 7. **Delegate captcha to the core CaptchaService.** `create()` checks `CaptchaService::enforcedFor('comments')` (provider configured plus the "Comment form" switch on in Settings > Captcha) and calls `verify()`; the service itself fails closed on a missing secret or an unreachable provider. Templates render the captcha with the `captcha` Vision tag, never with hardcoded provider markup. Reason: captcha config is site-wide (shared with forms and the sign-in form); duplicating provider logic here would drift.
 8. **Keep guest attribution split from user attribution.** Comments store either `user_id` or `guest_name`/`guest_email`/`guest_website`, never both (`Controllers/CommentsPublicController.php:87-98`). Reason: the display and admin tooling branch on this split.
 9. **Do not add soft deletes to comments.** `delete()` is a hard delete (`Models/Comment.php:186-196`). Descendants are not cascaded; `buildTree()` promotes orphaned children to the thread root (`Services/CommentService.php:769-777`). Reason: moderation is explicit and a visitor comment must actually disappear, not linger as a tombstone.
@@ -39,7 +39,9 @@ plugins/Comments/
 │   ├── Migrations/2026-09-17-105228_CreateCommentsTable.php
 │   │                                  comments (commentable_type/id, parent_id, user/guest cols,
 │   │                                  status, ip_address; indexes on host pair, parent, status, user)
-│   └── Seeds/Seed.php                 Seed: 5 "Comments.*" settings rows + comments.moderate permission
+│   ├── Migrations/2026-09-17-105229_MigrateCaptchaSettings.php
+│   │                                  moves Comments.captcha_* rows into the Captcha.* namespace
+│   └── Seeds/Seed.php                 Seed: 6 "Comments.*" settings rows + comments.moderate permission
 ├── Models/Comment.php                 comments table; find, paginate, count, status updates, depth walk
 ├── Services/CommentService.php        Singleton mapped as $app->comments() (Plugin.php:28-34); lifecycle owner
 ├── assets/css/comments.css            Public styles (registered via adext public.css)
@@ -47,9 +49,9 @@ plugins/Comments/
 ├── pubvana.json                       Manifest; provides admin.menu (Manage/Settings) and admin.dashboard
 ├── Views/
 │   ├── admin/                         index, show, settings (config fields + per-host toggles)
-│   ├── public/comments.tpl            Injectable thread + form fragment (rendered by CommentService::render())
 │   ├── public/blocks/recent-comments.tpl   Recent Comments block
-│   └── comments.tpl                   Standalone display template (core render('comments'))
+│   └── pubvana/comments/comments.tpl  Injectable thread + form fragment (CommentService::render())
+│                                       and the standalone page (core render('pubvana/comments/comments'))
 └── README.md
 ```
 
@@ -63,13 +65,13 @@ plugins/Comments/
 - `admin.dashboard` card (pending count) and section (pending list) (`Plugin.php:62-114`).
 - `block.available` recent-comments (`Plugin.php:118-128`).
 
-**Host registration (outbound).** Content plugins register `comments.host` with a `label` and a `callable` returning `{type, id, title, url, allow_comments}` items. `type`/`id` identify the content the comments belong to, `allow_comments` is the per-item opt-in (default false), and `title`/`url` link stored comments back to their content in the admin. `CommentService` consumes that catalog for the admin host manager, the recent-comments block, and host-style enrichment (`Services/CommentService.php:410-647`).
+**Host registration (outbound).** Content plugins register `comments.host` with a `label` and a `callable` returning `{type, id, title, url, allow_comments}` items. `type`/`id` identify the content the comments belong to, `allow_comments` is the per-item opt-in (default false), and `title`/`url` link stored comments back to their content in the admin. `CommentService` consumes that catalog for the admin host manager, the recent-comments block, and host-style enrichment (`Services/CommentService.php:483-744`).
 
-**Render pipeline (inbound).** A host calls `CommentService::render($type, $id, $allowComments)` or `dataFor()`; `render()` builds the view data, resolves the `.tpl` through the 3-tier override chain, and renders it (`Services/CommentService.php:267-344`). The result is injected into the host's template as `comments_html`.
+**Render pipeline (inbound).** A host calls `CommentService::render($type, $id, $allowComments)` or `dataFor()`; `render()` builds the view data, resolves the `.tpl` through the 3-tier override chain, and renders it (`Services/CommentService.php:359-397`). The result is injected into the host's template as `comments_html`.
 
-**Submission path.** `CommentsPublicController::store()` gates on system enabled, host type enabled, guest policy, empty body, and guest name, then delegates to `CommentService::create()` which additionally enforces nesting depth, captcha, and purification (`Controllers/CommentsPublicController.php:41-108`). Errors bounce back to the referrer as a standard `error` flash, rendered by the layout alert area.
+**Submission path.** `CommentsPublicController::store()` gates on system enabled, host type enabled, guest policy, empty body, and guest name, then delegates to `CommentService::create()`, which additionally enforces the item opt-in (the host must list the item with comments on), nesting depth, captcha, and purification (`Controllers/CommentsPublicController.php:41-108`, `Services/CommentService.php:230-287`). Errors bounce back to the referrer as a standard `error` flash, rendered by the layout alert area.
 
-**Display path.** `findByContent()` only returns approved comments (`Models/Comment.php:62-74`); they are threaded by `buildTree()` and flattened with depth one level at a time by `flattenComments()` (`Services/CommentService.php:757-814`).
+**Display path.** `findByContent()` only returns approved comments (`Models/Comment.php:62-74`); they are threaded by `buildTree()` and flattened with depth one level at a time by `flattenComments()` (`Services/CommentService.php:805-869`).
 
 ## Development and testing
 
@@ -97,8 +99,8 @@ The unit suite is in `tests/Unit/Plugins/Comments/` and covers the service (capt
 2. **Models extend `Pubvana\Models\AbstractModel` and declare their table string in the constructor** (`Models/Comment.php:42-45`).
 3. **Prefer the ActiveRecord fluent query; raw SQL only for `GROUP BY` aggregates.** `countByType()` is the single raw query and uses named placeholders for status (`Models/Comment.php:116-143`).
 4. **Use `DateTimeImmutable` for all timestamp writes** (`Models/Comment.php:151, 177`). Do not call `date()` for stored values.
-5. **Keep views dumb and dependency-free.** The injectable partial consumes the `dataFor()` array verbatim (`Views/public/comments.tpl`); do not call services from templates.
-6. **Catch `\Throwable` only at trust boundaries.** Host callables and template rendering already fail soft to empty output (`Services/CommentService.php:293-297, 422-426, 632-635`); do not add blanket try/catch inside business logic.
+5. **Keep views dumb and dependency-free.** The injectable partial consumes the `dataFor()` array verbatim (`Views/pubvana/comments/comments.tpl`); do not call services from templates.
+6. **Catch `\Throwable` only at trust boundaries.** Host callables and template rendering already fail soft to empty output (`Services/CommentService.php:388-390, 501-503, 715-717`); do not add blanket try/catch inside business logic.
 
 ## Documentation sources
 
@@ -117,7 +119,7 @@ The unit suite is in `tests/Unit/Plugins/Comments/` and covers the service (capt
 | Change the nesting limit | `Comments.max_nesting_depth` setting (database, default 3) |
 | Change moderation page pagination | `Controllers/CommentsAdminController.php:31` |
 | Register a new host side | `comments.host` adext slot in the host plugin's `Plugin.php`; see the Host registration section |
-| Change the block output shape | `recentCommentsBlock()` (`Services/CommentService.php:661-693`) + `Views/public/blocks/recent-comments.tpl` |
+| Change the block output shape | `recentCommentsBlock()` (`Services/CommentService.php:746-784`) + `Views/public/blocks/recent-comments.tpl` |
 | Add an admin moderation action | Route in `Plugin.php:41-49`, action in `CommentsAdminController.php`, service method in `CommentService` |
 
 ## PR / contribution checklist
@@ -135,6 +137,6 @@ The unit suite is in `tests/Unit/Plugins/Comments/` and covers the service (capt
 
 - This is an in-tree application plugin, not a Composer package; no `composer.json` and nothing for Packagist.
 - No email notifications for new comments or replies.
-- No spam engine beyond optional captcha plus human moderation; no rate limiting.
+- No spam engine beyond optional captcha, a per-IP rate limit (`Comments.rate_limit_seconds`), and human moderation.
 - No pagination or lazy loading of threads; the full approved tree loads per item render.
 - No localization; labels and messages are hardcoded English.

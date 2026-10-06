@@ -8,7 +8,7 @@
     "pubver_max": "",
     "slug": "default",
     "icon": "icon.svg",
-    "semver": "1.4.27",
+    "semver": "1.4.28",
     "provides": {
         "options": {
             "layout": {
