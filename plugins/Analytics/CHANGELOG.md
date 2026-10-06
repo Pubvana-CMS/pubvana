@@ -5,6 +5,14 @@ All notable changes to the Analytics plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.12] - 2026-10-05
+
+### Fixed
+- The daily rollup failed with a SQL syntax error on MySQL 8.0.19 and later.
+- A half-finished rollup could count the same views twice.
+- A failed rollup left no record.
+- A settings or request failure during page tracking could break the page.
+
 ## [0.1.11] - 2026-09-26
 
 ### Changed

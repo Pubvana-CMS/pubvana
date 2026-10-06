@@ -25,9 +25,26 @@ final class RollupUpsertSqlTest extends TestCase
 
         self::assertCount(2, $pdo->upserts());
         foreach ($pdo->upserts() as $sql) {
-            self::assertStringContainsString(' AS new_row', $sql);
+            // The alias has to wrap the aggregate in a derived table. Putting
+            // AS new_row straight after GROUP BY is a syntax error on MySQL
+            // 8.0.19+, which is the branch this form runs on.
+            self::assertStringContainsString('SELECT * FROM (', $sql);
+            self::assertStringContainsString(') AS new_row', $sql);
             self::assertStringNotContainsString('VALUES(', $sql);
         }
+    }
+
+    public function testRollupRunsInOneTransaction(): void
+    {
+        $pdo = $this->recordingPdo('8.0.36');
+        $service = new AnalyticsService($pdo, $this->engine());
+        $service->rollup();
+
+        // The two merges and the delete commit together, so a half-finished
+        // run cannot leave raw rows behind and double count on the next run.
+        self::assertSame(1, $pdo->begins);
+        self::assertSame(1, $pdo->commits);
+        self::assertSame(0, $pdo->rollbacks);
     }
 
     public function testMariaDbKeepsValuesForm(): void
@@ -111,6 +128,12 @@ final class RecordingPdo extends PDO
 
     public int $versionProbes = 0;
 
+    public int $begins = 0;
+
+    public int $commits = 0;
+
+    public int $rollbacks = 0;
+
     public function __construct(string $serverVersion)
     {
         $this->serverVersion = $serverVersion;
@@ -120,6 +143,24 @@ final class RecordingPdo extends PDO
     {
         $this->versionProbes++;
         return $this->serverVersion;
+    }
+
+    public function beginTransaction(): bool
+    {
+        $this->begins++;
+        return true;
+    }
+
+    public function commit(): bool
+    {
+        $this->commits++;
+        return true;
+    }
+
+    public function rollBack(): bool
+    {
+        $this->rollbacks++;
+        return true;
     }
 
     public function prepare(string $query, array $options = []): PDOStatement|false

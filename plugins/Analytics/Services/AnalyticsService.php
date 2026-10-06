@@ -279,25 +279,36 @@ class AnalyticsService
         $cutoff = $this->cutoff($this->hotDays());
         $rowAlias = $this->supportsInsertSelectRowAlias();
 
-        $views = $this->pdo->prepare($this->viewsRollupSql($rowAlias));
-        $views->bindValue(':cutoff', $cutoff);
-        $views->execute();
+        // One transaction: the two merges and the delete either all land or
+        // none do. A merge that committed without the delete would leave the
+        // raw rows in place, and the next run would add their counts again.
+        $this->pdo->beginTransaction();
+        try {
+            $views = $this->pdo->prepare($this->viewsRollupSql($rowAlias));
+            $views->bindValue(':cutoff', $cutoff);
+            $views->execute();
 
-        $referrers = $this->pdo->prepare($this->referrersRollupSql($rowAlias));
-        $referrers->bindValue(':cutoff', $cutoff);
-        $referrers->execute();
+            $referrers = $this->pdo->prepare($this->referrersRollupSql($rowAlias));
+            $referrers->bindValue(':cutoff', $cutoff);
+            $referrers->execute();
 
-        $removed = 0;
-        $delete = $this->pdo->prepare(
-            'DELETE FROM analytics_page_views WHERE viewed_at < :cutoff LIMIT 5000'
-        );
-        $delete->bindValue(':cutoff', $cutoff);
+            $removed = 0;
+            $delete = $this->pdo->prepare(
+                'DELETE FROM analytics_page_views WHERE viewed_at < :cutoff LIMIT 5000'
+            );
+            $delete->bindValue(':cutoff', $cutoff);
 
-        do {
-            $delete->execute();
-            $count = $delete->rowCount();
-            $removed += $count;
-        } while ($count > 0);
+            do {
+                $delete->execute();
+                $count = $delete->rowCount();
+                $removed += $count;
+            } while ($count > 0);
+
+            $this->pdo->commit();
+        } catch (\Throwable $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
 
         return $removed;
     }
@@ -311,11 +322,12 @@ class AnalyticsService
     {
         if ($rowAlias) {
             return 'INSERT INTO analytics_views_daily (day, page_group, page_path, view_count)'
-                . ' SELECT DATE(viewed_at), page_group, page_path, COUNT(*)'
+                . ' SELECT * FROM ('
+                . ' SELECT DATE(viewed_at) AS day, page_group, page_path, COUNT(*) AS view_count'
                 . ' FROM analytics_page_views'
                 . ' WHERE viewed_at < :cutoff'
                 . ' GROUP BY DATE(viewed_at), page_group, page_path'
-                . ' AS new_row'
+                . ' ) AS new_row'
                 . ' ON DUPLICATE KEY UPDATE view_count = analytics_views_daily.view_count + new_row.view_count';
         }
         return 'INSERT INTO analytics_views_daily (day, page_group, page_path, view_count)'
@@ -333,13 +345,14 @@ class AnalyticsService
     {
         if ($rowAlias) {
             return 'INSERT INTO analytics_referrers_daily (day, referrer_domain, view_count)'
-                . ' SELECT DATE(viewed_at), referrer_domain, COUNT(*)'
+                . ' SELECT * FROM ('
+                . ' SELECT DATE(viewed_at) AS day, referrer_domain, COUNT(*) AS view_count'
                 . ' FROM analytics_page_views'
                 . ' WHERE viewed_at < :cutoff'
                 . " AND referrer_domain IS NOT NULL"
                 . " AND referrer_domain <> ''"
                 . ' GROUP BY DATE(viewed_at), referrer_domain'
-                . ' AS new_row'
+                . ' ) AS new_row'
                 . ' ON DUPLICATE KEY UPDATE view_count = analytics_referrers_daily.view_count + new_row.view_count';
         }
         return 'INSERT INTO analytics_referrers_daily (day, referrer_domain, view_count)'
@@ -405,7 +418,9 @@ class AnalyticsService
             fwrite($handle, $today);
             fflush($handle);
         } catch (\Throwable $e) {
-            // Never break page delivery on a rollup failure.
+            // Never break page delivery on a rollup failure, but leave a trail:
+            // a silent failure hides a dead rollup.
+            error_log('Analytics rollup failed: ' . $e->getMessage());
         } finally {
             flock($handle, LOCK_UN);
             fclose($handle);
@@ -436,30 +451,30 @@ class AnalyticsService
      */
     public function logView(): void
     {
-        if (php_sapi_name() === 'cli') {
-            return;
-        }
-
-        if (!$this->isTrackingEnabled()) {
-            return;
-        }
-
-        $request = $this->app->request();
-        if (!in_array($request->method, ['GET', 'HEAD'], true)) {
-            return;
-        }
-
-        $path = $this->normalizePath($request->url, $request->base);
-        if ($this->shouldSkip($path)) {
-            return;
-        }
-
-        $ua = trim((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
-        if ($this->isBot($ua)) {
-            return;
-        }
-
         try {
+            if (php_sapi_name() === 'cli') {
+                return;
+            }
+
+            if (!$this->isTrackingEnabled()) {
+                return;
+            }
+
+            $request = $this->app->request();
+            if (!in_array($request->method, ['GET', 'HEAD'], true)) {
+                return;
+            }
+
+            $path = $this->normalizePath($request->url, $request->base);
+            if ($this->shouldSkip($path)) {
+                return;
+            }
+
+            $ua = trim((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
+            if ($this->isBot($ua)) {
+                return;
+            }
+
             $model = new PageView($this->pdo);
             $model->page_path = $this->clip($path, 255) ?? '';
             $model->page_group = $this->clip($this->groupForPath($path), 50) ?? '';
@@ -467,7 +482,9 @@ class AnalyticsService
             $model->viewed_at = $this->now();
             $model->insert();
         } catch (\Throwable $e) {
-            // Never break page delivery due to analytics failure.
+            // Never break page delivery due to analytics failure. The guards
+            // run inside the try too, so a settings or request failure is a
+            // no-op rather than an error page.
         }
     }
 
