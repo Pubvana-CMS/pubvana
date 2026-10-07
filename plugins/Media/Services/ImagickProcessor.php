@@ -16,6 +16,9 @@ class ImagickProcessor implements ImageProcessorInterface
 
     public function resize(int $width): static
     {
+        if ($width < 1) {
+            throw new \InvalidArgumentException("Resize width must be at least 1, got {$width}");
+        }
         $origWidth  = $this->image->getImageWidth();
         $origHeight = $this->image->getImageHeight();
 
@@ -23,7 +26,7 @@ class ImagickProcessor implements ImageProcessorInterface
             return $this;
         }
 
-        $height = (int) round($origHeight * ($width / $origWidth));
+        $height = max(1, (int) round($origHeight * ($width / $origWidth)));
         $this->image->resizeImage($width, $height, \Imagick::FILTER_LANCZOS, 1);
 
         return $this;
@@ -31,6 +34,9 @@ class ImagickProcessor implements ImageProcessorInterface
 
     public function crop(int $x, int $y, int $width, int $height): static
     {
+        if ($width < 1 || $height < 1) {
+            throw new \InvalidArgumentException("Crop dimensions must be at least 1, got {$width}x{$height}");
+        }
         $this->image->cropImage($width, $height, $x, $y);
         $this->image->setImagePage(0, 0, 0, 0);
         return $this;

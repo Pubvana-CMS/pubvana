@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 - Avatar uploads write a new file name each time.
 
+### Fixed
+- A resize edit with no width returned a server error instead of a validation error.
+- A crop edit with a missing size returned a server error instead of a validation error.
+
 ### Removed
 - `deleteAvatarFile()`.
 
