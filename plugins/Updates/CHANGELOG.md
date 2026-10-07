@@ -5,6 +5,25 @@ All notable changes to the Updates plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] - 2026-10-07
+
+### Added
+- An applied update re-checks the release feed, polls trust for addons with a new version, and refreshes the Marketplace addon updates.
+
+### Changed
+- Applying from the admin applies the version shown on the button.
+- The skip list is shown while an update is available.
+
+### Fixed
+- Migrations did not run after an update.
+- A stopped update showed a progress bar that never finished.
+- The progress card could reload before an update started, or stop polling.
+- A second update could overwrite the running update's progress.
+- A release feed outage was reported as a failed PHP version check.
+- Migration failures and preflight warnings were not shown.
+- Site Health reported a failed check as "No recent update check".
+- The dashboard card and Site Health kept offering a version that was already applied.
+
 ## [0.3.1] - 2026-10-04
 
 ### Changed

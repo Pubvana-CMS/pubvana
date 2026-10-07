@@ -160,6 +160,22 @@ final class UpdateProgress
     }
 
     /**
+     * Delete the progress payload when no live process owns the run.
+     *
+     * A process killed mid-update leaves status 'in_progress' behind with no
+     * lock. The page surfaces that once as an interrupted run and then calls
+     * this, so it does not keep reporting a live update forever.
+     */
+    public function clearIfUnlocked(): void
+    {
+        if (self::isLockedInDir(dirname($this->progressFile))) {
+            return;
+        }
+
+        @unlink($this->progressFile);
+    }
+
+    /**
      * Begin a run with the full phase checklist.
      *
      * @param list<array{name: string, label: string}> $phases

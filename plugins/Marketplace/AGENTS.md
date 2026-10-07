@@ -12,7 +12,7 @@ Guidance for AI agents contributing to this plugin, the buy-side companion for t
 - **Namespace:** `Pubvana\Plugins\Marketplace` with `Controllers`, `Services`, `Models`, and `Database\Seeds` sub-namespaces
 - **Runtime dependencies:** Pubvana core (Engine, AdminController, PluginInterface, adext, settings, shield, sessions, CSRF), `enlivenapp/migrations`, curl with `file_get_contents` fallback
 - **One database table:** `marketplace_installs`. It is internal bookkeeping only. No user-facing key list is rendered from it.
-- **Config:** `Config/Config.php`: `routePrepend`, `store_url`, `api_timeout`, `catalog_cache_ttl`, `verify_days` (default 14), `revalidate_days`
+- **Config:** `Config/Config.php`: `routePrepend`, `store_url`, `api_timeout`, `verify_days` (default 14), `revalidate_days`
 - **Docs:** [README.md](./README.md)
 
 ## Project guidelines
@@ -36,7 +36,7 @@ plugins/Marketplace/
 ├── Plugin.php                            Entry point; maps 'marketplace' singleton, admin routes, dashboard card, Site Health check, 24h cron task
 ├── pubvana.json                          Manifest; admin.menu (Marketplace under tools)
 ├── README.md                             User-facing docs
-├── Config/Config.php                     routePrepend, store_url, api_timeout, catalog_cache_ttl, verify_days, revalidate_days, max_bytes, max_zip_bytes
+├── Config/Config.php                     routePrepend, store_url, api_timeout, verify_days, revalidate_days, max_bytes, max_zip_bytes
 ├── Controllers/
 │   └── MarketplaceAdminController.php    Admin: index, connect, disconnect, purchases, verify, addToCart, install, installFree, reinstallAll, cartOpen
 ├── Services/
@@ -76,7 +76,7 @@ Auth is a `Marketplace.account_token` setting sent as an `Authorization: Bearer`
 
 `installFromPackage($package)` is the cross-plugin entry: finds the record by `package_id` and runs `install()`. A package with no purchase record (or no license key) falls to the free path `installFreePackage()`, which requires the store catalog to list it free (is_free or scope none), downloads through the store free endpoint, then records the install via `trackFreeInstall()` so later checks see it as a store item. The Updates plugin's addon-update action calls `installFromPackage()` and nothing inside Marketplace internals.
 
-`checkAddonUpdates()` reads each installed addon's manifest identity live (manifest `name` + `semver`) and compares against catalog versions; results are keyed by package. `trackedPackages()` returns the package identities holding install records, so other surfaces (Updates) can label an addon Marketplace-sourced versus core-included. `unlicensedPackages()` returns catalog packages with no verified purchase record here, each flagged `free` (scope none: genuinely free items, disclosure-friendly) or not, for the Updates page's "Free" / "Not purchased" rows. Disclosure only, never enforcement. `freePackageVersions()` is the free counterpart to `checkAddonUpdates()`: latest store versions for free packages, so untracked free installs stay updatable for free. `refreshCatalog()` stamps the cached catalog stale so the next `items()` re-fetches; the Updates "Check all" button calls it.
+`checkAddonUpdates()` reads each installed addon's manifest identity live (manifest `name` + `semver`) and compares against catalog versions; results are keyed by package. `trackedPackages()` returns the package identities holding install records, so other surfaces (Updates) can label an addon Marketplace-sourced versus core-included. `unlicensedPackages()` returns catalog packages with no verified purchase record here, each flagged `free` (scope none: genuinely free items, disclosure-friendly) or not, for the Updates page's "Free" / "Not purchased" rows. Disclosure only, never enforcement. `freePackageVersions()` is the free counterpart to `checkAddonUpdates()`: latest store versions for free packages, so untracked free installs stay updatable for free. Nothing caches the catalog: every view and every check is the store's current answer, so there is no refresh call to make.
 
 `reinstallAll()` iterates purchases and reinstalls every licensed, non-`file` item already installed locally, reporting ok/skipped/failed counts.
 
@@ -120,7 +120,6 @@ php pubvana cron 24h                    # exercise the cron task (graceful when 
 |------|---------------|
 | Change the store URL | `store_url` in `Config/Config.php` |
 | Change the verification cadence | `verify_days` in `Config/Config.php`; enforced by `verifyIfDue()` at `Services/MarketplaceService.php:1165` |
-| Change catalog cache lifetime | `catalog_cache_ttl` in `Config/Config.php` |
 | Add an admin route | Admin route block in `Plugin.php` |
 | Change the install flow | `install()` at `Services/MarketplaceService.php:771` |
 | Change the cross-plugin install entry | `installFromPackage()` at `Services/MarketplaceService.php:625` |

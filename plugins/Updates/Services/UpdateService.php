@@ -351,6 +351,48 @@ class UpdateService
         $this->app->settings()->forget(self::SETTING_LAST_CHECK_AT);
     }
 
+    /**
+     * Bring the site's own checks current after an applied release.
+     *
+     * The copy changed what is installed, so three cached answers are wrong:
+     * the release check (it names the old version), the trust standings (a
+     * new addon version has no cache row), and the Marketplace addon-update
+     * reading. This re-runs all three.
+     *
+     * Best effort by design: a finished update must not be turned into a
+     * failed one by an unreachable feed, trust service, or Marketplace, so
+     * each step is isolated and its outcome reported in the result.
+     *
+     * @return array{check: bool, trust: bool, addons: bool}
+     */
+    public function refreshSiteState(): array
+    {
+        $done = ['check' => false, 'trust' => false, 'addons' => false];
+
+        try {
+            $this->check(true);
+            $done['check'] = true;
+        } catch (Throwable) {
+            // The check cache stays as it was; the next page read refreshes it.
+        }
+
+        try {
+            $this->app->trustClient()->ensureCacheForAll();
+            $done['trust'] = true;
+        } catch (Throwable) {
+            // Addons without an answer keep rendering as 'not checked'.
+        }
+
+        try {
+            $this->app->marketplace()->checkAddonUpdates();
+            $done['addons'] = true;
+        } catch (Throwable) {
+            // The Marketplace is optional; its rows render without it.
+        }
+
+        return $done;
+    }
+
     // ------------------------------------------------------------------
     // Automatic update chain
     // ------------------------------------------------------------------
@@ -370,6 +412,12 @@ class UpdateService
      */
     public function runAutoUpdateChain(?callable $onProgress = null, string $triggeredBy = 'cron'): array
     {
+        // A run in flight owns the progress file and the lock. Step aside
+        // instead of competing: this task repeats on the next cron tick.
+        if (UpdateProgress::isLockedInDir($this->storageDir())) {
+            return ['status' => 'noop', 'message' => 'An update is already running.', 'version' => null];
+        }
+
         try {
             $state = $this->check(true);
         } catch (\RuntimeException $e) {
@@ -415,10 +463,13 @@ class UpdateService
         }
 
         $progress = (new UpdateProgress($this->storageDir()))->read();
+        $reason   = is_array($progress) && !empty($progress['error'])
+            ? (string) $progress['error']
+            : 'the update could not start (another update may already be running)';
 
         return [
             'status'  => 'error',
-            'message' => 'Automatic update failed: ' . (string) ($progress['error'] ?? 'unknown error'),
+            'message' => 'Automatic update failed: ' . $reason,
             'version' => $target,
         ];
     }
@@ -508,15 +559,26 @@ class UpdateService
         try {
             $releases = $this->fetchReleases();
         } catch (\RuntimeException) {
-            // Handled by the min-PHP check below falling back to null.
+            // Reported as its own failing check below. The PHP floor is read
+            // from the feed, so it cannot be evaluated without one and is not
+            // blamed for a network failure.
         }
 
-        $checks[] = [
-            'name'   => 'PHP version',
-            'ok'     => self::phpVersionSatisfies($releases, $this->currentVersion(), $targetVersion),
-            'detail' => 'Running PHP ' . PHP_VERSION,
-            'hard'   => true,
-        ];
+        if ($releases === null) {
+            $checks[] = [
+                'name'   => 'Release feed',
+                'ok'     => false,
+                'detail' => 'The release feed could not be read, so the update cannot be validated.',
+                'hard'   => true,
+            ];
+        } else {
+            $checks[] = [
+                'name'   => 'PHP version',
+                'ok'     => self::phpVersionSatisfies($releases, $this->currentVersion(), $targetVersion),
+                'detail' => 'Running PHP ' . PHP_VERSION,
+                'hard'   => true,
+            ];
+        }
 
         $checks[] = [
             'name'   => 'Free disk space',

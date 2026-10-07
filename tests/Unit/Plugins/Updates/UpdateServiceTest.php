@@ -354,6 +354,43 @@ final class UpdateServiceTest extends TestCase
         self::assertFalse($byName['Command line execution']['hard']);
     }
 
+    public function testPreflightReportsAFeedFailureInsteadOfBlamingPhp(): void
+    {
+        $service = $this->chainService(null);
+
+        $checks = $service->preFlight('3.1.0', false);
+
+        $byName = [];
+        foreach ($checks as $check) {
+            $byName[$check['name']] = $check;
+        }
+
+        // The PHP floor comes from the feed, so without a feed there is no
+        // PHP check to fail: the feed failure is named as its own check.
+        self::assertFalse($byName['Release feed']['ok']);
+        self::assertTrue($byName['Release feed']['hard']);
+        self::assertArrayNotHasKey('PHP version', $byName);
+    }
+
+    // ------------------------------------------------------------------
+    // Post-apply refresh
+    // ------------------------------------------------------------------
+
+    public function testRefreshSiteStateRerunsTheCheckAndIsolatesFailures(): void
+    {
+        $settings = new UpdatesSettingsStub();
+        $service  = $this->chainService($this->feedBody('3.0.0'), [], null, $settings);
+
+        $done = $service->refreshSiteState();
+
+        self::assertTrue($done['check']);
+        self::assertArrayHasKey('Updates.lastCheckResult', $settings->store, 'the release check was persisted again');
+        // No trust client or Marketplace is mapped onto the stand-in engine,
+        // so both steps fail and are swallowed rather than thrown.
+        self::assertFalse($done['trust']);
+        self::assertFalse($done['addons']);
+    }
+
     // ------------------------------------------------------------------
     // Compatibility constraints in check state
     // ------------------------------------------------------------------

@@ -151,4 +151,20 @@ final class UpdatesReportingTest extends TestCase
         self::assertSame('pass', $result->status);
         self::assertSame('Pubvana 3.0.0-beta.3 is up to date.', $result->message);
     }
+
+    public function testHealthCheckReportsAFailedCheckWithItsReason(): void
+    {
+        [$adext] = $this->bootWith([
+            'status'          => 'error',
+            'current_version' => '3.0.0-beta.3',
+            'error'           => 'Could not fetch the release feed.',
+        ]);
+
+        $checks = $adext->get('health', 'checks');
+        $result = $checks['pubvana.updates']['callable']();
+
+        self::assertSame('warning', $result->status);
+        self::assertStringContainsString('Could not fetch the release feed.', $result->message);
+        self::assertNotSame('', $result->remediation);
+    }
 }

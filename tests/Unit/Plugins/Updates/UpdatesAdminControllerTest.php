@@ -182,11 +182,40 @@ final class UpdatesAdminControllerTest extends TestCase
         (new UpdatesAdminController($this->engine()))->status();
         self::assertSame([['status' => 'idle']], $this->jsons);
 
+        // A live run: the lock is held and the child has written progress.
         $this->jsons = [];
+        $holder = new UpdateProgress($this->lockedDir);
+        $holder->acquireLock();
+        $this->lockHolder = $holder;
         file_put_contents($this->lockedDir . '/update_progress.json', '{"status":"in_progress","step":2}');
 
         (new UpdatesAdminController($this->engine()))->status();
         self::assertSame([['status' => 'in_progress', 'step' => 2]], $this->jsons);
+    }
+
+    public function testStatusReportsAStartingRunBeforeProgressExists(): void
+    {
+        // Lock held, child still booting: the previous payload (or none)
+        // must not be served, and the poll must not stop.
+        $this->lock();
+
+        (new UpdatesAdminController($this->engine()))->status();
+
+        self::assertSame('in_progress', $this->jsons[0]['status']);
+        self::assertSame('Starting', $this->jsons[0]['phase_label']);
+    }
+
+    public function testStatusReportsAnAbandonedRunAsFailed(): void
+    {
+        // Lock released (process died) but the payload still claims a run.
+        $this->lockedDir = $this->tempDir();
+        $this->updates()->config['updates_path'] = $this->lockedDir;
+        file_put_contents($this->lockedDir . '/update_progress.json', '{"status":"in_progress","step":2}');
+
+        (new UpdatesAdminController($this->engine()))->status();
+
+        self::assertSame('error', $this->jsons[0]['status']);
+        self::assertStringContainsString('stopped', (string) $this->jsons[0]['error']);
     }
 
     public function testSettingsSavesAutoUpdate(): void

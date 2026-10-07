@@ -12,7 +12,9 @@
  * @var list<array{name: string, ok: bool, detail: string, hard: bool}> $preflight
  * @var array{themes: list<array<string, mixed>>, plugins: list<array<string, mixed>>, marketplaceConnected: bool} $addons
  * @var array<string, mixed>|null $progress  Live progress payload (null when none)
+ * @var bool                 $running       Whether a live run owns the lock
  * @var bool                 $is_locked      Whether an operation is running
+ * @var bool                 $interrupted    Whether a stopped process left a run behind
  * @var string               $changelog_url  Human changelog link
  * @var string               $adminBase      Full admin URL base for this plugin
  * @var bool                 $marketplaceConnected  Marketplace addon-update surface availability
@@ -36,7 +38,9 @@ $checked   = $checkedAt !== '' ? date('M j, Y g:ia', strtotime($checkedAt) ?: ti
 
 $hasUpdate   = $status === 'available' && $target !== '';
 $hasBreaking = $breaking !== [];
-$running     = is_array($progress) && (($progress['status'] ?? '') === 'in_progress');
+// The controller decides this from the lock, not from the payload alone: a
+// killed run leaves 'in_progress' behind with no holder.
+$running     = (bool) ($running ?? false);
 
 $allHardPass = true;
 foreach ($preflight as $preflightCheck) {
@@ -175,6 +179,18 @@ $renderSkipped = static function () use ($skipped, $adminBase): void {
 </div>
 <?php endif; ?>
 
+<?php if (!empty($interrupted)): ?>
+<div class="alert alert-warning" role="alert">
+    <div class="d-flex">
+        <div><i class="ti ti-alert-triangle icon alert-icon"></i></div>
+        <div>
+            <strong>The previous update did not finish.</strong>
+            A stopped process left its progress behind. Check the site, then apply the update again if it is needed.
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <!-- Granular progress -->
 <div id="update-progress" class="card mb-4" style="<?= $running ? '' : 'display:none;' ?>">
     <div class="card-body">
@@ -290,6 +306,8 @@ $renderSkipped = static function () use ($skipped, $adminBase): void {
         Skip this version
     </button>
 </form>
+
+<?= $renderSkipped() ?>
 
 <?php elseif ($status === 'up_to_date' && $cappedBy !== null): ?>
 <div class="alert alert-warning" role="alert">
@@ -533,21 +551,49 @@ foreach ($addonSections as $addonLabel => $addonRows): ?>
             if (data.status === 'in_progress') {
                 render(data);
                 timer = setTimeout(poll, 1000);
-            } else if (data.status === 'completed' || data.status === 'error') {
-                render(data);
-                if (data.status === 'completed') {
-                    bar.classList.remove('progress-bar-animated');
-                    bar.classList.add('bg-success');
-                    bar.style.width = '100%';
-                    label.textContent = 'Update complete. Reloading...';
-                } else {
-                    bar.classList.remove('progress-bar-animated');
-                    bar.classList.add('bg-danger');
-                    label.textContent = 'Update failed';
-                    detail.textContent = data.error || '';
-                }
-                setTimeout(function () { location.reload(); }, 2500);
+                return;
             }
+
+            if (data.status !== 'completed' && data.status !== 'error') {
+                // Neither running nor terminal (a stale or not-yet-written
+                // payload). Keep waiting instead of stopping silently.
+                timer = setTimeout(poll, 1000);
+                return;
+            }
+
+            render(data);
+
+            if (data.status === 'error') {
+                bar.classList.remove('progress-bar-animated');
+                bar.classList.add('bg-danger');
+                label.textContent = 'Update failed';
+                detail.textContent = data.error || '';
+                setTimeout(function () { location.reload(); }, 4000);
+                return;
+            }
+
+            bar.classList.remove('progress-bar-animated');
+
+            // A migration failure does not fail the update (the files are in
+            // place) but it needs the admin, so show it and stay put instead
+            // of reloading the message away.
+            var migrationsError = data.result && data.result.migrations_error;
+            if (migrationsError) {
+                bar.classList.add('bg-warning');
+                bar.style.width = '100%';
+                label.textContent = 'Update complete. Migrations need a manual run';
+                detail.textContent = migrationsError;
+                return;
+            }
+
+            var warnings = data.result && data.result.warnings;
+            bar.classList.add('bg-success');
+            bar.style.width = '100%';
+            label.textContent = 'Update complete. Reloading...';
+            if (warnings && warnings.length) {
+                detail.textContent = 'Warnings: ' + warnings.join('; ');
+            }
+            setTimeout(function () { location.reload(); }, 2500);
         }).catch(function () {
             timer = setTimeout(poll, 2000);
         });

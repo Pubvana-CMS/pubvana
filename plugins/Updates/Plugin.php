@@ -168,6 +168,15 @@ class Plugin implements PluginInterface
                 message: 'Version ' . ($state['target_version'] ?? 'newer') . ' is available.',
                 remediation: 'Apply it from Tools > Maintenance > Updates. A pre-update backup is taken automatically.'
             ),
+            'error' => new CheckResult(
+                id: 'pubvana-update',
+                name: 'Pubvana Updates',
+                category: CheckResult::CAT_PLUGINS,
+                status: CheckResult::WARNING,
+                message: 'The last update check failed: '
+                    . ((string) ($state['error'] ?? '') !== '' ? (string) $state['error'] : 'unknown error'),
+                remediation: 'Visit Tools > Maintenance > Updates and run a check.'
+            ),
             default => new CheckResult(
                 id: 'pubvana-update',
                 name: 'Pubvana Updates',

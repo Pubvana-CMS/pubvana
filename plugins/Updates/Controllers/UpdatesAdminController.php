@@ -39,9 +39,20 @@ final class UpdatesAdminController extends AdminController
             return;
         }
 
-        $service  = $this->service();
-        $progress = (new UpdateProgress($service->storageDir()))->read();
-        $running  = is_array($progress) && ($progress['status'] ?? '') === 'in_progress';
+        $service    = $this->service();
+        $progress   = (new UpdateProgress($service->storageDir()))->read();
+        $locked     = $this->isLocked();
+        $inProgress = is_array($progress) && ($progress['status'] ?? '') === 'in_progress';
+
+        // A run is live only while its lock is held. A killed process leaves
+        // 'in_progress' behind with a free lock, which the old check read as
+        // a live update and polled forever. Surface that once as an
+        // interrupted run, then clear the leftover payload.
+        $running     = $locked && $inProgress;
+        $interrupted = !$locked && $inProgress;
+        if ($interrupted) {
+            (new UpdateProgress($service->storageDir()))->clearIfUnlocked();
+        }
 
         $state = $service->lastCheck();
 
@@ -66,7 +77,7 @@ final class UpdatesAdminController extends AdminController
             && ((array) ($state['breaking_changes'] ?? []) === [])
             && ($state['capped_by'] ?? null) === null
             && $this->execAvailable()
-            && !$this->isLocked()
+            && !$locked
         ) {
             $this->startBackgroundAutoUpdate();
         }
@@ -129,7 +140,9 @@ final class UpdatesAdminController extends AdminController
             'preflight'            => $targetVersion !== '' ? $service->preFlight($targetVersion) : [],
             'addons'               => $addons,
             'progress'             => $progress,
-            'is_locked'            => $this->isLocked(),
+            'running'              => $running,
+            'is_locked'            => $locked,
+            'interrupted'          => $interrupted,
             'changelog_url'        => $this->changelogUrl(),
             'adminBase'            => $this->adminBase(),
             'marketplaceConnected' => $addons['marketplaceConnected'],
@@ -246,7 +259,9 @@ final class UpdatesAdminController extends AdminController
             return;
         }
 
-        if ($this->isLocked()) {
+        $locked = $this->isLocked();
+
+        if ($locked) {
             $this->app->json(['status' => 'error', 'message' => 'An update or backup operation is already in progress.']);
             return;
         }
@@ -273,9 +288,13 @@ final class UpdatesAdminController extends AdminController
         }
 
         if ($this->execAvailable()) {
+            // Pin the version the admin confirmed: the child re-checks the
+            // feed, so without --release a release published in between would
+            // be applied instead of the one on the button.
             $cmd = sprintf(
-                'php %s updates:apply --user %s > /dev/null 2>&1 &',
+                'php %s updates:apply --release %s --user %s > /dev/null 2>&1 &',
                 escapeshellarg(PROJECT_ROOT . '/pubvana'),
+                escapeshellarg($target),
                 escapeshellarg($by)
             );
             exec($cmd);
@@ -291,14 +310,17 @@ final class UpdatesAdminController extends AdminController
 
         if ($result) {
             $this->app->json(['status' => 'completed', 'method' => 'sync']);
-        } else {
-            $progress = (new UpdateProgress($this->service()->storageDir()))->read();
-            $this->app->json([
-                'status'  => 'error',
-                'method'  => 'sync',
-                'message' => (string) ($progress['error'] ?? 'The update failed.'),
-            ]);
+            return;
         }
+
+        $progress = (new UpdateProgress($this->service()->storageDir()))->read();
+        // apply() writes its own failure into the progress file while it holds
+        // the lock, so a missing error means it could not take the lock.
+        $message  = is_array($progress) && !empty($progress['error'])
+            ? (string) $progress['error']
+            : 'The update could not start. Another operation may be running.';
+
+        $this->app->json(['status' => 'error', 'method' => 'sync', 'message' => $message]);
     }
 
     /**
@@ -307,6 +329,37 @@ final class UpdatesAdminController extends AdminController
     public function status(): void
     {
         $progress = (new UpdateProgress($this->service()->storageDir()))->read();
+        $locked   = $this->isLocked();
+
+        // A backgrounded update writes its first progress line only after the
+        // process boots, so right after "started" the file can still hold the
+        // previous run's payload, or nothing at all. While the lock is held
+        // the run is live, so report a starting state instead of letting the
+        // poll act on a stale payload or stop.
+        if ($locked && (!is_array($progress) || ($progress['status'] ?? '') !== 'in_progress')) {
+            $this->app->json([
+                'status'      => 'in_progress',
+                'phase_label' => 'Starting',
+                'detail'      => '',
+                'percent'     => 0,
+                'phases'      => [],
+            ]);
+            return;
+        }
+
+        // The lock is gone but the payload still claims a run, so that
+        // process died. Report a failure and stop the poll.
+        if (!$locked && is_array($progress) && ($progress['status'] ?? '') === 'in_progress') {
+            $this->app->json([
+                'status'      => 'error',
+                'phase_label' => (string) ($progress['phase_label'] ?? 'Update'),
+                'detail'      => '',
+                'percent'     => (int) ($progress['percent'] ?? 0),
+                'phases'      => is_array($progress['phases'] ?? null) ? $progress['phases'] : [],
+                'error'       => 'The update process stopped before it finished.',
+            ]);
+            return;
+        }
 
         $this->app->json($progress ?? ['status' => 'idle']);
     }

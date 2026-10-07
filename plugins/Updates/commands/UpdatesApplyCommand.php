@@ -46,6 +46,14 @@ class UpdatesApplyCommand extends AbstractBaseCommand
         $service = new UpdateService(Flight::app(), $config);
         $apply   = new UpdateApplyService(Flight::app(), $config);
 
+        // Say why, instead of letting apply() fail silently: the losing
+        // competitor must not write into the running update's progress file.
+        if (UpdateProgress::isLockedInDir($service->storageDir())) {
+            $io->error('An update is already in progress.', true);
+
+            return 1;
+        }
+
         $target = trim((string) ($this->release ?? ''));
 
         if ($target === '') {

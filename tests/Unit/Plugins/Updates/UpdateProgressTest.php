@@ -165,6 +165,28 @@ final class UpdateProgressTest extends TestCase
         self::assertNull($this->reporter()->read());
     }
 
+    public function testClearIfUnlockedRemovesAnAbandonedPayload(): void
+    {
+        $reporter = $this->reporter();
+        $reporter->start(PhasesStub::phases());
+        self::assertNotNull($reporter->read());
+
+        $reporter->clearIfUnlocked();
+        self::assertNull($reporter->read(), 'a payload with no live holder is abandoned');
+    }
+
+    public function testClearIfUnlockedLeavesALiveRunAlone(): void
+    {
+        $reporter = $this->reporter();
+        self::assertTrue($reporter->acquireLock());
+        $reporter->start(PhasesStub::phases());
+
+        $reporter->clearIfUnlocked();
+        self::assertNotNull($reporter->read(), 'the holder is still writing progress');
+
+        $reporter->releaseLock();
+    }
+
     // ------------------------------------------------------------------
     // Helpers
     // ------------------------------------------------------------------

@@ -68,9 +68,17 @@ Repo-level companions for this feature: root `releases.json` (machine feed, per-
 
 ### Apply flow (8 phases, `UpdateApplyService::apply()`)
 
-Lock → preflight (PHP floor from `min_php_version` across the range, disk, writables, Backups availability) → backup via `$app->backups()->createBackup('pre-update', ...)` while holding the Backups lock → download with byte-level progress → validate + detect wrapper dir → extract to `writable/updates/extract` → copy everything except protected paths (dirs 0755, per-directory counts; the cached check is dropped here, because the installed version has changed) → migrate (`php pubvana migrate` subprocess, `MigrationSetup` in-process fallback; failure is reported, never fatal at this point) → cleanup (zip, extract dir, `writable/cache` clear) → `complete()` with a structured result.
+Lock → preflight (release feed, PHP floor from `min_php_version` across the range, disk, writables, Backups availability) → backup via `$app->backups()->createBackup('pre-update', ...)` while holding the Backups lock → download with byte-level progress → validate + detect wrapper dir → extract to `writable/updates/extract` → copy everything except protected paths (dirs 0755, per-directory counts; the cached check is dropped here, because the installed version has changed) → migrate (`php pubvana migrate:all` subprocess, `MigrationSetup` in-process fallback; failure is reported, never fatal at this point) → cleanup (zip, extract dir, `writable/cache` clear) → `refreshSiteState()` → `complete()` with a structured result.
 
-Migration failure does not abort the update: files are already in place, and the result carries `migrations_error` so the admin can run `php pubvana migrate` manually.
+`migrate` on its own is the migrations help command (it prints the sub-command list and exits 0), so the subprocess must use `migrate:all`. Using `migrate` reported success while running nothing.
+
+Migration failure does not abort the update: files are already in place, and the result carries `migrations_error` so the admin can run `php pubvana migrate:all` manually. The completion card shows it and does not auto-reload.
+
+### Post-apply refresh
+
+`UpdateService::refreshSiteState()` runs after a successful apply and re-runs the three cached answers that the copy made wrong: the release check (`check(true)`), the trust standings of addons that shipped a new version (`trustClient()->ensureCacheForAll()`, which checks only identities with no cache row), and the Marketplace addon-update reading (`marketplace()->checkAddonUpdates()`). Each step is isolated and best effort, so an unreachable feed, trust service, or Marketplace cannot turn a finished update into a failed one. Its outcome is reported in the completion result under `refresh`.
+
+A run in flight owns the lock and the progress file: a second `apply()` that cannot take the lock returns false without writing progress, and `updates:apply`, `runAutoUpdateChain()`, and the admin apply path each check the lock first and report the refusal themselves.
 
 ### Automatic chain
 

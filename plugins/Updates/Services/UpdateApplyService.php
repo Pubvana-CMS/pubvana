@@ -59,7 +59,10 @@ final class UpdateApplyService
         $reporter = new UpdateProgress($this->storageDir());
 
         if (!$reporter->acquireLock()) {
-            $reporter->error('An update is already in progress.');
+            // Another process owns the run, so the progress file belongs to
+            // it. Write nothing here: a losing competitor that stamped its
+            // own failure into that file would make the live update look
+            // failed. Callers check the lock first and report the refusal.
             return false;
         }
 
@@ -89,6 +92,13 @@ final class UpdateApplyService
             $migrationsError = $this->runMigrations($reporter);
             $newVersion      = $this->runCleanup($reporter, $zipPath);
 
+            // What is installed changed on disk, so every cached answer
+            // about it is wrong: the release check, the trust standings of
+            // addons that shipped a new version, and the Marketplace addon
+            // update reading. Bring them current before reporting done.
+            $reporter->detail('Refreshing update checks, trust standings, and caches');
+            $refresh = $this->updates->refreshSiteState();
+
             $reporter->complete([
                 'previous_version' => $this->updates->currentVersion(),
                 'new_version'      => $newVersion,
@@ -96,6 +106,7 @@ final class UpdateApplyService
                 'backup_file'      => basename($backupFile),
                 'migrations_error' => $migrationsError,
                 'warnings'         => $warnings,
+                'refresh'          => $refresh,
                 'finished_at'      => date('c'),
                 'triggered_by'     => $triggeredBy,
             ]);
@@ -352,11 +363,15 @@ final class UpdateApplyService
     /**
      * Run pending migrations for the freshly copied code.
      *
-     * Primary: a fresh `pubvana migrate` process (correct boot, sees new
+     * Primary: a fresh `pubvana migrate:all` process (correct boot, sees new
      * plugins). Fallback on no-exec hosts: the migrations package runner
      * in-process against the live module set. A migration failure does
      * not abort the update (files are already in place); it is reported
      * in the result so the admin can run migrations manually.
+     *
+     * `migrate` on its own is the migrations help command (it prints the
+     * sub-command list and exits 0), so it must never be used here: it would
+     * report success while running nothing.
      */
     private function runMigrations(UpdateProgress $reporter): ?string
     {
@@ -364,7 +379,7 @@ final class UpdateApplyService
 
         if ($this->execAvailable()) {
             $cmd = sprintf(
-                'cd %s && php %s migrate 2>&1',
+                'cd %s && php %s migrate:all 2>&1',
                 escapeshellarg($this->projectRoot()),
                 escapeshellarg($this->projectRoot() . '/pubvana')
             );
@@ -375,7 +390,7 @@ final class UpdateApplyService
                 return null;
             }
 
-            return 'pubvana migrate exited with code ' . $code . '. Run "php pubvana migrate" manually.';
+            return 'pubvana migrate:all exited with code ' . $code . '. Run "php pubvana migrate:all" manually.';
         }
 
         try {
@@ -388,7 +403,7 @@ final class UpdateApplyService
 
             return null;
         } catch (Throwable $e) {
-            return 'Migrations need a manual run ("php pubvana migrate"): ' . $e->getMessage();
+            return 'Migrations need a manual run ("php pubvana migrate:all"): ' . $e->getMessage();
         }
     }
 
