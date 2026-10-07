@@ -372,6 +372,10 @@ class AiService
             'redirects.create'       => ['method' => 'POST', 'path' => $base . '/redirects',             'group' => 'redirects',  'label' => 'Create redirects',     'summary' => 'Add a URL redirect rule.'],
             'redirects.update'       => ['method' => 'POST', 'path' => $base . '/redirects/{id}/update', 'group' => 'redirects',  'label' => 'Edit redirects',       'summary' => 'Change a redirect rule.'],
             'redirects.delete'       => ['method' => 'POST', 'path' => $base . '/redirects/{id}/delete', 'group' => 'redirects',  'label' => 'Delete redirects',     'summary' => 'Remove a redirect rule.'],
+            '404s.read'              => ['method' => 'GET',  'path' => $base . '/404s',                 'group' => '404s',       'label' => 'View 404 entries',     'summary' => 'See the incoming requests that 404ed, with the hit count and what the visitor asked for.'],
+            '404s.ignore'            => ['method' => 'POST', 'path' => $base . '/404s/{id}/ignore',     'group' => '404s',       'label' => 'Ignore 404 entries',   'summary' => 'Ignore a 404 entry or put it back, so it stops showing among the open ones.'],
+            '404s.delete'            => ['method' => 'POST', 'path' => $base . '/404s/{id}/delete',     'group' => '404s',       'label' => 'Delete 404 entries',   'summary' => 'Remove a 404 entry from the list.'],
+            '404s.resolve'           => ['method' => 'POST', 'path' => $base . '/404s/{id}/redirect',   'group' => '404s',       'label' => 'Redirect 404 entries', 'summary' => 'Send a 404 path to a new URL by creating a redirect rule and marking the entry resolved. Needs the redirects.create grant as well.'],
             'navigation.read'        => ['method' => 'GET',  'path' => $base . '/navigation',            'group' => 'navigation', 'label' => 'View navigation',      'summary' => 'See the site\'s menu items.'],
             'navigation.create'      => ['method' => 'POST', 'path' => $base . '/navigation',            'group' => 'navigation', 'label' => 'Add menu items',        'summary' => 'Create a navigation menu item.'],
             'navigation.update'      => ['method' => 'POST', 'path' => $base . '/navigation/{id}/update','group' => 'navigation', 'label' => 'Edit menu items',      'summary' => 'Change a navigation menu item.'],
@@ -837,6 +841,27 @@ class AiService
             'last_hit_at'   => $redirect->last_hit_at !== null ? (string) $redirect->last_hit_at : null,
             'created_at'    => (string) $redirect->created_at,
             'updated_at'    => (string) $redirect->updated_at,
+        ];
+    }
+
+    /**
+     * @param \Pubvana\Plugins\Redirects\Models\RedirectLink $entry
+     * @return array<string, mixed>
+     */
+    public function serializeRedirectLink($entry): array
+    {
+        return [
+            'id'                   => (int) $entry->id,
+            'source_path'          => (string) $entry->source_path,
+            'hit_count'            => (int) $entry->hit_count,
+            'ignored'              => (int) $entry->ignored === 1,
+            'resolved_redirect_id' => $entry->resolved_redirect_id !== null ? (int) $entry->resolved_redirect_id : null,
+            'resolved_at'          => $entry->resolved_at !== null ? (string) $entry->resolved_at : null,
+            'first_seen_at'        => $entry->first_seen_at !== null ? (string) $entry->first_seen_at : null,
+            'last_seen_at'         => $entry->last_seen_at !== null ? (string) $entry->last_seen_at : null,
+            'last_query_string'    => $entry->last_query_string !== null ? (string) $entry->last_query_string : null,
+            'last_referrer'        => $entry->last_referrer !== null ? (string) $entry->last_referrer : null,
+            'last_user_agent'      => $entry->last_user_agent !== null ? (string) $entry->last_user_agent : null,
         ];
     }
 

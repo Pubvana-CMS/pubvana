@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Pubvana\Plugins\AiAssistant;
 
 use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
+use Pubvana\Plugins\AiAssistant\Controllers\Ai404sApiController;
 use Pubvana\Plugins\AiAssistant\Controllers\AiAdminController;
 use Pubvana\Plugins\AiAssistant\Controllers\AiAnalyticsApiController;
 use Pubvana\Plugins\AiAssistant\Controllers\AiApiController;
@@ -131,6 +132,11 @@ class Plugin implements PluginInterface
             ['POST', $apiPrefix . '/redirects',                    [AiRedirectsApiController::class, 'createRedirect']],
             ['POST', $apiPrefix . '/redirects/@id/update',         [AiRedirectsApiController::class, 'updateRedirect']],
             ['POST', $apiPrefix . '/redirects/@id/delete',         [AiRedirectsApiController::class, 'deleteRedirect']],
+            ['GET',  $apiPrefix . '/404s',                         [Ai404sApiController::class, 'entries']],
+            ['POST', $apiPrefix . '/404s/@id/ignore',              [Ai404sApiController::class, 'ignoreEntry']],
+            ['POST', $apiPrefix . '/404s/@id/unignore',            [Ai404sApiController::class, 'unignoreEntry']],
+            ['POST', $apiPrefix . '/404s/@id/delete',              [Ai404sApiController::class, 'deleteEntry']],
+            ['POST', $apiPrefix . '/404s/@id/redirect',            [Ai404sApiController::class, 'createRedirect']],
             ['GET',  $apiPrefix . '/navigation',                   [AiNavigationApiController::class, 'navigation']],
             ['POST', $apiPrefix . '/navigation',                   [AiNavigationApiController::class, 'createNavigation']],
             ['POST', $apiPrefix . '/navigation/@id/update',        [AiNavigationApiController::class, 'updateNavigation']],

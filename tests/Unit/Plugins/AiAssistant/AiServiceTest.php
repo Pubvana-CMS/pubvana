@@ -332,6 +332,10 @@ final class AiServiceTest extends TestCase
         self::assertArrayHasKey('brokenlinks.recheck', $catalog);
         self::assertArrayHasKey('brokenlinks.dismiss', $catalog);
         self::assertArrayHasKey('analytics.read', $catalog);
+        self::assertArrayHasKey('404s.read', $catalog);
+        self::assertArrayHasKey('404s.ignore', $catalog);
+        self::assertArrayHasKey('404s.delete', $catalog);
+        self::assertArrayHasKey('404s.resolve', $catalog);
         self::assertStringContainsString('/api/ai', $catalog['posts.read']['path']);
 
         $groups = $service->helpGroups();
@@ -341,6 +345,8 @@ final class AiServiceTest extends TestCase
         self::assertArrayHasKey('brokenlinks.read', $groups['brokenlinks']);
         self::assertArrayHasKey('analytics', $groups);
         self::assertArrayHasKey('analytics.read', $groups['analytics']);
+        self::assertArrayHasKey('404s', $groups);
+        self::assertArrayHasKey('404s.read', $groups['404s']);
     }
 
     public function testSerializers(): void

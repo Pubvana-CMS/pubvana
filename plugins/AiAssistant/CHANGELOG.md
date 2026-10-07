@@ -5,6 +5,12 @@ All notable changes to the AI Assistant plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.15] - 2026-10-07
+
+### Added
+- 404 management over the API: list the tracked 404s, ignore or unignore one, delete one, and send a 404 path to a new URL.
+- Grants `404s.read`, `404s.ignore`, `404s.delete`, and `404s.resolve`. Resolving a 404 also needs `redirects.create`.
+
 ## [0.3.14] - 2026-10-06
 
 ### Changed

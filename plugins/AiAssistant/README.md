@@ -8,6 +8,7 @@ The AI Assistant lets an AI assistant you trust create and manage content on you
 - Browse and search posts and pages (drafts included) so it can find what to work on
 - Moderate comments
 - Manage redirects
+- Triage the 404s the site has collected, turning them into redirects
 - Keep navigation menus tidy
 - Fact check posts and pages, on your terms
 
