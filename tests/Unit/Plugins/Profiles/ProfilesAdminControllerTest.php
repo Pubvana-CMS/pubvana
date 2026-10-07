@@ -29,6 +29,10 @@ final class ProfilesAdminControllerTest extends TestCase
     public array $redirects = [];
     /** @var array<string, list<string>> */
     public array $flashes = [];
+    /** @var list<array{0: int, 1: string}> */
+    public array $avatarSweeps = [];
+    /** @var list<string> */
+    public array $legacyDeletes = [];
     public int $currentUserId = 7;
     public bool $canEditAny = false;
 
@@ -40,6 +44,8 @@ final class ProfilesAdminControllerTest extends TestCase
         $this->fetches = [];
         $this->redirects = [];
         $this->flashes = [];
+        $this->avatarSweeps = [];
+        $this->legacyDeletes = [];
         $this->currentUserId = 7;
         $this->canEditAny = false;
     }
@@ -146,7 +152,7 @@ final class ProfilesAdminControllerTest extends TestCase
         $app = $this->engine(data: ['display_name' => 'Ada', 'website' => 'javascript:alert(1)']);
         (new ProfilesAdminController($app))->update('7');
 
-        self::assertSame('Website must be a full http:// or https:// URL.', $this->flashes['error'][0]);
+        self::assertSame('Website, Twitter, Facebook and LinkedIn must be full http:// or https:// URLs.', $this->flashes['error'][0]);
         self::assertSame(['/admin/profile'], $this->redirects);
         self::assertArrayNotHasKey('success', $this->flashes);
 
@@ -162,6 +168,21 @@ final class ProfilesAdminControllerTest extends TestCase
         (new ProfilesAdminController($app))->update('7');
 
         self::assertSame(['/admin/users/7/edit'], $this->redirects);
+    }
+
+    public function testUpdateSweepsAvatarFilesTheRowNoLongerPointsAt(): void
+    {
+        (new Profile($this->pdo))->updateProfile(7, ['avatar' => 'uploads/avatars/7-old.webp']);
+
+        $app = $this->engine(data: ['avatar' => '']);
+        (new ProfilesAdminController($app))->update('7');
+
+        self::assertSame([[7, '']], $this->avatarSweeps);
+        self::assertSame(['uploads/avatars/7-old.webp'], $this->legacyDeletes);
+
+        $profile = (new Profile($this->pdo))->findByUserId(7);
+        self::assertNotNull($profile);
+        self::assertNull($profile->avatar);
     }
 
     /**
@@ -228,10 +249,24 @@ final class ProfilesAdminControllerTest extends TestCase
                     };
                 }
             },
-            'media' => static fn(): object => new class {
+            'media' => static fn(): object => new class($test) {
+                public function __construct(private ProfilesAdminControllerTest $t)
+                {
+                }
+
                 public function avatarPicker(string $field, string $value): string
                 {
                     return 'AVATAR';
+                }
+
+                public function sweepAvatars(int $userId, string $keep = ''): void
+                {
+                    $this->t->avatarSweeps[] = [$userId, $keep];
+                }
+
+                public function deleteLegacyAvatar(int $userId, string $oldPath): void
+                {
+                    $this->t->legacyDeletes[] = $oldPath;
                 }
             },
             'pluginLoader' => static fn(): object => new class {

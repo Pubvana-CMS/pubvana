@@ -110,6 +110,22 @@ final class PluginLoaderTest extends TestCase
         self::assertSame('pubvana/alpha', $info['manifest']['name']);
     }
 
+    public function testEveryBundledPluginManifestIsValidJson(): void
+    {
+        // A manifest that fails json_decode() is skipped whole by
+        // discoverLocal(), so the plugin silently never loads and every route
+        // and block it registers disappears. Keep the shipped manifests
+        // parseable.
+        $manifests = glob(PROJECT_ROOT . '/plugins/*/pubvana.json') ?: [];
+        self::assertNotEmpty($manifests);
+
+        foreach ($manifests as $manifest) {
+            $decoded = json_decode((string) file_get_contents($manifest), true);
+            self::assertIsArray($decoded, "{$manifest} is not valid JSON: " . json_last_error_msg());
+            self::assertArrayHasKey('name', $decoded, "{$manifest} has no name key");
+        }
+    }
+
     public function testDiscoverLocalSkipsFoldersWithoutValidManifests(): void
     {
         mkdir($this->tmpRoot . '/plugins/no-manifest', 0777, true);

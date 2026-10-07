@@ -35,10 +35,6 @@ final class ProfilesAvatarEndpointTest extends TestCase
     public array $redirects = [];
     /** @var array<string, list<string>> */
     public array $flashes = [];
-    /** @var list<array{userId: int, path: string}> */
-    public array $legacyDeletes = [];
-    /** @var list<string> */
-    public array $fileDeletes = [];
     public ?int $currentUserId = null;
     public bool $canEditAny = false;
     /** @var array<string, mixed>|null */
@@ -55,8 +51,6 @@ final class ProfilesAvatarEndpointTest extends TestCase
         $this->halts = [];
         $this->redirects = [];
         $this->flashes = [];
-        $this->legacyDeletes = [];
-        $this->fileDeletes = [];
         $this->currentUserId = null;
         $this->canEditAny = false;
         $this->uploadedFile = null;
@@ -132,7 +126,6 @@ final class ProfilesAvatarEndpointTest extends TestCase
         (new ProfilesAdminController($this->adminEngine()))->avatar('7');
 
         self::assertSame(400, $this->jsons[0]['code']);
-        self::assertSame([], $this->fileDeletes, 'nothing is stored or cleaned up');
     }
 
     public function testAdminAvatarRejectsAFailedUploadCode(): void
@@ -164,7 +157,7 @@ final class ProfilesAvatarEndpointTest extends TestCase
         self::assertArrayHasKey('error', $this->jsons[0]['data']);
     }
 
-    public function testAdminAvatarDeletesThePreviousAvatarFile(): void
+    public function testAdminAvatarLeavesTheStoredRowAlone(): void
     {
         $this->pdo->exec("INSERT INTO users (id, username, active) VALUES (7, 'ada', 1)");
         $this->currentUserId = 7;
@@ -173,22 +166,11 @@ final class ProfilesAvatarEndpointTest extends TestCase
 
         (new ProfilesAdminController($this->adminEngine()))->avatar('7');
 
-        self::assertSame(['uploads/avatars/7-old.webp'], $this->fileDeletes);
-        self::assertSame([], $this->legacyDeletes);
-    }
-
-    public function testAdminAvatarFallsBackToLegacyCleanupForALibraryPath(): void
-    {
-        $this->pdo->exec("INSERT INTO users (id, username, active) VALUES (7, 'ada', 1)");
-        $this->currentUserId = 7;
-        $this->uploadedFile = $this->validUpload();
-        (new Profile($this->pdo))->updateProfile(7, ['avatar' => 'uploads/2026/01/old.png']);
-
-        (new ProfilesAdminController($this->adminEngine()))->avatar('7');
-
-        // deleteAvatarFile() refuses a non-avatar path, so the legacy sweep runs.
-        self::assertSame(['uploads/2026/01/old.png'], $this->fileDeletes);
-        self::assertSame([['userId' => 7, 'path' => 'uploads/2026/01/old.png']], $this->legacyDeletes);
+        // The upload stores the file but leaves the row alone: saving the form
+        // is what makes a stored file live.
+        $profile = (new Profile($this->pdo))->findByUserId(7);
+        self::assertNotNull($profile);
+        self::assertSame('uploads/avatars/7-old.webp', $profile->avatar);
     }
 
     // -----------------------------------------------------------------
@@ -258,7 +240,7 @@ final class ProfilesAvatarEndpointTest extends TestCase
         self::assertSame(422, $this->jsons[0]['code']);
     }
 
-    public function testPublicAvatarDeletesThePreviousAvatarFile(): void
+    public function testPublicAvatarLeavesTheStoredRowAlone(): void
     {
         $this->pdo->exec("INSERT INTO users (id, username, active) VALUES (7, 'ada', 1)");
         $this->currentUserId = 7;
@@ -267,7 +249,11 @@ final class ProfilesAvatarEndpointTest extends TestCase
 
         (new ProfilesPublicController($this->publicEngine()))->avatar('7');
 
-        self::assertSame(['uploads/avatars/7-old.webp'], $this->fileDeletes);
+        // The upload stores the file but leaves the row alone: saving the form
+        // is what makes a stored file live.
+        $profile = (new Profile($this->pdo))->findByUserId(7);
+        self::assertNotNull($profile);
+        self::assertSame('uploads/avatars/7-old.webp', $profile->avatar);
     }
 
     // -----------------------------------------------------------------
@@ -318,18 +304,6 @@ final class ProfilesAvatarEndpointTest extends TestCase
                 }
 
                 return $this->t->storedPath;
-            }
-
-            public function deleteAvatarFile(string $relativePath): bool
-            {
-                $this->t->fileDeletes[] = $relativePath;
-
-                return str_starts_with($relativePath, 'uploads/avatars/');
-            }
-
-            public function deleteLegacyAvatar(int $userId, string $oldPath): void
-            {
-                $this->t->legacyDeletes[] = ['userId' => $userId, 'path' => $oldPath];
             }
         };
     }

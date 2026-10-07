@@ -106,9 +106,10 @@ class ProfileBlockService
         return [
             'author' => [
                 'name'          => $profile->display_name !== null ? $profile->display_name : $username,
-                'username'      => $username,
                 'url'           => $profilesPrefix . '/' . $authorId,
                 'bio'           => $profile->bio,
+                'job_title'     => $profile->job_title,
+                'works_for'     => $profile->works_for,
                 'avatar_url'    => $avatarUrl,
                 'safe_website'  => $safeWebsite,
                 'twitter_url'   => $this->safeUrl($profile->twitter ?? null),

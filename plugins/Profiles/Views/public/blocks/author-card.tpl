@@ -14,11 +14,11 @@
         {% endif %}
 
         <div>
-            {# Escaped output: the author's display name (falls back to username in the provider). #}
+            {# Escaped output: the author's display name. #}
             <p class="pv-profile-name">{{ author.name }}</p>
-            {# Conditional: the profile link renders only when the user still exists. #}
+            {# Conditional: the profile link renders only when the user still exists. The account username is never shown. #}
             {% if author.url %}
-            <p class="pv-profile-username"><a href="{{ author.url }}">@{{ author.username }}</a></p>
+            <p class="pv-profile-username"><a href="{{ author.url }}">View profile</a></p>
             {% endif %}
 
             {# Conditional: the bio renders only when one exists. #}

@@ -124,8 +124,6 @@ class ProfilesPublicController extends PublicController
             return;
         }
 
-        $oldPath = (string) ($this->app->profiles()->findOrCreate((int) $user->id)->avatar ?? '');
-
         try {
             $path = $this->app->media()->storeAvatar((int) $user->id, $file);
         } catch (\InvalidArgumentException $e) {
@@ -133,14 +131,9 @@ class ProfilesPublicController extends PublicController
             return;
         }
 
-        // One image per user: drop the previous file, including a legacy
-        // path that points into the shared media library.
-        if ($oldPath !== '' && $oldPath !== $path) {
-            if (!$this->app->media()->deleteAvatarFile($oldPath)) {
-                $this->app->media()->deleteLegacyAvatar((int) $user->id, $oldPath);
-            }
-        }
-
+        // The file becomes live when the form is saved: update() removes the
+        // files the row stops pointing at, so an abandoned form cannot leave
+        // the row pointing at a deleted file.
         $url = '/' . ltrim($path, '/');
         $this->app->json(['success' => true, 'url' => $url, 'path' => $path]);
     }
@@ -190,13 +183,41 @@ class ProfilesPublicController extends PublicController
         $post = $this->app->request()->data->getData();
         unset($post['_csrf_token']);
 
-        if ($this->app->profiles()->updateProfile((int) $user->id, $post) === null) {
-            $this->app->session()->flash('danger', 'Website must be a full http:// or https:// URL.');
+        $previousAvatar = (string) ($this->app->profiles()->findOrCreate((int) $user->id)->avatar ?? '');
+
+        $updated = $this->app->profiles()->updateProfile((int) $user->id, $post);
+        if ($updated === null) {
+            $this->app->session()->flash('danger', 'Website, Twitter, Facebook and LinkedIn must be full http:// or https:// URLs.');
             $this->app->redirect($profileUrl . '/edit');
             return;
         }
 
+        $this->removeUnusedAvatar((int) $user->id, $previousAvatar, (string) ($updated->avatar ?? ''));
+
+        $this->app->session()->flash('success', 'Profile updated.');
         $this->app->redirect($profileUrl);
+    }
+
+    /**
+     * Delete the stored avatar files the profile row no longer points at.
+     *
+     * The row is the record of the live file, so this runs after a save. It
+     * sweeps the user's other avatar files, which covers the previous file
+     * and any upload replaced before the form was saved. A previous path
+     * outside the avatar directory points into the media library, which the
+     * sweep does not touch.
+     */
+    private function removeUnusedAvatar(int $userId, string $previous, string $current): void
+    {
+        try {
+            $this->app->media()->sweepAvatars($userId, $current);
+
+            if ($previous !== '' && $previous !== $current) {
+                $this->app->media()->deleteLegacyAvatar($userId, $previous);
+            }
+        } catch (\Throwable) {
+            // Media plugin disabled: no stored avatar to remove.
+        }
     }
 
     /**

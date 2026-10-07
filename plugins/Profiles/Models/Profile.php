@@ -110,7 +110,8 @@ class Profile extends \Pubvana\Models\AbstractModel
                 return false;
             }
 
-            $this->$field = trim((string) $data[$field]) ?: null;
+            $value = trim((string) $data[$field]);
+            $this->$field = $value === '' ? null : $value;
         }
         $this->updated_at = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
         $this->save();

@@ -28,10 +28,14 @@ final class ProfilesPublicWebsiteGuardTest extends TestCase
         );
 
         self::assertStringContainsString(
-            "flash('danger', 'Website must be a full http:// or https:// URL.')",
+            "flash('danger', 'Website, Twitter, Facebook and LinkedIn must be full http:// or https:// URLs.')",
             $src
         );
-        self::assertStringContainsString("updateProfile((int) \$user->id, \$post) === null", $src);
+        self::assertStringContainsString(
+            '$updated = $this->app->profiles()->updateProfile((int) $user->id, $post);',
+            $src
+        );
+        self::assertStringContainsString('if ($updated === null) {', $src);
         self::assertStringNotContainsString("/' . \$username . '/update'", $src);
     }
 

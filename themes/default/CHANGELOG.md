@@ -5,6 +5,17 @@ All notable changes to the Default theme will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.4.30] - 2026-10-07
+
+### Added
+- Job title and employer on the Author Card and the profile page.
+
+### Fixed
+- The Author Card showed no avatar.
+- The Author Card printed its heading on a page with no author.
+- The Author Card and the profile page showed the account username.
+- The Author Card had no social links.
+
 ## [1.4.29] - 2026-10-06
 
 ### Fixed

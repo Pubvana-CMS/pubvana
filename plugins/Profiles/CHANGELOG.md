@@ -5,6 +5,20 @@ All notable changes to the Profiles plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.1] - 2026-10-07
+
+### Added
+- Job title and employer fields on the admin profile form.
+
+### Fixed
+- The plugin did not load because `pubvana.json` had a trailing comma.
+- The Author Card carried the account username.
+- Removing an avatar left its file on disk.
+- Uploading an avatar deleted the previous file before the form was saved.
+- A rejected save named the website field for any of the four links.
+- A profile field holding "0" was stored as empty.
+- The profile pages raised an error when the Media plugin was disabled.
+
 ## [0.3.0] - 2026-09-30
 
 ### Added

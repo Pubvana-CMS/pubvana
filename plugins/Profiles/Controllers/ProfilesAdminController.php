@@ -18,11 +18,17 @@ class ProfilesAdminController extends AdminController
         }
 
         $profile = $this->app->profiles()->findOrCreate((int) $user->id);
-        $avatarPicker = $this->app->media()->avatarPicker(
-            'avatar',
-            (string) ($profile->avatar ?? ''),
-            $this->adminBase() . '/' . (int) $user->id . '/avatar'
-        );
+
+        try {
+            $avatarPicker = $this->app->media()->avatarPicker(
+                'avatar',
+                (string) ($profile->avatar ?? ''),
+                $this->adminBase() . '/' . (int) $user->id . '/avatar'
+            );
+        } catch (\Throwable) {
+            // Media plugin disabled: the form renders without a picker.
+            $avatarPicker = '';
+        }
 
         $this->render('pubvana/profiles/admin/profile/index', [
             'pageTitle'    => 'My Profile',
@@ -56,12 +62,18 @@ class ProfilesAdminController extends AdminController
             return;
         }
 
-        $profile    = $this->app->profiles()->findOrCreate((int) $userId);
-        $avatarPicker = $this->app->media()->avatarPicker(
-            'avatar',
-            (string) ($profile->avatar ?? ''),
-            $this->adminBase() . '/' . (int) $userId . '/avatar'
-        );
+        $profile = $this->app->profiles()->findOrCreate((int) $userId);
+
+        try {
+            $avatarPicker = $this->app->media()->avatarPicker(
+                'avatar',
+                (string) ($profile->avatar ?? ''),
+                $this->adminBase() . '/' . (int) $userId . '/avatar'
+            );
+        } catch (\Throwable) {
+            // Media plugin disabled: the form renders without a picker.
+            $avatarPicker = '';
+        }
 
         $this->render('pubvana/profiles/admin/profile/index', [
             'pageTitle'    => 'Edit Profile — ' . htmlspecialchars((string) ($user->username ?? '')),
@@ -86,11 +98,16 @@ class ProfilesAdminController extends AdminController
         $postedReturn = isset($post['return_url']) ? (string) $post['return_url'] : null;
         unset($post['_csrf_token'], $post['return_url']);
 
-        if ($this->app->profiles()->updateProfile((int) $userId, $post) === null) {
-            $this->app->session()->flash('error', 'Website must be a full http:// or https:// URL.');
+        $previousAvatar = (string) ($this->app->profiles()->findOrCreate((int) $userId)->avatar ?? '');
+
+        $updated = $this->app->profiles()->updateProfile((int) $userId, $post);
+        if ($updated === null) {
+            $this->app->session()->flash('error', 'Website, Twitter, Facebook and LinkedIn must be full http:// or https:// URLs.');
             $this->app->redirect($this->app->url()->sameSite($postedReturn, $this->adminBase()));
             return;
         }
+
+        $this->removeUnusedAvatar((int) $userId, $previousAvatar, (string) ($updated->avatar ?? ''));
 
         $this->app->session()->flash('success', 'Profile updated.');
         $this->app->redirect($this->app->url()->sameSite($postedReturn, $this->adminBase()));
@@ -115,8 +132,6 @@ class ProfilesAdminController extends AdminController
             return;
         }
 
-        $oldPath = (string) ($this->app->profiles()->findOrCreate((int) $userId)->avatar ?? '');
-
         try {
             $path = $this->app->media()->storeAvatar((int) $userId, $file);
         } catch (\InvalidArgumentException $e) {
@@ -124,14 +139,9 @@ class ProfilesAdminController extends AdminController
             return;
         }
 
-        // One image per user: drop the previous file, including a legacy
-        // path that points into the shared media library.
-        if ($oldPath !== '' && $oldPath !== $path) {
-            if (!$this->app->media()->deleteAvatarFile($oldPath)) {
-                $this->app->media()->deleteLegacyAvatar((int) $userId, $oldPath);
-            }
-        }
-
+        // The file becomes live when the form is saved: update() removes the
+        // files the row stops pointing at, so an abandoned form cannot leave
+        // the row pointing at a deleted file.
         $url = '/' . ltrim($path, '/');
         $this->app->json(['success' => true, 'url' => $url, 'path' => $path]);
     }
@@ -160,6 +170,28 @@ class ProfilesAdminController extends AdminController
         return (int) $file['error'] === UPLOAD_ERR_OK
             && is_string($file['tmp_name'])
             && $file['tmp_name'] !== '';
+    }
+
+    /**
+     * Delete the stored avatar files the profile row no longer points at.
+     *
+     * The row is the record of the live file, so this runs after a save. It
+     * sweeps the user's other avatar files, which covers the previous file
+     * and any upload replaced before the form was saved. A previous path
+     * outside the avatar directory points into the media library, which the
+     * sweep does not touch.
+     */
+    private function removeUnusedAvatar(int $userId, string $previous, string $current): void
+    {
+        try {
+            $this->app->media()->sweepAvatars($userId, $current);
+
+            if ($previous !== '' && $previous !== $current) {
+                $this->app->media()->deleteLegacyAvatar($userId, $previous);
+            }
+        } catch (\Throwable) {
+            // Media plugin disabled: no stored avatar to remove.
+        }
     }
 
     private function adminBase(): string

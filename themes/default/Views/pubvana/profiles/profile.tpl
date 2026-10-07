@@ -3,13 +3,20 @@
     <div class="pv-profile-header">
         {# Conditional: avatar renders only when the user uploaded one (Media plugin). #}
         {% if avatar_url %}
-        <img src="{{ avatar_url }}" class="pv-profile-avatar" alt="{{ user.username }}" width="80" height="80">
+        <img src="{{ avatar_url }}" class="pv-profile-avatar" alt="{{ profile.display_name }}" width="80" height="80">
         {% endif %}
         <div>
-            {# Filter: default() falls back to the username when no display name is set. #}
-            <h1 class="pv-profile-name">{{ profile.display_name | default(user.username) }}</h1>
-            {# Escaped output: the handle. #}
-            <p class="pv-profile-username">@{{ user.username }}</p>
+            {# Escaped output: the profile's display name. The account username is never shown. #}
+            {% if profile.display_name %}
+            <h1 class="pv-profile-name">{{ profile.display_name }}</h1>
+            {% endif %}
+            {# Escaped output: role and employer, when set. #}
+            {% if profile.job_title %}
+            <p class="pv-profile-meta">{{ profile.job_title }}</p>
+            {% endif %}
+            {% if profile.works_for %}
+            <p class="pv-profile-meta">{{ profile.works_for }}</p>
+            {% endif %}
         </div>
     </div>
 

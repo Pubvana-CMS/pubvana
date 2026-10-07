@@ -531,12 +531,15 @@ class MediaService
     /**
      * Store one square avatar per user and return its relative path.
      *
-     * The filename comes from the user id, so a replacement overwrites the
-     * previous file and nothing accumulates. Avatars live outside the media
-     * library: no `media` row, no originals, no derivatives.
+     * The filename carries a per-upload token, {user id}-{token}.webp, so a
+     * replacement gets a fresh URL. A constant name meant every replacement
+     * landed on the same URL and browsers served the previous image from
+     * cache. Nothing is removed here: the row is the record of the live file,
+     * and sweepAvatars() runs when the form is saved. Avatars live outside
+     * the media library: no `media` row, no originals, no derivatives.
      *
      * @param array{name: string, type: string, tmp_name: string, error: int, size: int} $file $_FILES entry
-     * @return string Relative path, e.g. 'uploads/avatars/7.webp'
+     * @return string Relative path, e.g. 'uploads/avatars/7-9f3c1a2b4d5e6f70.webp'
      * @throws \InvalidArgumentException When the upload fails validation.
      */
     public function storeAvatar(int $userId, array $file): string
@@ -551,7 +554,8 @@ class MediaService
         $absDir = $this->publicPath . '/' . $relDir;
         $this->ensureDirectory($absDir);
 
-        $relPath = $relDir . '/' . $userId . '.webp';
+        $token   = bin2hex(random_bytes(8));
+        $relPath = $relDir . '/' . $userId . '-' . $token . '.webp';
         $absPath = $this->publicPath . '/' . $relPath;
 
         $size    = (int) ($this->config['avatar_size'] ?? 256);
@@ -572,23 +576,37 @@ class MediaService
     }
 
     /**
-     * Delete a user's stored avatar file. Returns true when a file was
-     * removed. Only paths under the avatar directory are touched, so a
-     * stray value can never delete a library file.
+     * Delete a user's stored avatar files, except the one still in use.
+     *
+     * Each upload lands on a fresh name, so files can pile up when a form is
+     * saved after more than one pick. The row is the record of the live file:
+     * the caller passes its path as $keepRelativePath and the user's other
+     * files go. Only the avatar directory is touched, so a stray value cannot
+     * delete a library file.
+     *
+     * @param int    $userId           Owner
+     * @param string $keepRelativePath Path to keep, or '' to remove them all
      */
-    public function deleteAvatarFile(string $relativePath): bool
+    public function sweepAvatars(int $userId, string $keepRelativePath = ''): void
     {
-        $prefix = (string) ($this->config['avatar_path'] ?? 'uploads/avatars') . '/';
-        if ($relativePath === '' || !str_starts_with($relativePath, $prefix)) {
-            return false;
+        if ($userId <= 0) {
+            return;
         }
 
-        $abs = $this->publicPath . '/' . ltrim($relativePath, '/');
-        if (!is_file($abs)) {
-            return false;
-        }
+        $relDir = (string) ($this->config['avatar_path'] ?? 'uploads/avatars');
+        $absDir = $this->publicPath . '/' . $relDir;
+        $keep   = $keepRelativePath === ''
+            ? ''
+            : $this->publicPath . '/' . ltrim($keepRelativePath, '/');
 
-        return unlink($abs);
+        $candidates   = glob($absDir . '/' . $userId . '-*.webp') ?: [];
+        $candidates[] = $absDir . '/' . $userId . '.webp';
+
+        foreach ($candidates as $file) {
+            if ($file !== $keep && is_file($file)) {
+                @unlink($file);
+            }
+        }
     }
 
     /**

@@ -63,6 +63,18 @@
                         <div class="form-hint">Full URL, e.g. https://linkedin.com/in/username</div>
                     </div>
 
+                    <div class="mb-3">
+                        <label class="form-label" for="job_title">Job Title</label>
+                        <input type="text" class="form-control" id="job_title" name="job_title"
+                               value="<?= htmlspecialchars($profile->job_title ?? '') ?>">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="works_for">Works For</label>
+                        <input type="text" class="form-control" id="works_for" name="works_for"
+                               value="<?= htmlspecialchars($profile->works_for ?? '') ?>">
+                    </div>
+
                     <div class="mt-4">
                         <button type="submit" class="btn btn-primary">Save Profile</button>
                     </div>

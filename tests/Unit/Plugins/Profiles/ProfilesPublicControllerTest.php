@@ -169,7 +169,7 @@ final class ProfilesPublicControllerTest extends TestCase
         $app = $this->engine(data: ['website' => 'javascript:alert(1)']);
         $this->controller($app)->update('7');
 
-        self::assertSame('Website must be a full http:// or https:// URL.', $this->flashes['danger'][0]);
+        self::assertSame('Website, Twitter, Facebook and LinkedIn must be full http:// or https:// URLs.', $this->flashes['danger'][0]);
         self::assertSame(['/profile/7/edit'], $this->redirects);
     }
 

@@ -137,7 +137,8 @@ final class MediaAvatarServiceTest extends TestCase
 
         $path = $service->storeAvatar(7, $this->upload(200, 100));
 
-        self::assertSame('uploads/avatars/7.webp', $path);
+        self::assertStringStartsWith('uploads/avatars/7-', $path);
+        self::assertStringEndsWith('.webp', $path);
         self::assertFileExists($this->publicPath . '/' . $path);
 
         $info = getimagesize($this->publicPath . '/' . $path);
@@ -146,15 +147,45 @@ final class MediaAvatarServiceTest extends TestCase
         self::assertSame(64, $info[1], 'the avatar is cropped square');
     }
 
-    public function testStoreAvatarReplacesThePreviousFile(): void
+    public function testStoreAvatarLeavesEarlierFilesAlone(): void
     {
         $service = $this->service();
 
         $first = $service->storeAvatar(7, $this->upload());
         $second = $service->storeAvatar(7, $this->upload());
 
-        self::assertSame($first, $second, 'the filename is the user id, so it overwrites');
+        self::assertNotSame($first, $second, 'each upload gets a fresh URL so a browser cache cannot serve the old image');
+        self::assertFileExists($this->publicPath . '/' . $first, 'nothing is deleted at upload time');
         self::assertFileExists($this->publicPath . '/' . $second);
+    }
+
+    public function testSweepAvatarsKeepsTheGivenFileAndRemovesTheRest(): void
+    {
+        $service = $this->service();
+
+        // The name written before the per-upload token change.
+        $legacy = $this->publicPath . '/uploads/avatars/7.webp';
+        self::assertTrue(mkdir(dirname($legacy), 0777, true));
+        file_put_contents($legacy, 'old');
+
+        $first  = $service->storeAvatar(7, $this->upload());
+        $second = $service->storeAvatar(7, $this->upload());
+
+        $service->sweepAvatars(7, $second);
+
+        self::assertFileDoesNotExist($this->publicPath . '/' . $first, 'earlier uploads go');
+        self::assertFileDoesNotExist($legacy, 'the pre-change constant-named avatar goes');
+        self::assertFileExists($this->publicPath . '/' . $second, 'the live file stays');
+    }
+
+    public function testSweepAvatarsWithNoKeepRemovesThemAll(): void
+    {
+        $service = $this->service();
+        $path = $service->storeAvatar(7, $this->upload());
+
+        $service->sweepAvatars(7);
+
+        self::assertFileDoesNotExist($this->publicPath . '/' . $path);
     }
 
     public function testStoreAvatarWritesNoMediaRow(): void
@@ -191,33 +222,6 @@ final class MediaAvatarServiceTest extends TestCase
 
         $this->expectException(\InvalidArgumentException::class);
         $service->storeAvatar(0, $this->upload());
-    }
-
-    public function testDeleteAvatarFileRemovesOnlyAvatarPaths(): void
-    {
-        $service = $this->service();
-        $path = $service->storeAvatar(7, $this->upload());
-
-        self::assertTrue($service->deleteAvatarFile($path));
-        self::assertFileDoesNotExist($this->publicPath . '/' . $path);
-
-        // Already gone.
-        self::assertFalse($service->deleteAvatarFile($path));
-    }
-
-    public function testDeleteAvatarFileRefusesPathsOutsideTheAvatarDirectory(): void
-    {
-        $service = $this->service();
-
-        // A library file must survive a stray avatar value.
-        $library = 'uploads/2026/01/abc.png';
-        self::assertTrue(mkdir($this->publicPath . '/uploads/2026/01', 0777, true));
-        file_put_contents($this->publicPath . '/' . $library, 'x');
-
-        self::assertFalse($service->deleteAvatarFile($library));
-        self::assertFileExists($this->publicPath . '/' . $library);
-
-        self::assertFalse($service->deleteAvatarFile(''));
     }
 
     public function testDeleteLegacyAvatarRemovesTheLibraryRowItOwns(): void
@@ -258,7 +262,7 @@ final class MediaAvatarServiceTest extends TestCase
     {
         $service = $this->service();
 
-        // Already an avatar path: deleteAvatarFile() owns it.
+        // An avatar path is not a library row: sweepAvatars() owns it.
         $service->deleteLegacyAvatar(7, 'uploads/avatars/7.webp');
 
         // No media row at all.

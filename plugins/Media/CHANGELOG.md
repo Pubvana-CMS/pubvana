@@ -5,6 +5,17 @@ All notable changes to the Media plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.2] - 2026-10-07
+
+### Added
+- Avatar files are deleted when the profile row no longer points at them.
+
+### Changed
+- Avatar uploads write a new file name each time.
+
+### Removed
+- `deleteAvatarFile()`.
+
 ## [0.2.1] - 2026-10-06
 
 ### Fixed

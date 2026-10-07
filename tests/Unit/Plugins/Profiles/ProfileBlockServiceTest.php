@@ -54,7 +54,6 @@ final class ProfileBlockServiceTest extends TestCase
 
         self::assertNotNull($payload['author']);
         self::assertSame('Ada Lovelace', $payload['author']['name']);
-        self::assertSame('ada', $payload['author']['username']);
         self::assertSame('/profile/7', $payload['author']['url']);
     }
 
@@ -68,7 +67,6 @@ final class ProfileBlockServiceTest extends TestCase
 
         self::assertNotNull($payload['author']);
         self::assertSame('Grace Hopper', $payload['author']['name']);
-        self::assertSame('grace', $payload['author']['username']);
         self::assertSame('/profile/9', $payload['author']['url']);
     }
 
@@ -155,7 +153,7 @@ final class ProfileBlockServiceTest extends TestCase
         $payload = (new ProfileBlockService($app))->provide(['show_on_blog' => 1]);
 
         self::assertNotNull($payload['author']);
-        self::assertSame('ada', $payload['author']['username']);
+        self::assertSame('/profile/7', $payload['author']['url']);
     }
 
     // -----------------------------------------------------------------
