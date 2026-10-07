@@ -458,6 +458,11 @@ class PluginLoader
             $pluginId = $manifest['name'] ?? $folder;
             $config = $this->enabledPlugins[$pluginId] ?? ['enabled' => true, 'priority' => 50];
 
+            // Label for the admin Plugins page. The manifest's display_name is
+            // the human name ('Blog'); the plugin ID stays the identity.
+            $displayName = $manifest['display_name'] ?? null;
+            $displayName = is_string($displayName) && $displayName !== '' ? $displayName : $pluginId;
+
             $plugins[$pluginId] = [
                 'source'    => 'local',
                 'folder'    => $folder,
@@ -466,6 +471,7 @@ class PluginLoader
                 'priority'  => $config['priority'] ?? 50,
                 'namespace' => $manifest['namespace'] ?? 'Pubvana\\Plugins\\' . ucfirst($folder),
                 'version'   => $manifest['semver'] ?? $manifest['version'] ?? '',
+                'name'      => $displayName,
             ];
         }
         return $plugins;
@@ -547,6 +553,13 @@ class PluginLoader
             // Check for config overrides in the plugins array
             $config = $this->enabledPlugins[$name] ?? ['enabled' => true, 'priority' => 50];
 
+            // Composer packages carry no pubvana.json. The label shown on the
+            // Plugins page comes from the package name with the vendor dropped
+            // and the dashes read as word breaks, so 'enlivenapp/flight-sessions'
+            // reads as 'Flight Sessions'.
+            $packageName = str_contains($name, '/') ? substr($name, (int) strpos($name, '/') + 1) : $name;
+            $label = ucwords(str_replace('-', ' ', $packageName));
+
             $discovered[$name] = [
                 'source'    => 'vendor',
                 'type'      => $type,
@@ -554,6 +567,7 @@ class PluginLoader
                 'priority'  => $config['priority'] ?? 50,
                 'namespace' => $namespace,
                 'version'   => $package['version'] ?? '',
+                'name'      => $label,
             ];
         }
 

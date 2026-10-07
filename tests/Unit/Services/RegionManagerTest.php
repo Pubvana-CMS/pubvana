@@ -197,6 +197,26 @@ final class RegionManagerTest extends TestCase
         self::assertSame('pubvana.three', $grouped['footer'][1]->block_key);
     }
 
+    public function testGetPlacementsSeesAPlacementAddedInTheSameRequest(): void
+    {
+        $this->insertPlacement('footer', 'pubvana.one', 0);
+        self::assertCount(1, $this->service->getPlacements('footer'));
+
+        $this->service->savePlacement('footer', 'pubvana.two');
+
+        self::assertCount(2, $this->service->getPlacements('footer'), 'the cache is dropped after a write');
+    }
+
+    public function testGetPlacementsSeesARemovalInTheSameRequest(): void
+    {
+        $placement = $this->insertPlacement('footer', 'pubvana.one', 0);
+        self::assertCount(1, $this->service->getPlacements('footer'));
+
+        $this->service->removePlacement((int) $placement->id);
+
+        self::assertSame([], $this->service->getPlacements('footer'), 'the cache is dropped after a removal');
+    }
+
     // -----------------------------------------------------------------
     // Placement CRUD
     // -----------------------------------------------------------------

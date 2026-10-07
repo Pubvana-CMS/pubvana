@@ -24,10 +24,23 @@ use flight\Engine;
  * remember-me path both reject status 'banned'); no additional checking
  * is needed here.
  *
+ * Every account holds at least one group. syncGroups() falls back to
+ * BASE_GROUP when a caller posts none, which is what a headless or API
+ * client does: it never renders the admin checkbox list, so an absent list
+ * means 'not supplied', not 'no groups'.
+ *
  * @package Pubvana\Services
  */
 class UserAdminService
 {
+    /**
+     * The group every account holds at least.
+     *
+     * Shield seeds it as 'user' (superadmin, admin, user) and moves members
+     * to it when a group is deleted. syncGroups() applies the same floor.
+     */
+    public const BASE_GROUP = 'user';
+
     /** @var Engine<object> Flight application instance */
     protected Engine $app;
 
@@ -92,6 +105,13 @@ class UserAdminService
     public function syncGroups(User $user, array $groups): Result
     {
         $groups = array_values(array_unique(array_map('strval', $groups)));
+
+        // Never leave the account with no groups. An absent list (a headless
+        // or API caller that posts no groups at all) is not a request for
+        // zero groups, so it falls back to the base group.
+        if ($groups === []) {
+            $groups = [self::BASE_GROUP];
+        }
 
         $grantsSuperadmin = in_array('superadmin', $groups, true);
         $dropsSuperadmin = $user->inGroup('superadmin') && ! $grantsSuperadmin;

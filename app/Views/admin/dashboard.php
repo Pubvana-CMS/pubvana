@@ -41,7 +41,7 @@
                         <div class="d-flex align-items-start justify-content-between gap-3">
                             <div>
                                 <div class="subheader"><?= htmlspecialchars((string) $card['label']) ?></div>
-                                <div class="h1 mb-1"><?= htmlspecialchars((string) $card['value']) ?></div>
+                                <div class="h1 mb-1"><?= htmlspecialchars((string) ($card['value'] ?? '')) ?></div>
                                 <?php if (!empty($card['description'])): ?>
                                     <div class="text-secondary"><?= htmlspecialchars((string) $card['description']) ?></div>
                                 <?php endif; ?>

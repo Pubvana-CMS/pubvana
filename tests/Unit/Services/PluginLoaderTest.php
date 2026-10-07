@@ -163,6 +163,29 @@ final class PluginLoaderTest extends TestCase
         self::assertFalse($info['config']['enabled']);
     }
 
+    public function testDiscoverLocalUsesTheDisplayNameAsTheAdminLabel(): void
+    {
+        $this->writeLocalPlugin('_fxlabelled', 'pubvana/labelled', [
+            'display_name' => 'Labelled Plugin',
+            'namespace'    => $this->fxNs('\Labelled'),
+        ]);
+
+        $info = $this->loader()->discoverLocal()['pubvana/labelled'];
+
+        self::assertSame('Labelled Plugin', $info['name']);
+    }
+
+    public function testDiscoverLocalFallsBackToThePluginIdWithoutADisplayName(): void
+    {
+        $this->writeLocalPlugin('_fxplain', 'pubvana/plain', [
+            'namespace' => $this->fxNs('\Plain'),
+        ]);
+
+        $info = $this->loader()->discoverLocal()['pubvana/plain'];
+
+        self::assertSame('pubvana/plain', $info['name']);
+    }
+
     // -----------------------------------------------------------------
     // discoverVendor()
     // -----------------------------------------------------------------
@@ -218,6 +241,15 @@ final class PluginLoaderTest extends TestCase
         unlink($this->tmpRoot . '/vendor/composer/installed.json');
 
         self::assertSame([], $this->loader()->discoverVendor());
+    }
+
+    public function testDiscoverVendorDerivesTheAdminLabelFromThePackageName(): void
+    {
+        $this->writeVendorPackage('acme/flight-tool', $this->fxNs('\Tool'), 'pubvana-plugin');
+
+        $info = $this->loader()->discoverVendor()['acme/flight-tool'];
+
+        self::assertSame('Flight Tool', $info['name'], 'vendor dropped, dashes read as word breaks');
     }
 
     // -----------------------------------------------------------------

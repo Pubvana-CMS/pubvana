@@ -23,6 +23,7 @@ namespace Pubvana\Models;
  *   - updated_at: Last modification timestamp
  *
  * @method self eq(string $field, mixed $value, string $operator = 'AND')
+ * @method self isNull(string $field, string $operator = 'AND')
  * @method self order(string $field)
  * @method self select(string $field)
  *
@@ -106,13 +107,24 @@ class NavigationItem extends AbstractModel
     /**
      * Get all direct children of a specific parent within a group.
      *
-     * @param int    $parentId Parent item ID (0 for top-level)
+     * Top-level rows store parent_id as NULL, so a $parentId of 0 or less
+     * asks for those rows and is matched with IS NULL.
+     *
+     * @param int    $parentId Parent item ID (0 or less for top-level)
      * @param string $group    Navigation group identifier
      * @return self[] Child items ordered by sort_order ascending
      */
     public function getChildren(int $parentId, string $group): array
     {
         $model = new self($this->getDatabaseConnection());
+
+        if ($parentId <= 0) {
+            return $model->isNull('parent_id')
+                         ->eq('nav_group', $group)
+                         ->order('sort_order ASC')
+                         ->findAll();
+        }
+
         return $model->eq('parent_id', $parentId)
                      ->eq('nav_group', $group)
                      ->order('sort_order ASC')

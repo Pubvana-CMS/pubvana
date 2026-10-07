@@ -234,6 +234,20 @@ final class UserAdminServiceTest extends TestCase
         self::assertFalse($steppingDown->inGroup('superadmin'));
     }
 
+    public function testSyncGroupsFallsBackToTheBaseGroupWhenNoneArePosted(): void
+    {
+        $this->auth->actor = $this->seedUser('owner', ['superadmin']);
+        $target = $this->seedUser('target', ['user']);
+
+        // A headless or API caller posts no groups at all. That means 'not
+        // supplied', so the account keeps the base group instead of ending up
+        // with none.
+        $result = $this->service->syncGroups($target, []);
+
+        self::assertTrue($result->isOK());
+        self::assertSame([UserAdminService::BASE_GROUP], $target->getGroups());
+    }
+
     // -----------------------------------------------------------------
     // deleteUser
     // -----------------------------------------------------------------

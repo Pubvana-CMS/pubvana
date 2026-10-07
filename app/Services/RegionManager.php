@@ -224,6 +224,18 @@ class RegionManager
     }
 
     /**
+     * Drop the memoized placement map.
+     *
+     * Every write below calls this, so a read later in the same request sees
+     * the change instead of the list loaded before it.
+     */
+    protected function invalidatePlacementsCache(): void
+    {
+        $this->placementsCacheLoaded = false;
+        $this->placementsByRegion = [];
+    }
+
+    /**
      * Get all placements grouped by region.
      *
      * @return array<string, BlockPlacement[]> Placements keyed by region_id
@@ -263,6 +275,7 @@ class RegionManager
         $placement->sort_order = $this->placements()->nextSortOrder($regionId);
         $placement->created_at = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
         $placement->insert();
+        $this->invalidatePlacementsCache();
 
         return $placement;
     }
@@ -279,6 +292,7 @@ class RegionManager
 
         if ($placement->isHydrated()) {
             $placement->delete();
+            $this->invalidatePlacementsCache();
         }
     }
 
@@ -301,6 +315,8 @@ class RegionManager
                 $placement->save();
             }
         }
+
+        $this->invalidatePlacementsCache();
     }
 
     /**
@@ -324,12 +340,14 @@ class RegionManager
         $existing = $this->placements()->findPlacement($newRegionId, $placement->block_key);
         if ($existing) {
             $placement->delete();
+            $this->invalidatePlacementsCache();
             return;
         }
 
         $placement->region_id = $newRegionId;
         $placement->sort_order = $this->placements()->nextSortOrder($newRegionId);
         $placement->save();
+        $this->invalidatePlacementsCache();
     }
 
     /**

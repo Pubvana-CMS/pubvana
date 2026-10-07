@@ -83,6 +83,21 @@ final class NavigationItemTest extends TestCase
         self::assertSame([], (new NavigationItem($this->pdo))->getChildren($otherParent->id, 'primary'));
     }
 
+    public function testGetChildrenWithZeroReturnsTopLevelRows(): void
+    {
+        $menu = $this->createItem('Menu', '/menu', 'primary', 1);
+        $child = $this->createItem('Child', '/menu/a', 'primary', 0);
+        $child->parent_id = $menu->id;
+        $child->save();
+        $this->createItem('Footer', '/about', 'footer', 0);
+
+        // Top-level rows store parent_id as NULL, so the top level has to be
+        // asked for with IS NULL rather than an equality test against 0.
+        $topLevel = (new NavigationItem($this->pdo))->getChildren(0, 'primary');
+
+        self::assertSame(['Menu'], array_column($topLevel, 'label'));
+    }
+
     private function createItem(string $label, string $url, string $group, int $sortOrder): NavigationItem
     {
         $item = new NavigationItem($this->pdo);
