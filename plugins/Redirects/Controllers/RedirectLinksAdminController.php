@@ -16,24 +16,29 @@ class RedirectLinksAdminController extends AdminController
      */
     public function index(): void
     {
-        $status = (string) ($this->app->request()->query->status ?? 'active');
+        $request = $this->app->request();
+        $status = (string) ($request->query->status ?? 'active');
         if (!in_array($status, ['active', 'ignored', 'resolved', 'all'], true)) {
             $status = 'active';
         }
 
-        $page = (int) ($this->app->request()->query->page ?? 1);
+        $page = max(1, (int) ($request->query->page ?? 1));
         $perPage = 25;
+        $adminBase = $this->adminBase();
 
-        $pagination = $this->app->redirectLinks()->paginate($status, $page, $perPage);
+        $links = $this->app->redirectLinks()->paginate($status, $page, $perPage);
 
         $this->render('pubvana/redirects/admin/incoming-404s', [
-            'pageTitle' => '404 Manager',
-            'entries'   => $pagination['items'],
-            'total'     => $pagination['total'],
-            'page'      => $pagination['page'],
-            'perPage'   => $pagination['per_page'],
-            'status'    => $status,
-            'adminBase' => $this->adminBase(),
+            'pageTitle'  => '404 Manager',
+            'entries'    => $links['items'],
+            'status'     => $status,
+            'pagination' => $this->app->pagination()->build(
+                $links['page'],
+                $links['total'],
+                $links['per_page'],
+                static fn(int $n): string => $adminBase . '/404-manager?status=' . urlencode($status) . '&page=' . $n
+            ),
+            'adminBase'  => $adminBase,
         ]);
     }
 

@@ -96,6 +96,72 @@ final class RedirectsServiceTest extends TestCase
         self::assertFalse($this->service->delete(99999));
     }
 
+    public function testCreateRefusesDuplicateSourcePath(): void
+    {
+        $this->service->create(['source_path' => '/old', 'target_url' => '/new']);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('already exists');
+
+        // Normalized onto the same path as the first row.
+        $this->service->create(['source_path' => 'old/', 'target_url' => '/other']);
+    }
+
+    public function testUpdateRefusesSourcePathHeldByAnotherRow(): void
+    {
+        $this->service->create(['source_path' => '/a', 'target_url' => '/x']);
+        $second = $this->service->create(['source_path' => '/b', 'target_url' => '/y']);
+
+        try {
+            $this->service->update((int) $second->id, ['source_path' => '/a', 'target_url' => '/y']);
+            self::fail('A duplicate source path must be refused.');
+        } catch (\InvalidArgumentException $e) {
+            self::assertStringContainsString('already exists', $e->getMessage());
+        }
+
+        // Keeping its own path is fine.
+        $kept = $this->service->update((int) $second->id, ['source_path' => '/b/', 'target_url' => '/z']);
+        self::assertNotNull($kept);
+        self::assertSame('/b', $kept->source_path);
+        self::assertSame('/z', $kept->target_url);
+        self::assertSame('/z', $this->service->find((int) $second->id)?->target_url);
+    }
+
+    public function testWildcardTargetPlaceholderIsOptional(): void
+    {
+        // '$1' is optional: without it the capture is dropped.
+        $dropped = $this->service->create(['source_path' => '/old/*', 'target_url' => '/new']);
+        self::assertSame('/old/*', $dropped->source_path);
+        self::assertSame('/new', $dropped->target_url);
+
+        $kept = $this->service->create(['source_path' => '/docs/*', 'target_url' => '/manual/$1']);
+        self::assertSame('/manual/$1', $kept->target_url);
+    }
+
+    public function testWildcardRejectsPlaceholderWithoutWildcardSource(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('$1');
+
+        $this->service->create(['source_path' => '/old', 'target_url' => '/new/$1']);
+    }
+
+    public function testWildcardRejectsNumberedPlaceholderAboveOne(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('$1 only');
+
+        $this->service->create(['source_path' => '/old/*', 'target_url' => '/new/$2']);
+    }
+
+    public function testWildcardRejectsStarThatIsNotTrailing(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('trailing');
+
+        $this->service->create(['source_path' => '/old/*/tail', 'target_url' => '/new']);
+    }
+
     public function testAllFindCounts(): void
     {
         self::assertSame([], $this->service->all());
@@ -163,7 +229,7 @@ final class RedirectsServiceTest extends TestCase
             'pluginLoader' => static fn(): object => new class {
                 public function routePrefix(string $id): string
                 {
-                    return '/blog';
+                    return $id === 'pubvana/pages' ? '/page' : '/blog';
                 }
             },
         ]);

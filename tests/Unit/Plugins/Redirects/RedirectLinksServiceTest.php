@@ -211,6 +211,68 @@ final class RedirectLinksServiceTest extends TestCase
         self::assertNull($model->findById(99999));
     }
 
+    public function testWildcardMatchPrefersTheMostSpecificPattern(): void
+    {
+        $this->insertRedirect('/blog/*', '/broad');
+        $this->insertRedirect('/blog/post/*', '/narrow');
+
+        $model = new Redirect($this->pdo);
+
+        $narrow = $model->findActiveBySourcePath('/blog/post/hello');
+        self::assertNotNull($narrow['redirect']);
+        self::assertSame('/blog/post/*', $narrow['redirect']->source_path);
+        self::assertSame(['/blog/post/hello', 'hello'], $narrow['captures']);
+
+        $broad = $model->findActiveBySourcePath('/blog/other');
+        self::assertNotNull($broad['redirect']);
+        self::assertSame('/blog/*', $broad['redirect']->source_path);
+        self::assertSame(['/blog/other', 'other'], $broad['captures']);
+    }
+
+    public function testWildcardMatchSkipsDisabledPatterns(): void
+    {
+        $this->insertRedirect('/blog/post/*', '/narrow', 0);
+        $this->insertRedirect('/blog/*', '/broad');
+
+        $hit = (new Redirect($this->pdo))->findActiveBySourcePath('/blog/post/hello');
+
+        self::assertNotNull($hit['redirect']);
+        self::assertSame('/blog/*', $hit['redirect']->source_path);
+    }
+
+    public function testRecentByStatusLimitsTheQuery(): void
+    {
+        $this->insertLink('/a', seen: '2026-01-01 00:00:00');
+        $this->insertLink('/b', seen: '2026-01-02 00:00:00');
+        $this->insertLink('/c', seen: '2026-01-03 00:00:00');
+
+        self::assertSame(['/c', '/b'], $this->paths($this->service->recent('active', 2)));
+    }
+
+    public function testIgnoreClearsResolution(): void
+    {
+        $this->insertLink('/a', resolved: 3);
+        $id = (int) $this->pdo->lastInsertId();
+
+        $entry = $this->service->setIgnored($id, true);
+
+        self::assertNotNull($entry);
+        self::assertSame(1, (int) $entry->ignored);
+        self::assertNull($entry->resolved_redirect_id);
+        self::assertNull($entry->resolved_at);
+        self::assertSame(0, $this->service->count('resolved'));
+        self::assertSame(1, $this->service->count('ignored'));
+    }
+
+    public function testAllResolvedByFindsLinkedEntries(): void
+    {
+        $this->insertLink('/a', resolved: 5);
+        $this->insertLink('/b', resolved: 5);
+        $this->insertLink('/c', resolved: 9);
+
+        self::assertSame(['/a', '/b'], $this->paths((new RedirectLink($this->pdo))->allResolvedBy(5)));
+    }
+
     private function insertRedirect(string $source, string $target, int $enabled = 1): void
     {
         $stmt = $this->pdo->prepare(

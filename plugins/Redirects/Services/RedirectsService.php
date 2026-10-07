@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Pubvana\Plugins\Redirects\Services;
 
 use Pubvana\Plugins\Redirects\Models\Redirect;
+use Pubvana\Plugins\Redirects\Models\RedirectLink;
 use Pubvana\Services\UrlService;
 use flight\Engine;
 
@@ -14,6 +15,7 @@ use flight\Engine;
 class RedirectsService
 {
     private const UNSAFE_TARGET_MESSAGE = 'Target URL must be a relative path or a full http:// or https:// URL.';
+    private const DUPLICATE_SOURCE_MESSAGE = 'A redirect for that path already exists.';
 
     private \PDO $pdo;
     /** @var Engine<object> */
@@ -83,7 +85,7 @@ class RedirectsService
      */
     public function countEnabled(): int
     {
-        return count(array_filter($this->all(), static fn(Redirect $redirect): bool => (int) $redirect->enabled === 1));
+        return $this->model()->countEnabled();
     }
 
     /**
@@ -95,11 +97,13 @@ class RedirectsService
     public function create(array $data): Redirect
     {
         $this->assertSafeTarget((string) ($data['target_url'] ?? ''));
-        $this->validateWildcardPattern((string) ($data['source_path'] ?? ''), (string) ($data['target_url'] ?? ''));
+
+        $payload = $this->preparePayload($data);
+        $this->validateWildcardPattern((string) $payload['source_path'], (string) $payload['target_url']);
+        $this->assertSourcePathFree((string) $payload['source_path'], null);
 
         $now = $this->now();
         $redirect = $this->model();
-        $payload = $this->preparePayload($data);
 
         $redirect->source_path = $payload['source_path'];
         $redirect->target_url = $payload['target_url'];
@@ -110,7 +114,12 @@ class RedirectsService
         $redirect->last_hit_at = null;
         $redirect->created_at = $now;
         $redirect->updated_at = $now;
-        $redirect->insert();
+
+        try {
+            $redirect->insert();
+        } catch (\PDOException $e) {
+            throw $this->duplicateOrRethrow($e);
+        }
 
         return $redirect;
     }
@@ -130,19 +139,23 @@ class RedirectsService
         }
 
         $this->assertSafeTarget((string) ($data['target_url'] ?? ''));
-        $this->validateWildcardPattern(
-            (string) ($data['source_path'] ?? $redirect->source_path),
-            (string) ($data['target_url'] ?? $redirect->target_url)
-        );
 
         $payload = $this->preparePayload($data);
+        $this->validateWildcardPattern((string) $payload['source_path'], (string) $payload['target_url']);
+        $this->assertSourcePathFree((string) $payload['source_path'], $id);
+
         $redirect->source_path = $payload['source_path'];
         $redirect->target_url = $payload['target_url'];
         $redirect->status_code = $payload['status_code'];
         $redirect->enabled = $payload['enabled'];
         $redirect->notes = $payload['notes'];
         $redirect->updated_at = $this->now();
-        $redirect->save();
+
+        try {
+            $redirect->save();
+        } catch (\PDOException $e) {
+            throw $this->duplicateOrRethrow($e);
+        }
 
         return $redirect;
     }
@@ -161,6 +174,15 @@ class RedirectsService
         }
 
         $redirect->delete();
+
+        // The entries this redirect resolved are unresolved again, so they
+        // return to the 404 manager's Active list instead of staying Resolved.
+        foreach ((new RedirectLink($this->pdo))->allResolvedBy($id) as $link) {
+            $link->resolved_redirect_id = null;
+            $link->resolved_at = null;
+            $link->save();
+        }
+
         return true;
     }
 
@@ -175,11 +197,12 @@ class RedirectsService
 
         try {
             $pages = $this->app->pages()->listPublished(100);
+            $prefix = $this->app->pluginLoader()->routePrefix('pubvana/pages');
             $items = [];
             foreach ($pages as $page) {
                 $items[] = [
                     'label' => $page->title,
-                    'url'   => '/page/' . $page->slug,
+                    'url'   => $prefix . '/' . $page->slug,
                 ];
             }
             if (!empty($items)) {
@@ -381,20 +404,67 @@ class RedirectsService
     }
 
     /**
-     * Validate wildcard pattern rules.
-     * - Wildcards can only be trailing * in source_path
-     * - If target has $N placeholders, source must have *
+     * Validate the source pattern and the placeholders in its target.
+     *
+     * The source may hold one wildcard, the trailing '*'. '$1' in the
+     * target inserts the captured text and is optional: a wildcard target
+     * without it drops the capture and sends every match to the same
+     * place. '$1' with no wildcard source would reach the visitor
+     * literally, and a wildcard captures exactly one group, so '$1' is
+     * the only placeholder accepted.
      *
      * @throws \InvalidArgumentException When the pattern is invalid
      */
     private function validateWildcardPattern(string $sourcePath, string $targetUrl): void
     {
-        $isWildcardSource = str_ends_with($sourcePath, '*');
-        $hasPlaceholder = preg_match('/\$[1-9]/', $targetUrl) === 1;
+        $normalized = $this->normalizeSourcePath($sourcePath);
+        $star = strpos($normalized, '*');
 
-        if (!$isWildcardSource && $hasPlaceholder) {
-            throw new \InvalidArgumentException('Target URL contains placeholders ($1, $2, etc.) but source path is not a wildcard pattern (must end with *).');
+        if ($star !== false && $star !== strlen($normalized) - 1) {
+            throw new \InvalidArgumentException('A source path may hold one wildcard, the trailing * (for example /old/*).');
         }
+
+        if (preg_match('/\$(?!1(?!\d))\d/', $targetUrl) === 1) {
+            throw new \InvalidArgumentException('Target URL may use $1 only, the single captured wildcard value.');
+        }
+
+        if ($star === false && preg_match('/\$1(?!\d)/', $targetUrl) === 1) {
+            throw new \InvalidArgumentException('Target URL contains $1 but the source path is not a wildcard, which must end with *.');
+        }
+    }
+
+    /**
+     * Refuse a source path another redirect already holds.
+     *
+     * The unique index on redirects.source_path would otherwise raise a
+     * query error and hand the admin a 500 instead of a form message.
+     *
+     * @param string   $sourcePath
+     * @param int|null $exceptId   Row allowed to keep the path (the one being edited)
+     * @throws \InvalidArgumentException When another row holds the path
+     */
+    private function assertSourcePathFree(string $sourcePath, ?int $exceptId): void
+    {
+        $existing = $this->model()->findBySourcePath($sourcePath);
+        if ($existing !== null && (int) $existing->id !== $exceptId) {
+            throw new \InvalidArgumentException(self::DUPLICATE_SOURCE_MESSAGE);
+        }
+    }
+
+    /**
+     * Turn a duplicate-key failure into the same form error the pre-check
+     * raises. Any other database error is rethrown untouched.
+     *
+     * @param \PDOException $e
+     * @return \Throwable
+     */
+    private function duplicateOrRethrow(\PDOException $e): \Throwable
+    {
+        if ((string) $e->getCode() === '23000') {
+            return new \InvalidArgumentException(self::DUPLICATE_SOURCE_MESSAGE, 0, $e);
+        }
+
+        return $e;
     }
 
     private function shouldSkipPath(string $path): bool

@@ -4,8 +4,8 @@ URL redirect manager with automatic tracking of incoming 404s. Manage 301/302 re
 
 ## Features
 
-- 301 and 302 redirects with exact-path matching
-- Wildcard `*` targets, with `$1` in the replacement
+- 301 and 302 redirects, matched by exact path or a trailing-`*` wildcard
+- Wildcard targets, with an optional `$1` in the replacement and the most specific rule winning
 - Query strings preserved when forwarding
 - Automatic 404 tracking grouped by path
 - Triage 404s into redirects, ignore them, or delete them

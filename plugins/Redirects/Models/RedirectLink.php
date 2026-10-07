@@ -41,8 +41,38 @@ class RedirectLink extends \Pubvana\Models\AbstractModel
      */
     public function allByStatus(string $status = 'active'): array
     {
-        $query = new self($this->getDatabaseConnection());
+        return $this->applyStatus(new self($this->getDatabaseConnection()), $status)
+            ->order('last_seen_at DESC')
+            ->findAll();
+    }
 
+    /**
+     * The newest entries for one status, capped at $limit.
+     *
+     * @param string $status
+     * @param int    $limit
+     * @return self[]
+     */
+    public function recentByStatus(string $status = 'active', int $limit = 5): array
+    {
+        return $this->applyStatus(new self($this->getDatabaseConnection()), $status)
+            ->order('last_seen_at DESC')
+            ->limit($limit)
+            ->findAll();
+    }
+
+    /**
+     * Apply a status filter to a query.
+     *
+     * 'active' is unresolved and not ignored, 'resolved' carries a redirect
+     * id, 'ignored' is flagged, and anything else ('all') passes through.
+     *
+     * @param self   $query
+     * @param string $status
+     * @return self
+     */
+    private function applyStatus(self $query, string $status): self
+    {
         if ($status === 'active') {
             $query->eq('ignored', 0)->isNull('resolved_redirect_id');
         } elseif ($status === 'ignored') {
@@ -51,9 +81,7 @@ class RedirectLink extends \Pubvana\Models\AbstractModel
             $query->notNull('resolved_redirect_id');
         }
 
-        return $query
-            ->order('last_seen_at DESC')
-            ->findAll();
+        return $query;
     }
 
     /**
@@ -91,17 +119,7 @@ class RedirectLink extends \Pubvana\Models\AbstractModel
      */
     public function paginate(string $status = 'active', int $page = 1, int $perPage = 25): array
     {
-        $query = new self($this->getDatabaseConnection());
-
-        if ($status === 'active') {
-            $query->eq('ignored', 0)->isNull('resolved_redirect_id');
-        } elseif ($status === 'ignored') {
-            $query->eq('ignored', 1);
-        } elseif ($status === 'resolved') {
-            $query->notNull('resolved_redirect_id');
-        }
-
-        return $query
+        return $this->applyStatus(new self($this->getDatabaseConnection()), $status)
             ->order('last_seen_at DESC')
             ->limit($perPage)
             ->offset(($page - 1) * $perPage)
@@ -116,17 +134,22 @@ class RedirectLink extends \Pubvana\Models\AbstractModel
      */
     public function countByStatus(string $status = 'active'): int
     {
-        $query = new self($this->getDatabaseConnection());
-
-        if ($status === 'active') {
-            $query->eq('ignored', 0)->isNull('resolved_redirect_id');
-        } elseif ($status === 'ignored') {
-            $query->eq('ignored', 1);
-        } elseif ($status === 'resolved') {
-            $query->notNull('resolved_redirect_id');
-        }
-
-        $result = $query->select('COUNT(*) as cnt')->find();
+        $result = $this->applyStatus(new self($this->getDatabaseConnection()), $status)
+            ->select('COUNT(*) as cnt')
+            ->find();
         return (int) $result->cnt;
+    }
+
+    /**
+     * Entries a redirect resolved, so deleting that redirect can reopen them.
+     *
+     * @param int $redirectId
+     * @return self[]
+     */
+    public function allResolvedBy(int $redirectId): array
+    {
+        return (new self($this->getDatabaseConnection()))
+            ->eq('resolved_redirect_id', $redirectId)
+            ->findAll();
     }
 }

@@ -75,11 +75,15 @@ class RedirectLinksService
     }
 
     /**
+     * Newest entries for a status, capped at $limit.
+     *
+     * @param string $status
+     * @param int    $limit
      * @return RedirectLink[]
      */
     public function recent(string $status = 'active', int $limit = 5): array
     {
-        return array_slice($this->all($status), 0, $limit);
+        return $this->model()->recentByStatus($status, $limit);
     }
 
     /**
@@ -114,6 +118,11 @@ class RedirectLinksService
         }
 
         $entry->ignored = $ignored ? 1 : 0;
+        if ($ignored) {
+            // An ignored path is not a resolved one: the status tabs stay exclusive.
+            $entry->resolved_redirect_id = null;
+            $entry->resolved_at = null;
+        }
         $entry->save();
 
         return $entry;

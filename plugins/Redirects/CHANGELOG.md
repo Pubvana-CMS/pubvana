@@ -5,6 +5,21 @@ All notable changes to the Redirects plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-10-07
+
+### Changed
+- Wildcard rules are matched most specific first, so the longest literal prefix before the `*` wins.
+- `$1` in a wildcard target is optional, and the captured text is dropped when it is absent.
+- Both admin lists page through the shared pagination service.
+- Target suggestions build page URLs from the Pages route prefix.
+
+### Fixed
+- A second redirect on an existing source path raised a server error instead of showing a form message.
+- Deleting a redirect left the 404 entries it resolved in the Resolved list.
+- Ignoring an entry left it in the Resolved list as well.
+- A source path holding `*` anywhere but the end matched nothing.
+- A target placeholder other than `$1` was stored and sent to visitors.
+
 ## [0.2.0] - 2026-09-30
 
 ### Added
@@ -12,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Wildcard `*` support for redirect targets.
 
 ### Fixed
-- A wildcard target requires `$1` in the replacement.
+- A target placeholder was accepted with no wildcard source path.
 
 ## [0.1.9] - 2026-09-26
 

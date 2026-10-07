@@ -12,6 +12,7 @@ use Pubvana\Plugins\Redirects\Controllers\RedirectLinksAdminController;
 use Pubvana\Plugins\Redirects\Controllers\RedirectsAdminController;
 use Pubvana\Plugins\Redirects\Services\RedirectLinksService;
 use Pubvana\Plugins\Redirects\Services\RedirectsService;
+use Pubvana\Services\PaginationService;
 use Pubvana\Tests\Support\Sqlite;
 use Pubvana\Tests\Support\TestCase;
 
@@ -147,6 +148,46 @@ final class RedirectsAdminControllersTest extends TestCase
         self::assertSame(['/admin/redirects', '/admin/redirects'], $this->redirectsTo);
     }
 
+    public function testIndexClampsPageFloor(): void
+    {
+        $this->redirects->create(['source_path' => '/a', 'target_url' => '/b']);
+
+        // ?page=0 would otherwise reach MySQL as OFFSET -25.
+        (new RedirectsAdminController($this->engine(query: ['page' => '0'])))->index();
+
+        self::assertSame('pubvana/redirects/admin/index', $this->fetches[0]['view']);
+        self::assertNull($this->fetches[0]['data']['pagination']);
+        self::assertCount(1, $this->fetches[0]['data']['redirects']);
+    }
+
+    public function testStoreRefusesDuplicateSourcePath(): void
+    {
+        $this->redirects->create(['source_path' => '/old', 'target_url' => '/new']);
+
+        (new RedirectsAdminController($this->engine(data: ['source_path' => 'old/', 'target_url' => '/other'])))->store();
+
+        self::assertSame('A redirect for that path already exists.', $this->flashes['error'][0]);
+        self::assertSame(['/admin/redirects/create'], $this->redirectsTo);
+        self::assertSame(1, $this->redirects->countAll());
+        self::assertSame('/new', $this->redirects->find(1)?->target_url);
+    }
+
+    public function testDeleteReopensResolvedEntries(): void
+    {
+        $this->pdo->exec("INSERT INTO redirects_links (source_path, hit_count) VALUES ('/old', 2)");
+        $linkId = (int) $this->pdo->lastInsertId();
+        $this->redirects->create(['source_path' => '/old', 'target_url' => '/new']);
+        $this->links->markResolved($linkId, 1);
+
+        (new RedirectsAdminController($this->engine()))->delete('1');
+
+        $link = $this->links->find($linkId);
+        self::assertNotNull($link);
+        self::assertNull($link->resolved_redirect_id);
+        self::assertNull($link->resolved_at);
+        self::assertSame(1, $this->links->count('active'));
+    }
+
     public function testLinksIndexStatusWhitelist(): void
     {
         (new RedirectLinksAdminController($this->engine()))->index();
@@ -204,6 +245,7 @@ final class RedirectsAdminControllersTest extends TestCase
         $redirects = $this->redirects;
         $links = $this->links;
         $app = $this->app([
+            'pagination' => static fn(): PaginationService => new PaginationService(),
             // Settings-store stand-in: resolves CMS.* the way production does.
             'settings' => static fn(): object => new class {
                 public function get(string $key, mixed $default = null): mixed

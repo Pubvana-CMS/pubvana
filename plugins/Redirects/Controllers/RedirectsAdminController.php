@@ -16,18 +16,22 @@ class RedirectsAdminController extends AdminController
      */
     public function index(): void
     {
-        $page = (int) ($this->app->request()->query->page ?? 1);
+        $page = max(1, (int) ($this->app->request()->query->page ?? 1));
         $perPage = 25;
+        $adminBase = $this->adminBase();
 
-        $pagination = $this->app->redirects()->paginate($page, $perPage);
+        $redirects = $this->app->redirects()->paginate($page, $perPage);
 
         $this->render('pubvana/redirects/admin/index', [
-            'pageTitle' => 'Redirects',
-            'redirects' => $pagination['items'],
-            'total'     => $pagination['total'],
-            'page'      => $pagination['page'],
-            'perPage'   => $pagination['per_page'],
-            'adminBase' => $this->adminBase(),
+            'pageTitle'  => 'Redirects',
+            'redirects'  => $redirects['items'],
+            'pagination' => $this->app->pagination()->build(
+                $redirects['page'],
+                $redirects['total'],
+                $redirects['per_page'],
+                static fn(int $n): string => $adminBase . '?page=' . $n
+            ),
+            'adminBase'  => $adminBase,
         ]);
     }
 

@@ -5,9 +5,7 @@
  * @var string $pageTitle
  * @var string $status
  * @var \Pubvana\Plugins\Redirects\Models\RedirectLink[] $entries
- * @var int $total
- * @var int $page
- * @var int $perPage
+ * @var array{current: int, total: int, prev_url: string|null, next_url: string|null, pages: list<array{number: int|string, url: string, active: bool, gap: bool}>}|null $pagination
  * @var string $adminBase
  */
 ?>
@@ -103,15 +101,4 @@
     </div>
 </div>
 
-<?php $totalPages = (int) ceil($total / $perPage); ?>
-<?php if ($totalPages > 1): ?>
-    <nav class="mt-3">
-        <ul class="pagination justify-content-center">
-            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                <li class="page-item <?= $i === $page ? 'active' : '' ?>">
-                    <a class="page-link" href="<?= $adminBase ?>/404-manager?page=<?= $i ?>&status=<?= urlencode($status) ?>"><?= $i ?></a>
-                </li>
-            <?php endfor; ?>
-        </ul>
-    </nav>
-<?php endif; ?>
+<?php include PROJECT_ROOT . '/app/Views/admin/_pagination.php'; ?>
