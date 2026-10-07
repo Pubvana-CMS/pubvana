@@ -5,6 +5,13 @@ All notable changes to the Pages plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.7] - 2026-10-07
+
+### Fixed
+- A search term that only appeared in markup, such as `href`, returned the page.
+- A search term that only matched a page slug returned the page.
+- A search term in a page's `alt`, `title`, or `aria-label` did not match.
+
 ## [0.3.6] - 2026-10-06
 
 ### Fixed

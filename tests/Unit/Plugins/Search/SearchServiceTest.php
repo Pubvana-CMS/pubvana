@@ -135,7 +135,8 @@ final class SearchServiceTest extends TestCase
         self::assertNull($result['error']);
         // Title match outranks the zero-score item.
         self::assertSame('About Us', strip_tags((string) $result['items'][0]['title']));
-        self::assertSame('pages', $result['from']);
+        // from carries the source's registered label, not its key.
+        self::assertSame('Pages', $result['from']);
     }
 
     public function testSearchSkipsBadProvidersAndItems(): void
@@ -279,6 +280,82 @@ final class SearchServiceTest extends TestCase
         self::assertStringContainsString('<mark>About</mark>', (string) $result['items'][0]['excerpt']);
     }
 
+    /**
+     * A later token must not match inside the <mark> tag an earlier token
+     * inserted, which produced malformed markup (`<m<mark>a</mark>rk>`).
+     */
+    public function testHighlightDoesNotMatchInsideMarkup(): void
+    {
+        $service = $this->service();
+
+        $result = $this->invoke($service, 'highlight', [
+            ['title' => 'mark', 'url' => '/a', 'excerpt' => '', 'published_at' => ''],
+            ['mark', 'a'],
+        ]);
+
+        self::assertSame('<mark>mark</mark>', $result['title']);
+    }
+
+    /**
+     * A token matches the visible characters, not the entity text of an
+     * escaped one (`amp` used to mark the inside of `&amp;`).
+     */
+    public function testHighlightDoesNotMatchEscapedEntities(): void
+    {
+        $service = $this->service();
+
+        $result = $this->invoke($service, 'highlight', [
+            ['title' => 'Tom & Jerry', 'url' => '/a', 'excerpt' => '', 'published_at' => ''],
+            ['amp'],
+        ]);
+
+        self::assertSame('Tom &amp; Jerry', $result['title']);
+    }
+
+    public function testHighlightPrefersPhraseOverItsWords(): void
+    {
+        $service = $this->service();
+
+        $result = $this->invoke($service, 'highlight', [
+            ['title' => 'alpha bravo', 'url' => '/a', 'excerpt' => '', 'published_at' => ''],
+            ['alpha', 'alpha bravo'],
+        ]);
+
+        self::assertSame('<mark>alpha bravo</mark>', $result['title']);
+    }
+
+    /**
+     * A page number past the end renders the last real page, not an empty one
+     * labelled "Page 99 of 3".
+     */
+    public function testSearchClampsPagePastTheEnd(): void
+    {
+        $items = [];
+        for ($i = 1; $i <= 5; $i++) {
+            $items[] = ['title' => "Post {$i} alpha", 'url' => "/p{$i}", 'excerpt' => '', 'content' => '', 'published_at' => ''];
+        }
+        $this->providers = ['blog' => ['label' => 'Blog', 'callable' => static fn() => $items]];
+        $this->settings = ['Search.resultsPerPage' => '2'];
+        $service = $this->service();
+
+        $result = $service->search('alpha', 99);
+
+        self::assertSame(3, $result['page']);
+        self::assertCount(1, $result['items']);
+    }
+
+    /**
+     * Phrase quotes do not count toward the minimum length, so `"a"` is a
+     * one-character search and is refused.
+     */
+    public function testSearchRejectsQuotedShortQuery(): void
+    {
+        $result = $this->service()->search('"a"');
+
+        self::assertSame([], $result['items']);
+        self::assertSame('Please enter at least 3 characters.', $result['error']);
+    }
+
     public function testPhraseScoresAboveSingleWord(): void
     {
         $service = $this->service();
@@ -339,6 +416,22 @@ final class SearchServiceTest extends TestCase
 
         self::assertSame(3.0, $withBody);
         self::assertSame(0.0, $withoutBody);
+    }
+
+    /**
+     * The service scores the provider's text as given. It must not strip a
+     * second time, or visible text that looks like a tag (an escaped code
+     * sample) would score nothing.
+     */
+    public function testContentTierScoresVisibleAngleBracketText(): void
+    {
+        $service = $this->service();
+
+        $score = $this->invoke($service, 'scoreItem', [[
+            'title' => 'Heading', 'url' => '/x', 'excerpt' => '', 'content' => 'Use <a href="x"> here', 'published_at' => '',
+        ], ['href']]);
+
+        self::assertSame(3.0, $score);
     }
 
     public function testPhraseScoresInSuppliedContent(): void
@@ -411,6 +504,23 @@ final class SearchServiceTest extends TestCase
         ]]);
         self::assertSame('pages, blog', $label);
         self::assertSame('', $this->invoke($service, 'sourceLabel', [[]]));
+    }
+
+    public function testSourceLabelPrefersRegisteredLabels(): void
+    {
+        $this->providers = [
+            'pubvana.pages' => ['label' => 'Pages', 'callable' => static fn(): array => []],
+            'pubvana.blog'  => ['label' => 'Blog Posts', 'callable' => static fn(): array => []],
+        ];
+        $service = $this->service();
+
+        $label = $this->invoke($service, 'sourceLabel', [[
+            ['_source' => 'pubvana.pages'],
+            ['_source' => 'pubvana.blog'],
+            ['_source' => 'pubvana.pages'],
+        ]]);
+
+        self::assertSame('Pages, Blog Posts', $label);
     }
 
     public function testSourcesAndEnabledSources(): void

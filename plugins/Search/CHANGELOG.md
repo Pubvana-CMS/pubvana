@@ -5,6 +5,19 @@ All notable changes to the Search plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.3] - 2026-10-07
+
+### Added
+- Search results name the content sources that matched, by their label.
+
+### Fixed
+- Highlighting corrupted the markup when a query had two or more tokens.
+- Highlighting matched the text of an escaped character, so a term like `amp` marked the inside of `&amp;`.
+- A page number past the last page showed an empty page.
+- A quoted one-character query cleared the minimum query length.
+- A repeated `q` parameter was searched as the word "Array".
+- The search block form carried a fixed input id, so two blocks on one page collided.
+
 ## [0.2.2] - 2026-09-26
 
 ### Fixed

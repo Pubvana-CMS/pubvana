@@ -5,6 +5,13 @@ All notable changes to the Default theme will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.4.31] - 2026-10-07
+
+### Fixed
+- The Search block override ignored its Form Action URL, Label, Placeholder, and Button Text options.
+- The Search block override had a fixed input id, so two blocks on one page collided.
+- The search results page did not print the contributing sources.
+
 ## [1.4.30] - 2026-10-07
 
 ### Added

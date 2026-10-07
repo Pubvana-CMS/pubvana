@@ -559,6 +559,39 @@ final class BlogServiceTest extends TestCase
         self::assertStringNotContainsString('<strong>', $content);
     }
 
+    /**
+     * A term that only appears in markup must not return the post.
+     */
+    public function testSearchProviderIgnoresMarkupOnlyMatches(): void
+    {
+        $this->service->createPost([
+            'title'   => 'Link Post',
+            'slug'    => 'link-post',
+            'content' => '<p>See <a href="/docs">the docs</a></p>',
+            'status'  => 'published',
+        ], 1);
+
+        self::assertSame([], $this->service->searchProvider('href', '/blog'));
+    }
+
+    /**
+     * A title attribute is text a visitor perceives, so it matches.
+     */
+    public function testSearchProviderMatchesTitleAttribute(): void
+    {
+        $this->service->createPost([
+            'title'   => 'Tooltip Post',
+            'slug'    => 'tooltip-post',
+            'content' => '<p>See <a href="/docs" title="Zebra stripes">the docs</a></p>',
+            'status'  => 'published',
+        ], 1);
+
+        $results = $this->service->searchProvider('zebra', '/blog');
+
+        self::assertCount(1, $results);
+        self::assertStringContainsString('Zebra stripes', (string) $results[0]['content']);
+    }
+
     public function testCommentHostItems(): void
     {
         $this->service->createPost(['title' => 'Live', 'slug' => 'live', 'status' => 'published', 'allow_comments' => 1], 1);

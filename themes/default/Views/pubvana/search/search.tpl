@@ -20,6 +20,12 @@
     {{ total }} result{% if total != 1 %}s{% endif %} for &ldquo;{{ query }}&rdquo;
 </p>
 
+{# Contributing sources, labelled by the Search plugin (a source with no
+   label falls back to its registry key). #}
+{% if from %}
+<p class="text-muted small mb-3">Results from {{ from }}</p>
+{% endif %}
+
 {# Loop: one card per result. #}
 {% for result in results %}
 <article class="card mb-3">

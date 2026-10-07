@@ -21,8 +21,13 @@ class SearchPublicController extends PublicController
      */
     public function search(): void
     {
-        $query = trim((string) ($this->app->request()->query->q ?? ''));
-        $page  = max(1, (int) ($this->app->request()->query->page ?? 1));
+        // A repeated query parameter arrives as an array; casting it straight
+        // to string raises a warning and searches for the word "Array".
+        $rawQuery = $this->app->request()->query->q ?? '';
+        $query = is_string($rawQuery) ? trim($rawQuery) : '';
+
+        $rawPage = $this->app->request()->query->page ?? 1;
+        $page = is_scalar($rawPage) ? max(1, (int) $rawPage) : 1;
 
         $data = [
             'title'     => 'Search',

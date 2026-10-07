@@ -12,6 +12,7 @@ use Pubvana\Plugins\Blog\Models\PostTag;
 use Pubvana\Plugins\Blog\Models\PostRevision;
 use Enlivenapp\FlightShield\Models\User;
 use Pubvana\Services\HtmlPurifierFactory;
+use Pubvana\Services\PerceivedText;
 use flight\Engine;
 use Flight;
 
@@ -898,7 +899,7 @@ class BlogService
      * title, excerpt, or body match the term.
      *
      * Finds content only. Ranking belongs to SearchService::scoreItem(), so
-     * this computes no score. The stripped body rides along as `content` so
+     * this computes no score. The perceived body rides along as `content` so
      * the service can score a body hit.
      *
      * @return array<int, array<string, mixed>>
@@ -910,16 +911,23 @@ class BlogService
         $results = [];
 
         foreach ($posts as $post) {
-            $stripped = html_entity_decode(strip_tags((string) ($post->content ?? '')), ENT_QUOTES, 'UTF-8');
-            $len = mb_strlen($stripped);
-            $pos = mb_stripos($stripped, $term);
+            $perceived = PerceivedText::fromHtml((string) ($post->content ?? ''));
+            $excerpt   = (string) ($post->excerpt ?? '');
+
+            // The SQL LIKE ran against the raw column, so it also matches
+            // markup. Keep only rows whose perceived text carries the term, so
+            // every result has something the score and highlight can show.
+            if (!PerceivedText::contains($term, (string) $post->title, $excerpt, $perceived)) {
+                continue;
+            }
+
+            $len = mb_strlen($perceived);
+            $pos = mb_stripos($perceived, $term);
             if ($pos !== false) {
                 $start = max(0, $pos - 80);
-                $excerpt = ($start > 0 ? '...' : '') . mb_substr($stripped, $start, 200) . ($start + 200 < $len ? '...' : '');
-            } elseif ($post->excerpt) {
-                $excerpt = $post->excerpt;
-            } else {
-                $excerpt = mb_substr($stripped, 0, 200) . ($len > 200 ? '...' : '');
+                $excerpt = ($start > 0 ? '...' : '') . mb_substr($perceived, $start, 200) . ($start + 200 < $len ? '...' : '');
+            } elseif ($excerpt === '') {
+                $excerpt = mb_substr($perceived, 0, 200) . ($len > 200 ? '...' : '');
             }
 
             $results[] = [
@@ -927,7 +935,7 @@ class BlogService
                 'title'        => $post->title,
                 'url'          => $urlPrefix . '/' . $post->slug,
                 'excerpt'      => $excerpt,
-                'content'      => $stripped,
+                'content'      => $perceived,
                 'content_type' => 'Post',
                 'published_at' => $post->published_at,
             ];

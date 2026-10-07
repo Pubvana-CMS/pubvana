@@ -126,6 +126,37 @@ final class SearchControllersTest extends TestCase
         self::assertSame(24.0, $this->fetches[0]['data']['max_score']);
     }
 
+    public function testPublicSearchNamesContributingSources(): void
+    {
+        $this->providers = [
+            'pubvana.pages' => [
+                'label' => 'Pages',
+                'callable' => static fn(): array => [
+                    ['title' => 'About Us', 'url' => '/page/about', 'excerpt' => '', 'content' => '', 'published_at' => ''],
+                ],
+            ],
+        ];
+        $this->query = ['q' => 'about'];
+
+        $this->controller($this->engine())->search();
+
+        self::assertSame('Pages', $this->fetches[0]['data']['from']);
+    }
+
+    /**
+     * A repeated q parameter arrives as an array; it must not be cast to the
+     * string "Array" and searched for.
+     */
+    public function testPublicSearchIgnoresArrayQuery(): void
+    {
+        $this->query = ['q' => ['about']];
+
+        $this->controller($this->engine())->search();
+
+        self::assertSame('', $this->fetches[0]['data']['query']);
+        self::assertSame([], $this->fetches[0]['data']['results']);
+    }
+
     public function testPublicSearchDefaultsCeilingWithoutAQuery(): void
     {
         $this->controller($this->engine())->search();

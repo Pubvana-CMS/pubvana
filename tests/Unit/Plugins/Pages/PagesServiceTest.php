@@ -272,6 +272,40 @@ final class PagesServiceTest extends TestCase
         self::assertSame('/page/about-us', $results[0]['url']);
     }
 
+    /**
+     * The hyphen makes the term match the slug but not the title or body, so a
+     * slug-only hit used to return a result with nothing to score or highlight.
+     */
+    public function testSearchProviderIgnoresSlugOnlyMatches(): void
+    {
+        $this->service->createPage(['title' => 'Hello World', 'content' => 'nothing here', 'status' => 'published'], 1);
+
+        self::assertSame([], $this->service->searchProvider('hello-world'));
+    }
+
+    /**
+     * A term that only appears in markup must not return the page.
+     */
+    public function testSearchProviderIgnoresMarkupOnlyMatches(): void
+    {
+        $this->service->createPage(['title' => 'Link Page', 'content' => '<p>See <a href="/docs">the docs</a></p>', 'status' => 'published'], 1);
+
+        self::assertSame([], $this->service->searchProvider('href'));
+    }
+
+    /**
+     * A title attribute is text a visitor perceives, so it matches.
+     */
+    public function testSearchProviderMatchesTitleAttribute(): void
+    {
+        $this->service->createPage(['title' => 'Tooltip Page', 'content' => '<p>See <a href="/docs" title="Zebra stripes">the docs</a></p>', 'status' => 'published'], 1);
+
+        $results = $this->service->searchProvider('zebra');
+
+        self::assertCount(1, $results);
+        self::assertStringContainsString('Zebra stripes', (string) $results[0]['content']);
+    }
+
     public function testNavAndCommentHostItems(): void
     {
         self::assertSame([], $this->service->navLinkableItems());

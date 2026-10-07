@@ -25,8 +25,9 @@ use flight\Engine;
  * or inner-substring hit, then 5 in the excerpt and 3 in the content. Recency
  * adds up to +4, losing a point per 30 days of age.
  *
- * A provider that wants body scoring must return the stripped body as
- * `content`; a provider that omits it simply forfeits that tier.
+ * A provider that wants body scoring must return the perceived text (see
+ * `Pubvana\Services\PerceivedText`) as `content`; a provider that omits it
+ * simply forfeits that tier.
  *
  * `maxScore()` derives the ceiling the weights allow for a given query, and
  * the envelope carries it as `max_score`, so a result can be read against the
@@ -79,7 +80,10 @@ class SearchService
         $perPage = (int) $this->setting('resultsPerPage', 10);
         $minLength = (int) $this->setting('minQueryLength', 3);
 
-        if (mb_strlen($term) < $minLength) {
+        // Measure the term without its phrase quotes: `"a"` is a
+        // one-character search, and counting the quotes let it clear a
+        // three-character minimum.
+        if (mb_strlen(str_replace('"', '', $term)) < $minLength) {
             return [
                 'items'     => [],
                 'total'     => 0,
@@ -157,6 +161,11 @@ class SearchService
         });
 
         $total  = count($allItems);
+        // Clamp the requested page to the range that exists, so a stale or
+        // hand-edited page number renders the last real page instead of an
+        // empty one labelled "Page 99 of 3".
+        $pages  = max(1, (int) ceil($total / max($perPage, 1)));
+        $page   = min(max(1, $page), $pages);
         $offset = ($page - 1) * $perPage;
         $items  = array_slice($allItems, $offset, $perPage);
 
@@ -281,7 +290,10 @@ class SearchService
     {
         $title    = mb_strtolower((string) ($item['title'] ?? ''));
         $excerpt  = mb_strtolower((string) ($item['excerpt'] ?? ''));
-        $content  = mb_strtolower(strip_tags((string) ($item['content'] ?? '')));
+        // The provider supplies perceived text (no markup), so nothing is
+        // stripped here. A second strip_tags() would eat visible text that
+        // looks like a tag, such as an escaped code sample.
+        $content  = mb_strtolower((string) ($item['content'] ?? ''));
         $score    = 0.0;
 
         $single = [];
@@ -381,49 +393,95 @@ class SearchService
     /**
      * Wrap matched tokens in <mark> tags on title and excerpt.
      *
-     * Escapes HTML first, then injects <mark> around case-insensitive matches.
-     */
-    /**
+     * Splits the RAW text on the match pattern, then escapes each piece as it
+     * is assembled. Escaping up front and running one replace per token (as
+     * this once did) broke on two counts: a later token matched inside the
+     * <mark> tag an earlier token had just inserted, and a token matched the
+     * entity text of an escaped character (`amp` inside `&amp;`) rather than
+     * the character the visitor sees.
+     *
      * @param array<string, mixed> $item
      * @param string[] $words
      * @return array<string, mixed>
      */
     protected function highlight(array $item, array $words): array
     {
-        $wordMap = [];
-        foreach ($words as $w) {
-            $wordMap[$w] = htmlspecialchars($w, ENT_QUOTES, 'UTF-8');
-        }
+        $pattern = $this->matchPattern($words);
 
         foreach (['title', 'excerpt'] as $field) {
-            if (empty($item[$field])) {
+            if (empty($item[$field]) || !is_string($item[$field])) {
                 continue;
             }
-            $text = htmlspecialchars((string) $item[$field], ENT_QUOTES, 'UTF-8');
-            foreach ($wordMap as $regex => $escaped) {
-                $quoted = preg_quote($escaped, '/');
-                $text = preg_replace('/(' . $quoted . ')/iu', '<mark>$1</mark>', $text) ?? $text;
-            }
-            $item[$field] = $text;
+            $item[$field] = $this->markMatches($item[$field], $pattern);
         }
 
         return $item;
     }
 
     /**
-     * Human-friendly list of contributing source labels (for a "Results from" line).
+     * Case-insensitive alternation over the query tokens, longest first so a
+     * quoted phrase wins over the single words inside it.
+     *
+     * @param string[] $words
      */
+    protected function matchPattern(array $words): ?string
+    {
+        $words = array_values(array_filter($words, static fn(string $w): bool => $w !== ''));
+        if ($words === []) {
+            return null;
+        }
+
+        usort($words, static fn(string $a, string $b): int => mb_strlen($b) <=> mb_strlen($a));
+        $alternatives = array_map(static fn(string $w): string => preg_quote($w, '/'), $words);
+
+        return '/(' . implode('|', $alternatives) . ')/iu';
+    }
+
     /**
+     * Escape text and wrap every match of the pattern in <mark>. Text with no
+     * pattern (an empty token set) is escaped and returned unchanged.
+     */
+    protected function markMatches(string $text, ?string $pattern): string
+    {
+        if ($pattern === null) {
+            return htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+        }
+
+        $parts = preg_split($pattern, $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+        if ($parts === false) {
+            return htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+        }
+
+        $html = '';
+        foreach ($parts as $index => $part) {
+            $escaped = htmlspecialchars($part, ENT_QUOTES, 'UTF-8');
+            // PREG_SPLIT_DELIM_CAPTURE puts captured matches at odd indexes.
+            $html .= $index % 2 === 1 ? '<mark>' . $escaped . '</mark>' : $escaped;
+        }
+
+        return $html;
+    }
+
+    /**
+     * Human-friendly list of contributing source labels (for a "Results from"
+     * line). A source that registered a label renders its label; one that did
+     * not falls back to its registry key.
+     *
      * @param array<int, array<string, mixed>> $items
      */
     protected function sourceLabel(array $items): string
     {
-        $labels = [];
+        $sources = $this->sources();
+        $labels  = [];
+
         foreach ($items as $item) {
-            if (!empty($item['_source']) && !in_array($item['_source'], $labels, true)) {
-                $labels[] = (string) $item['_source'];
+            $key = $item['_source'] ?? null;
+            if (!is_string($key) || $key === '' || array_key_exists($key, $labels)) {
+                continue;
             }
+            $labels[$key] = (string) ($sources[$key]['label'] ?? $key);
         }
+
         return implode(', ', $labels);
     }
 }

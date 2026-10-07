@@ -5,6 +5,12 @@ All notable changes to the Blog plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.9] - 2026-10-07
+
+### Fixed
+- A search term that only appeared in markup, such as `href`, returned the post.
+- A search term in a post's `alt`, `title`, or `aria-label` did not match.
+
 ## [0.3.8] - 2026-10-06
 
 ### Fixed

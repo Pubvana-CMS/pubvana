@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Pubvana\Plugins\Pages\Models;
 
+use Pubvana\Services\PerceivedText;
+
 /**
  * Page - ActiveRecord model for the pages table.
  *
@@ -218,7 +220,7 @@ class Page extends \Pubvana\Models\AbstractModel
     }
 
     /**
-     * Find published pages matching a search term in title, slug, or content.
+     * Find published pages matching a search term in title or content.
      *
      * Raw prepared statement because the pattern needs an explicit ESCAPE
      * clause so a caller-supplied % or _ stays literal; the fluent like()
@@ -230,7 +232,12 @@ class Page extends \Pubvana\Models\AbstractModel
      *
      * Supplies normalized content matches for the Search plugin. Ranking is
      * owned by SearchService, so this only finds matching content; the
-     * stripped body rides along as `content` for the service to score.
+     * perceived text rides along as `content` for the service to score. The
+     * SQL LIKE is a rough pre-filter over the raw column, so it also matches
+     * markup; the perceived-text check drops those rows. The match set is
+     * exactly what SearchService can see (title and content): matching slug
+     * here returned pages whose only hit was invisible to the score and to
+     * the highlight.
      *
      * @param string $term       Raw search term
      * @param string $urlPrefix  Public route prefix for result URLs
@@ -242,7 +249,7 @@ class Page extends \Pubvana\Models\AbstractModel
         /** @var array<int, static> $pages */
         $pages = $query->query(
             "SELECT * FROM pages
-             WHERE (title LIKE :q ESCAPE '!' OR slug LIKE :q ESCAPE '!' OR content LIKE :q ESCAPE '!')
+             WHERE (title LIKE :q ESCAPE '!' OR content LIKE :q ESCAPE '!')
                AND status = :status
                AND deleted_at IS NULL",
             [':q' => '%' . $this->escapeLikePattern($term) . '%', ':status' => 'published']
@@ -250,14 +257,19 @@ class Page extends \Pubvana\Models\AbstractModel
 
         $results = [];
         foreach ($pages as $page) {
-            $stripped = html_entity_decode(strip_tags((string) ($page->content ?? '')), ENT_QUOTES, 'UTF-8');
-            $len = mb_strlen($stripped);
-            $pos = mb_stripos($stripped, $term);
+            $perceived = PerceivedText::fromHtml((string) ($page->content ?? ''));
+
+            if (!PerceivedText::contains($term, (string) $page->title, $perceived)) {
+                continue;
+            }
+
+            $len = mb_strlen($perceived);
+            $pos = mb_stripos($perceived, $term);
             if ($pos !== false) {
                 $start = max(0, $pos - 80);
-                $excerpt = ($start > 0 ? '...' : '') . mb_substr($stripped, $start, 200) . ($start + 200 < $len ? '...' : '');
+                $excerpt = ($start > 0 ? '...' : '') . mb_substr($perceived, $start, 200) . ($start + 200 < $len ? '...' : '');
             } else {
-                $excerpt = mb_substr($stripped, 0, 200) . ($len > 200 ? '...' : '');
+                $excerpt = mb_substr($perceived, 0, 200) . ($len > 200 ? '...' : '');
             }
 
             $results[] = [
@@ -265,7 +277,7 @@ class Page extends \Pubvana\Models\AbstractModel
                 'title'        => (string) $page->title,
                 'url'          => $urlPrefix . '/' . $page->slug,
                 'excerpt'      => $excerpt,
-                'content'      => $stripped,
+                'content'      => $perceived,
                 'content_type' => 'Page',
                 'published_at' => $page->created_at,
             ];

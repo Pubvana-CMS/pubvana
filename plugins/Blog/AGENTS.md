@@ -76,7 +76,7 @@ plugins/Blog/
 - `public.head` feed auto-discovery link tags, priority 10 (`Plugin.php:87-91`).
 - `admin.dashboard` cards and sections (`Plugin.php:95-105`), backed by `dashboardCards()` / `dashboardSections()`.
 - `block.available`: recent-posts, categories, tags, archive, related-posts (`Plugin.php:109-164`), each with options schema and a block template under `Views/public/blocks/`.
-- `search.provider` for posts (`Plugin.php:168-171`). Supplies normalized content matches only: `title`, `url`, `excerpt`, stripped `content`, `content_type`, `published_at` and `id`, with no score of its own (`Services/BlogService.php:685-722`). Ranking belongs to the Search plugin's `SearchService::scoreItem()`, so do not reintroduce local relevance scoring here; a returning `relevance` field was removed precisely because the service ignored it.
+- `search.provider` for posts (`Plugin.php:168-171`). Supplies normalized content matches only: `title`, `url`, `excerpt`, perceived `content`, `content_type`, `published_at` and `id`, with no score of its own (`Services/BlogService.php:685-722`). The body is `Pubvana\Services\PerceivedText::fromHtml()` output, and the SQL `LIKE` pre-filter is followed by a `PerceivedText::contains()` check so a term that only appears in markup does not match. Ranking belongs to the Search plugin's `SearchService::scoreItem()`, so do not reintroduce local relevance scoring here; a returning `relevance` field was removed precisely because the service ignored it.
 - `comments.host` content items `['type' => 'blog', 'id', ...]` (`Plugin.php:175-178`, `Services/BlogService.php:486-506`).
 - `brokenlinks` source: published posts as scan targets (`Plugin.php` `brokenlinks` registration, `Services/BlogService.php:brokenLinksItems()`).
 - `nav.linkable` default: published posts as navigation targets (`Plugin.php:182-197`).
@@ -118,6 +118,7 @@ The unit suite is in `tests/Unit/Plugins/Blog/` and covers the service (CRUD, re
   - [ ] Preview a draft via `/admin/blog/{id}/edit` preview link and the `/preview/@token` route
   - [ ] Confirm the five blocks render and that related-posts scores shared tags/categories highest
   - [ ] Search from `/{prefix}` for a title word, an excerpt word, and a body word; all three match, and the ordering is the Search plugin's to decide (this plugin only supplies the matches)
+  - [ ] Search for a term that only appears in markup (`href`); nothing matches, while a term in a `title` attribute does
 
 - Coverage: the unit suite covers `BlogService` (CRUD, revisions, taxonomy sync, blocks, search, dashboard), the models, both controllers, plugin registration, the status allowlist guard, taxonomy pagination, migrations and seed, and search wildcards. `<!-- TODO: add [coverage target] -->`
 
