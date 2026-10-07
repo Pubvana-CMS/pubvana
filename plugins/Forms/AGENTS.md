@@ -102,9 +102,9 @@ The unit suite is in `tests/Unit/Plugins/Forms/` and covers the service (captcha
 1. **`declare(strict_types=1);` at the top of every class file** (`Plugin.php:3`). No exceptions.
 2. **Models extend `Pubvana\Models\AbstractModel` and declare their table string in the constructor** (`Models/Form.php:35-38`).
 3. **Prefer the ActiveRecord fluent query.** No raw SQL exists in this plugin; keep it that way.
-4. **`updateRecord()` must stay whitelisted.** Only `name`, `description`, `status`, `submit_label`, `success_message`, `notification_emails` are writable (`Models/Form.php:133`). The slug is immutable after creation, mirroring the Blog plugin convention.
+4. **`updateRecord()` must stay whitelisted.** Only `name`, `description`, `status`, `submit_label`, `success_message`, `notification_emails` are writable (`Models/Form.php:139`). The slug is immutable after creation, mirroring the Blog plugin convention. `Form::slugExists()` counts soft-deleted rows: the unique index does not exempt them, so a deleted form still holds its slug.
 5. **Escape every interpolated value in the inline HTML builder.** Field names, labels, values, options, URLs all go through `htmlspecialchars` (`Services/FormsService.php:219-334`). Never concatenate a user value raw into markup.
-6. **Use `DateTimeImmutable` for all timestamp writes** (`Models/Form.php:115, 141`). Do not call `date()` for stored values.
+6. **Use `DateTimeImmutable` for all timestamp writes** (`Models/Form.php:121, 147`). Do not call `date()` for stored values.
 7. **Store structured payloads as JSON with `JSON_UNESCAPED_SLASHES`** (`Services/FormsService.php:454, 523`).
 
 ## Documentation sources

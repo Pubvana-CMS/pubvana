@@ -118,6 +118,7 @@ final class PagesAdminControllerTest extends TestCase
     {
         (new PagesAdminController($this->engine()))->edit('99');
         self::assertSame(['/admin/page'], $this->redirects);
+        self::assertSame('Page not found.', $this->flashes['error'][0]);
 
         $this->pages->createPage(['title' => 'E', 'status' => 'draft'], 1);
         (new PagesAdminController($this->engine()))->edit('1');
@@ -136,12 +137,13 @@ final class PagesAdminControllerTest extends TestCase
         self::assertSame(['/admin/page/1/edit'], $this->redirects);
     }
 
-    public function testUpdateMissRedirectsWithoutFlash(): void
+    public function testUpdateMissFlashesNotFound(): void
     {
         (new PagesAdminController($this->engine(data: ['title' => 'X'])))->update('99');
 
         self::assertSame(['/admin/page'], $this->redirects);
-        self::assertSame([], $this->flashes);
+        self::assertSame('Page not found.', $this->flashes['error'][0]);
+        self::assertArrayNotHasKey('success', $this->flashes);
     }
 
     public function testUpdateHitFlashesAndRedirects(): void
@@ -168,6 +170,7 @@ final class PagesAdminControllerTest extends TestCase
     {
         (new PagesAdminController($this->engine()))->revisions('99999');
         self::assertSame(['/admin/page'], $this->redirects);
+        self::assertSame('Page not found.', $this->flashes['error'][0]);
 
         $page = $this->pages->createPage(['title' => 'Y', 'status' => 'draft'], 1);
         $id = (int) $page->id;
@@ -189,6 +192,41 @@ final class PagesAdminControllerTest extends TestCase
         (new PagesAdminController($this->engine()))->restore((string) $id, (string) $revs[0]->id);
         self::assertSame('Revision restored.', $this->flashes['success'][0]);
         self::assertSame(["/admin/page/{$id}/edit"], $this->redirects);
+    }
+
+    public function testStoreRejectsAnUnknownStatus(): void
+    {
+        $app = $this->engine(data: ['title' => 'Bad', 'status' => 'Published']);
+
+        try {
+            (new PagesAdminController($app))->store();
+        } catch (\InvalidArgumentException $e) {
+            self::fail('store() must turn the service error into a flash, not leak it: ' . $e->getMessage());
+        }
+
+        self::assertSame('Status must be draft or published.', $this->flashes['error'][0]);
+        self::assertSame(['/admin/page/create'], $this->redirects);
+        self::assertSame(0, $this->pages->listPages()['total']);
+    }
+
+    public function testDeleteMissFlashesNotFound(): void
+    {
+        (new PagesAdminController($this->engine()))->delete('99999');
+
+        self::assertSame('Page not found.', $this->flashes['error'][0]);
+        self::assertArrayNotHasKey('success', $this->flashes);
+    }
+
+    public function testRestoreMissFlashesError(): void
+    {
+        $page = $this->pages->createPage(['title' => 'V1', 'status' => 'draft'], 1);
+        $id = (int) $page->id;
+
+        (new PagesAdminController($this->engine()))->restore((string) $id, '99999');
+
+        self::assertSame('That revision could not be restored.', $this->flashes['error'][0]);
+        self::assertArrayNotHasKey('success', $this->flashes);
+        self::assertSame(["/admin/page/{$id}/revisions"], $this->redirects);
     }
 
     /**

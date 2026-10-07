@@ -160,6 +160,57 @@ final class PagesServiceTest extends TestCase
         self::assertSame('<p>keep</p>', (string) $updated->content);
     }
 
+    public function testUpdatePageKeepsAllowCommentsWhenTheKeyIsOmitted(): void
+    {
+        $page = $this->service->createPage(['title' => 'C', 'status' => 'draft', 'allow_comments' => '1'], 1);
+        $id = (int) $page->id;
+
+        // A title-only update (what the AI API sends) must not switch comments
+        // off just because the key is absent.
+        $this->service->updatePage($id, ['title' => 'C2'], 1);
+        self::assertSame(1, (int) $this->service->findPage($id)?->allow_comments);
+
+        // An explicit value still wins, both ways.
+        $this->service->updatePage($id, ['title' => 'C3', 'allow_comments' => '0'], 1);
+        self::assertSame(0, (int) $this->service->findPage($id)?->allow_comments);
+
+        $this->service->updatePage($id, ['title' => 'C4', 'allow_comments' => '1'], 1);
+        self::assertSame(1, (int) $this->service->findPage($id)?->allow_comments);
+    }
+
+    public function testCreatePageRejectsAnUnknownStatusBeforeInserting(): void
+    {
+        try {
+            $this->service->createPage(['title' => 'Bad', 'status' => 'Published'], 1);
+            self::fail('An unknown status must be refused.');
+        } catch (\InvalidArgumentException $e) {
+            self::assertSame('Status must be draft or published.', $e->getMessage());
+        }
+
+        // Refused before the insert, so nothing half-created is left behind.
+        self::assertSame(0, $this->service->listPages()['total']);
+    }
+
+    public function testUpdatePageRejectsAnUnknownStatusAndLeavesTheRowAlone(): void
+    {
+        $page = $this->service->createPage(['title' => 'Keep', 'status' => 'published'], 1);
+        $id = (int) $page->id;
+
+        try {
+            $this->service->updatePage($id, ['title' => 'Changed', 'status' => 'PUBLISHED'], 1);
+            self::fail('An unknown status must be refused.');
+        } catch (\InvalidArgumentException $e) {
+            self::assertSame('Status must be draft or published.', $e->getMessage());
+        }
+
+        $after = $this->service->findPage($id);
+        self::assertNotNull($after);
+        self::assertSame('Keep', $after->title);
+        self::assertSame('published', $after->status);
+        // Refused before the snapshot, so no spurious revision was written.
+        self::assertCount(1, $this->service->getRevisions($id));
+    }
+
     public function testDeletePage(): void
     {
         $page = $this->service->createPage(['title' => 'Gone', 'status' => 'draft'], 1);

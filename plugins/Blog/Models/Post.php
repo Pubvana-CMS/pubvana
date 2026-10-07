@@ -103,12 +103,18 @@ class Post extends \Pubvana\Models\AbstractModel
         return $query->isHydrated() ? $query : null;
     }
 
+    /**
+     * Whether a slug is taken anywhere in the table.
+     *
+     * Soft-deleted rows count. The slug column carries a plain unique index,
+     * so a deleted post still occupies its slug and an insert that ignores that
+     * fails on the constraint. Counting every row keeps the admin's collision
+     * check in step with what the database will accept.
+     */
     public function slugExists(string $slug, ?int $excludeId = null): bool
     {
         $query = new self($this->getDatabaseConnection());
-        $query->select('COUNT(*) as cnt')
-              ->eq('slug', $slug)
-              ->isNull('deleted_at');
+        $query->select('COUNT(*) as cnt')->eq('slug', $slug);
 
         if ($excludeId !== null) {
             $query->notEqual('id', $excludeId);

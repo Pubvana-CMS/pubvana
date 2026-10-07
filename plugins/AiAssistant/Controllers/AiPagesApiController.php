@@ -145,12 +145,12 @@ class AiPagesApiController extends AiApiController
             $update['content'] = $content;
         }
         $update['status'] = $status;
-        // PagesService::updatePage always writes allow_comments, so a partial
-        // update that omits it has to carry the current value or comments get
-        // switched off.
-        $update['allow_comments'] = array_key_exists('allow_comments', $payload)
-            ? (!empty($payload['allow_comments']) ? 1 : 0)
-            : (int) $existing->allow_comments;
+        // Sent only when asked for. PagesService::updatePage() leaves the column
+        // alone when the key is absent, so a partial update cannot switch
+        // comments off by omitting it.
+        if (array_key_exists('allow_comments', $payload)) {
+            $update['allow_comments'] = !empty($payload['allow_comments']) ? 1 : 0;
+        }
 
         $page = $pages->updatePage((int) $id, $update);
         $this->app->ai()->saveSeo('page', (int) $id, $payload);

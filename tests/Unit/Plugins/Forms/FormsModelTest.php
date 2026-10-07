@@ -81,6 +81,16 @@ final class FormsModelTest extends TestCase
         self::assertFalse((new Form($this->pdo))->slugExists('taken', (int) $form->id));
     }
 
+    public function testSlugExistsCountsSoftDeletedRows(): void
+    {
+        $form = $this->makeForm(['slug' => 'taken']);
+        $form->softDelete();
+
+        // The slug column's unique index does not exempt soft-deleted rows, so
+        // the check must not either.
+        self::assertTrue((new Form($this->pdo))->slugExists('taken'));
+    }
+
     public function testPaginateListAllCountAllSkipDeleted(): void
     {
         $a = $this->makeForm(['name' => 'Bravo', 'slug' => 'bravo']);

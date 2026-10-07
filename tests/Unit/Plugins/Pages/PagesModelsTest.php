@@ -67,6 +67,46 @@ final class PagesModelsTest extends TestCase
         self::assertTrue($model->slugExists('hello', 99999));
     }
 
+    public function testSlugExistsCountsSoftDeletedRows(): void
+    {
+        $model = new Page($this->pdo);
+        $page = $model->createPage('About', 'x', 1);
+        $page->softDelete();
+
+        // The slug column's unique index does not exempt soft-deleted rows, so
+        // the check has to see them. Reporting the slug as free made the next
+        // create with the same title fail on the constraint.
+        self::assertTrue($model->slugExists('about'));
+    }
+
+    public function testRecreatingAfterSoftDeleteBumpsTheSlug(): void
+    {
+        $model = new Page($this->pdo);
+        $first = $model->createPage('About', 'one', 1);
+        $first->softDelete();
+
+        $second = $model->createPage('About', 'two', 1);
+
+        self::assertSame('about-1', $second->slug);
+        self::assertNotNull($model->findById((int) $second->id));
+    }
+
+    public function testPaginatedOrderBreaksTimestampTiesById(): void
+    {
+        $model = new Page($this->pdo);
+        $a = $model->createPage('Tie A', 'x', 1);
+        $b = $model->createPage('Tie B', 'x', 1);
+
+        // Identical timestamps: without the id tiebreak the database is free to
+        // return either order, which makes paging repeat or drop rows.
+        $this->pdo->exec("UPDATE pages SET created_at = '2026-01-01 00:00:00'");
+
+        $items = $model->findAllPaginated(1, 10);
+
+        self::assertSame((int) $b->id, (int) $items[0]->id);
+        self::assertSame((int) $a->id, (int) $items[1]->id);
+    }
+
     public function testPageCreatedByForSlug(): void
     {
         $page = (new Page($this->pdo))->createPage('About', '<p>Hi</p>', 3);

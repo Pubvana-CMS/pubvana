@@ -5,6 +5,11 @@ All notable changes to the Blog plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.8] - 2026-10-06
+
+### Fixed
+- Creating a post failed when a deleted post still held the same slug.
+
 ## [0.3.7] - 2026-10-05
 
 ### Fixed

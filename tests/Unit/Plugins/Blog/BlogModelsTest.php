@@ -88,6 +88,21 @@ final class BlogModelsTest extends TestCase
         self::assertTrue($model->slugExists('hello', $id + 99));
     }
 
+    public function testPostSlugExistsCountsSoftDeletedRows(): void
+    {
+        $id = $this->insertPost('Hello', 'hello', 'published');
+        $model = new Post($this->pdo);
+
+        $post = $model->findById($id);
+        self::assertNotNull($post);
+        $post->softDelete();
+
+        // The slug column's unique index does not exempt soft-deleted rows, so
+        // the check must not either. Reporting the slug as free left the admin
+        // suffixing nothing, and the insert then failed on the constraint.
+        self::assertTrue($model->slugExists('hello'));
+    }
+
     public function testPostAuthorIdForSlug(): void
     {
         $this->insertPost('Hello', 'hello', 'published');

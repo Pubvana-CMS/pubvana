@@ -64,9 +64,9 @@ final class PagesServiceStub
 /**
  * Partial page updates must not touch fields the caller did not send.
  *
- * PagesService::updatePage() always writes allow_comments, so the AI
- * controller has to carry the page's current value when the payload omits
- * it. Otherwise a title-only update silently switches comments off.
+ * The controller passes allow_comments through only when the payload carries
+ * it. PagesService::updatePage() leaves the column alone when the key is
+ * absent, so a title-only update cannot switch comments off.
  */
 #[CoversClass(AiPagesApiController::class)]
 final class AiPagesUpdateTest extends TestCase
@@ -118,11 +118,14 @@ final class AiPagesUpdateTest extends TestCase
         parent::tearDown();
     }
 
-    public function testOmittedAllowCommentsKeepsThePageValue(): void
+    public function testOmittedAllowCommentsIsNotSent(): void
     {
         $this->update(['title' => 'New title']);
 
-        self::assertSame(1, $this->pages->updates[0]['allow_comments']);
+        // Absent is what makes PagesService::updatePage() leave the column
+        // alone. Sending the page's current value would also work today, but it
+        // makes the controller the authority on a field it was not asked about.
+        self::assertArrayNotHasKey('allow_comments', $this->pages->updates[0]);
     }
 
     public function testExplicitFalseTurnsCommentsOff(): void

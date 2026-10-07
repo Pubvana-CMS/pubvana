@@ -5,6 +5,16 @@ All notable changes to the Pages plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.6] - 2026-10-06
+
+### Fixed
+- Re-creating a page after deleting one failed on the unique slug index.
+- A page status other than `draft` or `published` was stored as given.
+- A partial update switched comments off when the request omitted `allow_comments`.
+- Restore and delete reported success when the page or revision was missing.
+- A search term containing `%` or `_` matched every page.
+- The page list order could change between pages when two pages shared a timestamp.
+
 ## [0.3.5] - 2026-09-30
 
 ### Fixed

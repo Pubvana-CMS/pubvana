@@ -62,7 +62,14 @@ class PagesAdminController extends AdminController
         }
 
         $userId = $this->app->auth()->user()->id ?? 0;
-        $this->app->pages()->createPage($post, $userId);
+
+        try {
+            $this->app->pages()->createPage($post, $userId);
+        } catch (\InvalidArgumentException $e) {
+            $this->app->session()->flash('error', $e->getMessage());
+            $this->app->redirect($this->adminBase() . '/create');
+            return;
+        }
 
         $this->app->session()->flash('success', 'Page created.');
         $this->app->redirect($this->adminBase());
@@ -73,6 +80,7 @@ class PagesAdminController extends AdminController
         $page = $this->app->pages()->findPage((int) $id);
 
         if ($page === null) {
+            $this->app->session()->flash('error', 'Page not found.');
             $this->app->redirect($this->adminBase());
             return;
         }
@@ -100,7 +108,16 @@ class PagesAdminController extends AdminController
 
         $userId = $this->app->auth()->user()->id ?? 0;
 
-        if ($this->app->pages()->updatePage((int) $id, $post, $userId) === null) {
+        try {
+            $page = $this->app->pages()->updatePage((int) $id, $post, $userId);
+        } catch (\InvalidArgumentException $e) {
+            $this->app->session()->flash('error', $e->getMessage());
+            $this->app->redirect($this->adminBase() . '/' . $id . '/edit');
+            return;
+        }
+
+        if ($page === null) {
+            $this->app->session()->flash('error', 'Page not found.');
             $this->app->redirect($this->adminBase());
             return;
         }
@@ -111,7 +128,11 @@ class PagesAdminController extends AdminController
 
     public function delete(string $id): void
     {
-        $this->app->pages()->deletePage((int) $id);
+        if (!$this->app->pages()->deletePage((int) $id)) {
+            $this->app->session()->flash('error', 'Page not found.');
+            $this->app->redirect($this->adminBase());
+            return;
+        }
 
         $this->app->session()->flash('success', 'Page deleted.');
         $this->app->redirect($this->adminBase());
@@ -122,6 +143,7 @@ class PagesAdminController extends AdminController
         $page = $this->app->pages()->findPage((int) $id);
 
         if ($page === null) {
+            $this->app->session()->flash('error', 'Page not found.');
             $this->app->redirect($this->adminBase());
             return;
         }
@@ -139,7 +161,13 @@ class PagesAdminController extends AdminController
     public function restore(string $id, string $revisionId): void
     {
         $userId = $this->app->auth()->user()->id ?? 0;
-        $this->app->pages()->restoreRevision((int) $id, (int) $revisionId, $userId);
+
+        if ($this->app->pages()->restoreRevision((int) $id, (int) $revisionId, $userId) === null) {
+            $this->app->session()->flash('error', 'That revision could not be restored.');
+            $this->app->redirect($this->adminBase() . '/' . $id . '/revisions');
+            return;
+        }
+
         $this->app->session()->flash('success', 'Revision restored.');
         $this->app->redirect($this->adminBase() . '/' . $id . '/edit');
     }

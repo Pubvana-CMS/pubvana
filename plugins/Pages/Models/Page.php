@@ -8,15 +8,16 @@ namespace Pubvana\Plugins\Pages\Models;
  * Page - ActiveRecord model for the pages table.
  *
  * Represents a static page (About, Contact, Terms, etc.).
- * Pages are simple content containers with SEO metadata,
- * draft/published status, and soft-delete support.
+ * Pages are simple content containers with draft/published status and
+ * soft-delete support.
  *
  * Schema:
  *   id                - Auto-increment primary key
  *   title             - Page title
- *   slug              - URL-safe slug (unique among non-deleted pages)
+ *   slug              - URL-safe slug (unique across the table, deleted rows included)
  *   content           - HTML content (sanitized on save)
  *   status            - 'draft' or 'published'
+ *   ai_generated      - 1 when the body was drafted with AI assistance
  *   allow_comments    - 1 if comments are allowed on this page (per-page toggle)
  *   created_by        - User ID of creator
  *   created_at        - Creation timestamp
@@ -28,7 +29,7 @@ namespace Pubvana\Plugins\Pages\Models;
  * @method self notEqual(string $field, mixed $value, string $operator = 'AND')
  * @method self like(string $field, mixed $value, string $operator = 'AND')
  * @method self isNull(string $field, string $operator = 'AND')
- * @method self order(string $field)
+ * @method self order(string $field, string ...$fields)
  * @method self select(string $field, string ...$fields)
  * @method self limit(int $limit)
  * @method self offset(int $offset)
@@ -113,18 +114,21 @@ class Page extends \Pubvana\Models\AbstractModel
     }
 
     /**
-     * Check if a slug already exists (excluding a given page ID).
+     * Whether a slug is taken anywhere in the table.
+     *
+     * Soft-deleted rows count. The slug column carries a plain unique index,
+     * so a deleted page still occupies its slug and an insert that ignores
+     * that fails on the constraint. Counting every row keeps generateSlug()
+     * in step with what the database will accept.
      *
      * @param string $slug Slug to check
-     * @param int|null $excludeId Page ID to exclude from check
-     * @return bool True if slug is taken
+     * @param int|null $excludeId Page ID to exclude from the check
+     * @return bool True if the slug is taken
      */
     public function slugExists(string $slug, ?int $excludeId = null): bool
     {
         $query = new self($this->getDatabaseConnection());
-        $query->select('COUNT(*) as cnt')
-              ->eq('slug', $slug)
-              ->isNull('deleted_at');
+        $query->select('COUNT(*) as cnt')->eq('slug', $slug);
 
         if ($excludeId !== null) {
             $query->notEqual('id', $excludeId);
@@ -146,7 +150,9 @@ class Page extends \Pubvana\Models\AbstractModel
         $offset = ($page - 1) * $perPage;
         $model = new self($this->getDatabaseConnection());
         return $model->isNull('deleted_at')
-                     ->order('created_at DESC')
+                     // id breaks created_at ties, so paging never repeats or
+                     // drops a row when two pages share a timestamp.
+                     ->order('created_at DESC', 'id DESC')
                      ->limit($perPage)
                      ->offset($offset)
                      ->findAll();
@@ -214,6 +220,14 @@ class Page extends \Pubvana\Models\AbstractModel
     /**
      * Find published pages matching a search term in title, slug, or content.
      *
+     * Raw prepared statement because the pattern needs an explicit ESCAPE
+     * clause so a caller-supplied % or _ stays literal; the fluent like()
+     * operator cannot carry one. The escape character is '!' and not a
+     * backslash: MySQL reads a backslash inside a string literal as an escaped
+     * quote, so ESCAPE '\' is a syntax error there while SQLite accepts it,
+     * which is why the SQLite suite never caught it. '!' is a plain literal on
+     * MySQL, SQLite and Postgres alike.
+     *
      * Supplies normalized content matches for the Search plugin. Ranking is
      * owned by SearchService, so this only finds matching content; the
      * stripped body rides along as `content` for the service to score.
@@ -224,15 +238,15 @@ class Page extends \Pubvana\Models\AbstractModel
      */
     public function searchContent(string $term, string $urlPrefix): array
     {
-        $pages = (new self($this->getDatabaseConnection()))
-            ->startWrap()
-                ->like('title', '%' . $term . '%')
-                ->like('slug', '%' . $term . '%', 'or')
-                ->like('content', '%' . $term . '%', 'or')
-            ->endWrap('OR')
-            ->eq('status', 'published')
-            ->isNull('deleted_at')
-            ->findAll();
+        $query = new self($this->getDatabaseConnection());
+        /** @var array<int, static> $pages */
+        $pages = $query->query(
+            "SELECT * FROM pages
+             WHERE (title LIKE :q ESCAPE '!' OR slug LIKE :q ESCAPE '!' OR content LIKE :q ESCAPE '!')
+               AND status = :status
+               AND deleted_at IS NULL",
+            [':q' => '%' . $this->escapeLikePattern($term) . '%', ':status' => 'published']
+        );
 
         $results = [];
         foreach ($pages as $page) {
@@ -333,6 +347,22 @@ class Page extends \Pubvana\Models\AbstractModel
     // -----------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------
+
+    /**
+     * Neutralize the LIKE wildcards % and _ so a user-supplied search term
+     * matches them literally. searchContent() carries the matching ESCAPE
+     * clause.
+     *
+     * The escape character there is '!', so '!' is doubled first. strtr()
+     * replaces without rescanning what it already emitted, but an escape
+     * character must still be escaped by itself to keep the resulting pattern
+     * well formed. A backslash needs no handling: it is not the escape
+     * character, so it is already literal in the pattern.
+     */
+    private function escapeLikePattern(string $term): string
+    {
+        return strtr($term, ['!' => '!!', '%' => '!%', '_' => '!_']);
+    }
 
     /**
      * Generate a URL-safe slug from a title.

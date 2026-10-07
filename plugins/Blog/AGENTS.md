@@ -17,15 +17,15 @@ Blog is the content module of Pubvana. It provides posts, categories, tags, revi
 ## Project guidelines
 
 1. **Route all writes through `BlogService`.** Controllers must call service methods (`createPost`, `updatePost`, `syncPostCategories`, `syncPostTags`) and never touch models directly. Reason: the service handles revision snapshots, taxonomy sync, `ai_generated` handling, and content purification (`Controllers/BlogAdminController.php:74-89`).
-2. **Never change a slug after creation.** `Post::updateRecord()` only writes whitelisted fields and `slug` is excluded (`Models/Post.php:324-327`). Reason: the immutable slug keeps post URLs, feeds, previews, and nav links stable.
+2. **Never change a slug after creation.** `Post::updateRecord()` only writes whitelisted fields and `slug` is excluded (`Models/Post.php:347-350`). `Post::slugExists()` counts soft-deleted rows: the unique index does not exempt them, so a deleted post still holds its slug and the admin's collision suffix has to see it. Reason: the immutable slug keeps post URLs, feeds, previews, and nav links stable.
 3. **Never change `ai_generated` after creation.** It is set once at create time (`Services/BlogService.php:85`) and influences the public AI disclosure (`Controllers/BlogPublicController.php:387-394`). Reason: the flag records provenance, not current state.
 4. **Bump post views with `incrementViewsDirect()`, not `incrementViews()`.**
-   The raw `UPDATE ... SET views = views + 1 ... WHERE deleted_at IS NULL` (`Models/Post.php:360-368`) is atomic and avoids the N+1 hydration that the old two-round-trip save caused. Reason: concurrent-safe counting with minimal query cost.
+   The raw `UPDATE ... SET views = views + 1 ... WHERE deleted_at IS NULL` (`Models/Post.php:383-391`) is atomic and avoids the N+1 hydration that the old two-round-trip save caused. Reason: concurrent-safe counting with minimal query cost.
 5. **Snapshot before every state change.** `PostRevision::createFromPost()` records title, content, excerpt, and status before a write (`Models/PostRevision.php:56-69`), and a restore first snapshots the current state (`Services/BlogService.php:153-154`). Reason: every restore is itself reversible.
 6. **Prune revisions after each snapshot.** History is capped at `max_revisions` (default `15`, `Config/Config.php:5`) via `PostRevision::pruneForPost()` (`Models/PostRevision.php:71-86`). Reason: unbounded history would bloat the `post_revisions` table.
 7. **Keep content purification enabled.** `purify_content` defaults to true (`Services/BlogService.php:77, 98`) and runs stored HTML through htmlpurifier when available (`Services/BlogService.php:589-596`). Reason: admin-authored HTML is trusted input, but purging keeps output consistent and defendable.
 8. **Filter every public/read query to `status = 'published' AND deleted_at IS NULL`.**
-   Posts are soft-deleted (`Models/Post.php:339-343`) and carry statuses `draft`, `published`, `scheduled`; public listing, search, feed, nav, and comment-host queries must exclude drafts and tombstones (e.g. `Plugin.php:186`, `Models/Post.php:59-64`). Reason: only published, live posts reach the public surface.
+   Posts are soft-deleted (`Models/Post.php:362-366`) and carry statuses `draft`, `published`, `scheduled`; public listing, search, feed, nav, and comment-host queries must exclude drafts and tombstones (e.g. `Plugin.php:186`, `Models/Post.php:59-64`). Reason: only published, live posts reach the public surface.
 9. **Treat `preview_token` as a capability, not a secret you add to URLs.** It is a unique column (migration `000001`) and the `/preview/@token` route renders unpublished posts without auth (`Plugin.php:74`, `Controllers/BlogPublicController.php:201-226`). Reason: the token is the sole gate for draft review before publish.
 10. **Taxonomy sync is delete-then-insert.** `syncForPost` drops existing join rows, then inserts the incoming set (`Models/PostCategory.php:46-58`, `Models/PostTag.php:46-58`). Reason: keeps join tables consistent on every save at small-cardinality cost, so only pass validated ID sets.
 11. **Build all slugs with `Flight::slugify()` / `$app->slugify()`.** Used for posts, categories (with server-side duplicates handling) and inline tags (`Controllers/BlogAdminController.php:58, 219, 261`; `Services/BlogService.php:271`). Reason: consistent, URL-safe slugs across all admin forms and the tag auto-create path.
@@ -88,7 +88,7 @@ plugins/Blog/
 
 **Write path.** `BlogAdminController` reads form data (`->_csrf_token` stripped, `Controllers/BlogAdminController.php:56, 123`), builds the slug, then `BlogService::createPost()` / `updatePost()` snapshots a revision, prunes, and writes via the model. Taxonomy is re-synced afterwards (`Controllers/BlogAdminController.php:88-89, 151-152`).
 
-**Read path.** Public controllers resolve `$app->blog()` and model queries, then render Vision templates (`post`, `archive`, `categories`, `tags`, `home`; e.g. `Controllers/BlogPublicController.php:121`). Post view counting is atomic (`Services/BlogService.php:159-166`, `Models/Post.php:360-368`).
+**Read path.** Public controllers resolve `$app->blog()` and model queries, then render Vision templates (`post`, `archive`, `categories`, `tags`, `home`; e.g. `Controllers/BlogPublicController.php:121`). Post view counting is atomic (`Services/BlogService.php:159-166`, `Models/Post.php:383-391`).
 
 ### Revisions
 
@@ -126,8 +126,8 @@ The unit suite is in `tests/Unit/Plugins/Blog/` and covers the service (CRUD, re
 
 1. **`declare(strict_types=1);` at the top of every class file** (`Plugin.php:3`). No exceptions.
 2. **Models extend `Pubvana\Models\AbstractModel` and declare their table string in the constructor** (`Models/Post.php:47-50`). Do not hardcode table names in business logic.
-3. **Prefer the ActiveRecord fluent query (eq, in, notEq, like, isNull, order, limit, offset) over raw SQL.** Raw PDO prepared statements are allowed only where the fluent API cannot express the query, and must carry a comment explaining why (see the `incrementViewsDirect()` rationale, `Models/Post.php:360-368`, and the ESCAPE-clause pre-filter in `searchByPattern()`, `Models/Post.php:285`).
-4. **`updateRecord()` must stay whitelisted.** Only fields listed in the `$allowed` array may be written (`Models/Post.php:324-327`, `Models/Category.php:101`). Never pass raw request arrays into model writes; controllers unset `_csrf_token` first (`Controllers/BlogAdminController.php:56`).
+3. **Prefer the ActiveRecord fluent query (eq, in, notEq, like, isNull, order, limit, offset) over raw SQL.** Raw PDO prepared statements are allowed only where the fluent API cannot express the query, and must carry a comment explaining why (see the `incrementViewsDirect()` rationale, `Models/Post.php:360-368`, and the ESCAPE-clause pre-filter in `searchByPattern()`, `Models/Post.php:298`).
+4. **`updateRecord()` must stay whitelisted.** Only fields listed in the `$allowed` array may be written (`Models/Post.php:347-350`, `Models/Category.php:101`). Never pass raw request arrays into model writes; controllers unset `_csrf_token` first (`Controllers/BlogAdminController.php:56`).
 5. **Views render through Vision paths.** Admin views use `pubvana/blog/admin/{view}` and public pages render core templates (`post`, `archive`, `categories`, `tags`, `home`). Block templates are `.tpl` files registered as bare names (`recent-posts.tpl`, etc.) under `Views/public/blocks/`; RegionManager derives the package (`pubvana/blog`) from the block key for app and theme overrides.
 6. **Keep block providers returning plain template-ready arrays** (`title` + items) so block templates stay dumb; compute URLs using the passed `$prefix`, never hardcoded `/blog`.
 

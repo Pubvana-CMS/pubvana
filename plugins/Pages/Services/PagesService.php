@@ -25,6 +25,9 @@ class PagesService
     /** @var array<string, mixed> */
     private array $config;
 
+    /** Statuses the schema and the public queries accept. */
+    private const VALID_STATUSES = ['draft', 'published'];
+
     /**
      * @param array<string, mixed> $config
     */
@@ -78,6 +81,10 @@ class PagesService
     */
     public function createPage(array $data, int $userId): Page
     {
+        // Validated before the insert so a bad status cannot leave a
+        // half-created page behind.
+        $status = $this->validStatus((string) ($data['status'] ?? 'draft'));
+
         $page = $this->pageModel->createPage(
             (string) ($data['title'] ?? ''),
             $this->purifyContent((string) ($data['content'] ?? '')),
@@ -86,7 +93,7 @@ class PagesService
         );
 
         $page->updatePage([
-            'status'         => (string) ($data['status'] ?? 'draft'),
+            'status'         => $status,
             'allow_comments' => !empty($data['allow_comments']) ? 1 : 0,
         ]);
 
@@ -106,18 +113,42 @@ class PagesService
             return null;
         }
 
+        // Validated before the snapshot so a rejected update leaves no trace.
+        $status = $this->validStatus((string) ($data['status'] ?? $page->status));
+
         $authorId = $userId ?? (int) $page->created_by;
         $this->revisionModel->createFromPage($page, $authorId);
 
-        $page->updatePage([
-            'title'          => $data['title'] ?? $page->title,
-            'content'        => isset($data['content']) ? $this->purifyContent((string) $data['content']) : $page->content,
-            'status'         => $data['status'] ?? $page->status,
-            'allow_comments' => !empty($data['allow_comments']) ? 1 : 0,
-        ]);
+        $fields = [
+            'title'   => $data['title'] ?? $page->title,
+            'content' => isset($data['content']) ? $this->purifyContent((string) $data['content']) : $page->content,
+            'status'  => $status,
+        ];
+
+        // Only write allow_comments when the caller supplied it. A partial
+        // update that omits the key must not switch comments off.
+        if (array_key_exists('allow_comments', $data)) {
+            $fields['allow_comments'] = !empty($data['allow_comments']) ? 1 : 0;
+        }
+
+        $page->updatePage($fields);
         $this->pruneRevisions($id);
 
         return $page;
+    }
+
+    /**
+     * Reject any status the schema does not accept.
+     *
+     * @throws \InvalidArgumentException When the status is not draft or published.
+     */
+    private function validStatus(string $status): string
+    {
+        if (!in_array($status, self::VALID_STATUSES, true)) {
+            throw new \InvalidArgumentException('Status must be draft or published.');
+        }
+
+        return $status;
     }
 
     public function deletePage(int $id): bool

@@ -95,7 +95,8 @@ class Plugin implements PluginInterface
             'callable'     => fn(string $term) => $app->pages()->searchProvider($term),
         ]);
 
-        // Comments host — pages are commentable content (no per-page toggle)
+        // Comments host: pages are commentable content. The payload carries
+        // each page's allow_comments toggle.
         $adext->register('comments.host', 'content', 'pubvana.pages', [
             'label'    => 'Pages',
             'callable' => fn() => $app->pages()->commentHostItems(),
