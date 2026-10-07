@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Pubvana\Tests\Unit\Plugins\SiteHealth;
 
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use Pubvana\Plugins\SiteHealth\Services\CheckResult;
 use Pubvana\Plugins\SiteHealth\Services\ConfigDefaultsCheck;
 use Pubvana\Plugins\SiteHealth\Services\DatabaseCheck;
@@ -233,11 +234,12 @@ final class ChecksTest extends TestCase
         self::assertSame(CheckResult::PASS, $result->status);
     }
 
+    #[RunInSeparateProcess]
     public function testSessionConfigPassesWhenHardened(): void
     {
-        // Session ini keys cannot change while a session is active (another
-        // suite, e.g. FormsIpRateLimitTest, starts a real one). Without
-        // isolation the hardened values cannot be forced.
+        // Session ini keys cannot change while a session is active, and another
+        // suite (e.g. FormsIpRateLimitTest) starts a real one. A separate
+        // process starts clean, so the hardened values can be forced.
         if (session_status() === PHP_SESSION_ACTIVE) {
             self::markTestSkipped('a session is active; session ini keys are locked');
         }
@@ -256,6 +258,7 @@ final class ChecksTest extends TestCase
         self::assertSame(CheckResult::PASS, $result->status);
     }
 
+    #[RunInSeparateProcess]
     public function testSessionConfigCriticalWhenWideOpen(): void
     {
         if (session_status() === PHP_SESSION_ACTIVE) {

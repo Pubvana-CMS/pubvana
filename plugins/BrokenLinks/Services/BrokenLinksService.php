@@ -369,7 +369,7 @@ class BrokenLinksService
             'DELETE FROM broken_links WHERE source_type = ? AND source_id = ? AND dismissed = 0'
             . ' AND url_hash NOT IN (' . $placeholders . ')'
         );
-        $stmt->execute(array_merge([$sourceType, $sourceId], array_values($keepHashes)));
+        $stmt->execute(array_merge([$sourceType, $sourceId], $keepHashes));
     }
 
     /**

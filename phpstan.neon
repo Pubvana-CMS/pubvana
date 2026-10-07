@@ -46,10 +46,3 @@ parameters:
             # Same vendor imprecision as above, for Router::group() middlewares.
             message: '#Parameter \#3 \$groupMiddlewares of method flight\\net\\Router\:\:group\(\) expects .* given#'
             path: app/Services/PluginLoader.php
-        -
-            # dataFor()/render() expose an $allowComments flag to comment hosts
-            # by contract; every current in-tree host happens to pass true, so
-            # PHPStan sees the branches as dead. The flag stays because
-            # third-party hosts pass the item's allow_comments value.
-            message: '#Left side of && is always true|Negated boolean expression is always false#'
-            path: plugins/Comments/Services/CommentService.php
