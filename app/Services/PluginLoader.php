@@ -305,8 +305,10 @@ class PluginLoader
      * Load a local plugin's Config/Config.php and merge with app overrides.
      *
      * Mirrors the vendor path: reads Config.php for routePrepend,
-     * configPrepend, and other settings, then merges any app-level
-     * overrides from the plugins config array.
+     * configPrepend, and other settings, merges any app-level overrides from
+     * the plugins config array, publishes the result on the app container
+     * under its config key, then requires every other PHP file in Config/
+     * with $app and $router in scope.
      *
      * @param string               $pluginId  Plugin ID
      * @param string               $pluginDir Plugin root directory
@@ -314,7 +316,8 @@ class PluginLoader
      */
     protected function loadLocalPluginConfig(string $pluginId, string $pluginDir, array $appConfig): void
     {
-        $configFile = $pluginDir . DIRECTORY_SEPARATOR . 'Config' . DIRECTORY_SEPARATOR . 'Config.php';
+        $configDir = $pluginDir . DIRECTORY_SEPARATOR . 'Config';
+        $configFile = $configDir . DIRECTORY_SEPARATOR . 'Config.php';
 
         $config = [];
         if (file_exists($configFile)) {
@@ -330,7 +333,27 @@ class PluginLoader
             $config = array_replace_recursive($config, $overrides);
         }
 
+        $configPrepend = $config['configPrepend'] ?? $this->deriveConfigPrepend($pluginId);
+
+        // Store config on $app under the prefixed key, same as the vendor
+        // path, so any code can read the plugin's config (routePrepend,
+        // cache_ttl, ...) without reaching into the loader.
+        if (!empty($config)) {
+            $this->app->set($configPrepend, $config);
+        }
+
         $this->pluginConfigs[$pluginId] = $config;
+
+        // Every other PHP file in Config/ (except the handled ones), required
+        // with $app and $router in scope. Same convention as the vendor path.
+        $app = $this->app;
+        $router = $this->router;
+        $handled = ['Config.php', 'Services.php', 'Routes.php', 'AdminRoutes.php'];
+        foreach (glob($configDir . DIRECTORY_SEPARATOR . '*.php') ?: [] as $file) {
+            if (!in_array(basename($file), $handled, true)) {
+                require $file;
+            }
+        }
     }
 
     /**

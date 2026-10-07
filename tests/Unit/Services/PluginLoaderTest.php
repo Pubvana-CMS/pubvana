@@ -462,6 +462,65 @@ final class PluginLoaderTest extends TestCase
         self::assertContains('/tool/status', $patterns);
     }
 
+    public function testLocalPluginConfigIsStoredAndPrefixed(): void
+    {
+        $this->writeLocalPlugin('_fxlocal', 'pubvana/local', [
+            'name'      => 'pubvana/local',
+            'namespace' => $this->fxNs('\Local'),
+        ], [
+            'config' => "return ['routePrepend' => 'local', 'api_key' => 'from-package'];",
+        ]);
+
+        $app = $this->engine();
+        $loader = new PluginLoader(
+            $app,
+            $app->router(),
+            $this->tmpRoot . '/plugins',
+            $this->tmpRoot . '/vendor',
+            ['pubvana/local' => ['enabled' => true, 'api_key' => 'from-app']]
+        );
+        $loader->loadPlugins();
+
+        // Same container key and override merge as a vendor package.
+        self::assertSame(
+            ['routePrepend' => 'local', 'api_key' => 'from-app'],
+            $app->get('pubvana.local')
+        );
+        $this->assertRegistered('pubvana/local');
+    }
+
+    public function testLocalPluginExtraConfigFilesAreRequired(): void
+    {
+        $this->writeLocalPlugin('_fxextra', 'pubvana/extra', [
+            'name'      => 'pubvana/extra',
+            'namespace' => $this->fxNs('\Extra'),
+        ], [
+            'config' => "return ['routePrepend' => 'extra'];",
+        ]);
+
+        $pluginDir = $this->tmpRoot . '/plugins/_fxextra';
+        file_put_contents(
+            $pluginDir . '/Config/Boot.php',
+            "<?php\n"
+            . "\$app->set('pubvana.extra.booted', true);\n"
+            . "\$GLOBALS['fixture_extra_router_in_scope'] = \$router instanceof \\flight\\net\\Router;\n"
+        );
+
+        $app = $this->engine();
+        $loader = new PluginLoader(
+            $app,
+            $app->router(),
+            $this->tmpRoot . '/plugins',
+            $this->tmpRoot . '/vendor',
+            ['pubvana/extra' => ['enabled' => true]]
+        );
+        $loader->loadPlugins();
+
+        self::assertTrue($app->get('pubvana.extra.booted'), 'the extra Config file ran');
+        self::assertTrue($GLOBALS['fixture_extra_router_in_scope'] ?? false, '$router was in scope');
+        unset($GLOBALS['fixture_extra_router_in_scope']);
+    }
+
     public function testRoutePrefixAndApiPrefixDeriveAndRespectConfig(): void
     {
         $this->writeLocalPlugin('_fxalpha', 'pubvana/alpha', [
