@@ -18,6 +18,17 @@ use flight\Engine;
  */
 class LlmsTxtService
 {
+    /**
+     * Per-section item cap, matching the llms.txt convention of a short,
+     * curated list rather than a full dump.
+     */
+    protected const MAX_SECTION_ITEMS = 50;
+
+    /**
+     * Upper bound on the items pulled from a host before filtering.
+     */
+    protected const MAX_ITEMS = 5000;
+
     protected \PDO $pdo;
     /** @var Engine<object> */
     protected Engine $app;
@@ -100,19 +111,31 @@ class LlmsTxtService
      */
     protected function getPublishedPages(): array
     {
-        $pages = $this->app->pages()->listPublished();
-        $seoModel = new SeoMeta($this->pdo);
+        try {
+            $pages = $this->app->pages()->listPublished(self::MAX_ITEMS);
+        } catch (\Throwable) {
+            // Pages disabled or unavailable: omit that section, do not 500.
+            return [];
+        }
+
+        $meta = $this->metaByContent('page');
         $result = [];
 
-        foreach (array_slice($pages, 0, 50) as $page) {
-            $meta = $seoModel->findByContent('page', (int) $page->id);
-            if ($meta && $meta->isNoindex()) {
+        foreach ($pages as $page) {
+            $id = (int) $page->id;
+
+            // Filter noindex before the cap, so a hidden item never eats a slot.
+            if (isset($meta[$id]) && $meta[$id]->isNoindex()) {
                 continue;
             }
+            if (count($result) >= self::MAX_SECTION_ITEMS) {
+                break;
+            }
+
             $result[] = [
                 'title'            => $page->title,
                 'slug'             => $page->slug,
-                'meta_description' => $meta->meta_description ?? '',
+                'meta_description' => isset($meta[$id]) ? (string) ($meta[$id]->meta_description ?? '') : '',
             ];
         }
 
@@ -124,19 +147,31 @@ class LlmsTxtService
      */
     protected function getPublishedPosts(): array
     {
-        $posts = $this->app->blog()->listPosts(1, 50, 'published');
-        $seoModel = new SeoMeta($this->pdo);
+        try {
+            $posts = $this->app->blog()->listPosts(1, self::MAX_ITEMS, 'published');
+        } catch (\Throwable) {
+            // Blog disabled or unavailable: omit that section, do not 500.
+            return [];
+        }
+
+        $meta = $this->metaByContent('post');
         $result = [];
 
         foreach ($posts['items'] as $post) {
-            $meta = $seoModel->findByContent('post', (int) $post->id);
-            if ($meta && $meta->isNoindex()) {
+            $id = (int) $post->id;
+
+            // Filter noindex before the cap, so a hidden item never eats a slot.
+            if (isset($meta[$id]) && $meta[$id]->isNoindex()) {
                 continue;
             }
+            if (count($result) >= self::MAX_SECTION_ITEMS) {
+                break;
+            }
+
             $result[] = [
                 'title'            => $post->title,
                 'slug'             => $post->slug,
-                'meta_description' => $meta->meta_description ?? '',
+                'meta_description' => isset($meta[$id]) ? (string) ($meta[$id]->meta_description ?? '') : '',
             ];
         }
 
@@ -148,7 +183,12 @@ class LlmsTxtService
      */
     protected function getCategories(): array
     {
-        $categories = $this->app->blog()->listCategories();
+        try {
+            $categories = $this->app->blog()->listCategories();
+        } catch (\Throwable) {
+            return [];
+        }
+
         $result = [];
 
         foreach ($categories as $cat) {
@@ -159,6 +199,25 @@ class LlmsTxtService
         }
 
         return $result;
+    }
+
+    /**
+     * SEO meta for one content type, keyed by content id.
+     *
+     * One query for the whole type, instead of one per item.
+     *
+     * @return array<int, SeoMeta>
+     */
+    protected function metaByContent(string $contentType): array
+    {
+        $model = new SeoMeta($this->pdo);
+        $map = [];
+
+        foreach ($model->findByContentType($contentType) as $meta) {
+            $map[(int) $meta->content_id] = $meta;
+        }
+
+        return $map;
     }
 
     /**

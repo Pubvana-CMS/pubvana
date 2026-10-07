@@ -19,6 +19,21 @@ if ($seo_meta instanceof \Pubvana\Plugins\Seo\Models\SeoMeta) {
 }
 
 $focusKeywordsValue = !empty($focusKeywords) ? implode(', ', $focusKeywords) : '';
+
+$schemaOptions = $content_type === 'post'
+    ? [
+        'BlogPosting' => 'Blog post (default)',
+        'Article'     => 'Article',
+        'NewsArticle' => 'News article',
+        'TechArticle' => 'Tech article',
+    ]
+    : [
+        'WebPage'     => 'Web page (default)',
+        'AboutPage'   => 'About page',
+        'ContactPage' => 'Contact page',
+        'FAQPage'     => 'FAQ page',
+    ];
+$schemaType = $seo_meta['schema_type'] ?? '';
 ?>
 
 <div class="card mb-4" id="seo-panel">
@@ -94,6 +109,17 @@ $focusKeywordsValue = !empty($focusKeywords) ? implode(', ', $focusKeywords) : '
                 <option value="noindex" <?= ($seo_meta['robots_directive'] ?? '') === 'noindex' ? 'selected' : '' ?>>noindex</option>
                 <option value="nofollow" <?= ($seo_meta['robots_directive'] ?? '') === 'nofollow' ? 'selected' : '' ?>>nofollow</option>
                 <option value="noindex, nofollow" <?= ($seo_meta['robots_directive'] ?? '') === 'noindex, nofollow' ? 'selected' : '' ?>>noindex, nofollow</option>
+            </select>
+        </div>
+
+        <!-- Schema Type -->
+        <div class="mb-3">
+            <label class="form-label">Schema Type <small class="text-secondary">(structured data type for this content)</small></label>
+            <select name="seo[schema_type]" class="form-select" id="seo-schema-type">
+                <option value="" <?= empty($schemaType) ? 'selected' : '' ?>>Auto (<?= htmlspecialchars((string) array_key_first($schemaOptions)) ?>)</option>
+                <?php foreach ($schemaOptions as $value => $label): ?>
+                    <option value="<?= htmlspecialchars($value) ?>" <?= $schemaType === $value ? 'selected' : '' ?>><?= htmlspecialchars($label) ?></option>
+                <?php endforeach; ?>
             </select>
         </div>
 
@@ -251,23 +277,25 @@ $focusKeywordsValue = !empty($focusKeywords) ? implode(', ', $focusKeywords) : '
         const images = tempDiv.querySelectorAll('img');
         const imageAlts = Array.from(images).map(img => img.getAttribute('alt') || '');
 
-        const params = new URLSearchParams({
-            title: (pageTitle ? pageTitle.value : ''),
-            content: content,
-            meta_title: titleInput.value,
-            meta_description: descInput.value,
-            focus_keywords: focusKeywords ? focusKeywords.value : '',
-            slug: slug ? slug.value : '',
-            has_images: images.length > 0 ? '1' : '0',
+        const formData = new FormData();
+        formData.append('title', pageTitle ? pageTitle.value : '');
+        formData.append('content', content);
+        formData.append('meta_title', titleInput.value);
+        formData.append('meta_description', descInput.value);
+        formData.append('focus_keywords', focusKeywords ? focusKeywords.value : '');
+        formData.append('slug', slug ? slug.value : '');
+        formData.append('has_images', images.length > 0 ? '1' : '0');
+        imageAlts.forEach(function (alt, i) {
+            formData.append('image_alts[' + i + ']', alt);
         });
+        formData.append('_csrf_token', document.querySelector('input[name="_csrf_token"]')?.value || '');
 
-        imageAlts.forEach((alt, i) => {
-            params.append('image_alts[' + i + ']', alt);
-        });
-
-        fetch('/admin/seo/analyze?' + params.toString(), {
-            method: 'GET',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        // POST, so a long article body never overflows the URL limit or ends
+        // up recorded in access logs.
+        fetch('/admin/seo/analyze', {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: formData
         })
             .then(response => response.json())
             .then(data => {
@@ -287,6 +315,9 @@ $focusKeywordsValue = !empty($focusKeywords) ? implode(', ', $focusKeywords) : '
 
         const score = data.score || 0;
         scoreHidden.value = score;
+
+        // Persist the score, otherwise the dashboard average never moves.
+        autoSave('seo_score', String(score));
 
         const scoreTone = score >= 70 ? 'success-lt' : (score >= 40 ? 'warning-lt' : 'danger-lt');
         scoreBadge.innerHTML = '<span class="badge bg-' + scoreTone + '">Score: ' + score + '/100</span>';
@@ -332,7 +363,8 @@ $focusKeywordsValue = !empty($focusKeywords) ? implode(', ', $focusKeywords) : '
         fetch('/admin/seo/meta', {
             method: 'POST',
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
-            body: formData
+            body: formData,
+            keepalive: true
         }).catch(function (err) {
             console.error('SEO auto-save error:', err);
         });
@@ -345,7 +377,6 @@ $focusKeywordsValue = !empty($focusKeywords) ? implode(', ', $focusKeywords) : '
         { el: document.getElementById('seo-canonical'), field: 'canonical_url' },
         { el: document.querySelector('input[name="seo[og_title]"]'), field: 'og_title' },
         { el: document.querySelector('textarea[name="seo[og_description]"]'), field: 'og_description' },
-        { el: document.querySelector('input[name="seo[og_image]"]'), field: 'og_image' },
     ];
 
     textFields.forEach(function (item) {
@@ -356,8 +387,18 @@ $focusKeywordsValue = !empty($focusKeywords) ? implode(', ', $focusKeywords) : '
         }
     });
 
+    // The OG image lives in a hidden input the media picker fills in, so
+    // there is no blur to hook. The picker dispatches a change event.
+    const ogImageInput = document.querySelector('input[name="seo[og_image]"]');
+    if (ogImageInput) {
+        ogImageInput.addEventListener('change', function () {
+            autoSave('og_image', this.value);
+        });
+    }
+
     const selectFields = [
         { el: document.getElementById('seo-robots'), field: 'robots_directive' },
+        { el: document.getElementById('seo-schema-type'), field: 'schema_type' },
         { el: document.querySelector('select[name="seo[og_type]"]'), field: 'og_type' },
         { el: document.querySelector('select[name="seo[twitter_card]"]'), field: 'twitter_card' },
     ];

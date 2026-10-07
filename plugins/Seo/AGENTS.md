@@ -19,7 +19,7 @@ Seo manages on-page SEO for Pubvana: head meta tags with per-content overrides, 
 1. **Never let `renderHead()` emit `<title>`.** It renders description, canonical, robots, hreflang, Open Graph, Twitter, verification, injected, and JSON-LD lines only; the theme's header renders the title from `buildTitle()` (`Services/SeoService.php:392-396`). Reason: a duplicated `<title>` tag breaks the single-title rule the theme relies on.
 2. **Escape every value before emitting it.** Head tags use `htmlspecialchars(..., ENT_QUOTES, 'UTF-8')`; the sitemap uses `ENT_XML1` (`Services/SeoService.php:401-461`, `Services/SitemapService.php:151`). The only exception is `addTag()`, which injects raw HTML intentionally. Reason: title/description/canonical content is admin-controlled and must stay inert.
 3. **Publish only indexable URLs.** Sitemaps and llms.txt skip any item whose `seo_meta` robots directive is `noindex` (`Services/SitemapService.php:70-95`, `Services/LlmsTxtService.php:101-124`). Reason: telling crawlers to index a noindex URL defeats the directive.
-4. **Gate every fetch file in its public controller.** `/sitemap.xml` and `/llms.txt` halt 404 when their `Seo.*_enabled` setting is off (`Controllers/SeoPublicController.php:28-31, 58-61`); robots.txt always responds. New public endpoints must copy that pattern and the `X-Robots-Tag: noindex` header on the sitemap.
+4. **Fetch files are always served; there is no on/off switch.** `/sitemap.xml`, `/robots.txt`, and `/llms.txt` always respond, so the robots.txt sitemap reference can never point at a dead URL (`Controllers/SeoPublicController.php`). New public endpoints follow the same rule, and the sitemap keeps its `X-Robots-Tag: noindex` header. Content inclusion is still tunable (`Seo.sitemap_include_pages`, `Seo.sitemap_include_posts`, `Seo.sitemap_include_archives`, and the matching `Seo.llms_txt_*` keys).
 5. **The author node is the human, never an AI/model identity.** `resolveAuthor()` resolves the profile and account username; the Person node appears only for posts with a name (`Services/SeoService.php:527-574`). AI provenance is a separate signal: `digitalSourceType` is added only when the context is `ai_generated` and `Seo.ai_disclosure_enabled` is on (`Services/SchemaService.php:213-215, 235-237`). Reason: editorial responsibility stays with a person, and disclosure is a policy toggle, not a side effect of generation.
 6. **Read every tunable through the `Seo.` settings namespace with an explicit default.** Examples: `title_separator` `|`, `title_template` `{title} {sep} {site_name}`, `default_language` `en` (`Services/SeoService.php:245-262, 317-319`). Reason: defaults are the fallback everywhere, so a new knob must be plumbed through settings, not hardcoded at one call site.
 7. **`saveMeta()` is the single write path for `seo_meta`.** The whitelist (`meta_title`, `meta_description`, `canonical_url`, `robots_directive`, `og_title`, `og_description`, `og_image`, `og_type`, `twitter_card`, `schema_type`, `seo_score`, `hreflang` at `Services/SeoService.php:204-208`) and the focus-keywords handling (array or CSV, capped at 5 via `setFocusKeywordsArray`) stay fixed. Add a field here and add a column to the migration together.
@@ -68,7 +68,7 @@ plugins/Seo/
 
 **Structured data.** `SchemaService::render()` emits one `@graph`: Organization (home/post/page), WebSite with SearchAction (homepage only), Person (post author), BreadcrumbList (when context supplies `breadcrumbs`), and BlogPosting/WebPage as the main entity (`Services/SchemaService.php:39-99`).
 
-**Fetch files.** `/sitemap.xml` (settings-gated, homepage + published pages/posts + category/tag archives, `<loc>`/`<lastmod>` only, `noindex` excluded), `/robots.txt` (custom body or defaults, then per-bot AI `Disallow` lines, then sitemap reference), `/llms.txt` (settings-gated, llmstxt.org format, 50 page/post cap, `noindex` excluded).
+**Fetch files.** `/sitemap.xml` (always served, homepage + published pages/posts + optional category/tag archives, `<loc>`/`<lastmod>` only, `noindex` excluded), `/robots.txt` (custom body or defaults, then per-bot AI `Disallow` lines, then sitemap reference), `/llms.txt` (always served, llmstxt.org format, 50 page/post cap, `noindex` excluded).
 
 **Editor panel.** The `content.edit.panel` adext callable renders the panel (or a create-notice before the item exists), computing the content URL base from `SITE_URL` and the Blog/Pages route prefixes, and embedding a Media og-image picker (`Plugin.php:109-145`). The panel autosaves `seo[...]` fields to `POST /admin/seo/meta` and scores content via `GET /admin/seo/analyze`.
 
@@ -83,9 +83,9 @@ The plugin has no `composer.json` (it is in-tree), but it has a test suite under
   - `find plugins/Seo -name '*.php' -exec php -l {} \;`
 - Tests: `vendor/bin/phpunit --filter Seo`
 - Manual verification checklist:
-  - [ ] `/sitemap.xml` is valid XML, includes homepage + published content + archives, omits no-indexed items, and 404s with `Seo.sitemap_enabled` off
+  - [ ] `/sitemap.xml` is valid XML, includes homepage + published content + archives, omits no-indexed items, and always responds
   - [ ] `/robots.txt` shows defaults plus `Disallow: /` only for blocked AI crawlers, the custom body when provided, and a sitemap reference using `CMS.siteUrl`
-  - [ ] `/llms.txt` follows llmstxt.org (H1, blockquote, `## Pages`/`## Blog`/`## Topics`), caps at 50 each, omits no-indexed items, and 404s when disabled
+  - [ ] `/llms.txt` follows llmstxt.org (H1, blockquote, `## Pages`/`## Blog`/`## Topics`), caps at 50 each, omits no-indexed items, and always responds
   - [ ] The public head shows exactly one `<title>` (from the theme), description truncated to 160, canonical from context, absolute OG image, and no `robots` directive when unset
   - [ ] `addMeta()`/`addTag()` output appears in the head; the injected raw tag is emitted verbatim
   - [ ] A post renders `og:type article`, an article JSON-LD node, and a Person author node with `sameAs`/`jobTitle`/`worksFor` from the profile; breadcrumbs render from a `breadcrumbs` context
@@ -122,7 +122,7 @@ Coverage: the suite covers the service, the meta model, the content analysis ser
 | Add a per-content meta field | `saveMeta()` whitelist + `2026-09-17-105237` migration + `content-panel.php` + `build*()` consumer |
 | Change world defaults | Settings view + the matching `build*()` default in the service |
 | Adjust AI crawler set or stances | `AI_CRAWLERS` const + `getAiCrawlerList()` descriptions + settings view |
-| Add a public fetch file | Public controller route (`Plugin.php:91-95`) following the `*_enabled` gating pattern |
+| Add a public fetch file | Public controller route (`Plugin.php`) that always responds; inclusion toggles are the only knob |
 | Exclude content from crawl surfaces | Set its `robots_directive` to a `noindex` value; sitemap/llms honor it |
 | Change score weighting | `ContentAnalysisService::analyze()` check thresholds (keep score `passed/total * 100`) |
 | Add a schema node | `SchemaService` builder method + link into the existing `@id` graph |
@@ -148,4 +148,5 @@ Coverage: the suite covers the service, the meta model, the content analysis ser
 - Known gaps to reconcile, not fixed here:
   - `analyze()` emits 15 checks (`Services/ContentAnalysisService.php:39-63`); keep the count in sync when adding or removing checks. `<!-- TODO: reconcile the check count with ContentAnalysisService::analyze -->`
   - Sitemap/llms/detectContent URL patterns hardcode the default Blog/Pages route prefixes (guideline 8). `<!-- TODO: derive prefixes through pluginLoader()->routePrefix when prefixes become configurable -->`
-  - `getDashboardCards()` assumes `pages()` and `blog()` exist and would throw if either host were disabled (`Plugin.php:155-156`). `<!-- TODO: guard dashboard card math against missing host plugins -->`
+  - Sitemap and llms.txt are capped (`SitemapService::MAX_ITEMS`, `LlmsTxtService::MAX_SECTION_ITEMS`) rather than paged; a sitemap index is still out of scope. `<!-- TODO: sitemap index when a site outgrows the flat cap -->`
+  - The dashboard coverage scan samples up to `Plugin::DASHBOARD_SCAN_LIMIT` items per type. `<!-- TODO: replace the sample with real counts when the host services expose them -->`

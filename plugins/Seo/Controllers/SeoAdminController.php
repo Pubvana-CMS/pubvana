@@ -31,10 +31,9 @@ class SeoAdminController extends AdminController
             'verification_google'    => $settings->get('Seo.verification_google', ''),
             'verification_bing'      => $settings->get('Seo.verification_bing', ''),
             'robots_txt_custom'      => $settings->get('Seo.robots_txt_custom', ''),
-            'sitemap_enabled'        => $settings->get('Seo.sitemap_enabled', true),
             'sitemap_include_pages'  => $settings->get('Seo.sitemap_include_pages', true),
             'sitemap_include_posts'  => $settings->get('Seo.sitemap_include_posts', true),
-            'llms_txt_enabled'       => $settings->get('Seo.llms_txt_enabled', true),
+            'sitemap_include_archives' => $settings->get('Seo.sitemap_include_archives', true),
             'llms_txt_include_pages' => $settings->get('Seo.llms_txt_include_pages', true),
             'llms_txt_include_posts' => $settings->get('Seo.llms_txt_include_posts', true),
             'ai_disclosure_enabled'  => $settings->get('Seo.ai_disclosure_enabled', true),
@@ -74,8 +73,8 @@ class SeoAdminController extends AdminController
 
         // Boolean settings
         $boolKeys = [
-            'sitemap_enabled', 'sitemap_include_pages', 'sitemap_include_posts',
-            'llms_txt_enabled', 'llms_txt_include_pages', 'llms_txt_include_posts',
+            'sitemap_include_pages', 'sitemap_include_posts', 'sitemap_include_archives',
+            'llms_txt_include_pages', 'llms_txt_include_posts',
             'ai_disclosure_enabled',
         ];
 
@@ -130,20 +129,23 @@ class SeoAdminController extends AdminController
 
     /**
      * Run content analysis (AJAX endpoint).
+     *
+     * POST, not GET: the full post body travels in the request body, so a
+     * long article cannot blow the URL length limit or land in access logs.
      */
     public function analyze(): void
     {
         $request = $this->app->request();
 
         $data = [
-            'title'            => $request->query->title ?? '',
-            'content'          => $request->query->content ?? '',
-            'meta_title'       => $request->query->meta_title ?? '',
-            'meta_description' => $request->query->meta_description ?? '',
-            'focus_keywords'   => $request->query->focus_keywords ?? [],
-            'slug'             => $request->query->slug ?? '',
-            'has_images'       => (bool) ($request->query->has_images ?? false),
-            'image_alts'       => $request->query->image_alts ?? [],
+            'title'            => $request->data->title ?? '',
+            'content'          => $request->data->content ?? '',
+            'meta_title'       => $request->data->meta_title ?? '',
+            'meta_description' => $request->data->meta_description ?? '',
+            'focus_keywords'   => $request->data->focus_keywords ?? [],
+            'slug'             => $request->data->slug ?? '',
+            'has_images'       => (bool) ($request->data->has_images ?? false),
+            'image_alts'       => $request->data->image_alts ?? [],
         ];
 
         // Parse focus_keywords if it comes as comma-separated string

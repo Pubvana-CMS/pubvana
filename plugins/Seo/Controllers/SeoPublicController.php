@@ -24,16 +24,12 @@ class SeoPublicController
 
     /**
      * Serve the XML sitemap.
+     *
+     * Always served: the sitemap is a permanent crawl surface, and
+     * robots.txt references it unconditionally.
      */
     public function sitemap(): void
     {
-        $settings = $this->app->settings();
-
-        if (!$settings->get('Seo.sitemap_enabled', true)) {
-            $this->app->halt(404);
-            return;
-        }
-
         $sitemap = $this->app->seoSitemap();
 
         $this->app->response()->header('Content-Type', 'application/xml; charset=UTF-8');
@@ -54,16 +50,11 @@ class SeoPublicController
 
     /**
      * Serve llms.txt for AI crawlers.
+     *
+     * Always served; there is no on/off switch for the fetch files.
      */
     public function llmsTxt(): void
     {
-        $settings = $this->app->settings();
-
-        if (!$settings->get('Seo.llms_txt_enabled', true)) {
-            $this->app->halt(404);
-            return;
-        }
-
         $llms = $this->app->seoLlmsTxt();
 
         $this->app->response()->header('Content-Type', 'text/plain; charset=UTF-8');

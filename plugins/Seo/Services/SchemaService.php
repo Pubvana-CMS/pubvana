@@ -28,6 +28,20 @@ class SchemaService
     protected const DIGITAL_SOURCE_TYPE_AI = 'https://schema.org/TrainedAlgorithmicMediaDigitalSource';
 
     /**
+     * Article-family types a post may opt into through its schema_type.
+     *
+     * @var list<string>
+     */
+    protected const ARTICLE_TYPES = ['Article', 'BlogPosting', 'NewsArticle', 'TechArticle'];
+
+    /**
+     * Web-page-family types a page may opt into through its schema_type.
+     *
+     * @var list<string>
+     */
+    protected const PAGE_TYPES = ['WebPage', 'AboutPage', 'ContactPage', 'FAQPage', 'CollectionPage', 'ItemPage'];
+
+    /**
      * @param Engine<object> $app
     */
     public function __construct(Engine $app)
@@ -83,11 +97,14 @@ class SchemaService
             $graph[] = $breadcrumb;
         }
 
-        // Main entity.
+        // Main entity. A per-content schema_type may override the default
+        // when it names a type allowed for this content kind.
         if ($contentType === 'post') {
-            $graph[] = $this->buildArticleNode($context, 'BlogPosting', $canonical . '#article', $authorId, $orgId);
+            $articleType = $this->resolveSchemaType($context, self::ARTICLE_TYPES, 'BlogPosting');
+            $graph[] = $this->buildArticleNode($context, $articleType, $canonical . '#article', $authorId, $orgId);
         } elseif ($contentType === 'page') {
-            $graph[] = $this->buildWebPageNode($context, $canonical . '#webpage', $orgId);
+            $pageType = $this->resolveSchemaType($context, self::PAGE_TYPES, 'WebPage');
+            $graph[] = $this->buildWebPageNode($context, $pageType, $canonical . '#webpage', $orgId);
         }
 
         if ($graph === []) {
@@ -242,25 +259,39 @@ class SchemaService
     protected function buildArticleNode(array $context, string $type, string $id, ?string $authorId, string $orgId): array
     {
         $node = [
-            '@type'         => $type,
-            '@id'           => $id,
-            'headline'      => $context['title'] ?? '',
-            'url'           => $context['url'] ?? $this->getCurrentUrl(),
-            'datePublished' => $context['published_at'] ?? '',
-            'dateModified'  => $context['updated_at'] ?? $context['published_at'] ?? '',
-            'publisher'     => ['@id' => $orgId],
+            '@type'     => $type,
+            '@id'       => $id,
+            'url'       => $context['url'] ?? $this->getCurrentUrl(),
+            'publisher' => ['@id' => $orgId],
         ];
+
+        $headline = (string) ($context['title'] ?? '');
+        if ($headline !== '') {
+            $node['headline'] = $headline;
+        }
+
+        // Empty date fields are invalid schema.org output, so only emit
+        // the ones that carry a real value.
+        $published = $this->nonEmptyString($context['published_at'] ?? null);
+        if ($published !== null) {
+            $node['datePublished'] = $published;
+        }
+
+        $modified = $this->nonEmptyString($context['updated_at'] ?? null) ?? $published;
+        if ($modified !== null) {
+            $node['dateModified'] = $modified;
+        }
 
         if ($authorId !== null) {
             $node['author'] = ['@id' => $authorId];
         }
 
         if (!empty($context['description'])) {
-            $node['description'] = mb_substr($context['description'], 0, 160);
+            $node['description'] = mb_substr((string) $context['description'], 0, 160);
         }
 
         if (!empty($context['image'])) {
-            $node['image'] = $this->resolveImageUrl($context['image']);
+            $node['image'] = $this->resolveImageUrl((string) $context['image']);
         }
 
         if (!empty($context['ai_generated']) && $this->aiDisclosureEnabled()) {
@@ -274,19 +305,27 @@ class SchemaService
      * @param array<string, mixed> $context
      * @return array<string, mixed>
     */
-    protected function buildWebPageNode(array $context, string $id, string $orgId): array
+    protected function buildWebPageNode(array $context, string $type, string $id, string $orgId): array
     {
         $node = [
-            '@type'        => 'WebPage',
-            '@id'          => $id,
-            'name'         => $context['title'] ?? '',
-            'url'          => $context['url'] ?? $this->getCurrentUrl(),
-            'dateModified' => $context['updated_at'] ?? '',
-            'publisher'    => ['@id' => $orgId],
+            '@type'     => $type,
+            '@id'       => $id,
+            'url'       => $context['url'] ?? $this->getCurrentUrl(),
+            'publisher' => ['@id' => $orgId],
         ];
 
+        $name = (string) ($context['title'] ?? '');
+        if ($name !== '') {
+            $node['name'] = $name;
+        }
+
+        $modified = $this->nonEmptyString($context['updated_at'] ?? null);
+        if ($modified !== null) {
+            $node['dateModified'] = $modified;
+        }
+
         if (!empty($context['description'])) {
-            $node['description'] = mb_substr($context['description'], 0, 160);
+            $node['description'] = mb_substr((string) $context['description'], 0, 160);
         }
 
         if (!empty($context['ai_generated']) && $this->aiDisclosureEnabled()) {
@@ -304,18 +343,43 @@ class SchemaService
     {
         $breadcrumbs = $context['breadcrumbs'] ?? [];
 
-        if (empty($breadcrumbs)) {
+        if (!is_array($breadcrumbs) || $breadcrumbs === []) {
             return null;
         }
 
+        $siteUrl = $this->getSiteUrl();
         $items = [];
-        foreach ($breadcrumbs as $i => $crumb) {
-            $items[] = [
+
+        foreach ($breadcrumbs as $crumb) {
+            if (!is_array($crumb)) {
+                continue;
+            }
+
+            $label = '';
+            foreach (['label', 'name'] as $key) {
+                if (isset($crumb[$key]) && is_string($crumb[$key])) {
+                    $label = $crumb[$key];
+                    break;
+                }
+            }
+
+            $node = [
                 '@type'    => 'ListItem',
-                'position' => $i + 1,
-                'name'     => $crumb['label'] ?? $crumb['name'] ?? '',
-                'item'     => $crumb['url'] ?? '',
+                'position' => count($items) + 1,
+                'name'     => $label,
             ];
+
+            $url = isset($crumb['url']) && is_string($crumb['url']) ? $crumb['url'] : '';
+            if ($url !== '') {
+                // The last crumb has no URL; item stays omitted rather than empty.
+                $node['item'] = str_starts_with($url, '/') ? $siteUrl . $url : $url;
+            }
+
+            $items[] = $node;
+        }
+
+        if ($items === []) {
+            return null;
         }
 
         return [
@@ -328,6 +392,37 @@ class SchemaService
     // -----------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------
+
+    /**
+     * A per-content schema_type override, or the default when the stored
+     * value is not an allowed type for this content kind.
+     *
+     * @param array<string, mixed> $context
+     * @param list<string>         $allowed
+     */
+    protected function resolveSchemaType(array $context, array $allowed, string $default): string
+    {
+        $requested = $context['schema_type'] ?? null;
+        if (is_string($requested) && in_array($requested, $allowed, true)) {
+            return $requested;
+        }
+
+        return $default;
+    }
+
+    /**
+     * Trim a scalar date/name value, returning null when there is nothing
+     * worth emitting.
+     */
+    protected function nonEmptyString(mixed $value): ?string
+    {
+        if (!is_string($value)) {
+            return null;
+        }
+
+        $trimmed = trim($value);
+        return $trimmed === '' ? null : $trimmed;
+    }
 
     protected function aiDisclosureEnabled(): bool
     {

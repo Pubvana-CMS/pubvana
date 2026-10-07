@@ -474,9 +474,15 @@ class SeoService
             $lines[] = $tag;
         }
 
-        // JSON-LD structured data
+        // JSON-LD structured data. The per-content schema_type (when set)
+        // rides along in the context so SchemaService can honour it.
         $schema = $this->app->seoSchema();
-        $schemaOutput = $schema->render($this->context);
+        $schemaContext = $this->context;
+        $schemaType = $this->getMetaField('schema_type');
+        if ($schemaType !== null) {
+            $schemaContext['schema_type'] = $schemaType;
+        }
+        $schemaOutput = $schema->render($schemaContext);
         if (!empty($schemaOutput)) {
             $lines[] = $schemaOutput;
         }

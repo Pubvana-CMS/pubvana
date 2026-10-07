@@ -24,6 +24,14 @@ use flight\net\Router;
  */
 class Plugin implements PluginInterface
 {
+    /**
+     * Upper bound on the published items the dashboard coverage scan reads.
+     *
+     * The dashboard is a summary, so it samples the first N items per type
+     * rather than loading an entire large site on every admin visit.
+     */
+    protected const DASHBOARD_SCAN_LIMIT = 5000;
+
     public function register(Engine $app, Router $router, array $config = []): void
     {
         $app->map('seo', function () use ($app) {
@@ -82,7 +90,7 @@ class Plugin implements PluginInterface
             ['GET',  '/seo',         [SeoAdminController::class, 'settings'],     []],
             ['POST', '/seo',         [SeoAdminController::class, 'saveSettings'], []],
             ['POST', '/seo/meta',    [SeoAdminController::class, 'saveMeta'],     []],
-            ['GET',  '/seo/analyze', [SeoAdminController::class, 'analyze'],      []],
+            ['POST', '/seo/analyze', [SeoAdminController::class, 'analyze'],      []],
         ], 'pubvana.seo');
 
         // ─── Public Routes (root-level, no prefix) ──────────────────────
@@ -145,22 +153,38 @@ class Plugin implements PluginInterface
      */
     protected function getDashboardCards(Engine $app): array
     {
-        $seoModel = new SeoMeta($app->db());
+        $totalContent = 0;
+        $withMeta = 0;
 
-        // Host plugins may be disabled; guard so a missing pages()/blog()
-        // service contributes 0 instead of throwing.
-        $totalPages = $app->pluginLoader()->isEnabled('pubvana/pages')
-            ? count($app->pages()->listPublished())
-            : 0;
-        $totalPosts = $app->pluginLoader()->isEnabled('pubvana/blog')
-            ? (int) ($app->blog()->listPosts(1, 1, 'published')['total'])
-            : 0;
-        $totalContent = $totalPages + $totalPosts;
+        // Count only published items that carry a meta title, so drafts and
+        // orphaned rows cannot push coverage past 100%.
+        if ($app->pluginLoader()->isEnabled('pubvana/pages')) {
+            $pages = $app->pages()->listPublished(self::DASHBOARD_SCAN_LIMIT);
+            $titled = $this->metaTitleIds($app, 'page');
+            $totalContent += count($pages);
 
-        $withMeta = $seoModel->countWithMetaTitle();
+            foreach ($pages as $page) {
+                if (isset($titled[(int) $page->id])) {
+                    $withMeta++;
+                }
+            }
+        }
+
+        if ($app->pluginLoader()->isEnabled('pubvana/blog')) {
+            $result = $app->blog()->listPosts(1, self::DASHBOARD_SCAN_LIMIT, 'published');
+            $titled = $this->metaTitleIds($app, 'post');
+            $items = $result['items'];
+            $totalContent += count($items);
+
+            foreach ($items as $post) {
+                if (isset($titled[(int) $post->id])) {
+                    $withMeta++;
+                }
+            }
+        }
+
         $missingMeta = max(0, $totalContent - $withMeta);
-
-        $avgScore = $seoModel->averageScore();
+        $avgScore = (new SeoMeta($app->db()))->averageScore();
 
         return [
             [
@@ -186,5 +210,27 @@ class Plugin implements PluginInterface
                 'description' => 'Average content optimization score.',
             ],
         ];
+    }
+
+    /**
+     * Ids of content in a type whose seo_meta row has a non-empty title.
+     *
+     * One query per type, so the dashboard does not run a lookup per item.
+     *
+     * @param Engine<object> $app
+     * @return array<int, true>
+     */
+    private function metaTitleIds(Engine $app, string $contentType): array
+    {
+        $model = new SeoMeta($app->db());
+        $ids = [];
+
+        foreach ($model->findByContentType($contentType) as $meta) {
+            if (trim((string) ($meta->meta_title ?? '')) !== '') {
+                $ids[(int) $meta->content_id] = true;
+            }
+        }
+
+        return $ids;
     }
 }

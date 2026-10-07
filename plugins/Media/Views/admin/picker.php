@@ -65,6 +65,13 @@ $previewSrc = $hasImage ? '/' . ltrim($currentValue, '/') : '';
     let total = 0;
     let loaded = false;
 
+    // Behave like a form control: consumers that listen for change
+    // (e.g. the SEO panel's OG image field) need to see the update.
+    function setHiddenValue(value) {
+        hiddenInput.value = value;
+        hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
     const uploadZone = document.getElementById('<?= $pickerId ?>-upload-zone');
     const uploadInput = uploadZone.querySelector('input[type="file"]');
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
@@ -174,7 +181,7 @@ $previewSrc = $hasImage ? '/' . ltrim($currentValue, '/') : '';
         const path = size === 'small'
             ? (item.dataset.thumbPath || item.dataset.path)
             : (size === 'large' ? item.dataset.path : (item.dataset.mediumPath || item.dataset.path));
-        hiddenInput.value = path;
+        setHiddenValue(path);
 
         preview.innerHTML = `<img src="/${esc(path)}" alt="Selected image"
             class="rounded" style="max-width:120px; max-height:120px; object-fit:cover;">`;
@@ -192,7 +199,7 @@ $previewSrc = $hasImage ? '/' . ltrim($currentValue, '/') : '';
     });
 
     function clearImage() {
-        hiddenInput.value = '';
+        setHiddenValue('');
         preview.innerHTML = `<div class="d-flex align-items-center justify-content-center text-secondary"
             style="width:80px; height:80px;">
             <i class="ti ti-photo-plus" style="font-size:2rem;"></i>

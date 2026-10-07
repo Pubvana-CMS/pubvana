@@ -15,6 +15,14 @@ use flight\Engine;
  */
 class SitemapService
 {
+    /**
+     * Upper bound on the items pulled from each host for one sitemap.
+     *
+     * A single flat sitemap is the documented scope (no sitemap index), so
+     * this caps memory on very large sites rather than paging.
+     */
+    protected const MAX_ITEMS = 5000;
+
     protected \PDO $pdo;
     /** @var Engine<object> */
     protected Engine $app;
@@ -35,29 +43,32 @@ class SitemapService
     {
         $settings = $this->app->settings();
         $siteUrl = $this->getSiteUrl();
-        $urls = [];
-
-        // Homepage
-        $urls[] = [
-            'loc'     => $siteUrl . '/',
-            'lastmod' => date('Y-m-d'),
-        ];
+        $content = [];
 
         // Pages
         if ($settings->get('Seo.sitemap_include_pages', true)) {
-            $urls = array_merge($urls, $this->getPageUrls($siteUrl));
+            $content = array_merge($content, $this->getPageUrls($siteUrl));
         }
 
         // Posts
         if ($settings->get('Seo.sitemap_include_posts', true)) {
-            $urls = array_merge($urls, $this->getPostUrls($siteUrl));
+            $content = array_merge($content, $this->getPostUrls($siteUrl));
         }
 
         // Category/tag archives
-        $urls = array_merge($urls, $this->getCategoryUrls($siteUrl));
-        $urls = array_merge($urls, $this->getTagUrls($siteUrl));
+        if ($settings->get('Seo.sitemap_include_archives', true)) {
+            $content = array_merge($content, $this->getCategoryUrls($siteUrl));
+            $content = array_merge($content, $this->getTagUrls($siteUrl));
+        }
 
-        return $this->buildXml($urls);
+        // Homepage first, dated by the newest content it wraps so its
+        // <lastmod> tracks real edits instead of resetting every day.
+        $urls = [[
+            'loc'     => $siteUrl . '/',
+            'lastmod' => $this->latestLastmod($content),
+        ]];
+
+        return $this->buildXml(array_merge($urls, $content));
     }
 
     /**
@@ -68,13 +79,18 @@ class SitemapService
      */
     protected function getPageUrls(string $siteUrl): array
     {
-        $pages = $this->app->pages()->listPublished();
-        $seoModel = new SeoMeta($this->pdo);
+        try {
+            $pages = $this->app->pages()->listPublished(self::MAX_ITEMS);
+        } catch (\Throwable) {
+            // Pages disabled or unavailable: omit that section, do not 500.
+            return [];
+        }
+
+        $hidden = $this->noindexIds('page');
         $urls = [];
 
         foreach ($pages as $page) {
-            $meta = $seoModel->findByContent('page', (int) $page->id);
-            if ($meta && $meta->isNoindex()) {
+            if (isset($hidden[(int) $page->id])) {
                 continue;
             }
             $urls[] = [
@@ -94,13 +110,18 @@ class SitemapService
      */
     protected function getPostUrls(string $siteUrl): array
     {
-        $result = $this->app->blog()->listPosts(1, 1000, 'published');
-        $seoModel = new SeoMeta($this->pdo);
+        try {
+            $result = $this->app->blog()->listPosts(1, self::MAX_ITEMS, 'published');
+        } catch (\Throwable) {
+            // Blog disabled or unavailable: omit that section, do not 500.
+            return [];
+        }
+
+        $hidden = $this->noindexIds('post');
         $urls = [];
 
         foreach ($result['items'] as $post) {
-            $meta = $seoModel->findByContent('post', (int) $post->id);
-            if ($meta && $meta->isNoindex()) {
+            if (isset($hidden[(int) $post->id])) {
                 continue;
             }
             $urls[] = [
@@ -120,13 +141,18 @@ class SitemapService
      */
     protected function getCategoryUrls(string $siteUrl): array
     {
-        $categories = $this->app->blog()->listCategories();
+        try {
+            $categories = $this->app->blog()->listCategories();
+        } catch (\Throwable) {
+            return [];
+        }
+
         $urls = [];
 
         foreach ($categories as $cat) {
             $urls[] = [
                 'loc'     => $siteUrl . '/blog/category/' . $cat->slug,
-                'lastmod' => date('Y-m-d'),
+                'lastmod' => '',
             ];
         }
 
@@ -141,17 +167,61 @@ class SitemapService
      */
     protected function getTagUrls(string $siteUrl): array
     {
-        $tags = $this->app->blog()->listTags();
+        try {
+            $tags = $this->app->blog()->listTags();
+        } catch (\Throwable) {
+            return [];
+        }
+
         $urls = [];
 
         foreach ($tags as $tag) {
             $urls[] = [
                 'loc'     => $siteUrl . '/blog/tag/' . $tag->slug,
-                'lastmod' => date('Y-m-d'),
+                'lastmod' => '',
             ];
         }
 
         return $urls;
+    }
+
+    /**
+     * Ids of content in a type whose robots directive carries noindex.
+     *
+     * One query for the whole type, instead of one query per item.
+     *
+     * @return array<int, true>
+     */
+    protected function noindexIds(string $contentType): array
+    {
+        $model = new SeoMeta($this->pdo);
+        $ids = [];
+
+        foreach ($model->findByContentType($contentType) as $meta) {
+            if ($meta->isNoindex()) {
+                $ids[(int) $meta->content_id] = true;
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
+     * Newest lastmod among the entries, or '' when none carry a date.
+     *
+     * @param array<int, array{loc: string, lastmod: string}> $entries
+     */
+    protected function latestLastmod(array $entries): string
+    {
+        $latest = '';
+
+        foreach ($entries as $entry) {
+            if ($entry['lastmod'] !== '' && strcmp($entry['lastmod'], $latest) > 0) {
+                $latest = $entry['lastmod'];
+            }
+        }
+
+        return $latest;
     }
 
     /**

@@ -110,26 +110,26 @@
             <h3 class="card-title"><i class="ti ti-sitemap me-2"></i>XML Sitemap</h3>
         </div>
         <div class="card-body">
-            <div class="mb-3">
-                <label class="form-check">
-                    <input type="checkbox" name="sitemap_enabled" class="form-check-input"
-                           <?= $settings['sitemap_enabled'] ? 'checked' : '' ?>>
-                    <span class="form-check-label">Enable XML Sitemap</span>
-                </label>
-            </div>
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-check">
                         <input type="checkbox" name="sitemap_include_pages" class="form-check-input"
                                <?= $settings['sitemap_include_pages'] ? 'checked' : '' ?>>
                         <span class="form-check-label">Include Pages</span>
                     </label>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-check">
                         <input type="checkbox" name="sitemap_include_posts" class="form-check-input"
                                <?= $settings['sitemap_include_posts'] ? 'checked' : '' ?>>
                         <span class="form-check-label">Include Blog Posts</span>
+                    </label>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-check">
+                        <input type="checkbox" name="sitemap_include_archives" class="form-check-input"
+                               <?= $settings['sitemap_include_archives'] ? 'checked' : '' ?>>
+                        <span class="form-check-label">Include Categories/Tags</span>
                     </label>
                 </div>
             </div>
@@ -145,14 +145,7 @@
             <h3 class="card-title"><i class="ti ti-robot me-2"></i>llms.txt (AI Discovery)</h3>
         </div>
         <div class="card-body">
-            <div class="mb-3">
-                <label class="form-check">
-                    <input type="checkbox" name="llms_txt_enabled" class="form-check-input"
-                           <?= $settings['llms_txt_enabled'] ? 'checked' : '' ?>>
-                    <span class="form-check-label">Enable llms.txt</span>
-                </label>
-                <small class="form-hint">Provides AI crawlers with a curated content map at <code>/llms.txt</code></small>
-            </div>
+            <p class="text-secondary mb-3">Provides AI crawlers with a curated content map at <code>/llms.txt</code>. Always served.</p>
             <div class="row">
                 <div class="col-md-6">
                     <label class="form-check">

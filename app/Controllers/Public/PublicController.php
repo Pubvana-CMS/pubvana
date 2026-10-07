@@ -91,8 +91,12 @@ abstract class PublicController
             $context = $seo->getContext();
             if (empty($context['title'])) {
                 $context['title'] = $pageTitle;
-                $seo->setContext($context);
             }
+            // The theme and the JSON-LD graph share one set of breadcrumbs.
+            if (empty($context['breadcrumbs']) && !empty($viewData['breadcrumbs'])) {
+                $context['breadcrumbs'] = $viewData['breadcrumbs'];
+            }
+            $seo->setContext($context);
             $viewData['header']['title'] = $seo->buildTitle();
             $viewData['header']['seo'] = $seo->renderHead();
         } else {

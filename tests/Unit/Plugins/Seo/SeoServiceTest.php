@@ -484,6 +484,43 @@ final class SeoServiceTest extends TestCase
         self::assertSame('', $schema->render(['content_type' => 'unknown', 'url' => 'https://example.com/x']));
     }
 
+    public function testSchemaTypeOverride(): void
+    {
+        $schema = new SchemaService($this->schemaApp());
+
+        $override = $schema->render([
+            'content_type' => 'post',
+            'schema_type'  => 'NewsArticle',
+            'title'        => 'Scoop',
+            'url'          => 'https://example.com/blog/scoop',
+        ]);
+        self::assertStringContainsString('"NewsArticle"', $override);
+
+        // A value outside the allowed set falls back to the default type.
+        $bogus = $schema->render([
+            'content_type' => 'post',
+            'schema_type'  => 'Recipe',
+            'title'        => 'Scoop',
+            'url'          => 'https://example.com/blog/scoop',
+        ]);
+        self::assertStringContainsString('BlogPosting', $bogus);
+        self::assertStringNotContainsString('Recipe', $bogus);
+    }
+
+    public function testSchemaOmitsEmptyDates(): void
+    {
+        $schema = new SchemaService($this->schemaApp());
+
+        $output = $schema->render([
+            'content_type' => 'post',
+            'title'        => 'No dates',
+            'url'          => 'https://example.com/blog/nodates',
+        ]);
+
+        self::assertStringNotContainsString('"datePublished"', $output);
+        self::assertStringNotContainsString('"dateModified"', $output);
+    }
+
     public function testSchemaAiDisclosureToggle(): void
     {
         $app = $this->schemaApp();

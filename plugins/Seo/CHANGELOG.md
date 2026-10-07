@@ -5,6 +5,36 @@ All notable changes to the SEO plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.12] - 2026-10-07
+
+### Added
+- Schema Type field on the page and post editor.
+- Categories/Tags option for the sitemap.
+
+### Changed
+- Analyze Content sends the article in the request body instead of the URL.
+- The sitemap and llms.txt read SEO data once per content type instead of once per item.
+- The sitemap and llms.txt keep up to 5,000 items per section.
+
+### Fixed
+- The content analysis score was never saved.
+- The dashboard average score stayed at 0.
+- The OG image override was never saved.
+- robots.txt linked to the sitemap when the sitemap setting was off.
+- Breadcrumbs were missing from the structured data.
+- Coverage could report more than 100 percent.
+- Pages past the first 100 were missing from the sitemap.
+- Posts past the first 1,000 were missing from the sitemap.
+- Hidden items filled a llms.txt slot before they were filtered out.
+- The sitemap and llms.txt returned a server error when Blog or Pages was off.
+- Structured data carried empty date fields.
+- The homepage sitemap entry used the current date instead of the newest edit date.
+- An autosave was cancelled when the post was saved.
+
+### Removed
+- The "Enable XML Sitemap" setting.
+- The "Enable llms.txt" setting.
+
 ## [0.1.11] - 2026-09-28
 
 ### Fixed

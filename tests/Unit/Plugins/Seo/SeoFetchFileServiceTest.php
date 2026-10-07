@@ -247,6 +247,26 @@ final class SeoFetchFileServiceTest extends TestCase
         self::assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}$/', (string) $this->invoke($service, 'formatDate', ['bogus']));
     }
 
+    public function testSitemapArchivesToggleAndHomepageLastmod(): void
+    {
+        $app = $this->makeEngine(
+            ['Seo.sitemap_include_archives' => false],
+            [
+                'pages' => [$this->page(1, 'about')],
+                'posts' => ['items' => [$this->post(5, 'hello')]],
+                'categories' => [(object) ['slug' => 'news']],
+                'tags' => [(object) ['slug' => 'php']],
+            ],
+        );
+
+        $xml = (new SitemapService($this->pdo, $app))->generate();
+
+        self::assertStringNotContainsString('/blog/category/news', $xml);
+        self::assertStringNotContainsString('/blog/tag/php', $xml);
+        // Homepage carries the newest content date, not today's date.
+        self::assertStringContainsString('<lastmod>2026-01-03</lastmod>', $xml);
+    }
+
     public function testLlmsGeneratesSections(): void
     {
         $app = $this->makeEngine([], [

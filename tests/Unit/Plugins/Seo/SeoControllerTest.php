@@ -231,7 +231,7 @@ final class SeoControllerTest extends TestCase
         $controller = new SeoAdminController($this->adminApp([], [
             '_csrf_token' => 'tok',
             'title_separator' => '-',
-            'sitemap_enabled' => '1',
+            'sitemap_include_archives' => '1',
             'social_profiles' => "https://a.test\nhttps://b.test\n",
             'ai_crawlers' => ['GPTBot' => 'allow', 'Bogus-Bot' => 'block'],
         ]));
@@ -239,7 +239,7 @@ final class SeoControllerTest extends TestCase
         $controller->saveSettings();
 
         self::assertSame('-', $this->savedSettings['Seo.title_separator']);
-        self::assertTrue($this->savedSettings['Seo.sitemap_enabled']);
+        self::assertTrue($this->savedSettings['Seo.sitemap_include_archives']);
         self::assertFalse($this->savedSettings['Seo.sitemap_include_pages']);
         self::assertSame(['https://a.test', 'https://b.test'], $this->savedSettings['Seo.social_profiles']);
         self::assertSame('allow', $this->savedSettings['Seo.ai_crawler_gptbot']);
@@ -281,8 +281,8 @@ final class SeoControllerTest extends TestCase
     public function testAnalyze(): void
     {
         $controller = new SeoAdminController($this->adminApp(
-            ['title' => 'Hello', 'focus_keywords' => 'seo, tips'],
             [],
+            ['title' => 'Hello', 'focus_keywords' => 'seo, tips'],
         ));
 
         $controller->analyze();
@@ -292,14 +292,9 @@ final class SeoControllerTest extends TestCase
         self::assertSame('Hello', $this->jsons[0]['data']['echo']);
     }
 
-    public function testSitemapGating(): void
+    public function testSitemapIsAlwaysServed(): void
     {
-        $controller = new SeoPublicController($this->publicApp(['Seo.sitemap_enabled' => false]));
-        $controller->sitemap();
-        self::assertSame(404, $this->halts[0]['code']);
-
-        $this->halts = [];
-        $controller = new class ($this->publicApp(['Seo.sitemap_enabled' => true])) extends SeoPublicController {
+        $controller = new class ($this->publicApp()) extends SeoPublicController {
             public function response(): object
             {
                 return new class {
@@ -336,14 +331,9 @@ final class SeoControllerTest extends TestCase
         self::assertStringContainsString('User-agent', $this->halts[0]['body']);
     }
 
-    public function testLlmsGating(): void
+    public function testLlmsIsAlwaysServed(): void
     {
-        $controller = new SeoPublicController($this->publicApp(['Seo.llms_txt_enabled' => false]));
-        $controller->llmsTxt();
-        self::assertSame(404, $this->halts[0]['code']);
-
-        $this->halts = [];
-        $controller = new class ($this->publicApp(['Seo.llms_txt_enabled' => true])) extends SeoPublicController {
+        $controller = new class ($this->publicApp()) extends SeoPublicController {
             public function response(): object
             {
                 return new class {
