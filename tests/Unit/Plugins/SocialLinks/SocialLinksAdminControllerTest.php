@@ -94,6 +94,50 @@ final class SocialLinksAdminControllerTest extends TestCase
         self::assertSame('Social link deleted.', $this->flashes['success'][0]);
     }
 
+    public function testEditRendersFormAndMissingId(): void
+    {
+        $link = $this->links->create(['platform' => 'github', 'url' => 'https://a.test']);
+        self::assertNotNull($link);
+
+        (new SocialLinksAdminController($this->engine()))->edit((string) $link->id);
+        self::assertSame('pubvana/social-links/admin/edit', $this->fetches[0]['view']);
+        self::assertSame('Edit Social Link', $this->fetches[0]['data']['pageTitle']);
+        self::assertSame((int) $link->id, (int) $this->fetches[0]['data']['link']->id);
+        self::assertArrayHasKey('github', $this->fetches[0]['data']['platforms']);
+
+        $this->fetches = [];
+        (new SocialLinksAdminController($this->engine()))->edit('99');
+        self::assertSame([], $this->fetches);
+        self::assertSame('Social link not found.', $this->flashes['error'][0]);
+        self::assertSame(['/admin/social-links'], $this->redirects);
+    }
+
+    public function testUpdatePaths(): void
+    {
+        $link = $this->links->create(['platform' => 'github', 'url' => 'https://a.test']);
+        self::assertNotNull($link);
+        $id = (string) $link->id;
+
+        $ok = $this->engine(data: ['platform' => 'github', 'url' => 'https://github.com/acme', '_csrf_token' => 'tok']);
+        (new SocialLinksAdminController($ok))->update($id);
+        self::assertSame('Social link updated.', $this->flashes['success'][0]);
+        self::assertSame(['/admin/social-links'], $this->redirects);
+
+        $this->flashes = [];
+        $this->redirects = [];
+        $bad = $this->engine(data: ['platform' => 'github', 'url' => 'example.com']);
+        (new SocialLinksAdminController($bad))->update($id);
+        self::assertStringContainsString('full http:// or https://', $this->flashes['error'][0]);
+        self::assertSame(['/admin/social-links/' . $id . '/edit'], $this->redirects);
+
+        $this->flashes = [];
+        $this->redirects = [];
+        $miss = $this->engine(data: ['platform' => 'github', 'url' => 'https://x.test']);
+        (new SocialLinksAdminController($miss))->update('99');
+        self::assertSame('Social link not found.', $this->flashes['error'][0]);
+        self::assertSame(['/admin/social-links'], $this->redirects);
+    }
+
     public function testReorderPaths(): void
     {
         $a = $this->links->create(['platform' => 'github', 'url' => 'https://a.test']);
@@ -116,6 +160,18 @@ final class SocialLinksAdminControllerTest extends TestCase
         $this->flashes = [];
         (new SocialLinksAdminController($this->engine(data: [])))->reorder('99');
         self::assertSame('Social link not found.', $this->flashes['error'][0]);
+    }
+
+    public function testReorderAtTheEndReportsTheEdge(): void
+    {
+        $a = $this->links->create(['platform' => 'github', 'url' => 'https://a.test']);
+        $b = $this->links->create(['platform' => 'x', 'url' => 'https://b.test']);
+        self::assertNotNull($a);
+        self::assertNotNull($b);
+
+        (new SocialLinksAdminController($this->engine(data: ['direction' => 'down'])))->reorder((string) $b->id);
+        self::assertSame('That link is already at the end of the list.', $this->flashes['error'][0]);
+        self::assertArrayNotHasKey('success', $this->flashes);
     }
 
     /**

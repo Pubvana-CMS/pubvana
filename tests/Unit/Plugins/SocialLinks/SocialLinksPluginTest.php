@@ -7,6 +7,7 @@ namespace Pubvana\Tests\Unit\Plugins\SocialLinks;
 use flight\Engine;
 use flight\net\Router;
 use PHPUnit\Framework\Attributes\CoversClass;
+use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 use Pubvana\Plugins\SocialLinks\Plugin;
 use Pubvana\Plugins\SocialLinks\Services\SocialLinksService;
 use Pubvana\Services\ExtensionRegistry;
@@ -45,10 +46,17 @@ final class SocialLinksPluginTest extends TestCase
         $routes = $adext->getRoutes();
         $handlers = array_map(static fn($r): string => $r['scope'] . ' ' . $r['method'] . ' ' . $r['path'], $routes);
         self::assertContains('admin GET /social-links', $handlers);
+        self::assertContains('admin GET /social-links/@id/edit', $handlers);
         self::assertContains('admin POST /social-links/store', $handlers);
+        self::assertContains('admin POST /social-links/@id/update', $handlers);
         self::assertContains('admin POST /social-links/@id/toggle', $handlers);
         self::assertContains('admin POST /social-links/@id/delete', $handlers);
         self::assertContains('admin POST /social-links/@id/reorder', $handlers);
+
+        // Every admin route carries the social.manage gate.
+        foreach ($routes as $route) {
+            self::assertInstanceOf(PermissionMiddleware::class, $route['middleware'][0] ?? null);
+        }
 
         $blocks = $adext->get('block', 'available');
         self::assertArrayHasKey('pubvana.social-links', $blocks);

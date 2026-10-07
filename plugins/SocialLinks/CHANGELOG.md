@@ -5,6 +5,20 @@ All notable changes to the Social Links plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.10] - 2026-10-07
+
+### Added
+- Edit and update for a social link, with an Edit action on each row.
+
+### Changed
+- Admin routes require the `social.manage` permission.
+
+### Fixed
+- The Signal link rendered a blank mark.
+- Moving the first or last link reported it as not found.
+- `move()` treated an unknown direction as down.
+- A custom icon class the stylesheets do not define was stored and rendered blank.
+
 ## [0.1.9] - 2026-09-26
 
 ### Fixed

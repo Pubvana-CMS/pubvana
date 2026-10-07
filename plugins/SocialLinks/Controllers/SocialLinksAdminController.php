@@ -9,8 +9,8 @@ use Pubvana\Controllers\Admin\AdminController;
 /**
  * Social Links Admin Controller
  *
- * Strict MVC: this controller handles HTTP only. List, create, toggle,
- * reorder and delete social links against the service facade.
+ * Strict MVC: this controller handles HTTP only. List, create, edit,
+ * toggle, reorder and delete social links against the service facade.
  *
  * @package Pubvana\Plugins\SocialLinks
  */
@@ -37,6 +37,43 @@ class SocialLinksAdminController extends AdminController
         }
 
         $this->app->session()->flash('success', 'Social link added.');
+        $this->app->redirect('/admin/social-links');
+    }
+
+    public function edit(string $id): void
+    {
+        $link = $this->app->socialLinks()->find((int) $id);
+        if ($link === null) {
+            $this->app->session()->flash('error', 'Social link not found.');
+            $this->app->redirect('/admin/social-links');
+            return;
+        }
+
+        $this->render('pubvana/social-links/admin/edit', [
+            'pageTitle' => 'Edit Social Link',
+            'link'      => $link,
+            'platforms' => $this->app->socialLinks()->platformOptions(),
+        ]);
+    }
+
+    public function update(string $id): void
+    {
+        $post = $this->app->request()->data->getData();
+        unset($post['_csrf_token']);
+
+        if ($this->app->socialLinks()->find((int) $id) === null) {
+            $this->app->session()->flash('error', 'Social link not found.');
+            $this->app->redirect('/admin/social-links');
+            return;
+        }
+
+        if ($this->app->socialLinks()->update((int) $id, $post) === null) {
+            $this->app->session()->flash('error', 'A URL is required and must be a full http:// or https:// address.');
+            $this->app->redirect('/admin/social-links/' . (int) $id . '/edit');
+            return;
+        }
+
+        $this->app->session()->flash('success', 'Social link updated.');
         $this->app->redirect('/admin/social-links');
     }
 
@@ -68,10 +105,12 @@ class SocialLinksAdminController extends AdminController
             $direction = 'down';
         }
 
-        if ($this->app->socialLinks()->move((int) $id, $direction)) {
+        if ($this->app->socialLinks()->find((int) $id) === null) {
+            $this->app->session()->flash('error', 'Social link not found.');
+        } elseif ($this->app->socialLinks()->move((int) $id, $direction)) {
             $this->app->session()->flash('success', 'Social links reordered.');
         } else {
-            $this->app->session()->flash('error', 'Social link not found.');
+            $this->app->session()->flash('error', 'That link is already at the end of the list.');
         }
         $this->app->redirect('/admin/social-links');
     }

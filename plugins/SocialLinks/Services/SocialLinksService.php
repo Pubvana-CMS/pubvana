@@ -61,7 +61,7 @@ class SocialLinksService
         'kickstarter'=> ['label' => 'Kickstarter', 'icon' => 'fa-brands fa-kickstarter'],
         'etsy'       => ['label' => 'Etsy',        'icon' => 'fa-brands fa-etsy'],
         'bandcamp'   => ['label' => 'Bandcamp',    'icon' => 'fa-brands fa-bandcamp'],
-        'signal'     => ['label' => 'Signal',      'icon' => 'fa-brands fa-signal'],
+        'signal'     => ['label' => 'Signal',      'icon' => 'fa-brands fa-signal-messenger'],
         'weibo'      => ['label' => 'Weibo',       'icon' => 'fa-brands fa-weibo'],
         'blogger'    => ['label' => 'Blogger',     'icon' => 'fa-brands fa-blogger'],
         'appstore'   => ['label' => 'App Store',   'icon' => 'fa-brands fa-app-store'],
@@ -69,6 +69,21 @@ class SocialLinksService
         'android'    => ['label' => 'Android',     'icon' => 'fa-brands fa-android'],
         'apple'      => ['label' => 'Apple',       'icon' => 'fa-brands fa-apple'],
     ];
+
+    /** @var list<string> Font Awesome family and style class tokens. */
+    private const FA_FAMILY_TOKENS = ['brands', 'solid', 'regular', 'classic', 'fas', 'far', 'fab'];
+
+    /**
+     * Class names defined by the staged stylesheets, keyed without the
+     * "fa-" prefix. A true value marks a glyph (a --fa rule), false marks
+     * any other fa- class. Null when the stylesheets could not be read.
+     *
+     * @var array<string, bool>|null
+     */
+    private static ?array $faClasses = null;
+
+    /** Whether the staged stylesheet class list has been read from disk. */
+    private static bool $faClassesLoaded = false;
 
     private \PDO $pdo;
 
@@ -162,24 +177,18 @@ class SocialLinksService
      */
     public function create(array $data): ?SocialLink
     {
-        $platform = $this->normalizePlatform((string) ($data['platform'] ?? ''));
-        $url = $this->normalizeUrl((string) ($data['url'] ?? ''));
-        if ($url === null) {
+        $fields = $this->normalizeFields($data);
+        if ($fields === null) {
             return null;
         }
 
-        $isCustom = $platform === 'custom';
         $now = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
 
         $link = $this->model();
-        $link->platform = $platform;
-        $link->label = $isCustom
-            ? $this->normalizeText((string) ($data['label'] ?? ''), (string) ($this->config['fallback_label'] ?? 'Website'), 100)
-            : $this->platformLabel($platform);
-        $link->url = $url;
-        $link->icon = $isCustom
-            ? $this->normalizeIcon((string) ($data['icon'] ?? ''), (string) ($this->config['fallback_icon'] ?? 'fa-solid fa-link'))
-            : $this->platformIcon($platform);
+        $link->platform = $fields['platform'];
+        $link->label = $fields['label'];
+        $link->url = $fields['url'];
+        $link->icon = $fields['icon'];
         // One past the highest value in use, not the row count: a deletion
         // leaves a gap, and a count would land on a value another row already
         // holds. A new link must sort strictly last, so it must be strictly
@@ -189,6 +198,38 @@ class SocialLinksService
         $link->created_at = $now;
         $link->updated_at = $now;
         $link->insert();
+
+        return $link;
+    }
+
+    /**
+     * Update an existing link from validated form data.
+     *
+     * Returns null when the link is gone, or when the posted URL is
+     * missing or not already a full http(s) URL. A known platform resets
+     * its label and icon from the catalog; "custom" keeps the posted
+     * values. Order and active state are untouched.
+     *
+     * @param array<string, mixed> $data
+     */
+    public function update(int $id, array $data): ?SocialLink
+    {
+        $link = $this->find($id);
+        if ($link === null) {
+            return null;
+        }
+
+        $fields = $this->normalizeFields($data);
+        if ($fields === null) {
+            return null;
+        }
+
+        $link->platform = $fields['platform'];
+        $link->label = $fields['label'];
+        $link->url = $fields['url'];
+        $link->icon = $fields['icon'];
+        $link->updated_at = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
+        $link->save();
 
         return $link;
     }
@@ -232,7 +273,13 @@ class SocialLinksService
             return false;
         }
 
-        $target = $direction === 'up' ? $position - 1 : $position + 1;
+        if ($direction === 'up') {
+            $target = $position - 1;
+        } elseif ($direction === 'down') {
+            $target = $position + 1;
+        } else {
+            return false;
+        }
         if (!isset($all[$target])) {
             return false;
         }
@@ -311,6 +358,40 @@ class SocialLinksService
         return $highest + 1;
     }
 
+    /**
+     * Normalize posted form data into the four stored columns.
+     *
+     * Known platforms derive label and icon from the catalog. "custom"
+     * takes the posted label and Font Awesome class, each with a config
+     * fallback. Returns null when the URL is missing or is not already a
+     * full http(s) URL: the law is store-what-you-emit, so no scheme is
+     * assumed or prepended.
+     *
+     * @param array<string, mixed> $data
+     * @return array{platform: string, label: string, url: string, icon: string}|null
+     */
+    private function normalizeFields(array $data): ?array
+    {
+        $platform = $this->normalizePlatform((string) ($data['platform'] ?? ''));
+        $url = $this->normalizeUrl((string) ($data['url'] ?? ''));
+        if ($url === null) {
+            return null;
+        }
+
+        $isCustom = $platform === 'custom';
+
+        return [
+            'platform' => $platform,
+            'label'    => $isCustom
+                ? $this->normalizeText((string) ($data['label'] ?? ''), (string) ($this->config['fallback_label'] ?? 'Website'), 100)
+                : $this->platformLabel($platform),
+            'url'      => $url,
+            'icon'     => $isCustom
+                ? $this->normalizeIcon((string) ($data['icon'] ?? ''), (string) ($this->config['fallback_icon'] ?? 'fa-solid fa-link'))
+                : $this->platformIcon($platform),
+        ];
+    }
+
     private function normalizePlatform(string $key): string
     {
         $key = strtolower(trim($key));
@@ -342,6 +423,107 @@ class SocialLinksService
         if ($icon === '' || preg_match('#^fa-[a-z0-9]+( [a-z0-9-]+)*$#i', $icon) !== 1) {
             return $fallback;
         }
+        if (!$this->isKnownIcon($icon)) {
+            return $fallback;
+        }
         return mb_substr($icon, 0, 100);
+    }
+
+    /**
+     * True when every token in the icon is a Font Awesome class the staged
+     * stylesheets define, with at least one family token and one glyph.
+     *
+     * A syntactically valid but unknown class (a typo like fa-twiter)
+     * renders an empty box, so it falls back instead of storing a class
+     * that shows nothing. When the stylesheets cannot be read the check
+     * passes, so a missing asset never blanks a working icon.
+     */
+    private function isKnownIcon(string $icon): bool
+    {
+        $classes = $this->stagedFaClasses();
+        if ($classes === null) {
+            return true;
+        }
+
+        $tokens = preg_split('/\s+/', $icon);
+        if ($tokens === false || $tokens === []) {
+            return false;
+        }
+
+        $hasFamily = false;
+        $hasGlyph = false;
+        foreach ($tokens as $token) {
+            $name = str_starts_with($token, 'fa-') ? substr($token, 3) : $token;
+            if (in_array($name, self::FA_FAMILY_TOKENS, true)) {
+                $hasFamily = true;
+                continue;
+            }
+            if (!array_key_exists($name, $classes)) {
+                return false;
+            }
+            if ($classes[$name]) {
+                $hasGlyph = true;
+            }
+        }
+
+        return $hasFamily && $hasGlyph;
+    }
+
+    /**
+     * Font Awesome class names defined by the plugin's staged stylesheets.
+     *
+     * Keys are names without the "fa-" prefix. A true value marks a glyph
+     * (a --fa rule), false marks any other fa- class such as a family or
+     * sizing utility. Null when no stylesheet could be read, so the caller
+     * skips the check.
+     *
+     * @return array<string, bool>|null
+     */
+    private function stagedFaClasses(): ?array
+    {
+        if (self::$faClassesLoaded) {
+            return self::$faClasses;
+        }
+        self::$faClassesLoaded = true;
+
+        $dir = dirname(__DIR__) . '/assets/css';
+        $classes = [];
+        $read = 0;
+
+        foreach (['fontawesome.min.css', 'brands.min.css', 'solid.min.css'] as $file) {
+            $path = $dir . '/' . $file;
+            if (!is_file($path)) {
+                continue;
+            }
+            $css = file_get_contents($path);
+            if ($css === false) {
+                continue;
+            }
+            $read++;
+
+            // Every fa- class, marked as a non-glyph until a --fa rule
+            // proves otherwise.
+            if (preg_match_all('#\.fa-([a-z0-9-]+)#', $css, $matches) > 0) {
+                foreach ($matches[1] as $name) {
+                    $classes[$name] ??= false;
+                }
+            }
+
+            // Names that define a glyph, including alias selector lists
+            // such as ".fa-signal,.fa-signal-5{--fa:"\f012"}".
+            if (preg_match_all('#([^{}]+)\{--fa:#', $css, $rules) > 0) {
+                foreach ($rules[1] as $selector) {
+                    if (preg_match_all('#\.fa-([a-z0-9-]+)#', $selector, $names) > 0) {
+                        foreach ($names[1] as $name) {
+                            $classes[$name] = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        self::$faClasses = $read === 0 ? null : $classes;
+
+        return self::$faClasses;
     }
 }

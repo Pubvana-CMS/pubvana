@@ -35,6 +35,8 @@ final class SocialLinksServiceTest extends TestCase
         self::assertGreaterThan(30, count($platforms));
         self::assertSame('Facebook', $platforms['facebook']['label']);
         self::assertSame('fa-brands fa-facebook', $platforms['facebook']['icon']);
+        // Signal ships as a brand mark (fa-signal-messenger), not fa-solid fa-signal.
+        self::assertSame('fa-brands fa-signal-messenger', $platforms['signal']['icon']);
 
         $options = $this->service->platformOptions();
         self::assertSame('Facebook', $options['facebook']);
@@ -75,13 +77,13 @@ final class SocialLinksServiceTest extends TestCase
             'platform' => 'myspace',
             'url' => 'https://example.com/profile',
             'label' => 'My Page',
-            'icon' => 'fa-brands fa-custom',
+            'icon' => 'fa-brands fa-x-twitter',
         ]);
 
         self::assertNotNull($link);
         self::assertSame('custom', $link->platform);
         self::assertSame('My Page', $link->label);
-        self::assertSame('fa-brands fa-custom', $link->icon);
+        self::assertSame('fa-brands fa-x-twitter', $link->icon);
         self::assertSame('https://example.com/profile', $link->url);
         self::assertSame(0, (int) $link->sort_order);
     }
@@ -101,6 +103,22 @@ final class SocialLinksServiceTest extends TestCase
 
         self::assertNotNull($link);
         self::assertSame('Website', $link->label);
+        self::assertSame('fa-solid fa-link', $link->icon);
+    }
+
+    public function testCreateCustomFallsBackOnUnknownIconClass(): void
+    {
+        // A syntactically valid class the staged stylesheets do not define
+        // renders nothing, so it falls back instead of storing a blank icon.
+        $link = $this->service->create([
+            'platform' => 'custom',
+            'url' => 'https://example.com',
+            'label' => 'Elsewhere',
+            'icon' => 'fa-brands fa-twiter',
+        ]);
+
+        self::assertNotNull($link);
+        self::assertSame('Elsewhere', $link->label);
         self::assertSame('fa-solid fa-link', $link->icon);
     }
 
@@ -207,6 +225,57 @@ final class SocialLinksServiceTest extends TestCase
         self::assertFalse($this->service->delete(99999));
     }
 
+    public function testUpdateKnownPlatformResetsLabelAndIcon(): void
+    {
+        $link = $this->service->create([
+            'platform' => 'custom',
+            'url' => 'https://a.test',
+            'label' => 'Old',
+            'icon' => 'fa-brands fa-x-twitter',
+        ]);
+        self::assertNotNull($link);
+        $id = (int) $link->id;
+
+        $updated = $this->service->update($id, ['platform' => 'github', 'url' => 'https://github.com/acme']);
+
+        self::assertNotNull($updated);
+        self::assertSame('github', (string) $this->service->find($id)?->platform);
+        self::assertSame('GitHub', (string) $this->service->find($id)?->label);
+        self::assertSame('fa-brands fa-github', (string) $this->service->find($id)?->icon);
+        self::assertSame('https://github.com/acme', (string) $this->service->find($id)?->url);
+    }
+
+    public function testUpdateCustomKeepsPostedValues(): void
+    {
+        $link = $this->service->create(['platform' => 'github', 'url' => 'https://a.test']);
+        self::assertNotNull($link);
+        $id = (int) $link->id;
+
+        $updated = $this->service->update($id, [
+            'platform' => 'custom',
+            'url'      => 'https://example.com/me',
+            'label'    => 'My Page',
+            'icon'     => 'fa-brands fa-mastodon',
+        ]);
+
+        self::assertNotNull($updated);
+        self::assertSame('custom', (string) $this->service->find($id)?->platform);
+        self::assertSame('My Page', (string) $this->service->find($id)?->label);
+        self::assertSame('fa-brands fa-mastodon', (string) $this->service->find($id)?->icon);
+    }
+
+    public function testUpdateRejectsBadUrlAndMissingId(): void
+    {
+        $link = $this->service->create(['platform' => 'github', 'url' => 'https://a.test']);
+        self::assertNotNull($link);
+        $id = (int) $link->id;
+
+        self::assertNull($this->service->update($id, ['platform' => 'github', 'url' => 'example.com']));
+        self::assertSame('https://a.test', (string) $this->service->find($id)?->url, 'a rejected update leaves the row alone');
+
+        self::assertNull($this->service->update(99999, ['platform' => 'github', 'url' => 'https://b.test']));
+    }
+
     public function testMove(): void
     {
         $a = $this->service->create(['platform' => 'github', 'url' => 'https://a.test']);
@@ -229,9 +298,9 @@ final class SocialLinksServiceTest extends TestCase
         self::assertFalse($this->service->move((int) $c->id, 'down'));
         // Unknown id refuses.
         self::assertFalse($this->service->move(99999, 'up'));
-        // Unknown direction moves down.
-        self::assertTrue($this->service->move((int) $a->id, 'sideways'));
-        self::assertSame([(int) $b->id, (int) $a->id, (int) $c->id], $this->ids($this->service->all()));
+        // Unknown direction refuses and leaves the order alone.
+        self::assertFalse($this->service->move((int) $a->id, 'sideways'));
+        self::assertSame([(int) $a->id, (int) $b->id, (int) $c->id], $this->ids($this->service->all()));
     }
 
     public function testSocialLinksBlock(): void

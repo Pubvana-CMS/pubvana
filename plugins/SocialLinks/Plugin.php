@@ -7,6 +7,7 @@ namespace Pubvana\Plugins\SocialLinks;
 use Pubvana\Plugins\SocialLinks\Controllers\SocialLinksAdminController;
 use Pubvana\Plugins\SocialLinks\Services\SocialLinksService;
 use Pubvana\Services\PluginInterface;
+use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 use flight\Engine;
 use flight\net\Router;
 
@@ -38,12 +39,16 @@ class Plugin implements PluginInterface
 
         // ─── Admin Routes ──────────────────────────────────────────────
 
+        $manage = new PermissionMiddleware($app, 'social.manage');
+
         $adext->addRoutes('admin', [
-            ['GET',  '/social-links',                [SocialLinksAdminController::class, 'index'],   []],
-            ['POST', '/social-links/store',          [SocialLinksAdminController::class, 'store'],   []],
-            ['POST', '/social-links/@id/toggle',     [SocialLinksAdminController::class, 'toggle'],  []],
-            ['POST', '/social-links/@id/delete',     [SocialLinksAdminController::class, 'delete'],  []],
-            ['POST', '/social-links/@id/reorder',    [SocialLinksAdminController::class, 'reorder'], []],
+            ['GET',  '/social-links',                [SocialLinksAdminController::class, 'index'],   [$manage]],
+            ['GET',  '/social-links/@id/edit',       [SocialLinksAdminController::class, 'edit'],    [$manage]],
+            ['POST', '/social-links/store',          [SocialLinksAdminController::class, 'store'],   [$manage]],
+            ['POST', '/social-links/@id/update',     [SocialLinksAdminController::class, 'update'],  [$manage]],
+            ['POST', '/social-links/@id/toggle',     [SocialLinksAdminController::class, 'toggle'],  [$manage]],
+            ['POST', '/social-links/@id/delete',     [SocialLinksAdminController::class, 'delete'],  [$manage]],
+            ['POST', '/social-links/@id/reorder',    [SocialLinksAdminController::class, 'reorder'], [$manage]],
         ], 'pubvana.social-links');
 
         // ─── Public Block ──────────────────────────────────────────────

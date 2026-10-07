@@ -110,6 +110,10 @@ $count = count($links);
                                         </form>
                                     </td>
                                     <td>
+                                        <a href="/admin/social-links/<?= (int) $link->id ?>/edit"
+                                           class="btn btn-sm btn-outline-secondary" title="Edit">
+                                            <i class="ti ti-pencil"></i>
+                                        </a>
                                         <form method="POST" action="/admin/social-links/<?= (int) $link->id ?>/delete"
                                               class="d-inline" onsubmit="return confirm('Delete this social link?')">
                                             <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">

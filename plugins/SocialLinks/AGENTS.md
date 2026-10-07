@@ -6,7 +6,7 @@ Guidance for AI agents contributing to this plugin, which is part of the main Pu
 
 Social Links is the port of the v2 SocialLinks feature. It stores site-wide social profile links in one table, manages them from an admin screen under Settings, and renders them anywhere via a public block with self-hosted Font Awesome 7 Free icons.
 
-- **Package:** `pubvana/social-links` (`pubvana.json:2`), semver `0.1.0`, category `tools`
+- **Package:** `pubvana/social-links` (`pubvana.json:2`), semver `0.1.10`, category `tools`
 - **License:** MIT, matching the main project (repo `composer.json` declares `"license": "MIT"`)
 - **PHP floor:** not declared in the plugin; the main project requires PHP `^8.2` (repo `composer.json`), and the code stays within that floor (`readonly`-free, nullable return `?SocialLink` at `Services/SocialLinksService.php:204`, arrow functions at `Plugin.php:45`)
 - **Namespace:** `Pubvana\Plugins\SocialLinks` (`Plugin.php:5`), with `Controllers`, `Services`, `Models`, and `Database\Migrations` sub-namespaces
@@ -18,11 +18,11 @@ Social Links is the port of the v2 SocialLinks feature. It stores site-wide soci
 
 1. **Route all reads and writes through the `$app->socialLinks()` service facade** (`Plugin.php:32-39`). Controllers must not touch models directly. Reason: the service handles the platform catalog, URL validation, icon normalization, and sequential ordering.
 2. **Known platforms derive their label and icon from the catalog; "custom" takes posted values.** `platformLabel()` and `platformIcon()` fall back to config defaults (`Services/SocialLinksService.php:151-165`). Reason: one canonical map keeps the admin dropdown, stored rows, and rendered icons in lockstep.
-3. **Never widen the platform catalog without a published Font Awesome class.** Every icon in `PLATFORMS` is verified against the staged `assets/css/brands.min.css` (`Services/SocialLinksService.php:33-70`). Reason: FA7 splits brand marks into brands.min.css, so an unverified class renders a broken box. Known missing brands in FA7 Free (do not rely on them): `stackoverflow`, `nextdoor`, `buffers`.
+3. **Never widen the platform catalog without a published Font Awesome class.** Every `fa-brands` class in `PLATFORMS` resolves a glyph in the staged `assets/css/brands.min.css`; the `fa-solid` fallback resolves in `fontawesome.min.css` (`Services/SocialLinksService.php`). Reason: a class the staged stylesheets do not define renders an empty box. `signal` is the brand mark `fa-brands fa-signal-messenger`, not the `fa-solid fa-signal` bars. Known missing brands in FA7 Free (do not rely on them): `stackoverflow`, `nextdoor`, `buffers`.
 4. **Validate URLs on write, never normalize on render.** A value must already be a full `http://` or `https://` URL; a bare domain, a handle, or any non-http(s) scheme is rejected and nothing is stored (`Services/SocialLinksService.php:289-301`). No scheme is assumed. Reason: the public template renders stored URLs unmodified, so the stored value must be exactly what gets emitted.
-5. **Keep the icon regex strict.** Custom icons must match `^fa-[a-z0-9]+( [a-z0-9-]+)*$` or be replaced with the fallback (`Services/SocialLinksService.php:315-320`). Reason: the class is echoed unescaped-safe but still must not allow arbitrary markup.
-6. **Treat `sort_order` as authoritative and sequential.** New links get `count(all())`, and `move()` swaps then re-normalizes 0..n via `persistOrder()` (`Services/SocialLinksService.php:238-251, 274-282`). Reason: re-normalizing absorbs any column drift so display order matches admin order.
-7. **Seed only the permission alias, do not gate in-controller.** `auth_permissions` seeds `social.manage` (`Database/Seeds/Seed.php:6-9`); admin routes are gated on `admin.access` automatically by the core and no per-route `can()` check is added. Reason: this matches the Redirects plugin; per-action gating is future middleware work.
+5. **Keep the icon check strict.** A custom icon must match `^fa-[a-z0-9]+( [a-z0-9-]+)*$`, carry one family token (`fa-brands`, `fa-solid`, `fa-regular`, `fa-classic`) and at least one glyph the staged stylesheets define, or it is replaced with the fallback (`Services/SocialLinksService.php`). Reason: the class is echoed into the page, and a syntactically valid but unknown class renders an empty box.
+6. **Treat `sort_order` as authoritative and sequential.** New links get one past the highest value in use (`nextSortOrder()`), and `move()` swaps then re-normalizes 0..n via `persistOrder()`. `move()` accepts only `up` and `down` (`Services/SocialLinksService.php`). Reason: a row count collides after a deletion, and re-normalizing absorbs any column drift so display order matches admin order.
+7. **Seed the permission alias and gate the routes with it.** `auth_permissions` seeds `social.manage` (`Database/Seeds/Seed.php`) and every admin route carries `new PermissionMiddleware($app, 'social.manage')` in its middleware slot (`Plugin.php`). The core still adds `admin.access` automatically, and superadmins bypass both. Reason: this matches the Updates plugin. No in-controller `can()` check is used.
 8. **Keep the three public.css FA loads in priority order.** `fontawesome` (base), `brands`, `solid`, then the plugin sheet (`Plugin.php:66-89`). Reason: brands and solid depend on the base font classes; inversing the order breaks rendering of `.fa-brands`.
 9. **Self-hosting means the staged files are part of the plugin.** Never swap to a CDN without updating the CSP (`app/Middleware/SecurityHeadersMiddleware.php`). The current CSP (`style-src 'self'`, `font-src 'self'`) already permits `/assets/plugin/SocialLinks/...`.
 10. **The block is icons-only.** The v2 "icons vs icons+text" style option is dropped because the region manager renders block options only as `repeater`, `textarea`, or text input (no select), so the block exposes a single `title` option (`Plugin.php:51-55`).
@@ -33,7 +33,7 @@ Social Links is the port of the v2 SocialLinks feature. It stores site-wide soci
 ```
 plugins/SocialLinks/
 ├── Config/Config.php                     default_target, link_rel, fallback_label, fallback_icon, block_title
-├── Controllers/SocialLinksAdminController.php  List, store, toggle, delete, reorder
+├── Controllers/SocialLinksAdminController.php  List, store, edit, update, toggle, delete, reorder
 ├── Database/
 │   ├── Migrations/2026-09-17-105238_CreateSocialLinksTable.php  social_links (is_active indexed)
 │   └── Seeds/Seed.php                    Seed: social.manage permission
@@ -42,7 +42,8 @@ plugins/SocialLinks/
 ├── Plugin.php                            Entry point; facade, admin routes, block, FA7 css registration
 ├── pubvana.json                          Manifest; admin.menu under settings, empty admin.dashboard
 ├── Views/
-│   ├── admin/index.php                   Add form + list with reorder/toggle/delete actions
+│   ├── admin/index.php                   Add form + list with edit/reorder/toggle/delete actions
+│   ├── admin/edit.php                    Edit form
 │   └── public/blocks/social-links.tpl    Public block template (Vision)
 ├── assets/
 │   ├── css/                              fontawesome.min.css, brands.min.css, solid.min.css, social-links.css
@@ -53,13 +54,13 @@ plugins/SocialLinks/
 
 ## Core architecture
 
-**Entry point.** `Plugin::register()` (`Plugin.php:23-99`). Maps the `socialLinks` service singleton (`Plugin.php:32-39`), registers five admin routes under the settings menu (`Plugin.php:42-50`) via `adext()->addRoutes('admin', ...)`, registers the `pubvana.social-links` block (`Plugin.php:53-59`), and registers FA7 base/brands/solid plus `social-links.css` on both `public.css` and `admin.css` (`Plugin.php:62-97`).
+**Entry point.** `Plugin::register()` (`Plugin.php`). Maps the `socialLinks` service singleton, registers seven admin routes under the settings menu via `adext()->addRoutes('admin', ...)`, each carrying a `PermissionMiddleware('social.manage')`, registers the `pubvana.social-links` block, and registers FA7 base/brands/solid plus `social-links.css` on both `public.css` and `admin.css`.
 
-**Write path.** The admin controller strips `_csrf_token` and forwards POST data to the service (`Controllers/SocialLinksAdminController.php:28-47`). The service normalizes the platform key, validates the URL, picks label/icon (catalog or custom), assigns the next `sort_order`, and writes timestamps as `DateTimeImmutable` strings (`Services/SocialLinksService.php:177-216`).
+**Write path.** The admin controller strips `_csrf_token` and forwards POST data to the service (`Controllers/SocialLinksAdminController.php`). `create()` and `update()` share `normalizeFields()`: it normalizes the platform key, validates the URL, and picks label/icon (catalog or custom). `create()` assigns the next `sort_order`; both write `updated_at` as a `DateTimeImmutable` string.
 
-**Read path.** `all()` feeds the admin list; `activeLinks()` feeds the block provider (`Services/SocialLinksService.php:174-193`). The block provider returns a plain template-ready array (`title`, `links`, `target`, `rel`), and the Vision template at `Views/public/blocks/social-links.tpl` renders anchors with escaped `aria-label` and framebusting `rel` attributes.
+**Read path.** `all()` feeds the admin list, `activeLinks()` feeds the block provider, and `find()` feeds the edit form and gates update, toggle, and delete (`Services/SocialLinksService.php`). The block provider returns a plain template-ready array (`title`, `links`, `target`, `rel`), and the Vision template at `Views/public/blocks/social-links.tpl` renders anchors with escaped `aria-label` and framebusting `rel` attributes.
 
-**Ordering.** `move($id, 'up'|'down')` swaps the link with its neighbor and calls `persistOrder()` to rewrite sequential `sort_order` values 0..n for rows that differ (`Services/SocialLinksService.php:232-282`).
+**Ordering.** `move($id, 'up'|'down')` swaps the link with its neighbor and calls `persistOrder()` to rewrite sequential `sort_order` values 0..n for rows that differ. Any other direction returns false without touching the order (`Services/SocialLinksService.php`).
 
 **Extension points (adext).** One `block.available` (`pubvana.social-links`), a `public.css` group, and an `admin.css` group (`Plugin.php:53-97`). No public routes; the menu entry comes from `pubvana.json` (`provides.admin.menu.settings`).
 
@@ -75,6 +76,9 @@ The plugin has no `composer.json` (it is in-tree), but it has a test suite under
   - [ ] Add every catalog platform; each row stores the matching label and `.fa-brands` class
   - [ ] Add a custom link; label and icon class are honored; empty fields fall back to `Website` / `fa-solid fa-link`
   - [ ] Submit a bare domain (`x.com/user`); it is rejected with the flash error and nothing is stored; a full `https://x.com/user` is accepted
+  - [ ] Edit a link; URL, label, and icon change and the order and active state stay put
+  - [ ] A custom icon typo falls back to the default icon
+  - [ ] A non-superadmin without `social.manage` cannot open the page or post to it
   - [ ] Toggle a link off; it disappears from the block but remains in the admin list
   - [ ] Reorder up/down; first/last controls are disabled at the ends, and reordering survives a page reload
   - [ ] Place the Social Links block in a region; the rendered anchor carries `target="_blank" rel="noopener noreferrer"` and the FA icon renders
@@ -108,7 +112,8 @@ Coverage: the suite covers the service, the admin controller, migrations/seeds, 
 
 | Goal | Where to look |
 |------|---------------|
-| Add or change an admin route | `Plugin.php:42-50` |
+| Add or change an admin route | `Plugin.php` (`addRoutes('admin', ...)`, each route carries the `social.manage` gate) |
+| Edit a link's fields | `Services/SocialLinksService.php` (`update()`), `Views/admin/edit.php` |
 | Add a platform | `PLATFORMS` map in `Services/SocialLinksService.php` (verify the icon in `brands.min.css` first) |
 | Change link rendering defaults | `Config/Config.php` (`default_target`, `link_rel`, `fallback_*`, `block_title`) |
 | Change blocks' visual style | `assets/css/social-links.css` and `Views/public/blocks/social-links.tpl` |
