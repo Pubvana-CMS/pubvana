@@ -5,6 +5,53 @@ Notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+### Added
+- added nginx config sample
+
+### Changed
+- changed `runway` CLI to `pubvana`. Commands run as `php pubvana <command>`.
+- `PROJECT_ROOT` and `PUBLIC_PATH` are set by the entry scripts and read across the app.
+- The updater copies the release `public/` folder to the served directory.
+- The updater keeps `public/index.php` in place.
+
+### Fixed
+- The Softaculous installer now runs the CLI as `php pubvana`.
+- The `.htaccess` files protect more files.
+- ActivityLog analyzed/bugs fixed. See it's changelog.
+- AiAssistant analyzed/bugs fixed. See it's changelog.
+- Analytics analyzed/bugs fixed. See it's changelog.
+- Backups analyzed/bugs fixed. See it's changelog.
+- Blog analyzed/bugs fixed. See it's changelog.(Default theme adjusted)
+- BrokenLinks analyzed/bugs fixed. See it's changelog.
+- CoreBlocks analyzed/bugs fixed. See it's changelog.
+- Forms analyzed/bugs fixed. See it's changelog.
+- Media analyzed/bugs fixed. See it's changelog.
+- Pages analyzed/bugs fixed. See it's changelog.
+- Profiles analyzed/bugs fixed. See it's changelog.(Default theme adjusted)
+- fixed a few tests (and then some more)
+- Redirects analyzed/bugs fixed. See it's changelog.
+- Added 404 management to AI Assistant
+- Search analyzed/bugs fixed. See it's changelog.
+- Seo analyzed/bugs fixed. See it's changelog.
+- SiteHealth analyzed/bugs fixed. See it's changelog.
+- PluginLoader now loads all plugins config to `$app->set()`.  plugins no longer need to
+- SocialLinks analyzed/bugs fixed. See it's changelog.
+- Updates analyzed/bugs fixed. See it's changelog.
+- The Plugins page showed plugin IDs instead of display names.
+- Composer packages on the Plugins page showed `vendor/package`.
+- The region manager served a stale block list after a placement change.
+- `getChildren()` returned no top-level navigation items.
+- Saving a user with no groups left the account without any.
+- The dashboard warned on a card with no value.
+
+ 
+
+
+
+
+
 
 ## [3.0.0-beta.8] - 2026-10-05
 
