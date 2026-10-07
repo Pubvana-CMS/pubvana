@@ -104,6 +104,12 @@ final class HealthResilienceTest extends TestCase
                     return [];
                 }
             },
+            'settings' => static fn (): object => new class {
+                public function get(string $key, mixed $default = null): mixed
+                {
+                    return $default;
+                }
+            },
             'migrations' => [],
         ]);
 

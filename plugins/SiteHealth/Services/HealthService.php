@@ -36,11 +36,15 @@ class HealthService
 
     /**
      * Public route prefix for this plugin (no '/admin'; the dashboard
-     * renderer adds it). Falls back to the plugin id's default.
+     * renderer adds it). Read from the app container, where the loader
+     * publishes the plugin config.
      */
     private function routePrefix(): string
     {
-        return rtrim((string) ($this->config['route_prefix'] ?? ''), '/');
+        $config = (array) ($this->app->get('pubvana.sitehealth') ?? []);
+        $prepend = trim((string) ($config['routePrepend'] ?? ''), '/');
+
+        return $prepend === '' ? '' : '/' . $prepend;
     }
 
     /**
@@ -78,7 +82,7 @@ class HealthService
                 if ($result instanceof CheckResult) {
                     $results[] = $result->toArray();
                 } elseif (is_array($result) && isset($result['id'])) {
-                    $results[] = $result;
+                    $results[] = $this->normalizeExternalResult($result);
                 }
             }
         }
@@ -164,6 +168,33 @@ class HealthService
     }
 
     /**
+     * Coerce an external array contribution into the CheckResult::toArray()
+     * shape. A contribution that carries only an 'id' is completed with safe
+     * defaults so the view never reads a missing key.
+     *
+     * @param array<string, mixed> $row
+     * @return array<string, string>
+     */
+    private function normalizeExternalResult(array $row): array
+    {
+        $id = (string) $row['id'];
+
+        $status = (string) ($row['status'] ?? '');
+        if (!in_array($status, [CheckResult::PASS, CheckResult::WARNING, CheckResult::CRITICAL], true)) {
+            $status = CheckResult::WARNING;
+        }
+
+        return [
+            'id'          => $id,
+            'name'        => (string) ($row['name'] ?? $id),
+            'category'    => (string) ($row['category'] ?? CheckResult::CAT_PLUGINS),
+            'status'      => $status,
+            'message'     => (string) ($row['message'] ?? ''),
+            'remediation' => (string) ($row['remediation'] ?? ''),
+        ];
+    }
+
+    /**
      * Run one built-in check. A crashing check becomes a critical result
      * (details in the error log) instead of killing the whole battery.
      *
@@ -195,11 +226,15 @@ class HealthService
         $projectRoot = PROJECT_ROOT;
         $publicPath  = PUBLIC_PATH;
         $migrationConfig = (array) ($this->app->get('migrations') ?? []);
+        $databaseConfig  = (array) ($this->app->get('database') ?? []);
+        $databaseDriver  = isset($databaseConfig['driver']) && is_string($databaseConfig['driver'])
+            ? $databaseConfig['driver']
+            : null;
 
         $checks = [
             // Environment
             new PhpVersionCheck(),
-            new PhpExtensionsCheck(),
+            new PhpExtensionsCheck($databaseDriver),
             new DatabaseCheck($this->pdo),
             new DiskSpaceCheck($publicPath . '/uploads'),
 

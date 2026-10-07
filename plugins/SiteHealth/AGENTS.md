@@ -6,26 +6,27 @@ Guidance for AI agents contributing to this plugin, which is part of the main Pu
 
 SiteHealth runs a battery of read-only diagnostics over the environment, security posture, configuration, and plugin state, and surfaces the results on an admin page (Tools → Site Health) plus a dashboard card that appears only when issues exist. It warns early about misconfigurations so admins can fix them before they become incidents.
 
-- **Package:** `pubvana/sitehealth` (`pubvana.json:2`), display name Site Health, semver `0.1.0`, category `tools`
+- **Package:** `pubvana/sitehealth` (`pubvana.json:2`), display name Site Health, semver `0.1.12`, category `tools`
 - **License:** MIT, matching the main project (repo `composer.json` declares `"license": "MIT"`)
 - **PHP floor:** not declared in the plugin; the main project requires PHP `^8.2` (repo `composer.json`), and the code stays within that floor (`readonly` properties at `Services/CheckResult.php:19-25`, plus `str_starts_with`/`str_contains` in several checks)
 - **Namespace:** `Pubvana\Plugins\SiteHealth` (`Plugin.php:5`), with `Controllers`, `Services`, `Interfaces`, and `Views` sub-trees
 - **Runtime dependencies (declared at the app level, not in the plugin):** `enlivenapp/flight-shield` (ShieldCheck presence), `enlivenapp/migrations` (MigrationsCheck via `MigrationSetup`); core `$app->settings()`, `adext()`, `db()`, `session()`, plus Flight helpers. Check classes take everything they need as constructor injection, so they stay decoupled from the engine where possible
-- **Config:** `Config/Config.php`: `routePrepend` `site-health`, `cache_ttl` 3600 (cache lifetime for `writable/cache/sitehealth.json`)
+- **Config:** `Config/Config.php`: `routePrepend` `site-health`, `cache_ttl` 3600 (cache lifetime for `writable/cache/sitehealth.json`). The loader publishes the config on `$app` as `pubvana.sitehealth`, so any code can read `routePrepend` with `$app->get('pubvana.sitehealth')`.
 - **Docs:** `README.md`
 
 ## Project guidelines
 
 1. **Checks are read-only by design.** A check reads PHP ini values, `.env`, file permissions, disk space, DB connectivity, migration status, or `installed.json` and never modifies them (`Services/DatabaseCheck.php:21-33`, `Services/EnvironmentFilePermissionsCheck.php:28-37`). Reason: diagnostics must never change the thing they diagnose. The only writer in the plugin is `HealthService` itself, which persists results to the cache file.
 2. **Never print credentials or config values in messages.** Messages name the failing item, never its value: `.env` checks only report that a key is empty or a placeholder (`Services/ConfigDefaultsCheck.php:41-64`); DB failures report the exception message, not the DSN or password. Reason: results render in the admin for anyone with dashboard access, and secret-leak risk is not worth a readable message.
-3. **Use the `CheckResult` constants, never string literals, for `status` and `category`.** `PASS`/`WARNING`/`CRITICAL` and `CAT_*` (`Services/CheckResult.php:9-16`). Reason: the view's badge/icon/severity mapping keys off these exact values (unknown categories never render, summary counts only known statuses).
+3. **Use the `CheckResult` constants, never string literals, for `status` and `category`.** `PASS`/`WARNING`/`CRITICAL` and `CAT_*` (`Services/CheckResult.php:9-16`). Reason: the view's badge/icon/severity mapping keys off these exact values (the controller renders every category present, the summary counts only known statuses).
 4. **Keep the severity bar honest.** Critical is reserved for "broken or dangerously misconfigured": PHP below the floor, a missing required extension, < 100 MB free, non-HTTP(S) HTTPS off in production, `display_errors` on in production, `.env` missing or world-writable, no Shield, non-writable runtime dirs, pending migrations, unmet package dependencies. Everything softer is a warning. Do not upgrade warnings to critical.
 5. **A check must always return one `CheckResult`, even on unexpected failure.** I/O that can throw is caught inside the check and degrades to a WARNING with remediation (`Services/DatabaseCheck.php:21-33`, `Services/PluginMigrationsCheck.php:27-39`). Reason: one throwing check must never kill the whole run or the dashboard.
 6. **Do not break the cache behavior.** `runAll()` returns cached results for `cache_ttl` seconds, refreshes when the cache expires or `$force` is true, and `POST /admin/site-health/rerun` clears then forces. Results must stay JSON-serializable (only the `toArray()` shape) so the cache round-trips.
 7. **Plugins that live elsewhere extend SiteHealth through `addCheck()` or the adext `health` / `checks` point, not by editing this plugin.** External contributions may return a `CheckResult` or an array that includes `id`; anything else is ignored (`Services/HealthService.php:54-64`). Only in-tree diagnostics belong in `getChecks()`.
-8. **Stick to the four existing categories for new built-in checks.** Environment, Security, Configuration, Plugins. The view renders categories from a fixed map in the controller (`Controllers/HealthAdminController.php:23-28`); a fifth category added to code but not to that map would be collected yet invisible.
+8. **Prefer the four existing categories for new built-in checks.** Environment, Security, Configuration, Plugins. The controller renders those four from a fixed map and appends any other category a result reports (`Controllers/HealthAdminController.php`), so a contributed check with its own category still shows instead of counting in the summary yet staying invisible.
 9. **Keep the dashboard card conditional.** `dashboardCards()` returns an empty array (no card) when nothing is wrong, and at most one card (dangers out-rank warnings) otherwise (`Services/HealthService.php:80-116`). "No issues, no card" is an advertised behavior.
 10. **Build messages from check results, not from user/anonymous input.** Every dynamic fragment is `htmlspecialchars`-escaped in the view and derived from environment/status values. No message content is ever echoed raw.
+11. **Read each value from its own store.** Database settings come from `$this->app->settings()->get()`. Deployment config from `.env` comes from `$this->app->get()`. `$app->get()` never holds a settings-table key, and the settings service never holds `.env` values (`Services/RequiredSettingsCheck.php`).
 
 ## Repository layout
 
@@ -38,7 +39,7 @@ plugins/SiteHealth/
 │   ├── CheckResult.php                   Immutable result record (readonly) + status/category consts
 │   ├── HealthService.php                 $app->health(): run/group/cache/addCheck, summary, dashboard card
 │   ├── PhpVersionCheck.php               Floor 8.2.0, recommended 8.3.0
-│   ├── PhpExtensionsCheck.php            8 required / 5 recommended extensions
+│   ├── PhpExtensionsCheck.php            Required/recommended extensions, name aliases, PDO driver for the configured DB
 │   ├── DatabaseCheck.php                 Connectivity + min versions (mysql 5.7, mariadb 10.3, sqlite 3.24)
 │   ├── DiskSpaceCheck.php                Uploads partition: <100 MB critical, <500 MB warning
 │   ├── HttpsCheck.php                    HTTPS + force_https, dev-env tolerance
@@ -85,6 +86,8 @@ The plugin has no `composer.json` (it is in-tree), but it has a test suite under
   - [ ] A third-party adext `health`/`checks` contribution returning a `CheckResult` and one returning a bare array both appear; one returning garbage is skipped
   - [ ] Break DB connectivity: `database` is critical with a message that exposes no credentials
   - [ ] SessionConfigCheck stays warning (not critical) under 3 issues and critical at 3+
+  - [ ] `required-settings` passes on a configured site (it reads `CMS.siteName` from the settings store) and warns only on the shipped default (`Pubvana v3`) or a placeholder `SITE_URL`
+  - [ ] The extensions check requires the PDO driver for the configured database and treats OPcache by its registered name
   - [ ] View output is escaped (htmlspecialchars on every message/name/url); nothing rendered raw
 
 Coverage: the suite covers the built-in checks, the service and controller, and resilience (throwing checks, cache round-trips).

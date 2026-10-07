@@ -23,7 +23,6 @@ class Plugin implements PluginInterface
     public function register(Engine $app, Router $router, array $config = []): void
     {
         $prefix = $app->pluginLoader()->routePrefix('pubvana/sitehealth');
-        $config['route_prefix'] = $prefix;
 
         $app->map('health', function () use ($app, $config) {
             static $instance = null;

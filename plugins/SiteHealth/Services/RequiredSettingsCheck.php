@@ -10,6 +10,14 @@ use Pubvana\Plugins\SiteHealth\Interfaces\CheckInterface;
 class RequiredSettingsCheck implements CheckInterface
 {
     /**
+     * Names a fresh install ships with. A site still carrying one of these
+     * has not been set up.
+     *
+     * @var list<string>
+     */
+    private array $defaultSiteNames = ['Pubvana v3', 'Pubvana', 'My Site'];
+
+    /**
      * @param Engine<object> $app
      */
     public function __construct(private Engine $app) {}
@@ -18,13 +26,16 @@ class RequiredSettingsCheck implements CheckInterface
     {
         $missing = [];
 
+        // SITE_URL is deployment config from .env, never a setting.
         $siteUrl = (string) ($this->app->get('siteUrl') ?? '');
         if (empty($siteUrl) || $siteUrl === 'http://example.com' || $siteUrl === 'https://example.com') {
             $missing[] = 'SITE_URL (still set to placeholder or empty)';
         }
 
-        $siteName = $this->settingsValue('CMS.siteName');
-        if (empty($siteName) || $siteName === 'Pubvana' || $siteName === 'My Site') {
+        // CMS.siteName is a database setting. Read it from the settings
+        // store, never from the app KV store, which never holds it.
+        $siteName = (string) $this->app->settings()->get('CMS.siteName', '');
+        if ($siteName === '' || in_array($siteName, $this->defaultSiteNames, true)) {
             $missing[] = 'CMS.siteName (still using default)';
         }
 
@@ -46,22 +57,5 @@ class RequiredSettingsCheck implements CheckInterface
             status: CheckResult::PASS,
             message: 'All required settings are configured.',
         );
-    }
-
-    /**
-     * Read a setting, preferring the settings service and falling back to
-     * the app's value.
-     */
-    private function settingsValue(string $key): string
-    {
-        if (method_exists($this->app, 'settings')) {
-            $value = $this->app->settings()->get($key, '');
-            if (is_scalar($value)) {
-                return (string) $value;
-            }
-        }
-
-        $value = $this->app->get($key);
-        return is_scalar($value) ? (string) $value : '';
     }
 }

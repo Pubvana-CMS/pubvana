@@ -29,11 +29,53 @@ class PhpExtensionsCheck implements CheckInterface
         'opcache' => 'PHP opcode caching for performance',
     ];
 
+    /**
+     * An extension can load under more than one name. OPcache registers as
+     * "Zend OPcache", so a short-name lookup reports it missing on a server
+     * that has it. Every known name is checked before an extension is called
+     * absent.
+     *
+     * @var array<string, list<string>>
+     */
+    private array $aliases = [
+        'opcache' => ['opcache', 'Zend OPcache'],
+    ];
+
+    /**
+     * Configured database driver => the PDO extension that backs it. A host
+     * can have pdo without the driver the site needs; that must fail here,
+     * not later as an opaque connection error.
+     *
+     * @var array<string, string>
+     */
+    private array $driverExtensions = [
+        'mysql'    => 'pdo_mysql',
+        'mariadb'  => 'pdo_mysql',
+        'pgsql'    => 'pdo_pgsql',
+        'postgres' => 'pdo_pgsql',
+        'sqlite'   => 'pdo_sqlite',
+    ];
+
+    /**
+     * @param string|null $driver Configured database driver (mysql, mariadb,
+     *                            pgsql, sqlite). When set, the matching PDO
+     *                            extension is required.
+     */
+    public function __construct(private ?string $driver = null) {}
+
     public function run(): CheckResult
     {
+        $required = $this->required;
+
+        if ($this->driver !== null && $this->driver !== '') {
+            $driver = strtolower($this->driver);
+            $extension = $this->driverExtensions[$driver] ?? 'pdo_' . $driver;
+            $required[$extension] = "PDO driver for the configured database ({$this->driver})";
+        }
+
         $missing = [];
-        foreach ($this->required as $ext => $reason) {
-            if (!extension_loaded($ext)) {
+        foreach ($required as $ext => $reason) {
+            if (!$this->isLoaded($ext)) {
                 $missing[] = "{$ext} ({$reason})";
             }
         }
@@ -51,7 +93,7 @@ class PhpExtensionsCheck implements CheckInterface
 
         $missingRec = [];
         foreach ($this->recommended as $ext => $reason) {
-            if (!extension_loaded($ext)) {
+            if (!$this->isLoaded($ext)) {
                 $missingRec[] = "{$ext} ({$reason})";
             }
         }
@@ -74,5 +116,19 @@ class PhpExtensionsCheck implements CheckInterface
             status: CheckResult::PASS,
             message: 'All required and recommended extensions are installed.',
         );
+    }
+
+    /**
+     * Whether an extension is loaded, by any of the names it registers under.
+     */
+    private function isLoaded(string $extension): bool
+    {
+        foreach ($this->aliases[$extension] ?? [$extension] as $name) {
+            if (extension_loaded($name)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pubvana\Tests\Unit\Plugins\SiteHealth;
 
+use flight\Engine;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use Pubvana\Plugins\SiteHealth\Services\CheckResult;
@@ -102,6 +103,33 @@ final class ChecksTest extends TestCase
 
         self::assertSame('php-extensions', $result->id);
         self::assertContains($result->status, [CheckResult::PASS, CheckResult::WARNING]);
+    }
+
+    public function testOpcacheAliasIsRecognized(): void
+    {
+        if (!extension_loaded('Zend OPcache')) {
+            self::markTestSkipped('Zend OPcache is not loaded');
+        }
+
+        self::assertTrue($this->invoke(new PhpExtensionsCheck(), 'isLoaded', ['opcache']));
+    }
+
+    public function testPhpExtensionsRequiresConfiguredDriver(): void
+    {
+        $result = (new PhpExtensionsCheck('pdo_no_such_driver'))->run();
+
+        self::assertSame(CheckResult::CRITICAL, $result->status);
+        self::assertStringContainsString('pdo_no_such_driver', $result->message);
+    }
+
+    public function testPhpExtensionsAcceptsPresentDriver(): void
+    {
+        $driver = \PDO::getAvailableDrivers()[0] ?? null;
+        if ($driver === null) {
+            self::markTestSkipped('no PDO drivers available');
+        }
+
+        self::assertNotSame(CheckResult::CRITICAL, (new PhpExtensionsCheck($driver))->run()->status);
     }
 
     public function testDebugModeWarnsInDevelopment(): void
@@ -212,9 +240,8 @@ final class ChecksTest extends TestCase
 
     public function testRequiredSettingsFlagsDefaults(): void
     {
-        $app = $this->app();
+        $app = $this->appWithSettings(['CMS.siteName' => 'Pubvana v3']);
         $app->set('siteUrl', 'http://example.com');
-        $app->set('CMS.siteName', 'Pubvana');
 
         $result = (new RequiredSettingsCheck($app))->run();
 
@@ -225,13 +252,23 @@ final class ChecksTest extends TestCase
 
     public function testRequiredSettingsPassesWhenConfigured(): void
     {
-        $app = $this->app();
+        $app = $this->appWithSettings(['CMS.siteName' => 'Real Site']);
         $app->set('siteUrl', 'https://real.org');
-        $app->set('CMS.siteName', 'Real Site');
 
         $result = (new RequiredSettingsCheck($app))->run();
 
         self::assertSame(CheckResult::PASS, $result->status);
+    }
+
+    public function testRequiredSettingsReadsSettingsStoreNotAppKv(): void
+    {
+        // The settings store holds the real value; a stale KV entry must not
+        // satisfy the check.
+        $app = $this->appWithSettings(['CMS.siteName' => 'Real Site']);
+        $app->set('CMS.siteName', 'Pubvana v3');
+        $app->set('siteUrl', 'https://real.org');
+
+        self::assertSame(CheckResult::PASS, (new RequiredSettingsCheck($app))->run()->status);
     }
 
     #[RunInSeparateProcess]
@@ -367,6 +404,29 @@ final class ChecksTest extends TestCase
         self::assertSame('plugin-migrations', $result->id);
         self::assertContains($result->status, [CheckResult::PASS, CheckResult::WARNING, CheckResult::CRITICAL]);
         self::assertNotSame('', $result->message);
+    }
+
+    /**
+     * Engine with a settings stand-in backed by the given key => value map.
+     *
+     * @param array<string, mixed> $settings
+     */
+    private function appWithSettings(array $settings): Engine
+    {
+        $app = $this->app();
+        $app->map('settings', static fn(): object => new class ($settings) {
+            /** @param array<string, mixed> $values */
+            public function __construct(private array $values)
+            {
+            }
+
+            public function get(string $key, mixed $default = null): mixed
+            {
+                return $this->values[$key] ?? $default;
+            }
+        });
+
+        return $app;
     }
 
     private function httpsResult(string $url, bool $force, string $env): CheckResult

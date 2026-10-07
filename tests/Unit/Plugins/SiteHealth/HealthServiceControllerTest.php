@@ -158,6 +158,47 @@ final class HealthServiceControllerTest extends TestCase
         self::assertCount(4, $this->fetches[0]['data']['categories']);
     }
 
+    public function testExternalPartialArrayIsNormalized(): void
+    {
+        $app = $this->engine(external: [
+            ['callable' => static fn(): array => ['id' => 'bare']],
+        ]);
+        $service = new HealthService($app, Sqlite::recreate());
+
+        $data = $service->runAll(true);
+        $bare = array_values(array_filter(
+            $data['results'],
+            static fn (array $r): bool => ($r['id'] ?? '') === 'bare'
+        ));
+
+        self::assertCount(1, $bare);
+        self::assertSame('bare', $bare[0]['name']);
+        self::assertSame('warning', $bare[0]['status']);
+        foreach (['id', 'name', 'category', 'status', 'message', 'remediation'] as $key) {
+            self::assertArrayHasKey($key, $bare[0]);
+        }
+    }
+
+    public function testControllerRendersContributedCategory(): void
+    {
+        $app = $this->engine(external: [
+            ['callable' => static fn(): CheckResult => new CheckResult(
+                id: 'ext-cat',
+                name: 'Ext Category',
+                category: 'custom',
+                status: CheckResult::WARNING,
+                message: 'A check in its own category.',
+            )],
+        ], controller: true);
+
+        (new HealthAdminController($app))->index();
+
+        $categories = $this->fetches[0]['data']['categories'];
+        self::assertArrayHasKey('custom', $categories);
+        self::assertSame('Custom', $categories['custom']['label']);
+        self::assertCount(5, $categories);
+    }
+
     public function testControllerRerun(): void
     {
         $app = $this->engine(controller: true);
@@ -267,6 +308,7 @@ final class HealthServiceControllerTest extends TestCase
         ]);
         $app->set('admin.topNav', []);
         $app->set('environment', 'production');
+        $app->set('pubvana.sitehealth', ['routePrepend' => 'site-health']);
         $app->set('CMS.siteUrl', 'https://example.org');
         $app->set('CMS.siteName', 'Real Site');
         $app->set('flight.force_https', true);

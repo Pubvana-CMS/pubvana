@@ -5,6 +5,19 @@ All notable changes to the Site Health plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.12] - 2026-10-07
+
+### Changed
+- The health service reads `routePrepend` from `$app` instead of the plugin config.
+
+### Fixed
+- `required-settings` read `CMS.siteName` from the app store, where it never lives.
+- `required-settings` compared the site name against `Pubvana`, not the shipped default `Pubvana v3`.
+- The extensions check reported OPcache missing on a server that has it.
+- The extensions check ignored the PDO driver for the configured database.
+- A contributed check returning only an `id` warned in the view.
+- A check in a category outside the four counted in the summary but did not render.
+
 ## [0.1.11] - 2026-09-27
 
 ### Changed
