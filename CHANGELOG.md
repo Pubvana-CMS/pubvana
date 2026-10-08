@@ -5,7 +5,7 @@ Notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## [3.0.0-beta.9] - 2026-10-08
 
 ### Added
 - added nginx config sample
@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Search analyzed/bugs fixed. See it's changelog.
 - Seo analyzed/bugs fixed. See it's changelog.
 - SiteHealth analyzed/bugs fixed. See it's changelog.
-- PluginLoader now loads all plugins config to `$app->set()`.  plugins no longer need to
+- PluginLoader now loads all plugins config to `$app->set()`.  plugins no longer need to manually add it's config.
 - SocialLinks analyzed/bugs fixed. See it's changelog.
 - Updates analyzed/bugs fixed. See it's changelog.
 - The Plugins page showed plugin IDs instead of display names.

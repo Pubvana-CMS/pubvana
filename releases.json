@@ -1,6 +1,17 @@
 {
     "releases": [
         {
+            "version": "3.0.0-beta.9",
+            "release_date": "2026-10-08",
+            "min_php_version": "8.2",
+            "breaking_changes": [],
+            "migration_notes": [
+                "Bug fixes. Assistant can help with 404 errors now."
+            ],
+            "notices": [],
+            "download_url": "https://github.com/Pubvana-CMS/pubvana/releases/download/3.0.0-beta.9/release.zip"
+        },
+        {
             "version": "3.0.0-beta.8",
             "release_date": "2026-10-05",
             "min_php_version": "8.2",
