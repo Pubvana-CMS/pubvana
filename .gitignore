@@ -37,6 +37,7 @@
 # Public uploads (site media/content)
 /public/uploads/*
 !/public/uploads/.gitkeep
+!/public/uploads/.htaccess
 
 # Node.js
 /node_modules/
