@@ -9,6 +9,7 @@ use Pubvana\Plugins\AiAssistant\Models\AiKeyGrant;
 use Pubvana\Plugins\AiAssistant\Models\AiLog;
 use Pubvana\Plugins\Blog\Models\Post;
 use flight\Engine;
+use flight\WrapExpressions;
 
 /**
  * AiService - API key management, bearer authentication, grants, and
@@ -528,6 +529,11 @@ class AiService
     /**
      * Apply the search term as an OR-wrapped LIKE across searchable fields.
      *
+     * The term is matched literally. The LIKE carries an explicit
+     * ESCAPE '!', so the match is the same on every server: the default
+     * escape character depends on the server's sql_mode (NO_BACKSLASH_ESCAPES
+     * changes it), and an explicit one does not.
+     *
      * @param \Pubvana\Plugins\Blog\Models\Post|\Pubvana\Plugins\Pages\Models\Page $query  Active record query builder
      * @param string|null  $search
      * @param bool         $includeExcerpt  Posts also search the excerpt
@@ -538,14 +544,36 @@ class AiService
             return;
         }
 
-        $query->startWrap()
-            ->like('title', '%' . $search . '%')
-            ->like('slug', '%' . $search . '%', 'or')
-            ->like('content', '%' . $search . '%', 'or');
+        $columns = ['title', 'slug', 'content'];
         if ($includeExcerpt) {
-            $query->like('excerpt', '%' . $search . '%', 'or');
+            $columns[] = 'excerpt';
         }
-        $query->endWrap('OR');
+
+        // Quoted through the connection, so the value is injection-safe and
+        // can sit next to the explicit ESCAPE clause.
+        $quoted = $this->pdo->quote('%' . $this->escapeLike($search) . '%');
+        if ($quoted === false) {
+            return;
+        }
+
+        $parts = [];
+        foreach ($columns as $column) {
+            $parts[] = $column . ' LIKE ' . $quoted . " ESCAPE '!'";
+        }
+
+        $group = new WrapExpressions(['target' => $parts]);
+        $group->delimiter = ' OR ';
+
+        $query->addCondition($group, null, null);
+    }
+
+    /**
+     * Escape LIKE metacharacters with '!'. Pair with an explicit
+     * "ESCAPE '!'" in the SQL (see applyListFilters).
+     */
+    private function escapeLike(string $term): string
+    {
+        return strtr($term, ['!' => '!!', '%' => '!%', '_' => '!_']);
     }
 
     private function countPostsForApi(?string $status, ?string $search): int

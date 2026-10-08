@@ -300,6 +300,11 @@ final class ActivityLogServiceTest extends TestCase
         self::assertCount(1, $service->list(['user_id' => 1]));
         self::assertCount(1, $service->list(['entity_name' => 'About']));
         self::assertCount(0, $service->list(['entity_name' => 'missing']));
+        // A LIKE wildcard in the term is matched literally (explicit ESCAPE),
+        // so it must not widen the result to every row.
+        self::assertCount(0, $service->list(['entity_name' => '%']));
+        self::assertCount(0, $service->list(['entity_name' => '_']));
+        self::assertSame(0, $service->count(['entity_name' => '%']));
 
         $today = date('Y-m-d');
         self::assertCount(2, $service->list(['date_from' => $today]));

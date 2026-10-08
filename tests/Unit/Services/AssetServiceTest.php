@@ -85,14 +85,19 @@ final class AssetServiceTest extends TestCase
         self::assertNull($this->service->resolve('vendor', 'a/b/c', 'x.css'));
     }
 
-    public function testResolveNeutralizesDirectoryTraversal(): void
+    public function testResolveRejectsDirectoryTraversal(): void
     {
-        // '../' is stripped, so the path collapses to css/blog.css which is
-        // legitimately inside the plugin assets dir. It must never escape
-        // the assets base directory.
-        $result = $this->service->resolve('plugin', 'Blog', '../css/blog.css');
-        self::assertNotNull($result);
-        self::assertStringContainsString('/plugins/Blog/assets/', $result);
+        // A ".." segment is rejected outright. It must never be stripped
+        // down to a legitimate path or allowed to escape the assets base.
+        self::assertNull($this->service->resolve('plugin', 'Blog', '../css/blog.css'));
+        self::assertNull($this->service->resolve('plugin', 'Blog', 'css/../../css/blog.css'));
+    }
+
+    public function testResolveRejectsDoubleSlashTraversalBypass(): void
+    {
+        // "....//" survives a naive strip as "../". The segment check and the
+        // fixed-base containment test both stop it from resolving.
+        self::assertNull($this->service->resolve('plugin', 'Blog', '....//....//css/blog.css'));
     }
 
     public function testResolveReturnsNullForTraversalOutsideTypeTree(): void

@@ -298,6 +298,39 @@ final class NavigationServiceTest extends TestCase
     }
 
     // -----------------------------------------------------------------
+    // URL sanitizing
+    // -----------------------------------------------------------------
+
+    public function testCreateSanitizesDangerousUrlScheme(): void
+    {
+        $item = $this->service->create(['label' => 'Bad', 'url' => 'javascript:alert(1)']);
+
+        self::assertSame('#', (string) $item->url);
+    }
+
+    public function testGetByGroupSanitizesALegacyDangerousUrl(): void
+    {
+        $this->insertItem('Legacy', 'javascript:alert(1)', 'primary', null, 0);
+
+        $items = $this->service->getByGroup('primary');
+
+        self::assertSame('#', (string) $items[0]->url);
+    }
+
+    public function testSafeUrlAllowsRelativeAndHttpAndRejectsTheRest(): void
+    {
+        self::assertSame('/blog', $this->service->safeUrl('/blog'));
+        self::assertSame('#anchor', $this->service->safeUrl('#anchor'));
+        self::assertSame('blog/post', $this->service->safeUrl('blog/post'));
+        self::assertSame('https://example.com/x', $this->service->safeUrl('https://example.com/x'));
+        self::assertSame('mailto:a@b.test', $this->service->safeUrl('mailto:a@b.test'));
+
+        self::assertSame('#', $this->service->safeUrl('javascript:alert(1)'));
+        self::assertSame('#', $this->service->safeUrl('data:text/html,<script>'));
+        self::assertSame('#', $this->service->safeUrl(''));
+    }
+
+    // -----------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------
 

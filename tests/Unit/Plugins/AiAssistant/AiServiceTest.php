@@ -54,6 +54,15 @@ final class AiServiceTest extends TestCase
         parent::tearDown();
     }
 
+    public function testEscapeLikeNeutralizesWildcards(): void
+    {
+        $service = $this->service();
+
+        self::assertSame('a!%b', $this->invoke($service, 'escapeLike', ['a%b']));
+        self::assertSame('a!_b', $this->invoke($service, 'escapeLike', ['a_b']));
+        self::assertSame('a!!b', $this->invoke($service, 'escapeLike', ['a!b']));
+    }
+
     /**
      * @param array<string, mixed> $config
      */
@@ -668,6 +677,22 @@ final class AiServiceTest extends TestCase
             'route_prefix'  => '/api/ai',
             'key_prefix'    => 'pvai1_',
         ]);
+    }
+
+    public function testListPostsSearchMatchesWildcardsLiterally(): void
+    {
+        $this->createContentTables($this->pdo);
+        $service = $this->service();
+        $this->insertPost(1, 'alpha', 'published', '2026-08-01 00:00:00');
+        $this->insertPost(2, 'beta', 'published', '2026-08-01 00:00:00');
+
+        // A normal term matches one row.
+        self::assertSame(1, $service->listPostsForApi(1, 25, null, 'al')['total']);
+
+        // A wildcard is literal: no title or slug contains '%' or '_', so
+        // nothing matches. Without the explicit ESCAPE both would match all.
+        self::assertSame(0, $service->listPostsForApi(1, 25, null, '%')['total']);
+        self::assertSame(0, $service->listPostsForApi(1, 25, null, '_')['total']);
     }
 
     private function createContentTables(PDO $pdo): void

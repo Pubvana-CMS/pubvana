@@ -388,6 +388,30 @@ final class UpdateApplyServiceTest extends TestCase
     // Check cache bust on apply
     // ------------------------------------------------------------------
 
+    public function testAllowedDownloadUrlAcceptsTheReleaseHosts(): void
+    {
+        $service = new UpdateApplyService($this->app(), []);
+
+        self::assertTrue($this->invoke($service, 'isAllowedDownloadUrl', [
+            'https://github.com/Pubvana-CMS/pubvana/releases/download/1.0.0/release.zip',
+        ]));
+        self::assertTrue($this->invoke($service, 'isAllowedDownloadUrl', [
+            'https://raw.githubusercontent.com/x/y/main/release.zip',
+        ]));
+        self::assertTrue($this->invoke($service, 'isAllowedDownloadUrl', ['file:///tmp/release.zip']));
+    }
+
+    public function testAllowedDownloadUrlRefusesOtherHostsAndSchemes(): void
+    {
+        $service = new UpdateApplyService($this->app(), []);
+
+        self::assertFalse($this->invoke($service, 'isAllowedDownloadUrl', [
+            'https://evil.example.com/release.zip',
+        ]));
+        self::assertFalse($this->invoke($service, 'isAllowedDownloadUrl', ['http://127.0.0.1/release.zip']));
+        self::assertFalse($this->invoke($service, 'isAllowedDownloadUrl', ['ftp://github.com/release.zip']));
+    }
+
     private function gateDir(): string
     {
         $dir = sys_get_temp_dir() . '/pv-updates-gate-' . uniqid();

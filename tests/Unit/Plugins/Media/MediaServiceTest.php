@@ -416,6 +416,44 @@ final class MediaServiceTest extends TestCase
         @unlink($outside);
     }
 
+    public function testUploadPosterLeavesFilesOutsideThePublicDirectory(): void
+    {
+        if (!extension_loaded('gd')) {
+            self::markTestSkipped('GD extension not available.');
+        }
+
+        $service = $this->service();
+
+        $outsideName = 'pv-media-outside-' . uniqid('', true) . '.png';
+        $outside     = dirname($this->publicPath) . '/' . $outsideName;
+        file_put_contents($outside, 'keep me');
+
+        $video = $this->makeImage([
+            'type'        => 'video',
+            'filename'    => 'clip.mp4',
+            'path'        => 'uploads/2026/01/clip.mp4',
+            'mime_type'   => 'video/mp4',
+            'poster_path' => '../' . $outsideName,
+        ]);
+
+        // A nested path so writePng's mkdir targets a directory that does not
+        // exist yet (a top-level path would warn on the existing public dir).
+        $source = $this->writePng('src/poster-source.png', 60, 40);
+        $file   = [
+            'name'     => 'poster.png',
+            'type'     => 'image/png',
+            'tmp_name' => $source,
+            'error'    => UPLOAD_ERR_OK,
+            'size'     => (int) filesize($source),
+        ];
+
+        $service->uploadPoster($video, $file);
+
+        self::assertFileExists($outside, 'a poster_path outside public/ must not be unlinked');
+
+        @unlink($outside);
+    }
+
     public function testPickerAvatarJoditRender(): void
     {
         $service = $this->service();

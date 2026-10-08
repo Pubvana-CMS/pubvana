@@ -98,22 +98,33 @@ class AssetService
             return null;
         }
 
-        // Sanitize inputs (prevent directory traversal)
-        $path = str_replace(['../', '..\\'], '', $path);
+        // Reject traversal outright. A ".." path segment, a backslash, or a
+        // NUL byte never reaches the filesystem. Stripping these is not
+        // enough: "....//" survives a strip as "../".
+        if (str_contains($path, '\\') || str_contains($path, "\0")) {
+            return null;
+        }
 
-        // Build file path based on type
+        foreach (explode('/', $path) as $segment) {
+            if ($segment === '..' || $segment === '.') {
+                return null;
+            }
+        }
+
+        // Build the base directory and the file path. The base is fixed from
+        // the type and the basenamed name, so it never moves with the request.
         $root = PROJECT_ROOT;
-        $filePath = null;
+        $base = null;
 
         switch ($type) {
             case 'plugin':
                 // $name is a single component (plugin id); strip any path
-                $filePath = $root . '/plugins/' . basename($name) . '/assets/' . $path;
+                $base = $root . '/plugins/' . basename($name) . '/assets';
                 break;
 
             case 'theme':
                 // $name is a single component (theme id); strip any path
-                $filePath = $root . '/themes/' . basename($name) . '/assets/' . $path;
+                $base = $root . '/themes/' . basename($name) . '/assets';
                 break;
 
             case 'vendor':
@@ -123,29 +134,30 @@ class AssetService
                     return null;
                 }
                 // Strip any path from each component to prevent traversal
-                $vendor = basename($parts[0]);
-                $package = basename($parts[1]);
-                $filePath = $root . '/vendor/' . $vendor . '/' . $package . '/assets/' . $path;
+                $base = $root . '/vendor/' . basename($parts[0]) . '/' . basename($parts[1]) . '/assets';
                 break;
         }
 
-        if ($filePath === null) {
+        if ($base === null) {
             return null;
         }
+
+        $filePath = $base . '/' . $path;
 
         // Validate file exists and is readable
         if (!is_file($filePath) || !is_readable($filePath)) {
             return null;
         }
 
-        // Security check: ensure resolved path is within expected directory
+        // Security check: the resolved file must sit inside the fixed base.
+        // realpath() collapses ".." and symlinks, so a link pointing outside
+        // the base fails this test. The trailing separator stops a sibling
+        // like "assets-extra" from passing a prefix match.
         $realPath = realpath($filePath);
-        if ($realPath === false) {
-            return null;
-        }
+        $realBase = realpath($base);
 
-        $allowedBase = realpath(dirname($filePath, 3)); // Go up to assets/ parent
-        if ($allowedBase === false || !str_starts_with($realPath, $allowedBase)) {
+        if ($realPath === false || $realBase === false
+            || !str_starts_with($realPath, $realBase . DIRECTORY_SEPARATOR)) {
             return null;
         }
 
@@ -173,6 +185,13 @@ class AssetService
             $this->fail404();
             return;
         }
+
+        // Never let a browser MIME-sniff an asset into something executable
+        // (SVG is the script-capable type in the allow-list). The full-app
+        // path gets this from SecurityHeadersMiddleware; the early asset path
+        // in asset-server.php never runs that middleware, so the header is set
+        // here to cover both entry points.
+        header('X-Content-Type-Options: nosniff');
 
         // Asset responses are binary streams; Tracy's debug bar cannot and
         // should not inject into them (it throws when Content-Length is set).

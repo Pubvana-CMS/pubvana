@@ -332,6 +332,22 @@ final class UsersControllerTest extends TestCase
         self::assertSame('That user no longer exists.', $this->flashes['error'][0]);
     }
 
+    public function testViewerMayManageUserBlocksCrossAdminForNonSuperadmin(): void
+    {
+        $controller = $this->controller($this->engine(viewerSuperadmin: false, actorId: 1));
+
+        self::assertFalse($this->invoke($controller, 'viewerMayManageUser', ['2', true]));
+        self::assertTrue($this->invoke($controller, 'viewerMayManageUser', ['1', true]), 'self is always allowed');
+        self::assertTrue($this->invoke($controller, 'viewerMayManageUser', ['9', false]), 'ordinary users are allowed');
+    }
+
+    public function testViewerMayManageUserAllowsSuperadminAnywhere(): void
+    {
+        $controller = $this->controller($this->engine(viewerSuperadmin: true, actorId: 1));
+
+        self::assertTrue($this->invoke($controller, 'viewerMayManageUser', ['2', true]));
+    }
+
     private function controller(Engine $app): UsersController
     {
         $test = $this;

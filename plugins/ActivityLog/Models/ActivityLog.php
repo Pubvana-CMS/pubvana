@@ -77,14 +77,18 @@ class ActivityLog extends \Pubvana\Models\AbstractModel
      */
     public function filtered(array $filters = [], int $page = 1, int $perPage = 25): array
     {
-        $model = new self($this->getDatabaseConnection());
-        $this->applyFilters($model, $filters);
+        [$where, $params] = $this->listWhere($filters);
 
-        $model->order('id DESC');
-        $model->limit($perPage);
-        $model->offset(($page - 1) * $perPage);
+        $limit  = max(1, $perPage);
+        $offset = max(0, ($page - 1) * $perPage);
 
-        return $model->findAll();
+        // Raw SQL so the LIKE can carry an explicit ESCAPE '!' (see listWhere).
+        $rows = $this->query(
+            'SELECT * FROM activity_logs' . $where . ' ORDER BY id DESC LIMIT ' . $limit . ' OFFSET ' . $offset,
+            $params
+        );
+
+        return is_array($rows) ? array_values($rows) : [];
     }
 
     /**
@@ -93,47 +97,70 @@ class ActivityLog extends \Pubvana\Models\AbstractModel
      */
     public function countFiltered(array $filters = []): int
     {
-        $model = new self($this->getDatabaseConnection());
-        $this->applyFilters($model, $filters);
+        [$where, $params] = $this->listWhere($filters);
 
-        $model->select('COUNT(*) AS cnt');
+        $row = $this->query('SELECT COUNT(*) AS cnt FROM activity_logs' . $where, $params, null, true);
 
-        return (int) $model->find()->cnt;
+        return (int) ($row->cnt ?? 0);
     }
 
     /**
-     * Apply the shared list filters to a query instance.
+     * Escape LIKE metacharacters with '!'. Pair with an explicit
+     * "ESCAPE '!'" in the SQL: the escape character is then named, so the
+     * match is the same on every server. The default escape character
+     * depends on the server's sql_mode (NO_BACKSLASH_ESCAPES changes it),
+     * and an explicit one does not.
+     */
+    private function escapeLike(string $term): string
+    {
+        return strtr($term, ['!' => '!!', '%' => '!%', '_' => '!_']);
+    }
+
+    /**
+     * Build the WHERE clause and bound params for the shared list filters.
      *
-     * All conditions use bound-parameter operators. Raw where() is avoided:
-     * it replaces the whole WHERE expression instead of appending.
+     * Raw SQL rather than the builder so the LIKE can carry an explicit
+     * ESCAPE '!'. Every value is still a bound parameter.
      *
      * @param array<string, mixed> $filters
+     * @return array{0: string, 1: array<string, mixed>}
      */
-    private function applyFilters(self $model, array $filters): void
+    private function listWhere(array $filters): array
     {
+        $clauses = [];
+        $params  = [];
+
         if (!empty($filters['user_id'])) {
-            $model->eq('user_id', (int) $filters['user_id']);
+            $clauses[] = 'user_id = :user_id';
+            $params[':user_id'] = (int) $filters['user_id'];
         }
 
         if (!empty($filters['action'])) {
-            $model->eq('action', $filters['action']);
+            $clauses[] = 'action = :action';
+            $params[':action'] = (string) $filters['action'];
         }
 
         if (!empty($filters['entity_type'])) {
-            $model->eq('entity_type', $filters['entity_type']);
+            $clauses[] = 'entity_type = :entity_type';
+            $params[':entity_type'] = (string) $filters['entity_type'];
         }
 
         if (!empty($filters['entity_name'])) {
-            $model->like('entity_name', '%' . $filters['entity_name'] . '%');
+            $clauses[] = "entity_name LIKE :entity_name ESCAPE '!'";
+            $params[':entity_name'] = '%' . $this->escapeLike((string) $filters['entity_name']) . '%';
         }
 
         if (!empty($filters['date_from'])) {
-            $model->ge('created_at', $filters['date_from']);
+            $clauses[] = 'created_at >= :date_from';
+            $params[':date_from'] = (string) $filters['date_from'];
         }
 
         if (!empty($filters['date_to'])) {
-            $model->le('created_at', $filters['date_to'] . ' 23:59:59');
+            $clauses[] = 'created_at <= :date_to';
+            $params[':date_to'] = (string) $filters['date_to'] . ' 23:59:59';
         }
+
+        return [$clauses === [] ? '' : ' WHERE ' . implode(' AND ', $clauses), $params];
     }
 
     /**

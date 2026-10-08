@@ -185,11 +185,15 @@ class MediaService
             ->resize($this->config['thumb_width'] ?? 300)
             ->toWebp($newPoster, $this->config['webp_quality'] ?? 85);
 
-        if ($media->poster_path) {
-            $oldPoster = $this->publicPath . '/' . $media->poster_path;
-            if ($oldPoster !== $newPoster && file_exists($oldPoster)) {
-                unlink($oldPoster);
-            }
+        // Remove the old poster only when it resolves inside public/. The
+        // path can be set through the metadata endpoint, so a ".." value
+        // must never reach unlink().
+        $oldPoster = $media->poster_path !== null
+            ? $this->publicPath . '/' . $media->poster_path
+            : null;
+
+        if ($oldPoster !== null && $oldPoster !== $newPoster) {
+            $this->unlinkPosterWithinPublic($media->poster_path);
         }
 
         $media->updateMeta([
@@ -416,14 +420,7 @@ class MediaService
         }
 
         if ($media->poster_path) {
-            // poster_path can be set through the metadata endpoint, so only
-            // unlink a file that resolves inside the public directory.
-            $publicRoot = realpath($this->publicPath);
-            $poster     = realpath($this->publicPath . '/' . ltrim($media->poster_path, '/'));
-            if ($publicRoot !== false && $poster !== false
-                && str_starts_with($poster, $publicRoot . DIRECTORY_SEPARATOR)) {
-                unlink($poster);
-            }
+            $this->unlinkPosterWithinPublic($media->poster_path);
         }
 
         $media->delete();
@@ -720,6 +717,35 @@ class MediaService
         }
 
         return null;
+    }
+
+    /**
+     * Unlink a poster file only when it resolves inside the public directory.
+     *
+     * poster_path is writable through the metadata endpoint, so a value like
+     * "../../app/config/services.php" must never reach unlink(). realpath()
+     * collapses ".." and symlinks before the containment test.
+     */
+    private function unlinkPosterWithinPublic(?string $posterPath): void
+    {
+        if ($posterPath === null || $posterPath === '') {
+            return;
+        }
+
+        $publicRoot = realpath($this->publicPath);
+        $poster     = realpath($this->publicPath . '/' . ltrim($posterPath, '/'));
+
+        if ($publicRoot === false || $poster === false) {
+            return;
+        }
+
+        if (!str_starts_with($poster, $publicRoot . DIRECTORY_SEPARATOR)) {
+            return;
+        }
+
+        if (is_file($poster)) {
+            unlink($poster);
+        }
     }
 
     private function ensureDirectory(string $path): void

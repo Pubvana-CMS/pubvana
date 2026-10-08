@@ -42,7 +42,7 @@ class NavigationService
      */
     public function getTree(string $group = 'primary'): array
     {
-        $flat = $this->model()->getByGroup($group);
+        $flat = $this->getByGroup($group);
         return $this->buildTree($flat);
     }
 
@@ -54,7 +54,15 @@ class NavigationService
      */
     public function getByGroup(string $group = 'primary'): array
     {
-        return $this->model()->getByGroup($group);
+        $items = $this->model()->getByGroup($group);
+
+        // Sanitize on the way out too, so a row stored before the write-side
+        // check (or edited by hand) can never reach the theme's href as-is.
+        foreach ($items as $item) {
+            $item->url = $this->safeUrl($item->url);
+        }
+
+        return $items;
     }
 
     /**
@@ -76,6 +84,37 @@ class NavigationService
     }
 
     /**
+     * Reduce a stored navigation URL to a safe href.
+     *
+     * Allows root-relative paths, in-page anchors, and the http, https,
+     * mailto, and tel schemes. Anything with another scheme (javascript:,
+     * data:, and the rest) becomes '#', so a stored value can never run
+     * script when the theme renders it into an href.
+     */
+    public function safeUrl(?string $url): string
+    {
+        $candidate = trim((string) ($url ?? ''));
+
+        if ($candidate === '') {
+            return '#';
+        }
+
+        // Control characters and backslashes have no place in an href.
+        if (str_contains($candidate, '\\') || preg_match('/[\x00-\x1f\x7f]/', $candidate) === 1) {
+            return '#';
+        }
+
+        $scheme = strtolower((string) (parse_url($candidate, PHP_URL_SCHEME) ?? ''));
+
+        // No scheme is a relative URL (/blog, #anchor, blog/post): allowed.
+        if ($scheme === '') {
+            return $candidate;
+        }
+
+        return in_array($scheme, ['http', 'https', 'mailto', 'tel'], true) ? $candidate : '#';
+    }
+
+    /**
      * Create a new navigation item.
      *
      * Auto-calculates sort_order if not provided. Sets timestamps.
@@ -90,7 +129,7 @@ class NavigationService
 
         $item = $this->model();
         $item->label      = $data['label'] ?? '';
-        $item->url        = $data['url'] ?? '/';
+        $item->url        = $this->safeUrl($data['url'] ?? '/');
         $item->parent_id  = !empty($data['parent_id']) ? (int) $data['parent_id'] : null;
         $item->sort_order = (int) ($data['sort_order'] ?? $this->model()->nextSortOrder($group));
         $item->target     = $data['target'] ?? '_self';

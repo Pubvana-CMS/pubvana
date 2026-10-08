@@ -173,3 +173,26 @@ $app->set(
     'flight.force_https',
     $forceHttps ?? false
 );
+
+// Session cookie Secure flag. The flight-sessions default follows
+// flight.force_https only, so an HTTPS site with FORCE_HTTPS unset would
+// ship a non-Secure session cookie. Mark it Secure whenever the request
+// arrived over HTTPS. Left untouched on plain HTTP so a non-TLS install (and
+// the local dev server) keeps working.
+if (php_sapi_name() !== 'cli') {
+    $secureRequest = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+
+    if ($secureRequest) {
+        $plugins = $app->get('plugins');
+        if (is_array($plugins)) {
+            $sessions = $plugins['enlivenapp/flight-sessions'] ?? [];
+            if (!is_array($sessions)) {
+                $sessions = [];
+            }
+            $sessions['cookie_secure'] = true;
+            $plugins['enlivenapp/flight-sessions'] = $sessions;
+            $app->set('plugins', $plugins);
+        }
+    }
+}

@@ -245,7 +245,9 @@ class Mailer
         $mail = new PHPMailer(true); // exceptions
         $mail->isSMTP();
 
-        $mail->Host = (string) $this->settings->get('Mail.host');
+        $host = (string) $this->settings->get('Mail.host');
+        $this->assertSafeSmtpHost($host);
+        $mail->Host = $host;
         $mail->Port = (int) $this->settings->get('Mail.port');
 
         $encryption = (string) $this->settings->get('Mail.encryption');
@@ -264,6 +266,46 @@ class Mailer
         $mail->SMTPAutoTLS = true;
 
         return $mail;
+    }
+
+    /**
+     * Refuse an SMTP host that points at the local machine or a link-local
+     * address. Those are the high-value SSRF targets (loopback services and
+     * the cloud metadata endpoint at 169.254.169.254) and are never a real
+     * mail server. Private ranges (10/8, 172.16/12, 192.168/16) stay allowed
+     * so an internal relay still works, and development is exempt so a local
+     * test relay (mailhog) keeps working.
+     *
+     * @throws MailerException When the stored host is a loopback, link-local,
+     *                         or otherwise reserved address.
+     */
+    protected function assertSafeSmtpHost(string $host): void
+    {
+        if (($this->app->get('environment') ?? 'production') === 'development') {
+            return;
+        }
+
+        $host = trim($host);
+        if ($host === '') {
+            return;
+        }
+
+        // Strip the brackets PHPMailer accepts around a literal IPv6 host.
+        $bare = trim($host, '[]');
+
+        if (strcasecmp($bare, 'localhost') === 0) {
+            throw new MailerException('SMTP host "localhost" is not allowed.');
+        }
+
+        if (filter_var($bare, FILTER_VALIDATE_IP) === false) {
+            return; // A hostname: left to DNS, same as before.
+        }
+
+        // NO_RES_RANGE covers loopback (127/8, ::1), link-local (169.254/16,
+        // fe80::/10), and other reserved blocks, but not the private ranges.
+        if (filter_var($bare, FILTER_VALIDATE_IP, FILTER_FLAG_NO_RES_RANGE) === false) {
+            throw new MailerException('SMTP host is a loopback or link-local address.');
+        }
     }
 
     /**

@@ -32,6 +32,30 @@ class UsersController extends AdminController
     }
 
     /**
+     * Whether the current viewer may act on a user account.
+     *
+     * A non-superadmin may manage ordinary users and their own account, but
+     * not another admin's. Without this, one admin could reset another
+     * admin's password (or ban or delete them) and take over the panel.
+     *
+     * @param string $targetId    Target user id
+     * @param bool   $targetAdmin Whether the target is in the admin tier
+     *                            (the admin or superadmin group)
+     */
+    protected function viewerMayManageUser(string $targetId, bool $targetAdmin): bool
+    {
+        if ($this->viewerIsSuperadmin()) {
+            return true;
+        }
+
+        if ((string) $this->app->auth()->id() === $targetId) {
+            return true;
+        }
+
+        return !$targetAdmin;
+    }
+
+    /**
      * User listing with pagination.
      *
      * Reads page number from query string, fetches paginated users,
@@ -257,6 +281,12 @@ class UsersController extends AdminController
             return;
         }
 
+        if (!$this->viewerMayManageUser((string) $user->id, $user->inGroup('admin') || $user->inGroup('superadmin'))) {
+            $this->app->session()->flash('error', 'Only a superadmin can manage another administrator.');
+            $this->app->redirect('/admin/users');
+            return;
+        }
+
         // Group changes first: an unauthorized superadmin grant stops the
         // whole update (profile untouched) instead of slipping through.
         $rawGroups = $post['groups'] ?? [];
@@ -314,6 +344,12 @@ class UsersController extends AdminController
             return;
         }
 
+        if (!$this->viewerMayManageUser((string) $user->id, $user->inGroup('admin') || $user->inGroup('superadmin'))) {
+            $this->app->session()->flash('error', 'Only a superadmin can manage another administrator.');
+            $this->app->redirect('/admin/users');
+            return;
+        }
+
         $result = $this->userAdmin()->deleteUser($user);
         if (!$result->isOK()) {
             $this->app->session()->flash('error', $result->reason() ?: 'User could not be deleted.');
@@ -339,6 +375,12 @@ class UsersController extends AdminController
         $user = $this->app->auth()->users()->find((int) $id, $this->viewerIsSuperadmin());
 
         if ($user === null) {
+            $this->app->redirect('/admin/users');
+            return;
+        }
+
+        if (!$this->viewerMayManageUser((string) $user->id, $user->inGroup('admin') || $user->inGroup('superadmin'))) {
+            $this->app->session()->flash('error', 'Only a superadmin can manage another administrator.');
             $this->app->redirect('/admin/users');
             return;
         }
@@ -372,6 +414,12 @@ class UsersController extends AdminController
             return;
         }
 
+        if (!$this->viewerMayManageUser((string) $user->id, $user->inGroup('admin') || $user->inGroup('superadmin'))) {
+            $this->app->session()->flash('error', 'Only a superadmin can manage another administrator.');
+            $this->app->redirect('/admin/users');
+            return;
+        }
+
         if ((string) $user->id === (string) $this->app->auth()->id()) {
             $this->app->session()->flash('error', 'You cannot ban your own account.');
             $this->app->redirect('/admin/users/' . $id . '/edit');
@@ -396,7 +444,7 @@ class UsersController extends AdminController
     {
         $user = $this->app->auth()->users()->find((int) $id, $this->viewerIsSuperadmin());
 
-        if ($user !== null) {
+        if ($user !== null && $this->viewerMayManageUser((string) $user->id, $user->inGroup('admin') || $user->inGroup('superadmin'))) {
             $this->userAdmin()->unBan($user);
         }
 
@@ -420,6 +468,12 @@ class UsersController extends AdminController
 
         if ($user === null) {
             $this->app->session()->flash('error', 'That user no longer exists.');
+            $this->app->redirect('/admin/users');
+            return;
+        }
+
+        if (!$this->viewerMayManageUser((string) $user->id, $user->inGroup('admin') || $user->inGroup('superadmin'))) {
+            $this->app->session()->flash('error', 'Only a superadmin can manage another administrator.');
             $this->app->redirect('/admin/users');
             return;
         }

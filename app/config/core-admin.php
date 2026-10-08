@@ -29,6 +29,7 @@ use Pubvana\Controllers\Admin\CaptchaAdminController;
 
 use Pubvana\Controllers\Admin\PluginsController;
 
+use Enlivenapp\FlightShield\Middlewares\GroupMiddleware;
 use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 
 /** @var \flight\Engine $app */
@@ -297,21 +298,27 @@ $adext->addRoutes('admin', [
 ], 'pubvana.core', true);
 
 // Groups
+// Superadmin-only: groups are how permissions get granted, so a non-superadmin
+// admin must not create or edit one to hand themselves the finer permissions.
+$superadminOnly = new GroupMiddleware($app, 'superadmin');
+
 $adext->addRoutes('admin', [
-    ['GET',    '/groups',             [GroupsController::class, 'index'],   []],
-    ['GET',    '/groups/create',      [GroupsController::class, 'create'],  []],
-    ['POST',   '/groups/store',       [GroupsController::class, 'store'],   []],
-    ['GET',    '/groups/@id/edit',    [GroupsController::class, 'edit'],    []],
-    ['POST',   '/groups/@id/update',  [GroupsController::class, 'update'],  []],
-    ['POST',   '/groups/@id/delete',  [GroupsController::class, 'delete'],  []],
+    ['GET',    '/groups',             [GroupsController::class, 'index'],   [$superadminOnly]],
+    ['GET',    '/groups/create',      [GroupsController::class, 'create'],  [$superadminOnly]],
+    ['POST',   '/groups/store',       [GroupsController::class, 'store'],   [$superadminOnly]],
+    ['GET',    '/groups/@id/edit',    [GroupsController::class, 'edit'],    [$superadminOnly]],
+    ['POST',   '/groups/@id/update',  [GroupsController::class, 'update'],  [$superadminOnly]],
+    ['POST',   '/groups/@id/delete',  [GroupsController::class, 'delete'],  [$superadminOnly]],
 ], 'pubvana.core', true);
 
 // Permissions
+// Superadmin-only, for the same reason as groups: defining a permission is
+// defining a capability, and only a superadmin should hand those out.
 $adext->addRoutes('admin', [
-    ['GET',    '/permissions',              [PermissionsController::class, 'index'],   []],
-    ['GET',    '/permissions/create',       [PermissionsController::class, 'create'],  []],
-    ['POST',   '/permissions/store',        [PermissionsController::class, 'store'],   []],
-    ['POST',   '/permissions/@id/delete',   [PermissionsController::class, 'delete'],  []],
+    ['GET',    '/permissions',              [PermissionsController::class, 'index'],   [$superadminOnly]],
+    ['GET',    '/permissions/create',       [PermissionsController::class, 'create'],  [$superadminOnly]],
+    ['POST',   '/permissions/store',        [PermissionsController::class, 'store'],   [$superadminOnly]],
+    ['POST',   '/permissions/@id/delete',   [PermissionsController::class, 'delete'],  [$superadminOnly]],
 ], 'pubvana.core', true);
 
 // Themes & Regions

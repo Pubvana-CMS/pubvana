@@ -151,6 +151,43 @@ final class MailerTest extends TestCase
         self::assertSame('', $mail->SMTPSecure);
     }
 
+    public function testTransportRefusesLoopbackAndLinkLocalHostsInProduction(): void
+    {
+        foreach (['127.0.0.1', '169.254.169.254', 'localhost', '::1', '[::1]'] as $host) {
+            $app = $this->makeApp();
+            $app->settings()->set('Mail.host', $host);
+
+            try {
+                $this->invoke(new Mailer($app), 'transport');
+                self::fail('Expected the transport to refuse host ' . $host);
+            } catch (\PHPMailer\PHPMailer\Exception $e) {
+                self::assertNotSame('', $e->getMessage());
+            }
+        }
+    }
+
+    public function testTransportAllowsPrivateAndPublicHostsInProduction(): void
+    {
+        foreach (['10.0.0.5', '192.168.1.10', 'smtp.example.com'] as $host) {
+            $app = $this->makeApp();
+            $app->settings()->set('Mail.host', $host);
+
+            $mail = $this->invoke(new Mailer($app), 'transport');
+            self::assertSame($host, $mail->Host);
+        }
+    }
+
+    public function testTransportAllowsLoopbackInDevelopment(): void
+    {
+        $app = $this->makeApp();
+        $app->set('environment', 'development');
+        $app->settings()->set('Mail.host', '127.0.0.1');
+
+        $mail = $this->invoke(new Mailer($app), 'transport');
+
+        self::assertSame('127.0.0.1', $mail->Host, 'a local test relay is normal in development');
+    }
+
     // -----------------------------------------------------------------
     // sendHtml()
     // -----------------------------------------------------------------

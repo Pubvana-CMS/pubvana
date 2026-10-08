@@ -24,6 +24,23 @@ use ZipArchive;
  */
 final class UpdateApplyService
 {
+    /**
+     * Hosts a release download may come from.
+     *
+     * The feed lives on raw.githubusercontent.com and release assets are
+     * served from github.com and its asset CDN. Anything else is refused, so
+     * a tampered feed cannot point the updater at an arbitrary host.
+     *
+     * @var list<string>
+     */
+    private const ALLOWED_DOWNLOAD_HOSTS = [
+        'github.com',
+        'raw.githubusercontent.com',
+        'objects.githubusercontent.com',
+        'codeload.github.com',
+        'github-releases.githubusercontent.com',
+    ];
+
     /** @var Engine<object> */
     private Engine $app;
 
@@ -241,6 +258,10 @@ final class UpdateApplyService
             throw new RuntimeException("Release {$targetVersion} has no download URL in the feed.");
         }
 
+        if (!$this->isAllowedDownloadUrl($url)) {
+            throw new RuntimeException('The release download URL is not from an allowed host.');
+        }
+
         $zipPath = $this->storageDir() . '/pubvana-' . $targetVersion . '.zip';
 
         if (!$this->download($url, $zipPath, $reporter)) {
@@ -437,6 +458,29 @@ final class UpdateApplyService
     /**
      * Stream the release zip with byte-level progress reporting.
      */
+    /**
+     * Whether a release download URL is http(s) to an allowed host.
+     *
+     * file:// stays allowed so the local end-to-end flow (releases_url
+     * pointing at a local releases.json plus zip) keeps working.
+     */
+    private function isAllowedDownloadUrl(string $url): bool
+    {
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+
+        if ($scheme === 'file') {
+            return true;
+        }
+
+        if (!in_array($scheme, ['http', 'https'], true)) {
+            return false;
+        }
+
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+
+        return in_array($host, self::ALLOWED_DOWNLOAD_HOSTS, true);
+    }
+
     private function download(string $url, string $destination, UpdateProgress $reporter): bool
     {
         if (function_exists('curl_init')) {
