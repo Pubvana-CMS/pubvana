@@ -283,7 +283,7 @@
                             </div>
                             <?php if (!$isFree && ($price > 0 || ($priceMulti ?? 0) > 0)): ?>
                                 <p class="text-secondary small mb-0 mt-2">
-                                    <?= ($priceMulti !== null && $price > 0) ? '1-site licenses bind to one domain; multi-site licenses cover a set of registered domains.' : (($priceMulti !== null && $priceMulti > 0) ? 'Licensed to a set of registered domains.' : 'Licensed to one domain; moving it needs an email-confirmed transfer.') ?>
+                                    <?= ($priceMulti !== null && $price > 0) ? '1-site licenses bind to one domain; multi-site licenses cover a set of registered domains.' : (($priceMulti !== null && $priceMulti > 0) ? 'Licensed to a set of registered domains.' : 'Licensed to one domain. Release the site in your Pubvana account to move it.') ?>
                                 </p>
                             <?php endif; ?>
                             <?php endif; ?>

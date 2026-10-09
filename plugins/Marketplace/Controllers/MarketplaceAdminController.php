@@ -165,13 +165,9 @@ class MarketplaceAdminController extends AdminController
     public function install(): void
     {
         $productId = (int) ($this->app->request()->data->product_id ?? 0);
-        $record = $this->app->marketplace()->installRecordForProduct($productId);
-        if ($record !== null && $this->app->marketplace()->needsDomainMove($productId)) {
-            $this->app->session()->flash('warning', 'Your license is bound to another domain. Confirm the transfer in your email, then install again.');
-            $this->app->marketplace()->requestDomainMove($productId);
-            $this->app->redirect($this->adminBase() . '/purchases');
-            return;
-        }
+        // A licensed install claims this site's domain at the store, so there
+        // is nothing to pre-empt here: the store either accepts the install or
+        // says the license is in use and where to release it.
         $result = $this->app->marketplace()->install($productId);
         $this->app->session()->flash(!empty($result['ok']) ? 'success' : 'danger', $result['reason']);
         $this->app->redirect($this->adminBase() . '/purchases');

@@ -1234,49 +1234,6 @@ class MarketplaceService
     }
 
     // -----------------------------------------------------------------
-    // Domain move / transfer
-    // -----------------------------------------------------------------
-
-    /**
-     * Whether a single-site license bound to a different domain should trigger
-     * the domain-move prompt on install.
-     */
-    public function needsDomainMove(int $storeProductId): bool
-    {
-        $record = $this->installRecordForProduct($storeProductId);
-        if ($record === null || (string) $record->license_scope !== 'single_site') {
-            return false;
-        }
-        return (string) $record->registered_domain !== $this->siteDomain();
-    }
-
-    /**
-     * Request a domain transfer (rebind) for a single-site license. The store
-     * emails a confirmation link that finalizes the move.
-     *
-     * @return array{ok: bool, reason: string}
-     */
-    public function requestDomainMove(int $storeProductId): array
-    {
-        if (!$this->withToken()) {
-            return ['ok' => false, 'reason' => 'Not connected to a Pubvana account.'];
-        }
-        $record = $this->installRecordForProduct($storeProductId);
-        if ($record === null || (string) $record->license_key === '') {
-            return ['ok' => false, 'reason' => 'No license to move.'];
-        }
-        $body = $this->httpPostJson($this->apiUrl('license/transfer-request'), [
-            'license_key' => (string) $record->license_key,
-            'new_domain'  => $this->siteDomain(),
-        ]);
-        $data = $this->decode($body);
-        if (!is_array($data) || empty($data['ok'])) {
-            return ['ok' => false, 'reason' => is_array($data) ? (string) ($data['reason'] ?? 'Transfer could not start.') : 'Transfer could not start.'];
-        }
-        return ['ok' => true, 'reason' => 'Check your email and confirm the transfer, then install again.'];
-    }
-
-    // -----------------------------------------------------------------
     // Cron / phone-home
     // -----------------------------------------------------------------
 

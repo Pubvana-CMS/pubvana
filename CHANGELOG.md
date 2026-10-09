@@ -5,6 +5,11 @@ Notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+### Changed
+- Marketplace works with the new store
+
 ## [3.0.0-beta.9] - 2026-10-08
 
 ### Added
