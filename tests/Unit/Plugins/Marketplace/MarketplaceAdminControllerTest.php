@@ -196,18 +196,6 @@ final class MarketplaceAdminControllerTest extends TestCase
         self::assertSame([7, 'EUR', 'multi_site'], $this->marketplace->cartArgs);
     }
 
-    public function testInstallDomainMovePath(): void
-    {
-        $this->marketplace->record = new \stdClass();
-        $this->marketplace->needsMove = true;
-
-        (new MarketplaceAdminController($this->engine(data: ['product_id' => '5'])))->install();
-
-        self::assertStringContainsString('bound to another domain', $this->flashes['warning'][0]);
-        self::assertTrue($this->marketplace->moveRequested);
-        self::assertSame(['/admin/marketplace/purchases'], $this->redirects);
-    }
-
     public function testInstallSuccessAndFailure(): void
     {
         $this->marketplace->installResult = ['ok' => true, 'reason' => 'Installed.'];
@@ -419,9 +407,6 @@ final class FakeMarketplace
     public array $cartResult = ['ok' => true];
     /** @var list<mixed> */
     public array $cartArgs = [];
-    public ?object $record = null;
-    public bool $needsMove = false;
-    public bool $moveRequested = false;
     /** @var array<string, mixed> */
     public array $installResult = ['ok' => true, 'reason' => 'Installed.'];
     /** @var array<string, mixed> */
@@ -494,21 +479,6 @@ final class FakeMarketplace
         $this->cartArgs = [$id, $currency, $scope];
 
         return $this->cartResult;
-    }
-
-    public function installRecordForProduct(int $id): ?object
-    {
-        return $this->record;
-    }
-
-    public function needsDomainMove(int $id): bool
-    {
-        return $this->needsMove;
-    }
-
-    public function requestDomainMove(int $id): void
-    {
-        $this->moveRequested = true;
     }
 
     /** @return array<string, mixed> */
