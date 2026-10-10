@@ -43,9 +43,9 @@
     $info = $theme_info[$theme->folder] ?? [];
     $screenshotUrl = '';
     if (!empty($theme->screenshot)) {
-        $screenshotUrl = '/themes/' . $theme->folder . '/' . $theme->screenshot;
+        $screenshotUrl = '/assets/theme/' . $theme->folder . '/' . $theme->screenshot;
     } elseif (!empty($info['icon'])) {
-        $screenshotUrl = '/themes/' . $theme->folder . '/' . $info['icon'];
+        $screenshotUrl = '/assets/theme/' . $theme->folder . '/' . $info['icon'];
     }
 
     $regions = $info['provides']['regions'] ?? [];

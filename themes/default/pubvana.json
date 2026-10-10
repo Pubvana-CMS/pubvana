@@ -7,7 +7,7 @@
     "pubver_min": "3.0.0",
     "pubver_max": "",
     "slug": "default",
-    "icon": "icon.svg",
+    "icon": "img/icon.png",
     "semver": "1.4.31",
     "provides": {
         "options": {
