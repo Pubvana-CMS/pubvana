@@ -18,7 +18,7 @@ use stdClass;
  *
  * The controller news up the real PasswordResetService, so tests swap
  * the protected property for a behavior-scripted fake through an
- * anonymous subclass. Auth, request, view, themes and redirects are
+ * anonymous subclass. Auth, request, view, and redirects are
  * lightweight stand-ins; redirects are recorded via a mapped provider.
  *
  * Log model:
@@ -295,7 +295,7 @@ final class PasswordResetControllerTest extends TestCase
     }
 
     // -----------------------------------------------------------------
-    // afterLoginUrl(), syncThemePath(), siteName()
+    // afterLoginUrl(), siteName()
     // -----------------------------------------------------------------
 
     public function testAfterLoginUrlRedirectsByRoleAndDefaults(): void
@@ -309,34 +309,6 @@ final class PasswordResetControllerTest extends TestCase
         // No shield config at all: hardcoded defaults.
         $controller3 = $this->controller($this->engine(user: $this->user(false), shieldConfig: null));
         self::assertSame('/', $controller3->callAfterLoginUrl());
-    }
-
-    public function testSyncThemePathFollowsTheActiveTheme(): void
-    {
-        $app = $this->engine(activeThemeFolder: '_fxauth');
-        $view = $app->view();
-        self::assertInstanceOf(PluginView::class, $view);
-        $view->setThemePath('/stale/Views');
-
-        $this->controller($app)->callSyncThemePath();
-
-        self::assertSame(PROJECT_ROOT . '/themes/_fxauth/Views', $view->getThemePath());
-
-        // No active theme: the fallback path stays.
-        $app2 = $this->engine(activeThemeFolder: null);
-        $view2 = $app2->view();
-        self::assertInstanceOf(PluginView::class, $view2);
-        $view2->setThemePath('/fallback/Views');
-        $this->controller($app2)->callSyncThemePath();
-        self::assertSame('/fallback/Views', $view2->getThemePath());
-
-        // Throwing themes service: swallowed.
-        $app3 = $this->engine(themesThrow: true);
-        $view3 = $app3->view();
-        self::assertInstanceOf(PluginView::class, $view3);
-        $view3->setThemePath('/fallback/Views');
-        $this->controller($app3)->callSyncThemePath();
-        self::assertSame('/fallback/Views', $view3->getThemePath());
     }
 
     public function testSiteNameComesFromTheStore(): void
@@ -363,8 +335,6 @@ final class PasswordResetControllerTest extends TestCase
         array $data = [],
         array $query = [],
         ?array $shieldConfig = ['redirects' => ['after_login' => '/members', 'after_login_admin' => '/admin']],
-        ?string $activeThemeFolder = '_fxauth',
-        bool $themesThrow = false,
         array $settingsRows = []
     ): \flight\Engine {
         $app = $this->app([
@@ -415,27 +385,6 @@ final class PasswordResetControllerTest extends TestCase
                     $this->query = new Collection($query);
                 }
             },
-            'themes' => fn(): object => $themesThrow
-                ? new class {
-                    public function getActive(): never
-                    {
-                        throw new \RuntimeException('themes table missing');
-                    }
-                }
-                : new class($activeThemeFolder) {
-                    public function __construct(private ?string $folder) {}
-                    public function getActive(): ?object
-                    {
-                        if ($this->folder === null) {
-                            return null;
-                        }
-                        $theme = new stdClass();
-                        $theme->id = 1;
-                        $theme->folder = $this->folder;
-
-                        return $theme;
-                    }
-                },
         ]);
 
         if ($shieldConfig !== null) {
@@ -475,11 +424,6 @@ final class PasswordResetControllerTest extends TestCase
             public function callAfterLoginUrl(): string
             {
                 return $this->afterLoginUrl();
-            }
-
-            public function callSyncThemePath(): void
-            {
-                $this->syncThemePath();
             }
 
             public function callSiteName(): string

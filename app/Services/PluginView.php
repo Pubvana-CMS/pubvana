@@ -34,8 +34,17 @@ class PluginView extends View
     /** @var string[] Route prefixes using native PHP rendering (no Vision) */
     protected array $nativeRenderPrefixes = ['/admin'];
 
-    /** @var string|null Active theme's Views/ dir for theme override tier */
+    /** @var string|null Explicit theme Views/ override for the theme override tier */
     protected ?string $themePath = null;
+
+    /** @var string|null Theme Views/ resolved through $themeResolver, cached per request */
+    protected ?string $resolvedThemePath = null;
+
+    /** @var bool Whether the resolver has run this request */
+    protected bool $themeResolved = false;
+
+    /** @var (callable(): ?string)|null Resolves the active theme's Views/ dir on first use */
+    protected $themeResolver = null;
 
     /** @var \Enlivenapp\Vision\Engine|null Vision template engine instance (lazy-loaded) */
     private ?\Enlivenapp\Vision\Engine $visionEngine = null;
@@ -79,19 +88,61 @@ class PluginView extends View
     }
 
     /**
-     * Set the active theme's Views/ directory for the theme override tier.
+     * Set an explicit theme Views/ directory, overriding the resolver.
+     *
+     * Pass null to fall back to the resolver again. Tests and callers that
+     * already know the theme use this; otherwise getThemePath() resolves.
      *
      * @param string|null $path Absolute path to theme's Views/ directory
      */
     public function setThemePath(?string $path): void
     {
         $this->themePath = $path !== null ? rtrim($path, DIRECTORY_SEPARATOR) : null;
+        $this->resolvedThemePath = null;
+        $this->themeResolved = false;
     }
 
-    /** @return string|null Active theme's Views/ directory path */
+    /**
+     * Register the resolver for the active theme's Views/ directory.
+     *
+     * Called once at boot. The resolver runs on the first theme-path read
+     * inside a request, never at boot, because it reads the database.
+     *
+     * @param callable(): ?string $resolver
+     */
+    public function setThemeResolver(callable $resolver): void
+    {
+        $this->themeResolver = $resolver;
+        $this->resolvedThemePath = null;
+        $this->themeResolved = false;
+    }
+
+    /**
+     * Active theme's Views/ directory.
+     *
+     * Returns an explicitly set path when one exists, otherwise resolves
+     * through the registered resolver once and caches it for the request.
+     *
+     * @return string|null
+     */
     public function getThemePath(): ?string
     {
-        return $this->themePath;
+        if ($this->themePath !== null) {
+            return $this->themePath;
+        }
+
+        if (!$this->themeResolved) {
+            $this->themeResolved = true;
+
+            if ($this->themeResolver !== null) {
+                $resolved = ($this->themeResolver)();
+                $this->resolvedThemePath = is_string($resolved) && $resolved !== ''
+                    ? rtrim($resolved, DIRECTORY_SEPARATOR)
+                    : null;
+            }
+        }
+
+        return $this->resolvedThemePath;
     }
 
     /**
@@ -304,8 +355,9 @@ class PluginView extends View
         }
 
         // Theme's Views/ as basePath so includes/extends resolve through the theme
-        $basePath = $this->themePath
-            ? ($this->themePath . DIRECTORY_SEPARATOR)
+        $themePath = $this->getThemePath();
+        $basePath = $themePath
+            ? ($themePath . DIRECTORY_SEPARATOR)
             : (dirname($template) . '/');
 
         $this->lastRenderData = $data;
@@ -412,8 +464,9 @@ class PluginView extends View
         }
 
         // Tier 2: Theme override in themes/{active}/Views/
-        if ($this->themePath !== null) {
-            $themeOverride = $this->themePath . DIRECTORY_SEPARATOR . $prefixedFile;
+        $themePath = $this->getThemePath();
+        if ($themePath !== null) {
+            $themeOverride = $themePath . DIRECTORY_SEPARATOR . $prefixedFile;
             if (file_exists($themeOverride)) {
                 return $themeOverride;
             }

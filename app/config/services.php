@@ -252,21 +252,16 @@ $app->map('pagination', fn() => new \Pubvana\Services\PaginationService());
 | the correct plugin's views automatically.
 */
 $appViewPath = PROJECT_ROOT . $ds . 'app' . $ds . 'Views';
-$pluginView = new PluginView($appViewPath);
-$pluginView->extension = '.php';
 
-// Set the active theme's Views/ directory for the theme override tier
-$themeName = $app->get('active_theme') ?? 'default';
-$themePath = PROJECT_ROOT . $ds . 'themes' . $ds . $themeName . $ds . 'Views';
-if (is_dir($themePath)) {
-    $pluginView->setThemePath($themePath);
-}
-
-$app->register('view', PluginView::class, [$appViewPath], function (PluginView $view) use ($pluginView) {
-    $view->extension = $pluginView->extension;
-    $view->setThemePath($pluginView->getThemePath());
+// The active theme lives in the database, so the theme override tier is
+// resolved lazily. The view asks the theme service on first use instead of
+// boot guessing at a config key. The themes table may not exist yet at
+// boot (fresh install), and every render happens inside a request.
+$app->register('view', PluginView::class, [$appViewPath], function (PluginView $view) use ($app) {
+    $view->setThemeResolver(function () use ($app): ?string {
+        return $app->themes()->activeViewsPath();
+    });
 });
-$app->set('view', $pluginView);
 
 /*
 |--------------------------------------------------------------------------

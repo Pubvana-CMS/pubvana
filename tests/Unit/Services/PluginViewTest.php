@@ -87,6 +87,52 @@ final class PluginViewTest extends TestCase
         self::assertNull($view->getThemePath());
     }
 
+    public function testThemePathResolvesThroughTheResolverOnce(): void
+    {
+        $view = $this->view();
+        $calls = 0;
+        $view->setThemeResolver(function () use (&$calls): ?string {
+            $calls++;
+
+            return $this->tmpRoot . '/theme-views';
+        });
+
+        self::assertSame($this->tmpRoot . '/theme-views', $view->getThemePath());
+        self::assertSame($this->tmpRoot . '/theme-views', $view->getThemePath());
+        self::assertSame(1, $calls, 'resolver runs once, then the result is cached');
+    }
+
+    public function testExplicitThemePathOverridesTheResolver(): void
+    {
+        $view = $this->view();
+        $view->setThemeResolver(fn(): ?string => '/resolved/Views');
+
+        $view->setThemePath('/explicit/Views');
+        self::assertSame('/explicit/Views', $view->getThemePath());
+
+        // Clearing the explicit override hands back to the resolver.
+        $view->setThemePath(null);
+        self::assertSame('/resolved/Views', $view->getThemePath());
+    }
+
+    public function testThemePathIsNullWithoutAResolverOrExplicitPath(): void
+    {
+        self::assertNull($this->view()->getThemePath());
+    }
+
+    public function testGetTemplateThemeTierResolvesThroughTheResolver(): void
+    {
+        $view = $this->view();
+        $view->setThemeResolver(fn(): ?string => $this->tmpRoot . '/theme-views');
+        $this->writeTemplate('theme-views/pubvana/blog/card.php', 'theme');
+        $this->writeTemplate('plugin-views/card.php', 'plugin');
+
+        self::assertSame(
+            $this->tmpRoot . '/theme-views/pubvana/blog/card.php',
+            $view->getTemplate('pubvana/blog/card')
+        );
+    }
+
     public function testVisionIsLazilyBuiltAndMemoized(): void
     {
         $view = $this->view();

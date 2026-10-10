@@ -296,6 +296,70 @@ final class ThemeServiceTest extends TestCase
     }
 
     // -----------------------------------------------------------------
+    // activeViewsPath()
+    // -----------------------------------------------------------------
+
+    public function testActiveViewsPathFollowsTheActiveTheme(): void
+    {
+        $this->makeThemeDir('alpha', ['display_name' => 'Alpha']);
+        mkdir($this->tmpRoot . '/alpha/Views', 0777, true);
+
+        $service = $this->service();
+        $service->sync();
+        $themeId = (int) (new Theme($this->pdo))->findByFolder('alpha')->id;
+        $service->activate($themeId);
+
+        self::assertSame($this->tmpRoot . '/alpha/Views', $service->activeViewsPath());
+    }
+
+    public function testActiveViewsPathFallsBackToTheDefaultTheme(): void
+    {
+        $this->makeThemeDir('default', ['display_name' => 'Default']);
+        mkdir($this->tmpRoot . '/default/Views', 0777, true);
+
+        $service = $this->service();
+        $service->sync();
+
+        // sync() auto-activates default when nothing else is active.
+        self::assertSame($this->tmpRoot . '/default/Views', $service->activeViewsPath());
+    }
+
+    public function testActiveViewsPathFallsBackForAnActiveThemeWithNoViews(): void
+    {
+        $this->makeThemeDir('default', ['display_name' => 'Default']);
+        mkdir($this->tmpRoot . '/default/Views', 0777, true);
+        $this->makeThemeDir('alpha', ['display_name' => 'Alpha']);
+
+        $service = $this->service();
+        $service->sync();
+        $themeId = (int) (new Theme($this->pdo))->findByFolder('alpha')->id;
+        $service->activate($themeId);
+
+        self::assertSame(
+            $this->tmpRoot . '/default/Views',
+            $service->activeViewsPath(),
+            'an active theme without Views/ falls back to default'
+        );
+    }
+
+    public function testActiveViewsPathIsNullWhenNothingExists(): void
+    {
+        self::assertNull($this->service()->activeViewsPath());
+    }
+
+    public function testActiveViewsPathToleratesAThrowingThemeLookup(): void
+    {
+        $this->makeThemeDir('default', ['display_name' => 'Default']);
+        mkdir($this->tmpRoot . '/default/Views', 0777, true);
+
+        self::assertSame(
+            $this->tmpRoot . '/default/Views',
+            $this->throwingService()->activeViewsPath(),
+            'a themes-table error still falls back to default'
+        );
+    }
+
+    // -----------------------------------------------------------------
     // Theme options
     // -----------------------------------------------------------------
 
@@ -359,6 +423,33 @@ final class ThemeServiceTest extends TestCase
             protected function getThemesPath(): string
             {
                 return rtrim($this->themesRoot, '/') . '/';
+            }
+        };
+    }
+
+    /**
+     * ThemeService whose getActive() throws, as when the themes table is absent.
+     */
+    private function throwingService(): ThemeService
+    {
+        $app = $this->app([
+            'db' => fn(): PDO => $this->pdo,
+        ]);
+
+        return new class($app, $this->tmpRoot) extends ThemeService {
+            public function __construct(Engine $app, private readonly string $themesRoot)
+            {
+                parent::__construct($app);
+            }
+
+            protected function getThemesPath(): string
+            {
+                return rtrim($this->themesRoot, '/') . '/';
+            }
+
+            public function getActive(): ?Theme
+            {
+                throw new \RuntimeException('themes table missing');
             }
         };
     }

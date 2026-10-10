@@ -110,29 +110,6 @@ abstract class PublicController
         // includes/regions all resolve from the theme.
         $view = $this->app->view();
 
-        // Sync the View basePath with the active theme from the database.
-        // services.php keys themePath off the 'active_theme' config key, which
-        // nothing sets, so it would stay 'default'. resolveTemplate() reads
-        // the DB (getActiveThemeName) and picks the right top-level file, but
-        // includes and region block overrides resolve against themePath:
-        // without this sync, includes resolve against the wrong theme.
-        if ($view instanceof \Pubvana\Services\PluginView) {
-            try {
-                $activeTheme = $this->app->themes()->getActive();
-                if ($activeTheme !== null) {
-                    $activeThemePath = PROJECT_ROOT . DIRECTORY_SEPARATOR . 'themes'
-                        . DIRECTORY_SEPARATOR . $activeTheme->folder
-                        . DIRECTORY_SEPARATOR . 'Views';
-                    if ($view->getThemePath() !== rtrim($activeThemePath, DIRECTORY_SEPARATOR)) {
-                        $view->setThemePath($activeThemePath);
-                    }
-                }
-            } catch (\Throwable) {
-                // Themes table missing on fresh installs; boot already
-                // placed a fallback theme path.
-            }
-        }
-
         if (!$view instanceof \Pubvana\Services\PluginView) {
             // Non-plugin view service: legacy native render path.
             $this->app->render($template, $viewData);
@@ -179,23 +156,6 @@ abstract class PublicController
             // Non-plugin view service: legacy native render path.
             $this->app->render('errors/error', $viewData);
             return;
-        }
-
-        // Sync the View basePath with the active theme, exactly as render()
-        // does, so includes and region blocks resolve against the theme.
-        try {
-            $activeTheme = $this->app->themes()->getActive();
-            if ($activeTheme !== null) {
-                $activeThemePath = PROJECT_ROOT . DIRECTORY_SEPARATOR . 'themes'
-                    . DIRECTORY_SEPARATOR . $activeTheme->folder
-                    . DIRECTORY_SEPARATOR . 'Views';
-                if ($view->getThemePath() !== rtrim($activeThemePath, DIRECTORY_SEPARATOR)) {
-                    $view->setThemePath($activeThemePath);
-                }
-            }
-        } catch (\Throwable) {
-            // Themes table missing on fresh installs; boot already
-            // placed a fallback theme path.
         }
 
         $templateFile = $this->resolveErrorTemplate();

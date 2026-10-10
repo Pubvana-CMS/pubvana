@@ -214,6 +214,38 @@ class ThemeService
     }
 
     /**
+     * Absolute path to the active theme's Views/ directory.
+     *
+     * The theme override tier resolves against this. It reads the active
+     * theme from the database, so call it at render time, not at boot (the
+     * themes table may not exist yet on a fresh install). Falls back to the
+     * default theme's Views/ when no theme is active or its Views/ is gone.
+     *
+     * @return string|null Absolute path, or null when neither exists
+     */
+    public function activeViewsPath(): ?string
+    {
+        $base = $this->getThemesPath();
+
+        try {
+            $active = $this->getActive();
+        } catch (\Throwable) {
+            $active = null;
+        }
+
+        if ($active !== null) {
+            $path = $base . $active->folder . '/Views';
+            if (is_dir($path)) {
+                return $path;
+            }
+        }
+
+        $fallback = $base . 'default/Views';
+
+        return is_dir($fallback) ? $fallback : null;
+    }
+
+    /**
      * Activate a theme by ID.
      *
      * @return string Status: 'activated', 'not_found', 'disabled', 'invalid'

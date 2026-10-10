@@ -203,8 +203,6 @@ class PasswordResetController
      */
     protected function renderAuthPage(string $partial, array $data, string $title, ?string $subtitle): void
     {
-        $this->syncThemePath();
-
         $content = $this->app->view()->fetch($partial, $data);
 
         $this->app->render('enlivenapp/flight-shield/auth/layout', [
@@ -212,42 +210,6 @@ class PasswordResetController
             'authTitle'    => $title,
             'authSubtitle' => $subtitle,
         ]);
-    }
-
-    /**
-     * Point the theme override tier at the active theme from the database.
-     *
-     * These are core routes with no plugin-view middleware, and
-     * services.php keys themePath off the 'active_theme' config key, which
-     * nothing sets (see PublicController::render for the same sync on
-     * public pages).
-     */
-    protected function syncThemePath(): void
-    {
-        $view = $this->app->view();
-
-        if (!$view instanceof \Pubvana\Services\PluginView) {
-            return;
-        }
-
-        try {
-            $activeTheme = $this->app->themes()->getActive();
-
-            if ($activeTheme === null) {
-                return;
-            }
-
-            $activeThemePath = PROJECT_ROOT . DIRECTORY_SEPARATOR . 'themes'
-                . DIRECTORY_SEPARATOR . $activeTheme->folder
-                . DIRECTORY_SEPARATOR . 'Views';
-
-            if ($view->getThemePath() !== rtrim($activeThemePath, DIRECTORY_SEPARATOR)) {
-                $view->setThemePath($activeThemePath);
-            }
-        } catch (\Throwable) {
-            // Themes table missing on fresh installs; boot already placed
-            // a fallback theme path.
-        }
     }
 
     /**
