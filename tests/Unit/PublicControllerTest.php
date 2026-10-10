@@ -96,46 +96,6 @@ final class PublicControllerTest extends TestCase
     }
 
     // -----------------------------------------------------------------
-    // sidebarKind()
-    // -----------------------------------------------------------------
-
-    public function testSidebarKindVariants(): void
-    {
-        $cases = [
-            // [page_sidebar, blog_layout, is_homepage, expected]
-            ['not_home', 'sidebar-right', false, 'sidebar-right'],
-            ['not_home', 'sidebar-left', false, 'sidebar-left'],
-            ['not_home', 'sidebar-right', true, ''],
-            ['home', 'sidebar-right', true, 'sidebar-right'],
-            ['home', 'sidebar-left', true, 'sidebar-left'],
-            ['home', 'sidebar-right', false, ''],
-            ['none', 'sidebar-left', false, ''],
-            ['none', 'sidebar-left', true, ''],
-        ];
-
-        foreach ($cases as $case) {
-            [$setting, $layout, $isHomepage, $expected] = $case;
-            $app = $this->engine(
-                ['CMS.siteName' => 'Pubvana'],
-                pageSidebar: $setting,
-                blogLayout: $layout
-            );
-            $controller = new class($app) extends PublicController {};
-
-            self::assertSame(
-                $expected,
-                $this->invoke($controller, 'sidebarKind', [['is_homepage' => $isHomepage]]),
-                "page_sidebar={$setting}, blog_layout={$layout}, is_homepage=" . var_export($isHomepage, true)
-            );
-        }
-
-        // No active theme: defaults (not_home + sidebar-right).
-        $app = $this->engine(['CMS.siteName' => 'Pubvana'], noActiveTheme: true);
-        $controller = new class($app) extends PublicController {};
-        self::assertSame('sidebar-right', $this->invoke($controller, 'sidebarKind', [['is_homepage' => false]]));
-    }
-
-    // -----------------------------------------------------------------
     // buildGlobalData(): is_homepage
     // -----------------------------------------------------------------
 
@@ -606,7 +566,7 @@ final class PublicControllerTest extends TestCase
     {
         $app = $this->engine(
             ['CMS.siteName' => 'FromDb'],
-            themeOptions: ['layout.page_sidebar' => 'not_home', 'layout.blog_layout' => 'sidebar-left']
+            themeOptions: ['layout.show_sidebar_on' => 'all', 'layout.sidebar_location' => 'sidebar-left']
         );
         $view = $app->view();
         self::assertInstanceOf(PluginView::class, $view);
@@ -618,7 +578,7 @@ final class PublicControllerTest extends TestCase
         file_put_contents($this->tmpRoot . '/plugin-views/pubvana/test/post.tpl', 'CONTENT[{{ title }}|{{ content }}]');
         file_put_contents(
             PROJECT_ROOT . '/themes/' . self::FIXTURE_THEME . '/Views/layout.tpl',
-            'LAYOUT({{ content }}){! comments_html !}|{{ site.name }}|{{ sidebar_kind }}|{% for crumb in breadcrumbs %}{{ crumb.label }}{% endfor %}'
+            'LAYOUT({{ content }}){! comments_html !}|{{ site.name }}|{{ theme_options.layout.sidebar_location }}|{% for crumb in breadcrumbs %}{{ crumb.label }}{% endfor %}'
         );
 
         $app->map('comments', fn(): object => new class {
@@ -643,7 +603,7 @@ final class PublicControllerTest extends TestCase
         self::assertStringContainsString('CONTENT[Post title|RENDERED(raw content)]', $output, 'route data reaches the content template, transformed centrally');
         self::assertStringContainsString('THREAD(blog:9)', $output, 'comments render into the layout');
         self::assertStringContainsString('FromDb', $output, 'site identity flows through');
-        self::assertStringContainsString('sidebar-left', $output, 'theme options drive the sidebar');
+        self::assertStringContainsString('sidebar-left', $output, 'theme options reach the layout');
         self::assertStringContainsString('Home', $output, 'provided breadcrumbs land in the layout');
         self::assertStringContainsString('Deep', $output, 'provided crumbs flow unfiltered');
         self::assertStringContainsString('RENDERED(raw content)', $output, 'content.render transformers ran centrally');
@@ -816,15 +776,11 @@ final class PublicControllerTest extends TestCase
      * Fresh Engine mapped the way services.php wires public pages.
      *
      * @param array<string, string|null> $settings   Settings-store rows
-     * @param string|null                $pageSidebar layout.page_sidebar option
-     * @param string|null                $blogLayout layout.blog_layout option
      * @param bool                       $noActiveTheme getActive() answers null
      * @param array<string, string>      $themeOptions Theme option rows
      */
     private function engine(
         array $settings = [],
-        ?string $pageSidebar = null,
-        ?string $blogLayout = null,
         bool $noActiveTheme = false,
         array $themeOptions = []
     ): Engine {
@@ -860,12 +816,10 @@ final class PublicControllerTest extends TestCase
                     }
                 };
             },
-            'themes' => function () use ($noActiveTheme, $pageSidebar, $blogLayout, $themeOptions) {
-                return new class($noActiveTheme, $pageSidebar, $blogLayout, $themeOptions) {
+            'themes' => function () use ($noActiveTheme, $themeOptions) {
+                return new class($noActiveTheme, $themeOptions) {
                     public function __construct(
                         private bool $noActive,
-                        private ?string $pageSidebar,
-                        private ?string $blogLayout,
                         private array $themeOptions
                     ) {}
 
@@ -879,15 +833,6 @@ final class PublicControllerTest extends TestCase
                         $theme->folder = PublicControllerTest::FIXTURE_THEME;
 
                         return $theme;
-                    }
-
-                    public function getThemeOption(int $themeId, string $key, ?string $default = null): ?string
-                    {
-                        return $this->themeOptions[$key] ?? match ($key) {
-                            'layout.page_sidebar' => $this->pageSidebar,
-                            'layout.blog_layout'  => $this->blogLayout,
-                            default               => $default,
-                        };
                     }
 
                     public function getThemeOptions(int $themeId): array

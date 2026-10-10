@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 - Marketplace works with the new store
+- Theme options found in Core, removed
 
 ## [3.0.0-beta.9] - 2026-10-08
 

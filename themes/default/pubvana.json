@@ -15,23 +15,24 @@
                 "label": "Layout",
                 "type": "group",
                 "fields": {
-                    "blog_layout": {
+                    "sidebar_location": {
                         "type": "select",
-                        "label": "Blog Layout",
+                        "label": "Sidebar Location",
                         "default": "sidebar-right",
                         "choices": {
                             "sidebar-right": "Sidebar Right",
                             "sidebar-left": "Sidebar Left"
                         }
                     },
-                    "page_sidebar": {
+                    "show_sidebar_on": {
                         "type": "select",
                         "label": "Show Sidebar On",
                         "default": "not_home",
                         "choices": {
+                            "all": "All Pages",
                             "not_home": "All Pages Except Home",
                             "home": "Home Only",
-                            "none": "Nowhere"
+                            "none": "None"
                         }
                     }
                 }

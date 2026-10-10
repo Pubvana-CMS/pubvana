@@ -1,4 +1,4 @@
-{# Static page. Content-only; the layout owns the sidebar (layout.page_sidebar). #}
+{# Static page. Content-only; the layout owns the sidebar (layout.show_sidebar_on). #}
 {# This template also serves the homepage when the front page is a static page (is_homepage). #}
 <article>
     {% if not is_homepage %}

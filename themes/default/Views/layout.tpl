@@ -36,14 +36,16 @@
     {# Include: one-shot flash messages (login notices, form feedback, etc.), before the page body. #}
     {% include 'partials/alerts' %}
 
-    {# Page body. The sidebar renders when the layout.page_sidebar theme option #}
-    {# covers this page kind (home / not_home) AND the sidebar region has #}
-    {# blocks in it. An empty aside collapses the row to one column. Sidebar #}
-    {# side (left/right) follows blog_layout. #}
+    {# Page body. The sidebar is the theme's call: layout.show_sidebar_on #}
+    {# (all | not_home | home | none) decides whether it renders on this #}
+    {# page, layout.sidebar_location (sidebar-left | sidebar-right) picks #}
+    {# the side. An empty sidebar region collapses the row to one column. #}
     <main class="container my-4">
-        {% if sidebar_kind %}
+        {% if theme_options.layout.show_sidebar_on | default('not_home') == 'all'
+            or (theme_options.layout.show_sidebar_on | default('not_home') == 'home' and is_homepage)
+            or (theme_options.layout.show_sidebar_on | default('not_home') == 'not_home' and not is_homepage) %}
         <div class="row">
-            {% if sidebar_kind == 'sidebar-left' %}
+            {% if theme_options.layout.sidebar_location | default('sidebar-right') == 'sidebar-left' %}
             <div class="col-lg-4">
                 {% region 'sidebar' %}
             </div>

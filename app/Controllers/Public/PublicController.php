@@ -63,7 +63,6 @@ abstract class PublicController
 
         $global = $this->buildGlobalData($data);
         $viewData = array_merge($global, $data);
-        $viewData['sidebar_kind'] = $this->sidebarKind($viewData);
 
         // Page-specific title overrides the default
         $siteName = $this->getSiteName();
@@ -171,7 +170,6 @@ abstract class PublicController
             'status'  => $status,
             'message' => $display,
         ]);
-        $viewData['sidebar_kind'] = $this->sidebarKind($viewData);
         $viewData['header']['title'] = $display . ' - ' . $this->getSiteName();
         $viewData['header'] = $this->buildHeadHtml($viewData['header']);
 
@@ -346,36 +344,6 @@ abstract class PublicController
         }
 
         return ltrim($prefix, '/');
-    }
-
-    // -----------------------------------------------------------------
-    // Layout assembly
-    // -----------------------------------------------------------------
-
-    /**
-     * Which sidebar variant the layout should render, if any.
-     *
-     * The theme's `layout.page_sidebar` option decides which page kinds
-     * show a sidebar: 'not_home' (default), 'home', or 'none'. The side
-     * (left/right) comes from the theme's `layout.blog_layout` option.
-     * An empty string means no sidebar for this request.
-     *
-     * @param array<string, mixed> $viewData Merged global + route data
-     */
-    protected function sidebarKind(array $viewData): string
-    {
-        $active = $this->app->themes()->getActive();
-        $setting = $active !== null
-            ? (string) ($this->app->themes()->getThemeOption((int) $active->id, 'layout.page_sidebar') ?? 'not_home')
-            : 'not_home';
-        $isHomepage = (bool) ($viewData['is_homepage'] ?? false);
-        if ($setting === 'none' || ($setting === 'home') !== $isHomepage) {
-            return '';
-        }
-        $side = $active !== null
-            ? (string) ($this->app->themes()->getThemeOption((int) $active->id, 'layout.blog_layout') ?? 'sidebar-right')
-            : 'sidebar-right';
-        return $side === 'sidebar-left' ? 'sidebar-left' : 'sidebar-right';
     }
 
     // -----------------------------------------------------------------

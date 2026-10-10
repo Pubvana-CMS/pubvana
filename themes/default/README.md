@@ -18,8 +18,8 @@ Manage options in **Admin > Appearance > Themes > Options**. The admin form grou
 
 | Group | Option | Type | Default | Purpose |
 |-------|--------|------|---------|---------|
-| Layout | Blog Layout | select | `sidebar-right` | Sidebar side on blog listings and single posts: `sidebar-right`, `sidebar-left` |
-| Layout | Show Sidebar On | select | `not_home` | Pages that show the sidebar region: `not_home`, `home`, `none` |
+| Layout | Sidebar Location | select | `sidebar-right` | Which side the sidebar renders on: `sidebar-right`, `sidebar-left` |
+| Layout | Show Sidebar On | select | `not_home` | Pages that show the sidebar region: `all`, `not_home`, `home`, `none` |
 | Breadcrumbs | Show Breadcrumbs | toggle | on | Breadcrumb trail on subpages |
 | Hero | Show Hero | toggle | off | Hero section below the navbar |
 | Hero | Background Image | media | (none) | Hero background image |
@@ -29,8 +29,8 @@ Manage options in **Admin > Appearance > Themes > Options**. The admin form grou
 
 ### Layout behavior
 
-- **Blog Layout** sets the sidebar side: left or right.
-- **Show Sidebar On** decides whether the sidebar renders: all pages except home, home only, or nowhere. Static pages follow this option like any other page.
+- **Sidebar Location** sets the sidebar side: left or right.
+- **Show Sidebar On** decides whether the sidebar renders: all pages, all pages except home, home only, or nowhere. Static pages follow this option like any other page.
 
 ## Regions
 
