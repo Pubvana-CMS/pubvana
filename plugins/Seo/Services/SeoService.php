@@ -9,7 +9,7 @@ use Pubvana\Services\UrlService;
 use flight\Engine;
 
 /**
- * Core SEO service — meta tag assembly, head output, canonical URLs.
+ * Core SEO service: meta tag assembly, head output, canonical URLs.
  *
  * Self-discovers content from the current request URL.
  * Other plugins can inject additional tags via addMeta() and addTag().
@@ -39,7 +39,7 @@ class SeoService
     }
 
     // -----------------------------------------------------------------
-    // Content detection — called before rendering to set current context
+    // Content detection: called before rendering to set current context
     // -----------------------------------------------------------------
 
     /**
@@ -134,12 +134,12 @@ class SeoService
             }
         }
 
-        // Unknown route — minimal context
+        // Unknown route, minimal context
         $this->context = ['content_type' => 'unknown', 'url' => $this->getCurrentUrl()];
     }
 
     // -----------------------------------------------------------------
-    // External injection — other plugins add tags here
+    // External injection: other plugins add tags here
     // -----------------------------------------------------------------
 
     /**
@@ -405,7 +405,7 @@ class SeoService
 
     /**
      * Render all SEO tags as HTML for injection into the page <head>.
-     * Does NOT include <title> — that stays in {{ header.title }}.
+     * Does NOT include <title>. That stays in {{ header.title }}.
      */
     public function renderHead(): string
     {

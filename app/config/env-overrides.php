@@ -58,7 +58,7 @@ if (!is_array($app->get('database'))) {
 
 // No config.php: the plugin array (formerly from config.php's 'plugins' block)
 // is not set. Seed it so the nested fold for SESSION_ENCRYPTION_KEY can land
-// on plugins.enlivenapp/flight-sessions.encryption_key — without the base
+// on plugins.enlivenapp/flight-sessions.encryption_key, without the base
 // array that fold silently skips and web requests die on missing session keys.
 if (!is_array($app->get('plugins'))) {
     $app->set('plugins', []);

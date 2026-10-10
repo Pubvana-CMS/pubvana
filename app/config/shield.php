@@ -25,7 +25,7 @@ return [
         // 'jwt'  => \Enlivenapp\FlightShield\Authentication\Authenticators\JWT::class,
     ],
 
-    // Authentication chain — tried in order by ChainAuthMiddleware
+    // Authentication chain: tried in order by ChainAuthMiddleware
     'authentication_chain' => ['session', 'tokens', 'hmac'],
 
     // JWT settings (requires firebase/php-jwt)
@@ -33,7 +33,7 @@ return [
         'header'         => 'Authorization',
         'time_to_live'   => 3600, // 1 hour
         'default_claims' => [
-            'iss' => '',  // Issuer — set to your domain
+            'iss' => '',  // Issuer: set to your domain
         ],
         'keys' => [
             'default' => [
@@ -107,7 +107,7 @@ return [
     'allow_magic_link'    => false,
     'magic_link_lifetime' => 3600, // 1 hour
 
-    // Email callback — shield calls this to send emails
+    // Email callback: shield calls this to send emails
     // function(string $to, string $subject, string $body): void
     'email_sender' => function (string $to, string $subject, string $body): void {
         \Flight::mailer()->sendHtml($to, $subject, $body);

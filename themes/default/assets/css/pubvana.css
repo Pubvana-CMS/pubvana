@@ -190,7 +190,7 @@
     line-height: 1.6;
 }
 
-/* Footer context — lighter text by default */
+/* Footer context: lighter text by default */
 footer .block-title {
     color: rgba(255, 255, 255, .9);
 }

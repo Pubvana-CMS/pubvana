@@ -10,7 +10,7 @@ use Pubvana\Services\UrlService;
 use flight\Engine;
 
 /**
- * Service layer for URL redirects — CRUD, matching, and request handling.
+ * Service layer for URL redirects: CRUD, matching, and request handling.
  */
 class RedirectsService
 {

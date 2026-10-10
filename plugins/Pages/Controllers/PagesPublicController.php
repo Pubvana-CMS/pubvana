@@ -25,7 +25,7 @@ class PagesPublicController extends PublicController
     /**
      * Public page listing.
      *
-     * Redirects to the homepage — pages are accessed by slug, not listed.
+     * Redirects to the homepage. Pages are accessed by slug, not listed.
      */
     public function index(): void
     {

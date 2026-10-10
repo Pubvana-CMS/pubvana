@@ -66,7 +66,7 @@ class SchemaService
             || $contentType === 'post'
             || $contentType === 'page';
 
-        // Organization — the site/brand identity, referenced by publisher.
+        // Organization: the site/brand identity, referenced by publisher.
         if ($needsOrg) {
             $org = $this->buildOrganizationNode($orgId);
             if ($org !== null) {
@@ -74,7 +74,7 @@ class SchemaService
             }
         }
 
-        // WebSite — homepage only.
+        // WebSite, homepage only.
         if ($this->isHomepage($context)) {
             $graph[] = $this->buildWebSiteNode($siteUrl . '#website');
         }

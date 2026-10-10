@@ -1,6 +1,6 @@
 <?php
 /**
- * Theme listing — card grid with screenshot, name, activate button.
+ * Theme listing, card grid with screenshot, name, activate button.
  *
  * Trust badge: the standing the Pubvana trust service (pubvanacms.com)
  * reports for the theme. Activating goes through the trust gate, handled by

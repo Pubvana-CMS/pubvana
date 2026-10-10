@@ -686,7 +686,7 @@ $adext->register('captcha.area', 'default', 'login', [
 | 'media', 'system') are resolved and labeled in AdminController.
 */
 
-// Users cards — total, active, new (with trend), banned, inactive
+// Users cards: total, active, new (with trend), banned, inactive
 $adext->register('admin.dashboard', 'cards', 'pubvana.users', [
     'label'    => 'Users',
     'priority' => 10,
@@ -774,7 +774,7 @@ $adext->register('admin.dashboard', 'cards', 'pubvana.users', [
     },
 ]);
 
-// Login activity section — Shield auth_logins summary
+// Login activity section: Shield auth_logins summary
 $adext->register('admin.dashboard', 'sections', 'pubvana.logins', [
     'label'    => 'Login Activity',
     'priority' => 20,
@@ -784,7 +784,7 @@ $adext->register('admin.dashboard', 'sections', 'pubvana.logins', [
         try {
             $summary = $app->auth()->stats()->loginAttempts(30);
         } catch (\Throwable $e) {
-            // Stats table missing (fresh install) — zeros are fine.
+            // Stats table missing (fresh install), zeros are fine.
         }
 
         return [[

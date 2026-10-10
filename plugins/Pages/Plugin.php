@@ -88,7 +88,7 @@ class Plugin implements PluginInterface
             'callable' => fn() => $app->pages()->brokenLinksItems(),
         ]);
 
-        // Search source — pages are searchable content
+        // Search source: pages are searchable content
         $adext->register('search', 'provider', 'pubvana.pages', [
             'label'        => 'Pages',
             'content_type' => 'Page',

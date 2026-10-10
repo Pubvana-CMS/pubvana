@@ -1,6 +1,6 @@
 <?php
 /**
- * Image editor — admin page.
+ * Image editor, admin page.
  *
  * @var string                       $pageTitle
  * @var string                       $adminBase

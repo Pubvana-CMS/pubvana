@@ -69,7 +69,7 @@
                                 <?php endif; ?>
                             </td>
                             <td class="text-break">
-                                <?= !empty($entry->last_referrer) ? htmlspecialchars((string) $entry->last_referrer) : '<span class="text-secondary">—</span>' ?>
+                                <?= !empty($entry->last_referrer) ? htmlspecialchars((string) $entry->last_referrer) : '<span class="text-secondary">-</span>' ?>
                             </td>
                             <td>
                                 <div class="btn-list flex-nowrap">

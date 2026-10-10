@@ -495,7 +495,7 @@ class RegionManager
                 return '';
             }
         } else {
-            // No provider — layer the saved options over the option schema
+            // No provider: layer the saved options over the option schema
             // defaults so every template variable carries a value.
             $data = $this->defaultOptions($block, $options);
         }

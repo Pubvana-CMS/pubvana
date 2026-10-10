@@ -1,6 +1,6 @@
 <?php
 /**
- * SEO content panel — injected into page/post edit forms.
+ * SEO content panel, injected into page/post edit forms.
  *
  * Expected variables:
  * @var string $content_type        'page' or 'post'

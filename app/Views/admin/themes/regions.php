@@ -1,12 +1,12 @@
 <?php
 /**
- * Region manager — assign blocks to regions with ordering.
+ * Region manager, assign blocks to regions with ordering.
  *
  * @var string $pageTitle
  * @var array  $regions      region_id => {id, label, description, source}
  * @var array  $placements   region_id => BlockPlacement[]
  * @var array  $blocks       block_key => {label, description, options, ...}
- * @var array  $orphaned     BlockPlacement[] — placements with no matching region
+ * @var array  $orphaned     BlockPlacement[], placements with no matching region
  * @var array  $savedValues  placement_id => options array
  */
 $wysiwygSelectors = [];
@@ -79,7 +79,7 @@ $wysiwygSelectors = [];
 <?php if (empty($blocks)): ?>
 <div class="alert alert-info mb-4">
     <i class="ti ti-info-circle me-2"></i>
-    No blocks are registered. Plugins register blocks during startup — install a plugin that provides blocks to get started.
+    No blocks are registered. Plugins register blocks during startup. Install a plugin that provides blocks to get started.
 </div>
 <?php endif; ?>
 

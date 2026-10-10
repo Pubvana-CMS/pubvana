@@ -191,7 +191,7 @@ class MediaAdminController extends AdminController
         $exifData     = $this->service()->getExifData((int) $id);
 
         $this->render('pubvana/media/admin/editor', [
-            'pageTitle'    => 'Edit — ' . ($media->title ?: $media->filename),
+            'pageTitle'    => 'Edit: ' . ($media->title ?: $media->filename),
             'adminBase'    => $this->adminBase(),
             'media'        => $media,
             'info'         => $info,

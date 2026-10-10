@@ -16,7 +16,7 @@ class Plugin implements PluginInterface
 
         // Blocks follow the shared convention: key '{author}.{package}.{name}',
         // template a bare file name under Views/public/blocks/. Provider
-        // callables are not needed — RegionManager passes saved options
+        // callables are not needed, RegionManager passes saved options
         // directly as template data when no provider is set.
         $adext->register('block', 'available', 'pubvana.core-blocks.text', [
             'label'       => 'Text',

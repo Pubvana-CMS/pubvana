@@ -70,7 +70,7 @@
                                         <span class="badge bg-secondary-lt">Not installed</span>
                                     <?php endif; ?>
                                 </td>
-                                <td><?= htmlspecialchars((string) ($r['installed_version'] ?? '')) ?: '—' ?></td>
+                                <td><?= htmlspecialchars((string) ($r['installed_version'] ?? '')) ?: '-' ?></td>
                                 <td class="text-end">
                                     <form method="POST" action="<?= $adminBase ?>/install" class="d-inline">
                                         <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">

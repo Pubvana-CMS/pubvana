@@ -237,7 +237,7 @@ $selectOptions = function (array $options): array {
                                         <dd class="col-9 text-break"><?= htmlspecialchars((string) $row->to_address) ?></dd>
 
                                         <dt class="col-3">From</dt>
-                                        <dd class="col-9 text-break"><?= htmlspecialchars((string) ($row->from_address ?? '')) ?: '—' ?></dd>
+                                        <dd class="col-9 text-break"><?= htmlspecialchars((string) ($row->from_address ?? '')) ?: '-' ?></dd>
 
                                         <dt class="col-3">Status</dt>
                                         <dd class="col-9">
@@ -256,7 +256,7 @@ $selectOptions = function (array $options): array {
 
                                         <dt class="col-3">Error</dt>
                                         <dd class="col-9 small text-danger text-break" style="white-space: pre-wrap;">
-                                            <?= htmlspecialchars((string) ($row->error ?? '')) ?: '—' ?>
+                                            <?= htmlspecialchars((string) ($row->error ?? '')) ?: '-' ?>
                                         </dd>
                                     </dl>
                                 </div>

@@ -1,6 +1,6 @@
 <?php
 /**
- * SEO notice shown on create forms — panel not available until first save.
+ * SEO notice shown on create forms. Panel not available until first save.
  */
 ?>
 <div class="card mb-3">

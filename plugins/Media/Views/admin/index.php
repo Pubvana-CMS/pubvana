@@ -1,6 +1,6 @@
 <?php
 /**
- * Media library — admin page.
+ * Media library, admin page.
  *
  * @var string                         $pageTitle
  * @var string                         $adminBase

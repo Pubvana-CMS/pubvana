@@ -9,7 +9,7 @@ use Pubvana\Plugins\Pages\Models\PageRevision;
 use Pubvana\Services\HtmlPurifierFactory;
 
 /**
- * Service layer for pages — CRUD, published lookups, and host integrations.
+ * Service layer for pages: CRUD, published lookups, and host integrations.
  *
  * Registered on the app engine as `pages` by the Pages plugin, so any
  * consumer reaches pages through `$app->pages()` rather than touching

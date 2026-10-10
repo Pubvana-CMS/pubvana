@@ -11,7 +11,7 @@ use flight\Engine;
  * XML Sitemap generation.
  *
  * Only includes canonical, published, indexable URLs.
- * Only uses <lastmod> — Google/Bing ignore <changefreq> and <priority>.
+ * Only uses <lastmod>. Google/Bing ignore <changefreq> and <priority>.
  */
 class SitemapService
 {

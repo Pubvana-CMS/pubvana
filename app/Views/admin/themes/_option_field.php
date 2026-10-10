@@ -1,6 +1,6 @@
 <?php
 /**
- * Single option field partial — included from options.php.
+ * Single option field partial, included from options.php.
  *
  * @var string $inputName HTML input name attribute
  * @var string $dbKey     Key used in $saved lookup

@@ -76,7 +76,7 @@ class ProfilesAdminController extends AdminController
         }
 
         $this->render('pubvana/profiles/admin/profile/index', [
-            'pageTitle'    => 'Edit Profile — ' . htmlspecialchars((string) ($user->username ?? '')),
+            'pageTitle'    => 'Edit Profile: ' . htmlspecialchars((string) ($user->username ?? '')),
             'profile'      => $profile,
             'user'         => $user,
             'avatarPicker' => $avatarPicker,

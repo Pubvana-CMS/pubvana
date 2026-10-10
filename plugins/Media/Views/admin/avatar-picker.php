@@ -1,6 +1,6 @@
 <?php
 /**
- * Lightweight avatar picker — upload or remove, no media library.
+ * Lightweight avatar picker, upload or remove, no media library.
  *
  * @var string $inputName    Form input name
  * @var string $currentValue Current image path

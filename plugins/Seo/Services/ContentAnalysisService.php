@@ -203,7 +203,7 @@ class ContentAnalysisService
         if (preg_match('/<p[^>]*>(.*?)<\/p>/is', $content, $match)) {
             $firstPara = strip_tags($match[1]);
         } else {
-            // No <p> tags — take first 200 chars
+            // No <p> tags, take first 200 chars
             $firstPara = mb_substr(strip_tags($content), 0, 200);
         }
 
@@ -233,7 +233,7 @@ class ContentAnalysisService
             return ['id' => 'keyword_density', 'status' => 'pass', 'message' => sprintf('Keyword density is %.1f%% (good range: 0.5–2.5%%).', $density)];
         }
         if ($density > 2.5) {
-            return ['id' => 'keyword_density', 'status' => 'warning', 'message' => sprintf('Keyword density is %.1f%% — may be over-optimized.', $density)];
+            return ['id' => 'keyword_density', 'status' => 'warning', 'message' => sprintf('Keyword density is %.1f%%. May be over-optimized.', $density)];
         }
         if ($keywordCount === 0) {
             return ['id' => 'keyword_density', 'status' => 'fail', 'message' => 'Focus keyword not found in content.'];
@@ -241,7 +241,7 @@ class ContentAnalysisService
     /**
      * @return array{id: string, status: string, message: string}
     */
-        return ['id' => 'keyword_density', 'status' => 'warning', 'message' => sprintf('Keyword density is %.1f%% — consider using the keyword more.', $density)];
+        return ['id' => 'keyword_density', 'status' => 'warning', 'message' => sprintf('Keyword density is %.1f%%. Consider using the keyword more.', $density)];
     }
 
     /**

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Pubvana\Plugins\Seo\Models;
 
 /**
- * SeoMeta model — per-content SEO data.
+ * SeoMeta model, per-content SEO data.
  *
  * @property int         $id
  * @property string      $content_type

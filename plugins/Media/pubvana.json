@@ -1,7 +1,7 @@
 {
     "name": "pubvana/media",
     "display_name": "Media",
-    "description": "Media management module — images, video, embeds",
+    "description": "Media management module: images, video, embeds",
     "type": "plugin",
     "pubver_min": "3.0.0",
     "pubver_max": "",

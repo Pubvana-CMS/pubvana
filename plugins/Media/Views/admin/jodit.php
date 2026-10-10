@@ -1,6 +1,6 @@
 <?php
 /**
- * Jodit editor init with media integration — rendered by MediaService::joditInit().
+ * Jodit editor init with media integration, rendered by MediaService::joditInit().
  *
  * @var string $selector CSS selector for the textarea
  * @var string $joditId  Unique ID for this instance

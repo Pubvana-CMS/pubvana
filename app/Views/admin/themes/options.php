@@ -1,6 +1,6 @@
 <?php
 /**
- * Theme options form — renders fields from pubvana.json provides.options.
+ * Theme options form, renders fields from pubvana.json provides.options.
  *
  * Supported field types: toggle, input, select, color, media, group.
  * Groups render as a card with their fields nested inside.

@@ -137,7 +137,7 @@ class PluginLoader
         $all = array_merge($local, $vendor);
         $this->discoveredById = $all;
 
-        // Tier 1: FOUNDATION packages first — migrations + seeds unconditional.
+        // Tier 1: FOUNDATION packages first, migrations + seeds unconditional.
         // These are the required vendor packages (enlivenapp/* flightphp-foundation,
         // pubvana/* pubvana-foundation). Their migrations create the tables core
         // seeds depend on (e.g. Shield's auth_permissions), which is why they run
@@ -168,7 +168,7 @@ class PluginLoader
 
         // Tier 4: Migrations + seeds for ENABLED non-foundation plugins only.
         // Disabled plugin directories are never scanned here, so their migration
-        // and seed files are never loaded — that is the enable/disable pause.
+        // and seed files are never loaded, that is the enable/disable pause.
         if ($runMigrations) {
             $this->runPluginMigrations($all);
         }
@@ -1128,7 +1128,7 @@ class PluginLoader
      * Foundation packages (enlivenapp/* type flightphp-foundation, pubvana/*
      * type pubvana-foundation) are the required vendor stack. They run BEFORE
      * core so the tables core seeds depend on (e.g. Shield's auth_permissions)
-     * exist first. Never gated by plugin_state — they are required by definition.
+     * exist first. Never gated by plugin_state, they are required by definition.
      *
      * @param array<string, array<string, mixed>> $foundation Discovered foundation packages keyed by plugin ID
      */
@@ -1220,7 +1220,7 @@ class PluginLoader
      *
      * Builds the migration/seed path list from plugin_state instead of blanket
      * globs, so a disabled plugin's directory is never scanned and its
-     * migration/seed files are never loaded — that is the enable/disable pause.
+     * migration/seed files are never loaded, that is the enable/disable pause.
      * Patterns keep the same module names ('plugins/Blog', 'author/package')
      * the migrations package recorded historically, so previously-applied
      * migrations stay applied.
@@ -1397,7 +1397,7 @@ class PluginLoader
      * required core plugins are enabled, everything else stays disabled until
      * an admin enables it. The shipped-active bundled core plugins are already
      * enabled by their install-time seed rows, not by this sync. Existing rows
-     * are never modified here — state only changes through the admin Plugins page.
+     * are never modified here, state only changes through the admin Plugins page.
      *
      * @param array<string, array<string, mixed>> $all Discovered plugins keyed by plugin ID (priorities overwritten in place)
      */
@@ -1407,7 +1407,7 @@ class PluginLoader
             // One bulk fetch for every existing plugin_state row, keyed by plugin_id.
             // Replaces a per-plugin findByPluginId() round-trip (10 plugins = 10 queries
             // down to 1). Newly discovered plugins are inserted below; existing rows are
-            // never modified here — state only changes through the admin Plugins page.
+            // never modified here, state only changes through the admin Plugins page.
             $existing = (new \Pubvana\Models\PluginState($this->app->db()))->getAllByPluginId();
 
             foreach ($all as $pluginId => $info) {
@@ -1450,7 +1450,7 @@ class PluginLoader
      *
      * 1. Required core plugins (sessions/shield/csrf) are enabled + locked.
      * 2. An explicit enabled/priority entry in the app-passed plugin config is inherited.
-     * 3. Anything else starts DISABLED — the pause. Its code runs nothing
+     * 3. Anything else starts DISABLED, the pause. Its code runs nothing
      *    until an admin enables it on the Plugins page, local or vendor alike.
      *
      * @param string               $pluginId Plugin/package ID
@@ -1489,7 +1489,7 @@ class PluginLoader
         // Tier order: foundation first, then core, then enabled non-foundation
         // plugins. Core seed dir is derived from its migration dir by the
         // migrations package (resolveModuleSeedDir), so it is NOT listed in
-        // seeds.paths — listing it would create a phantom "Seeds" module.
+        // seeds.paths: listing it would create a phantom "Seeds" module.
         $foundationPaths = [];
         $foundationSeeds = [];
         $paths = ['app/Database/Migrations'];

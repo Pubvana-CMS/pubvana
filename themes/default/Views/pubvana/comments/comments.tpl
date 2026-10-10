@@ -31,7 +31,7 @@
     <div class="mt-4" id="comment-form-wrapper">
         <h5 id="comment-form-title">Leave a Comment</h5>
         <div id="reply-indicator" class="alert alert-info d-none mb-3">
-            Replying to <span id="reply-indicator-author"></span> — <a href="#" id="cancel-reply">cancel</a>
+            Replying to <span id="reply-indicator-author"></span> (<a href="#" id="cancel-reply">cancel</a>)
         </div>
         <form method="post" action="{{ comment_post_url }}" id="comment-form">
             {! csrf_field !}

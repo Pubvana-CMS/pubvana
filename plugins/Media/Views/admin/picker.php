@@ -1,6 +1,6 @@
 <?php
 /**
- * Reusable media image picker — rendered by MediaService::picker().
+ * Reusable media image picker, rendered by MediaService::picker().
  *
  * @var string $inputName    Form input name
  * @var string $currentValue Current image path

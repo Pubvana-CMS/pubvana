@@ -8,7 +8,7 @@ use Pubvana\Plugins\Seo\Models\SeoMeta;
 use flight\Engine;
 
 /**
- * llms.txt generation — provides AI crawlers with a curated site map.
+ * llms.txt generation, provides AI crawlers with a curated site map.
  *
  * Format follows the llmstxt.org specification:
  * - H1: site name
@@ -54,11 +54,11 @@ class LlmsTxtService
 
         $lines = [];
 
-        // H1 — site name (mandatory per spec)
+        // H1: site name (mandatory per spec)
         $lines[] = '# ' . $siteName;
         $lines[] = '';
 
-        // Blockquote — site description (optional per spec)
+        // Blockquote: site description (optional per spec)
         if (!empty($siteDescription)) {
             $lines[] = '> ' . $siteDescription;
             $lines[] = '';
