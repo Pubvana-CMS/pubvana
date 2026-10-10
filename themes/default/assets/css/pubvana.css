@@ -377,3 +377,21 @@ footer .block-content {
     text-decoration: none;
     cursor: default;
 }
+
+/* ==========================================================================
+   Cover images
+   A post or page cover prints at its intrinsic size and fills the column.
+   Cap the height so a cover stays a band rather than a full square.
+   ========================================================================== */
+
+.featured-image {
+    width: 100%;
+    max-height: 200px;
+    object-fit: cover;
+}
+
+/* List cards use Bootstrap's card-img-top, which sets width only. Same cap. */
+.card-img-top {
+    max-height: 200px;
+    object-fit: cover;
+}

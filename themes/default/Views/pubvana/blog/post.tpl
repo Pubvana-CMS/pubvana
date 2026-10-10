@@ -17,7 +17,7 @@
 
     {# Conditional: featured image is optional. #}
     {% if featured_image %}
-    <img src="{{ featured_image }}" class="img-fluid rounded mb-4" alt="{{ title }}">
+    <img src="{{ featured_image }}" class="img-fluid rounded mb-4 featured-image" alt="{{ title }}">
     {% endif %}
 
     {# Loop: the post's tags, one badge each. #}

@@ -13,7 +13,7 @@
 
     {# Conditional: featured image. #}
     {% if featured_image %}
-    <img src="{{ featured_image }}" class="img-fluid rounded mb-4" alt="{{ title }}">
+    <img src="{{ featured_image }}" class="img-fluid rounded mb-4 featured-image" alt="{{ title }}">
     {% endif %}
 
     {# Raw output: the page body, admin-authored HTML from the editor. #}
