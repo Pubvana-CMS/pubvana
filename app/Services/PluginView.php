@@ -221,6 +221,28 @@ class PluginView extends View
             }
         });
 
+        // Sign-in options contributed by auth plugins (social login, SSO).
+        // The auth package renders the login and register views itself, so
+        // this tag is the seam that lets a plugin place its own buttons on
+        // them. Prints every contribution in priority order, or nothing when
+        // none is registered. The context is what makes a plugin's callable
+        // run, so the markup can be built from stored settings at this point
+        // rather than at boot.
+        // Usage in a template: {% auth_buttons %}
+        $this->visionEngine->tags()->register('auth_buttons', function () use ($app): string {
+            try {
+                $html = '';
+                foreach ($app->adext()->get('auth.login', 'default', ['surface' => 'login']) as $contribution) {
+                    if (isset($contribution['output']) && is_string($contribution['output'])) {
+                        $html .= $contribution['output'];
+                    }
+                }
+                return $html;
+            } catch (\Throwable $e) {
+                return '';
+            }
+        });
+
         // The Media plugin's avatar picker for a profile form. Arguments are
         // the field name and the stored path; the upload endpoint comes from
         // the template's avatarUploadUrl variable. Empty when Media is off.

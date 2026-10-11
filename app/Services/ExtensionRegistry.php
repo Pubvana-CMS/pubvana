@@ -150,6 +150,27 @@ class ExtensionRegistry
 
         /*
         |------------------------------------------------------------------
+        | Sign-in Surface Type
+        |------------------------------------------------------------------
+        | Plugins that add sign-in options (social login, SSO) register the
+        | button markup here, and the auth package's login view prints it
+        | with {% auth_buttons %}. The auth package owns that view, so this
+        | slot plus that tag are the whole seam a plugin needs to get its
+        | own buttons onto the sign-in page.
+        */
+        'auth.login' => [
+            'slots'    => ['default'],
+            // 'output' for markup built at registration time, 'callable' for
+            // markup that depends on stored settings and is therefore built
+            // when the page renders. A callable fires because PluginView
+            // reads this slot with a context, and its string return lands on
+            // 'output', which is why neither key can be required alone.
+            'required' => [],
+            'optional' => ['output', 'callable', 'priority'],
+        ],
+
+        /*
+        |------------------------------------------------------------------
         | Navigation Linkable Type
         |------------------------------------------------------------------
         | Plugins register items for the Quick Add dropdown in the

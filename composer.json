@@ -17,7 +17,8 @@
         "vlucas/phpdotenv": "^5.6",
         "phpmailer/phpmailer": "^7.1",
         "league/commonmark": "^2.6",
-        "league/html-to-markdown": "^5.1"
+        "league/html-to-markdown": "^5.1",
+        "league/oauth2-client": "^2.9"
     },
     "autoload": {
         "psr-4": {

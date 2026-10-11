@@ -44,6 +44,9 @@
     <button type="submit" class="btn btn-primary auth-submit">Sign In</button>
 </form>
 
+{# Sign-in options registered by auth plugins (social login, SSO). #}
+{% auth_buttons %}
+
 <div class="auth-links">
     <a href="/auth/forgot">Forgot password?</a>
 </div>
