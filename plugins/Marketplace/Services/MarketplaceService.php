@@ -997,7 +997,7 @@ class MarketplaceService
             $fresh->slug             = (string) ($item['slug'] ?? '');
             $fresh->item_type        = $itemType;
             $fresh->folder           = $folder;
-            $fresh->license_key      = '';
+            $fresh->license_key      = null;
             $fresh->license_valid    = 1;
             $fresh->license_last_checked = $now;
             $fresh->registered_domain = $this->siteDomain();
@@ -2242,9 +2242,6 @@ class MarketplaceService
 
         $host = strtolower(trim((string) (parse_url($siteUrl, PHP_URL_HOST) ?? '')));
         $host = (string) preg_replace('#^www\.#', '', $host);
-        if ($host === '') {
-            $host = 'localhost';
-        }
 
         // Keep domain and TLD only: subdomains share one license, so
         // staging.example.com and example.com register as one site. A
@@ -2257,6 +2254,10 @@ class MarketplaceService
             $multipart = strlen($tld) === 2
                 && in_array($secondLevel, ['ac', 'co', 'com', 'edu', 'firm', 'gen', 'gov', 'id', 'mil', 'ne', 'net', 'nom', 'or', 'org'], true);
             $host = implode('.', array_slice($labels, $multipart ? -3 : -2));
+        }
+
+        if ($host === '') {
+            $host = 'localhost';
         }
 
         return $host;
