@@ -11,8 +11,8 @@ use flight\Engine;
  * MarketplaceAdminController - admin surface for the Marketplace.
  *
  * Connect/disconnect the Pubvana account, browse the store catalog and push
- * items to the account-bound cart, and manage purchases (verify, install,
- * reinstall-all, domain move).
+ * items to the account's cart, and manage purchases (verify, install,
+ * reinstall-all).
  *
  * @package Pubvana\Plugins\Marketplace\Controllers
  */
@@ -30,6 +30,34 @@ class MarketplaceAdminController extends AdminController
     private function adminBase(): string
     {
         return '/admin' . rtrim((string) $this->app->pluginLoader()->routePrefix('pubvana/marketplace'), '/');
+    }
+
+    /**
+     * Full admin URL base for the Updates plugin, where addon updates are
+     * applied. Null when the plugin cannot be resolved.
+     */
+    private function updatesBase(): ?string
+    {
+        try {
+            return '/admin' . rtrim((string) $this->app->pluginLoader()->routePrefix('pubvana/updates'), '/');
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * The post-install flash: where the admin finishes the job. A new
+     * plugin lands disabled (PluginLoader::defaultState) and a new theme
+     * lands inactive, so the message points at the menu path that flips
+     * each on. Installs are only plugins or themes.
+     */
+    private function installedMessage(string $itemType): string
+    {
+        if ($itemType === 'theme') {
+            return 'Installed. You can activate it in Appearance > Themes.';
+        }
+
+        return 'Installed. You can enable it in Plugins > Manage.';
     }
 
     public function index(): void
@@ -54,6 +82,7 @@ class MarketplaceAdminController extends AdminController
             'installed'    => $installed,
             'adminBase'    => $this->adminBase(),
             'catalog'      => $catalog,
+            'cart'         => $svc->cart(),
             'tabs'         => $catalog['tabs'] ?? [],
             'openTab'      => $catalog['open_tab'] ?? '',
             'searchQuery'  => (string) ($_GET['q'] ?? ''),
@@ -63,8 +92,8 @@ class MarketplaceAdminController extends AdminController
     /**
      * The catalog request the admin asked for, read off the query string.
      *
-     * A search drops the tab: the store spans every addon category for a
-     * search, so sending a tab would narrow it back down.
+     * The tab rides along either way: a search runs inside its tab, so the
+     * store narrows to it exactly as browsing does.
      *
      * @return array{tab?: string, page?: int, q?: string}
      */
@@ -75,11 +104,13 @@ class MarketplaceAdminController extends AdminController
         $q = trim((string) ($_GET['q'] ?? ''));
         if ($q !== '') {
             $params['q'] = $q;
-        } else {
-            $tab = strtolower(trim((string) ($_GET['tab'] ?? '')));
-            if (in_array($tab, ['plugins', 'themes', 'sale'], true)) {
-                $params['type'] = $tab;
-            }
+        }
+
+        // The tab rides along either way: a search runs inside its tab, so
+        // the store narrows to it exactly as browsing does.
+        $tab = strtolower(trim((string) ($_GET['tab'] ?? '')));
+        if (in_array($tab, ['plugins', 'themes', 'sale'], true)) {
+            $params['type'] = $tab;
         }
 
         $page = (int) ($_GET['page'] ?? 1);
@@ -133,12 +164,28 @@ class MarketplaceAdminController extends AdminController
     public function purchases(): void
     {
         $svc = $this->app->marketplace();
-        $records = $svc->connected() ? $svc->localInstallRecords() : [];
+        $connected = $svc->connected();
+
+        // Every load syncs against the store. A failed sync disables every
+        // assign and install control and says why: unreachable, or whatever
+        // the store itself answered (maintenance, most obviously).
+        $syncOk = true;
+        $syncReason = '';
+        if ($connected) {
+            $sync = $svc->verifyPurchases();
+            $syncOk = !empty($sync['ok']);
+            $syncReason = (string) $sync['reason'];
+        }
+
         $this->render('pubvana/marketplace/admin/purchases', [
             'pageTitle'   => 'Purchases',
-            'connected'   => $svc->connected(),
-            'records'     => $records,
+            'connected'   => $connected,
+            'records'     => $connected ? $svc->localInstallRecords($syncOk) : [],
+            'syncOk'      => $syncOk,
+            'syncReason'  => $syncReason,
             'adminBase'   => $this->adminBase(),
+            'updatesBase' => $this->updatesBase(),
+            'siteDomain'  => $svc->siteDomain(),
         ]);
     }
 
@@ -146,31 +193,69 @@ class MarketplaceAdminController extends AdminController
     {
         $result = $this->app->marketplace()->verifyPurchases();
         if (!empty($result['ok'])) {
-            $this->app->session()->flash('success', 'Purchases verified against pubvanacms.com.');
+            $this->app->session()->flash('success', 'Synced with Pubvana Store.');
         } else {
             $this->app->session()->flash('danger', (string) $result['reason']);
         }
         $this->app->redirect($this->adminBase() . '/purchases');
     }
-
+    /**
+     * POST /admin/marketplace/assign
+     *
+     * Assign this site's domain to a purchase, no install: the store claims
+     * the license and the row shows assigned, ready for the install picker.
+     */
+    public function assign(): void
+    {
+        $recordId = (int) ($this->app->request()->data->record_id ?? 0);
+        $result = $this->app->marketplace()->assignByRecordId($recordId);
+        $this->app->session()->flash(
+            !empty($result['ok']) ? 'success' : 'danger',
+            !empty($result['ok']) ? 'Assigned to this website.' : (string) $result['reason']
+        );
+        $this->app->redirect($this->adminBase() . '/purchases');
+    }
     public function addToCart(): void
     {
         $productId = (int) ($this->app->request()->data->product_id ?? 0);
+        $tier = (string) ($this->app->request()->data->tier ?? '');
         $currency = (string) ($this->app->request()->data->currency ?? 'USD');
-        $scope = (string) ($this->app->request()->data->scope ?? 'single_site');
-        $result = $this->app->marketplace()->addToCart($productId, $currency, $scope);
+        $result = $this->app->marketplace()->addToCart($productId, $tier, $currency);
         $this->app->json($result);
     }
 
     public function install(): void
     {
-        $productId = (int) ($this->app->request()->data->product_id ?? 0);
-        // A licensed install claims this site's domain at the store, so there
-        // is nothing to pre-empt here: the store either accepts the install or
-        // says the license is in use and where to release it.
-        $result = $this->app->marketplace()->install($productId);
-        $this->app->session()->flash(!empty($result['ok']) ? 'success' : 'danger', $result['reason']);
+        $recordId = (int) ($this->app->request()->data->record_id ?? 0);
+        $version = (string) ($this->app->request()->data->version ?? '');
+        $clearDatabase = (string) ($this->app->request()->data->database ?? 'preserve') === 'clear';
+        $record = $this->app->marketplace()->installRecordById($recordId);
+        if ($record !== null && $this->app->marketplace()->needsDomainMoveForRecord($record)) {
+            $this->app->session()->flash('danger', 'This license is assigned to another domain.');
+            $this->app->redirect($this->adminBase() . '/purchases');
+            return;
+        }
+        $result = $this->app->marketplace()->installByRecordId($recordId, $version, $clearDatabase);
+        if (!empty($result['ok'])) {
+            // The fresh record carries the type stamped from the installed
+            // manifest, so the message can point at the page that turns the
+            // addon on (a new plugin lands disabled, a new theme inactive).
+            $installed = $this->app->marketplace()->installRecordById($recordId);
+            $this->app->session()->flash('success', $this->installedMessage($installed->item_type ?? ''));
+        } else {
+            $this->app->session()->flash('danger', $result['reason']);
+        }
         $this->app->redirect($this->adminBase() . '/purchases');
+    }
+
+    /**
+     * The covered releases for a purchase, newest fitting first (JSON): what
+     * the install screen's release picker lists.
+     */
+    public function installReleases(): void
+    {
+        $productId = (int) ($this->app->request()->data->product_id ?? 0);
+        $this->app->json($this->app->marketplace()->installReleases($productId));
     }
 
     /**
@@ -182,7 +267,12 @@ class MarketplaceAdminController extends AdminController
     {
         $package = (string) ($this->app->request()->data->package ?? '');
         $result = $this->app->marketplace()->installFromPackage($package);
-        $this->app->session()->flash(!empty($result['ok']) ? 'success' : 'danger', $result['reason']);
+        if (!empty($result['ok'])) {
+            $installed = $this->app->marketplace()->installRecordForPackage($package);
+            $this->app->session()->flash('success', $this->installedMessage($installed->item_type ?? ''));
+        } else {
+            $this->app->session()->flash('danger', $result['reason']);
+        }
         $this->app->redirect($this->adminBase());
     }
 
@@ -207,5 +297,38 @@ class MarketplaceAdminController extends AdminController
     public function cartOpen(): void
     {
         $this->app->redirect($this->app->marketplace()->checkoutUrl());
+    }
+
+    /**
+     * GET /admin/marketplace/cart-data
+     *
+     * The cart as JSON, so the modal can refresh itself after an item is
+     * added without a page reload.
+     */
+    public function cartData(): void
+    {
+        $this->app->json($this->app->marketplace()->cart());
+    }
+
+    /**
+     * POST /admin/marketplace/cart-remove
+     *
+     * Drop one line from the store's cart, from the cart modal. The line id
+     * is checked against the account's own cart store-side. The modal posts
+     * this over fetch and refreshes itself in place; a plain form post
+     * still works and lands back on the screen it came from.
+     */
+    public function removeCartItem(): void
+    {
+        $cartItemId = (int) ($this->app->request()->data->cart_item_id ?? 0);
+        $result = $this->app->marketplace()->removeCartItem($cartItemId);
+        if (str_contains((string) ($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json')) {
+            $this->app->json($result);
+            return;
+        }
+        if (empty($result['ok'])) {
+            $this->app->session()->flash('danger', (string) ($result['reason'] ?? 'Could not remove that item'));
+        }
+        $this->app->redirect($this->adminBase());
     }
 }

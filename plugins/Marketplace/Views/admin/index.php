@@ -15,7 +15,48 @@
  */
 ?>
 
-<a href="<?= $adminBase ?>" class="btn btn-sm btn-outline-secondary mb-3">Marketplace home</a>
+<div class="d-flex gap-2 mb-3">
+    <a href="<?= $adminBase ?>" class="btn btn-sm btn-outline-secondary">Marketplace home</a>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#license-info">
+        License Info
+    </button>
+</div>
+
+<div class="modal modal-blur fade" id="license-info" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">License Info</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-secondary">Each license covers one site. The tier purchased determines updates.</p>
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th class="text-secondary small text-center">Tier</th>
+                            <th class="text-secondary small text-center">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Patch updates</td>
+                            <td class="text-secondary">Fixes. You get every release in the same major/minor version (1.2.x).</td>
+                        </tr>
+                        <tr>
+                            <td>Minor updates</td>
+                            <td class="text-secondary">Fixes and new features. You get every release in the same major version (1.x.x).</td>
+                        </tr>
+                        <tr>
+                            <td>Major updates</td>
+                            <td class="text-secondary">Everything. Includes all future versions (x.x.x).</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 
 <?php if (!$connected): ?>
     <div class="row justify-content-center">
@@ -109,11 +150,65 @@
             <div>Connected as <code><?= htmlspecialchars($accountEmail) ?></code></div>
             <div>
                 <a href="<?= $adminBase ?>/purchases" class="btn btn-outline-primary">Purchases</a>
-                <a href="<?= $adminBase ?>/cart-open" target="_blank" rel="noopener" class="btn btn-outline-primary">Checkout <i class="ti ti-external-link"></i></a>
+                <?php $cartItems = is_array($cart['items'] ?? null) ? $cart['items'] : []; ?>
+                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#cart-modal" aria-label="Cart">
+                    <i class="ti ti-shopping-cart"></i>
+                    <span class="badge bg-primary-lt ms-2" id="cart-count"><?= count($cartItems) ?></span>
+                </button>
                 <form method="POST" action="<?= $adminBase ?>/disconnect" class="d-inline">
                     <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
                     <button class="btn btn-ghost-secondary">Disconnect</button>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal modal-blur fade" id="cart-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Cart</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="cart-modal-body">
+                    <?php if (!empty($cart['items'])): ?>
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th class="text-secondary small">Item</th>
+                                <th class="text-secondary small text-center">Price</th>
+                                <th class="text-secondary small"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($cart['items'] as $line): ?>
+                            <tr>
+                                <td>
+                                    <?= htmlspecialchars((string) ($line['name'] ?? '')) ?>
+                                    <?php if (!empty($line['tier_label'])): ?>
+                                    <div class="text-secondary small"><?= htmlspecialchars((string) $line['tier_label']) ?></div>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="text-center">$<?= number_format((float) ($line['payable'] ?? 0), 2) ?></td>
+                                <td class="text-end">
+                                    <form method="POST" action="<?= $adminBase ?>/cart-remove">
+                                        <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
+                                        <input type="hidden" name="cart_item_id" value="<?= (int) ($line['cart_item_id'] ?? 0) ?>">
+                                        <button class="btn btn-sm btn-outline-secondary">Remove</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                    <?php else: ?>
+                    <p class="text-secondary mb-0">Your cart is empty.</p>
+                    <?php endif; ?>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <span class="text-secondary">Total $<span id="cart-modal-total"><?= number_format((float) ($cart['total'] ?? 0), 2) ?></span></span>
+                    <a href="<?= $adminBase ?>/cart-open" target="_blank" rel="noopener" class="btn btn-primary">Checkout <i class="ti ti-external-link"></i></a>
+                </div>
             </div>
         </div>
     </div>
@@ -126,7 +221,9 @@
     $items = $catalogOk ? $catalog['items'] : [];
     $tabKey = (string) ($openTab ?? '');
     $searching = $searchQuery !== '';
-    $baseQuery = $searching ? [] : ['tab' => $tabKey];
+    // Search or not, the tab is part of every link: a search lives inside
+    // its tab, so paging and tab switches both keep the query and the tab.
+    $baseQuery = ['tab' => $tabKey];
     if ($searching) {
         $baseQuery['q'] = $searchQuery;
     }
@@ -144,7 +241,7 @@
         </div>
     <?php else: ?>
         <form method="GET" action="<?= $adminBase ?>" class="row g-2 align-items-end mb-3">
-            <?php if (!$searching): ?>
+            <?php if ($tabKey !== ''): ?>
             <input type="hidden" name="tab" value="<?= htmlspecialchars($tabKey) ?>">
             <?php endif; ?>
             <div class="col-md-5">
@@ -156,7 +253,6 @@
             </div>
         </form>
 
-        <?php if (!$searching): ?>
         <ul class="nav nav-tabs mb-3">
             <?php foreach ($tabs as $tab): ?>
                 <?php $key = (string) ($tab['key'] ?? ''); ?>
@@ -165,12 +261,26 @@
                 </li>
             <?php endforeach; ?>
         </ul>
-        <?php endif; ?>
 
         <?php if ($items === []): ?>
             <div class="card">
                 <div class="card-body text-center py-5">
-                    <p class="text-secondary mb-0">No items<?= $searching ? ' match that search' : ' here yet' ?>.</p>
+                    <?php
+                    $tabLabels = [];
+                    foreach ($tabs as $tabRow) {
+                        $tabLabels[(string) ($tabRow['key'] ?? '')] = (string) ($tabRow['label'] ?? '');
+                    }
+                    $tabLabel = $tabLabels[$tabKey] ?? '';
+                    ?>
+                    <p class="text-secondary mb-0">
+                        <?php if ($searching && $tabLabel !== ''): ?>
+                            No items match <i><?= htmlspecialchars($searchQuery) ?></i> in <?= htmlspecialchars($tabLabel) ?>.
+                        <?php elseif ($searching): ?>
+                            No items match <i><?= htmlspecialchars($searchQuery) ?></i>.
+                        <?php else: ?>
+                            No items here yet.
+                        <?php endif; ?>
+                    </p>
                 </div>
             </div>
         <?php else: ?>
@@ -186,19 +296,27 @@
                 // either), so fall back to it, the same way the update paths
                 // in MarketplaceService already do.
                 $packageId = $package !== '' ? $package : (string) ($item['slug'] ?? '');
-                // Free to install anywhere: fully free, any free tier, or a
-                // package with no license scope. Mirrors the check the
-                // install-free path makes.
-                $isFree = !empty($item['is_free'])
-                    || !empty($item['free_tier'])
-                    || (($item['license_scope'] ?? '') === 'none');
+                // Free to install anywhere: fully free, or any tier priced 0.
+                // Mirrors the check the install-free path makes.
+                $isFree = !empty($item['is_free']) || !empty($item['free_tier']);
                 // Addons physically on this site, from the local manifest
                 // scan: covers Marketplace installs, core-shipped, and
                 // manual uploads alike.
                 $installedInfo = $installed[$packageId] ?? null;
                 $installedHere = $installedInfo !== null;
-                $price = (float) ($item['price'] ?? 0);
-                $priceMulti = isset($item['price_multi']) && $item['price_multi'] !== null ? (float) $item['price_multi'] : null;
+                // Tiers for sale, from the store card, in Patch, Minor,
+                // Major order. Free tiers are not purchases and carry no
+                // button.
+                $paidTiers = [];
+                foreach ((array) ($item['tiers'] ?? []) as $tierRow) {
+                    if (is_array($tierRow) && (float) ($tierRow['price'] ?? 0) > 0) {
+                        $paidTiers[] = $tierRow;
+                    }
+                }
+                ?>
+                <?php
+                // Whether the card has a details modal to open at all.
+                $hasInfo = !empty($item['description']) || !empty($item['versions']) || !empty($item['package']);
                 ?>
                 <div class="col-md-6 col-lg-4">
                     <div class="card h-100">
@@ -214,81 +332,110 @@
                                     <span class="badge bg-info-lt">Installed v<?= htmlspecialchars((string) $installedInfo['version']) ?></span>
                                 <?php endif; ?>
                             </div>
-                            <h3 class="card-title mb-1"><?= htmlspecialchars((string) ($item['name'] ?? '')) ?></h3>
-                            <?php if (!empty($item['version'])): ?>
+                            <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+                                <h3 class="card-title mb-0"><?= htmlspecialchars((string) ($item['name'] ?? '')) ?></h3>
+                                <?php if ($hasInfo): ?>
+                                <button type="button" class="btn btn-sm btn-outline-secondary flex-shrink-0"
+                                        data-bs-toggle="modal" data-bs-target="#item-info-<?= (int) $id ?>">
+                                    More Info
+                                </button>
+                                <?php endif; ?>
+                            </div>
+                            <?php if (!empty($item['versions'])): ?>
+                                <table class="table table-sm mb-2">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-secondary small text-center">Version</th>
+                                            <th class="text-secondary small text-center">Pubvana Req'd</th>
+                                            <th class="text-secondary small text-center">Your Pubvana</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($item['versions'] as $row): ?>
+                                        <tr>
+                                            <td class="small text-center">v<?= htmlspecialchars((string) $row['version']) ?></td>
+                                            <td class="small text-center"><?= htmlspecialchars((string) $row['pubvana']) ?></td>
+                                            <td class="small text-center"><?= !empty($row['fits']) ? '&#10003;' : '&#10007;' ?></td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            <?php elseif (!empty($item['version'])): ?>
                                 <p class="text-secondary small mb-2">v<?= htmlspecialchars((string) $item['version']) ?></p>
                             <?php endif; ?>
-                            <p class="card-text text-secondary"><?= htmlspecialchars((string) ($item['description'] ?? '')) ?></p>
-                            <?php if (!empty($item['min_pubvana'])): ?>
-                                <p class="text-secondary small mb-2">Requires Pubvana <?= htmlspecialchars((string) $item['min_pubvana']) ?>+</p>
-                            <?php endif; ?>
                             <?php
-                            // Update available: installed here and the store
-                            // ships a newer version. installFromPackage()
-                            // routes free items through the free endpoint and
-                            // purchased items through license validation.
-                            $updateAvailable = $installedHere
-                                && (string) ($item['version'] ?? '') !== ''
-                                && version_compare((string) $item['version'], (string) $installedInfo['version'], '>');
+                            // Add to Cart shows whether or not the addon is
+                            // installed here; the Installed badge already says
+                            // so. The free download stays limited to items
+                            // that are not installed yet.
                             ?>
-                            <?php if ($updateAvailable): ?>
-                            <div class="d-flex align-items-center justify-content-between mt-3">
-                                <span class="badge bg-orange-lt">Update to v<?= htmlspecialchars((string) $item['version']) ?></span>
-                                <form method="POST" action="<?= $adminBase ?>/install-free" class="d-inline">
-                                    <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
-                                    <input type="hidden" name="package" value="<?= htmlspecialchars($packageId) ?>">
-                                    <button class="btn btn-primary">Update</button>
-                                </form>
-                            </div>
-                            <?php elseif (!$installedHere): ?>
-                            <div class="d-flex align-items-center justify-content-between mt-3 gap-2 flex-wrap">
-                                <?php if ($isFree): ?>
-                                    <strong>Free</strong>
-                                    <form method="POST" action="<?= $adminBase ?>/install-free" class="d-inline">
-                                        <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
-                                        <input type="hidden" name="package" value="<?= htmlspecialchars($packageId) ?>">
-                                        <button class="btn btn-primary">Download &amp; install</button>
-                                    </form>
-                                <?php elseif ($price <= 0 && $priceMulti !== null && $priceMulti > 0): ?>
-                                    <div class="btn-group">
+                            <?php if ($paidTiers !== [] || !$installedHere): ?>
+                            <div class="mt-3">
+                                <?php if ($paidTiers !== []): ?>
+                                <p class="text-secondary small fw-semibold mb-2">Add to Cart</p>
+                                <?php endif; ?>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <?php if (!empty($item['free_tier']) && !$installedHere): ?>
                                         <form method="POST" action="<?= $adminBase ?>/install-free" class="d-inline">
                                             <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
                                             <input type="hidden" name="package" value="<?= htmlspecialchars($packageId) ?>">
-                                            <button class="btn btn-success">Free download</button>
+                                            <button class="btn <?= $paidTiers === [] ? 'btn-primary' : 'btn-success' ?>"><?= $paidTiers === [] ? 'Download &amp; install' : 'Free download' ?></button>
                                         </form>
+                                    <?php endif; ?>
+                                    <?php if ($paidTiers !== []): ?>
+                                        <?php foreach ($paidTiers as $tierRow): ?>
                                         <button type="button" class="btn btn-primary"
                                                 data-cart-product="<?= $id ?>"
-                                                data-cart-scope="multi_site">Multi $<?= number_format($priceMulti, 2) ?></button>
-                                    </div>
-                                <?php elseif ($price > 0 && $priceMulti !== null && $priceMulti > 0): ?>
-                                    <div class="btn-group">
-                                        <button type="button" class="btn btn-primary"
-                                                data-cart-product="<?= $id ?>"
-                                                data-cart-scope="single_site">1-site $<?= number_format($price, 2) ?></button>
-                                        <button type="button" class="btn btn-outline-primary"
-                                                data-cart-product="<?= $id ?>"
-                                                data-cart-scope="multi_site">Multi $<?= number_format($priceMulti, 2) ?></button>
-                                    </div>
-                                <?php elseif ($price > 0): ?>
-                                    <strong>$<?= number_format($price, 2) ?></strong>
-                                    <button type="button" class="btn btn-primary"
-                                            data-cart-product="<?= $id ?>"
-                                            data-cart-scope="single_site">Add to cart</button>
-                                <?php elseif ($priceMulti !== null && $priceMulti > 0): ?>
-                                    <strong>$<?= number_format($priceMulti, 2) ?></strong>
-                                    <button type="button" class="btn btn-primary"
-                                            data-cart-product="<?= $id ?>"
-                                            data-cart-scope="multi_site">Add to cart</button>
-                                <?php endif; ?>
+                                                data-cart-tier="<?= htmlspecialchars((string) ($tierRow['tier'] ?? '')) ?>">
+                                            <?= htmlspecialchars(ucfirst((string) ($tierRow['tier'] ?? ''))) ?> $<?= number_format((float) $tierRow['price'], 2) ?>
+                                        </button>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </div>
                             </div>
-                            <?php if (!$isFree && ($price > 0 || ($priceMulti ?? 0) > 0)): ?>
-                                <p class="text-secondary small mb-0 mt-2">
-                                    <?= ($priceMulti !== null && $price > 0) ? '1-site licenses bind to one domain; multi-site licenses cover a set of registered domains.' : (($priceMulti !== null && $priceMulti > 0) ? 'Licensed to a set of registered domains.' : 'Licensed to one domain. Release the site in your Pubvana account to move it.') ?>
-                                </p>
-                            <?php endif; ?>
                             <?php endif; ?>
                         </div>
                     </div>
+                    <?php if ($hasInfo): ?>
+                    <div class="modal modal-blur fade" id="item-info-<?= (int) $id ?>" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title"><?= htmlspecialchars((string) ($item['name'] ?? '')) ?></h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <?php if (!empty($item['description'])): ?>
+                                    <p class="text-secondary"><?= htmlspecialchars((string) $item['description']) ?></p>
+                                    <?php endif; ?>
+                                    <?php if (!empty($item['versions'])): ?>
+                                    <table class="table table-sm mt-3 mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-secondary small text-center">Version</th>
+                                                <th class="text-secondary small text-center">Pubvana Req'd</th>
+                                                <th class="text-secondary small text-center">Your Pubvana</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($item['versions'] as $row): ?>
+                                            <tr>
+                                                <td class="small text-center">v<?= htmlspecialchars((string) $row['version']) ?></td>
+                                                <td class="small text-center"><?= htmlspecialchars((string) $row['pubvana']) ?></td>
+                                                <td class="small text-center"><?= !empty($row['fits']) ? '&#10003;' : '&#10007;' ?></td>
+                                            </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                    <?php endif; ?>
+                                    <?php if (!empty($item['package'])): ?>
+                                    <p class="text-secondary small mt-3 mb-0">Package: <code><?= htmlspecialchars((string) $item['package']) ?></code></p>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
                 </div>
             <?php endforeach; ?>
         </div>
@@ -314,15 +461,72 @@
     <?php endif; ?>
 
     <script>
+        function cartEscape(value) {
+            var div = document.createElement('div');
+            div.textContent = String(value);
+            return div.innerHTML;
+        }
+        function refreshCartModal() {
+            fetch('<?= $adminBase ?>/cart-data', { headers: { 'Accept': 'application/json' } })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var items = (data && data.items) ? data.items : [];
+                    var body = document.getElementById('cart-modal-body');
+                    if (body) {
+                        if (!items.length) {
+                            body.innerHTML = '<p class="text-secondary mb-0">Your cart is empty.</p>';
+                        } else {
+                            var html = '<table class="table table-sm"><thead><tr>'
+                                + '<th class="text-secondary small">Item</th>'
+                                + '<th class="text-secondary small text-center">Price</th>'
+                                + '<th class="text-secondary small"></th>'
+                                + '</tr></thead><tbody>';
+                            items.forEach(function (line) {
+                                html += '<tr><td>' + cartEscape(line.name)
+                                    + (line.tier_label ? '<div class="text-secondary small">' + cartEscape(line.tier_label) + '</div>' : '')
+                                    + '</td><td class="text-center">$' + Number(line.payable || 0).toFixed(2) + '</td>'
+                                    + '<td class="text-end"><form method="POST" action="<?= $adminBase ?>/cart-remove">'
+                                    + '<input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">'
+                                    + '<input type="hidden" name="cart_item_id" value="' + parseInt(line.cart_item_id || 0, 10) + '">'
+                                    + '<button class="btn btn-sm btn-outline-secondary">Remove</button>'
+                                    + '</form></td></tr>';
+                            });
+                            html += '</tbody></table>';
+                            body.innerHTML = html;
+                        }
+                    }
+                    var total = document.getElementById('cart-modal-total');
+                    if (total) { total.textContent = Number((data && data.total) || 0).toFixed(2); }
+                    var count = document.getElementById('cart-count');
+                    if (count) { count.textContent = items.length; }
+                })
+                .catch(function () {});
+        }
+        (function () {
+            var cartModal = document.getElementById('cart-modal');
+            if (!cartModal) { return; }
+            cartModal.addEventListener('submit', function (event) {
+                var form = event.target;
+                if (!form || String(form.action).indexOf('/cart-remove') === -1) { return; }
+                event.preventDefault();
+                fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: { 'Accept': 'application/json' }
+                }).then(function () {
+                    refreshCartModal();
+                }).catch(function () {});
+            });
+        })();
         document.querySelectorAll('[data-cart-product]').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 var id = btn.getAttribute('data-cart-product');
-                var scope = btn.getAttribute('data-cart-scope') || 'single_site';
+                var tier = btn.getAttribute('data-cart-tier') || '';
                 btn.disabled = true;
                 btn.textContent = 'Adding…';
                 var fd = new FormData();
                 fd.append('product_id', id);
-                fd.append('scope', scope);
+                fd.append('tier', tier);
                 fd.append('currency', 'USD');
                 fd.append('_csrf_token', '<?= csrf_token() ?>');
                 fetch('<?= $adminBase ?>/cart-add', {
@@ -334,6 +538,7 @@
                         btn.textContent = 'Added to cart';
                         btn.classList.remove('btn-primary', 'btn-outline-primary');
                         btn.classList.add('btn-success');
+                        refreshCartModal();
                     } else {
                         btn.textContent = 'Try again';
                         btn.disabled = false;

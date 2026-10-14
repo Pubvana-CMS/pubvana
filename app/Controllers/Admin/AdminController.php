@@ -391,6 +391,10 @@ class AdminController
      * The trust gate for enabling a plugin or activating a theme.
      *
      * The rules, in order:
+     *   - The store goes first when Marketplace can answer: a licensed
+     *     product has to hold a license for this site (the store says so),
+     *     free items activate with no restrictions at all, and an
+     *     unreachable store warns like an unknown trust answer.
      *   - malicious, cached or live, force or not: BLOCK. Never forceable.
      *   - trusted, cached or live: proceed, no modal.
      *   - anything else (unknown, known, no cache row, service unreachable):
@@ -407,15 +411,42 @@ class AdminController
      * cache entry expires or an admin hits recheck.
      *
      * A confirmed resubmit carries force=1: the live call is skipped, but a
-     * cached malicious verdict still refuses. Malicious is never forceable.
-     * The non-AJAX fallback has no modal, so there a cached malicious
-     * verdict is the only hard stop.
+     * cached malicious verdict still refuses, and so does a license the store
+     * has refused. Malicious is never forceable.
      *
      * @param array{type: string, slug: string, version: string, author: string, origin: string}|null $item
      * @param array<string, mixed> $payload Context for the needsConfirm JSON (id, name, version)
+     * @param callable(): array{checked: bool, ok: bool, reason: string, reachable: bool}|null $storeGate
      */
-    protected function trustGate(?array $item, string $payloadKey, array $payload, bool $force, bool $isAjax): ?string
+    protected function trustGate(?array $item, string $payloadKey, array $payload, bool $force, bool $isAjax, ?callable $storeGate = null): ?string
     {
+        // The store decides whether this is a licensed product at all. A
+        // licensed one must hold a license for this site before the trust
+        // check even runs; a free one activates with no restrictions.
+        if ($storeGate !== null) {
+            $store = $storeGate();
+            if (!empty($store['checked'])) {
+                if (empty($store['reachable'])) {
+                    // An outage is not a verdict: warn like an unknown trust
+                    // answer, and the non-AJAX fallback proceeds.
+                    if ($isAjax) {
+                        $this->app->jsonHalt(['needsConfirm' => true, $payloadKey => $payload, 'storeUnreachable' => true]);
+                    }
+                    return null;
+                }
+                if (empty($store['ok'])) {
+                    $reason = (string) ($store['reason'] ?? 'The store did not confirm this license for this site.');
+                    if ($isAjax) {
+                        $this->app->jsonHalt(['blocked' => true, 'warning' => $reason]);
+                    }
+                    return $reason;
+                }
+            } else {
+                // Not a licensed store item: free means no restrictions.
+                return null;
+            }
+        }
+
         if ($item === null) {
             return null;
         }
@@ -460,5 +491,53 @@ class AdminController
         // stop (already handled above). Anything else proceeds; the badge
         // already shows the status.
         return null;
+    }
+
+    /**
+     * The store side of the activation gate.
+     *
+     * A record with a license key means a licensed store item: the store is
+     * asked whether the license covers this site before activation. No
+     * record, or a record without a license (free items), carries no store
+     * restriction. Sites without Marketplace skip the check entirely.
+     *
+     * @param string ...$packageCandidates Package identity guesses, try in order
+     * @return array{checked: bool, ok: bool, reason: string, reachable: bool}
+     */
+    protected function storeGateFor(string ...$packageCandidates): array
+    {
+        $none = ['checked' => false, 'ok' => true, 'reason' => '', 'reachable' => true];
+
+        if (!method_exists($this->app, 'marketplace')) {
+            return $none;
+        }
+        $marketplace = $this->app->marketplace();
+        if (!$marketplace instanceof \Pubvana\Plugins\Marketplace\Services\MarketplaceService) {
+            return $none;
+        }
+
+        $record = null;
+        foreach ($packageCandidates as $candidate) {
+            $candidate = trim($candidate);
+            if ($candidate === '') {
+                continue;
+            }
+            $record = $marketplace->installRecordForPackage($candidate);
+            if ($record !== null) {
+                break;
+            }
+        }
+        if ($record === null || (string) $record->license_key === '') {
+            return $none;
+        }
+
+        $verdict = $marketplace->verifyLicenseForSite((int) $record->store_product_id);
+
+        return [
+            'checked'   => true,
+            'ok'        => !empty($verdict['ok']),
+            'reason'    => (string) ($verdict['reason'] ?? ''),
+            'reachable' => !empty($verdict['reachable']),
+        ];
     }
 }

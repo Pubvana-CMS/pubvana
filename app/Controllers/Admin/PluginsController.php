@@ -320,16 +320,20 @@ class PluginsController extends AdminController
     private function trustVerdict(string $id, array $info, bool $force, bool $isAjax): ?string
     {
         $item = $this->trustItem($id, $info);
-        if ($item === null) {
-            return null;
-        }
 
         $payload = [
             'id'      => $id,
             'name'    => (string) ($info['name'] ?? $id),
-            'version' => $item['version'],
+            'version' => $item['version'] ?? (string) ($info['version'] ?? ''),
         ];
 
-        return $this->trustGate($item, 'plugin', $payload, $force, $isAjax);
+        return $this->trustGate(
+            $item,
+            'plugin',
+            $payload,
+            $force,
+            $isAjax,
+            fn (): array => $this->storeGateFor((string) ($info['package'] ?? ''), (string) ($info['name'] ?? ''), $id)
+        );
     }
 }

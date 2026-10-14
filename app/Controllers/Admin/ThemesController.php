@@ -536,17 +536,21 @@ class ThemesController extends AdminController
         } catch (\Throwable) {
             $item = null;
         }
-        if ($item === null) {
-            return null;
-        }
 
         $payload = [
             'id'      => (int) $theme->id,
             'name'    => (string) $theme->name,
-            'version' => $item['version'],
+            'version' => $item['version'] ?? '',
         ];
 
-        return $this->trustGate($item, 'theme', $payload, $force, $isAjax);
+        return $this->trustGate(
+            $item,
+            'theme',
+            $payload,
+            $force,
+            $isAjax,
+            fn (): array => $this->storeGateFor((string) $theme->folder, (string) $theme->name)
+        );
     }
 
     /**

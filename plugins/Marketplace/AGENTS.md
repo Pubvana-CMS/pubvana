@@ -4,7 +4,7 @@ Guidance for AI agents contributing to this plugin, the buy-side companion for t
 
 ## Overview
 
-**pubvana/marketplace** is the companion app for the store at pubvanacms.com. It never processes payments and never merges with the Digital Store plugin. The Marketplace browses the store catalog, pushes items to an account-bound cart, opens the store checkout in a new tab, then verifies and installs purchases on this site.
+**pubvana/marketplace** is the companion app for the store at pubvanacms.com. It never processes payments and never merges with the Digital Store plugin. The Marketplace browses the store catalog, pushes items to the account's cart, opens the store checkout in a new tab, then verifies and installs purchases on this site.
 
 - **Package:** `pubvana/marketplace` (`pubvana.json:2`), semver `0.1.0`, category `commerce`
 - **License:** MIT, matching the main project
@@ -25,7 +25,7 @@ Guidance for AI agents contributing to this plugin, the buy-side companion for t
 6. **Validate every zip before extraction.** Reject entries with `..`, absolute paths, drive letters, or NUL bytes; only accept http/https download hosts on the store allow-list (`pubvanacms.com` apex or any subdomain, plus `localhost`/`plugindev` in development only). This is the same safety rule as the Updates plugin; do not weaken it.
 7. **One install path.** `installFromPackage()` is the only public store-install entry for cross-plugin use (Updates addon-update calls it). No client-supplied download URLs reach the install flow; URLs are always re-derived server-side from the license.
 8. **No payment integration here.** Checkout happens on pubvanacms.com. The Marketplace only opens the store checkout URL and verifies afterward.
-9. **Single-site domain moves require email confirmation.** The transfer-request endpoint starts the flow; the store emails a confirm link. The Marketplace can prompt and request; it must not rebind on its own.
+9. **Assigned elsewhere: error and stop.** A license bound to another domain does not install here. Flash the error and stop; the Marketplace never requests or triggers a transfer.
 10. **Controllers strip `_csrf_token` before POST data use; permission gate is flash + redirect, never `halt()`.** Standard v3 patterns.
 11. **HTTP always:** curl first, `file_get_contents` fallback, timeouts, non-empty user agent.
 
@@ -40,7 +40,7 @@ plugins/Marketplace/
 ├── Controllers/
 │   └── MarketplaceAdminController.php    Admin: index, connect, disconnect, purchases, verify, addToCart, install, installFree, reinstallAll, cartOpen
 ├── Services/
-│   └── MarketplaceService.php            $app->marketplace(): catalog, cart, purchases, install, verification, domain moves
+│   └── MarketplaceService.php            $app->marketplace(): catalog, cart, purchases, install, verification
 ├── Models/
 │   └── MarketplaceInstall.php            marketplace_installs table model
 ├── Database/
@@ -61,26 +61,25 @@ No generated dirs in this plugin.
 
 - `GET {store}/api/store/categories` - categories
 - `GET {store}/api/store/items?currency=` - marketplace-listed items
-- `GET {store}/api/store/free?slug=` - streams a free product's package (is_free or scope none); free items are free to use anywhere and update with no license
-- `POST {store}/api/store/cart/add` - push item into account-bound cart
+- `GET {store}/api/store/free?slug=` - streams a free product's package (is_free or a free tier); free items are free to use anywhere and update with no license
+- `POST {store}/api/store/cart/add` - push item into the account's cart
 - `GET {store}/api/store/purchases?domain=` - purchased products + license state for this domain
 - `POST {store}/api/store/license/validate` - returns a download URL for a valid license
-- `POST {store}/api/store/license/transfer-request` - begin a domain move
 - `POST {store}/api/store/auth/token` - exchange email for account token
 
 Auth is a `Marketplace.account_token` setting sent as an `Authorization: Bearer` header. It is never sent in the query string, and every outbound request and redirect hop is validated against the store host allow-list (http/https only, loopback/dev hosts in development only).
 
 ### Install flow
 
-`install($storeProductId, $itemType)` loads the local install record by store product id, validates the license via the API for this domain, downloads the package (host-checked), inspects the zip, extracts under `writable/cache/marketplace`, moves the resolved root (single-wrapper-dir aware) into `plugins/{folder}/` or `themes/{folder}/`, then stamps the identity and version from the freshly installed manifest (`package_id`, `installed_version`).
+`install($storeProductId, $itemType)` loads the local install record by store product id, validates the license via the API for this domain, downloads the package (host-checked), inspects the zip, extracts under `writable/cache/marketplace`, moves the resolved root (single-wrapper-dir aware) into `plugins/{folder}/` or `themes/{folder}/`, then stamps the identity from the freshly installed manifest (`package_id`). The installed version is never stored; it is read from the addon's own `pubvana.json` whenever it is needed.
 
 `installFromPackage($package)` is the cross-plugin entry: finds the record by `package_id` and runs `install()`. A package with no purchase record (or no license key) falls to the free path `installFreePackage()`, which requires the store catalog to list it free (is_free or scope none), downloads through the store free endpoint, then records the install via `trackFreeInstall()` so later checks see it as a store item. The Updates plugin's addon-update action calls `installFromPackage()` and nothing inside Marketplace internals.
 
-`checkAddonUpdates()` reads each installed addon's manifest identity live (manifest `name` + `semver`) and compares against catalog versions; results are keyed by package. `trackedPackages()` returns the package identities holding install records, so other surfaces (Updates) can label an addon Marketplace-sourced versus core-included. `unlicensedPackages()` returns catalog packages with no verified purchase record here, each flagged `free` (scope none: genuinely free items, disclosure-friendly) or not, for the Updates page's "Free" / "Not purchased" rows. Disclosure only, never enforcement. `freePackageVersions()` is the free counterpart to `checkAddonUpdates()`: latest store versions for free packages, so untracked free installs stay updatable for free. Nothing caches the catalog: every view and every check is the store's current answer, so there is no refresh call to make.
+`checkAddonUpdates()` reads each installed addon's manifest identity live (manifest `name` + `semver`). A licensed record is answered by the store's `license/validate` (claim=0) alone, which names the newest release the site may run, so an update does not depend on a catalog listing; records with no license keep the catalog path. Results are keyed by package. `trackedPackages()` returns the package identities holding install records, so other surfaces (Updates) can label an addon Marketplace-sourced versus core-included. `unlicensedPackages()` returns catalog packages with no verified purchase record here, each flagged `free` (free tier: genuinely free items, disclosure-friendly) or not, for the Updates page's "Free" / "Not purchased" rows. Disclosure only, never enforcement. `freePackageVersions()` is the free counterpart to `checkAddonUpdates()`: latest store versions for free packages, so untracked free installs stay updatable for free. Nothing caches the catalog: every view and every check is the store's current answer, so there is no refresh call to make.
 
 `reinstallAll()` iterates purchases and reinstalls every licensed, non-`file` item already installed locally, reporting ok/skipped/failed counts.
 
-`verifyIfDue()` / `verifyPurchases()` reconcile `marketplace_installs` from the store's answer for this domain, updating license validity, scope, expiry/renewal, and registered domain; `package_id` is backfilled from the local manifest when missing. `verifyPurchases()` returns `ok`, `reason`, and the purchase list, so the Verify button can tell a store failure from an account with no purchases; `purchases()` returns the list alone. `localInstallRecords()` serializes the table for the Purchases view.
+`verifyIfDue()` / `verifyPurchases()` reconcile `marketplace_installs` from the store's answer for this domain, updating license validity, tier, and registered domain; `package_id` is backfilled from the local manifest when missing. `verifyPurchases()` returns `ok`, `reason`, and the purchase list, so the Verify button can tell a store failure from an account with no purchases; `purchases()` returns the list alone. `localInstallRecords()` serializes the table for the Purchases view.
 
 ### Connect / account
 
@@ -140,4 +139,4 @@ php pubvana cron 24h                    # exercise the cron task (graceful when 
 - Payments, refunds, or gateway config (store's territory).
 - The Digital Store plugin itself: don't modify it from here.
 - License issuance and key generation (store-side).
-- Domain transfer confirmation logic (store-side; Marketplace only requests).
+- Domain transfers (store-side; the Marketplace never requests one).

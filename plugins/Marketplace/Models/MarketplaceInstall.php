@@ -39,17 +39,21 @@ class MarketplaceInstall extends \Pubvana\Models\AbstractModel
     public ?string $slug = null;
     public string $item_type = 'plugin';
     public ?string $folder = null;
-    public ?string $installed_version = null;
     public ?string $license_key = null;
-    public string $license_scope = 'single_site';
+    public ?string $tier = null;
     public int $license_valid = 0;
     public ?string $license_last_checked = null;
-    public ?string $expires_at = null;
-    public ?string $renews_at = null;
-    public int $is_subscription = 0;
     public ?string $registered_domain = null;
     public ?string $created_at = null;
     public ?string $updated_at = null;
+
+    public function findById(int $id): ?self
+    {
+        // Fresh instance: see findByProductId() for why $this cannot be reused.
+        $query = new self($this->getDatabaseConnection());
+        $query->eq('id', $id)->find();
+        return $query->isHydrated() ? $query : null;
+    }
 
     public function findByProductId(int $storeProductId): ?self
     {
@@ -88,5 +92,29 @@ class MarketplaceInstall extends \Pubvana\Models\AbstractModel
         $this->reset();
         $this->order('product_name ASC');
         return $this->findAll();
+    }
+
+    /**
+     * Bump the verify timestamps for many records in one query.
+     *
+     * verifyPurchases() runs on every Purchases load and the timestamps are
+     * the only thing that changes on a steady state check; one UPDATE beats
+     * one save() per row.
+     *
+     * @param array<int, string> $licenseKeys License keys just verified
+     */
+    public function stampVerified(array $licenseKeys, string $now): void
+    {
+        $keys = array_values(array_filter($licenseKeys, static fn (string $key): bool => $key !== ''));
+        if ($keys === []) {
+            return;
+        }
+
+        $pdo = $this->getDatabaseConnection();
+        $placeholders = implode(',', array_fill(0, count($keys), '?'));
+        $stmt = $pdo->prepare(
+            'UPDATE `marketplace_installs` SET `license_last_checked` = ?, `updated_at` = ? WHERE `license_key` IN (' . $placeholders . ')'
+        );
+        $stmt->execute(array_merge([$now, $now], $keys));
     }
 }

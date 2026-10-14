@@ -49,9 +49,13 @@ class Plugin implements PluginInterface
             ['POST', $prefix . '/verify',                  [MarketplaceAdminController::class, 'verify'],      [$manage]],
             ['POST', $prefix . '/cart-add',                [MarketplaceAdminController::class, 'addToCart'],   [$manage]],
             ['POST', $prefix . '/install',                 [MarketplaceAdminController::class, 'install'],     [$manage]],
+            ['POST', $prefix . '/install-releases',        [MarketplaceAdminController::class, 'installReleases'], [$manage]],
             ['POST', $prefix . '/install-free',            [MarketplaceAdminController::class, 'installFree'], [$manage]],
             ['POST', $prefix . '/reinstall',               [MarketplaceAdminController::class, 'reinstallAll'], [$manage]],
             ['GET',  $prefix . '/cart-open',               [MarketplaceAdminController::class, 'cartOpen'],    [$manage]],
+            ['GET',  $prefix . '/cart-data',               [MarketplaceAdminController::class, 'cartData'],    [$manage]],
+            ['POST', $prefix . '/cart-remove',             [MarketplaceAdminController::class, 'removeCartItem'], [$manage]],
+            ['POST', $prefix . '/assign',                  [MarketplaceAdminController::class, 'assign'],     [$manage]],
         ], 'pubvana.marketplace');
 
         // Dashboard card: shows connection status and purchase count
@@ -162,26 +166,10 @@ class Plugin implements PluginInterface
 
         $records = $service->localInstallRecords();
         $licensedCount = 0;
-        $expiredCount = 0;
         foreach ($records as $r) {
             if (!empty($r['license_valid'])) {
                 $licensedCount++;
             }
-            $expires = (string) ($r['expires'] ?? '');
-            if ($expires !== '' && strtotime($expires) !== false && strtotime($expires) < time()) {
-                $expiredCount++;
-            }
-        }
-
-        if ($expiredCount > 0) {
-            return new CheckResult(
-                id: 'marketplace-licenses',
-                name: 'Marketplace Licenses',
-                category: CheckResult::CAT_PLUGINS,
-                status: CheckResult::WARNING,
-                message: "{$expiredCount} of {$licensedCount} licensed items have expired licenses.",
-                remediation: 'Visit Tools > Marketplace > Purchases and verify against pubvanacms.com.'
-            );
         }
 
         return new CheckResult(
