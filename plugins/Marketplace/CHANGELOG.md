@@ -4,7 +4,25 @@ All notable changes to the Marketplace plugin will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
+## [0.4.0] - 2026-10-14
 
+### Added
+- Assign a purchase to this site from the Purchases page.
+- Update tiers on catalog items: patch, minor, or major, chosen when adding to the cart.
+- Items with a free tier install free from the catalog.
+- A release picker when reinstalling, with the option to clear and rebuild the addon's database tables.
+- A backup runs before an install or reinstall.
+- Cart items can be removed.
+
+### Changed
+- The Purchases page lists each license with its assigned state, tier, installed state, and version, and points to the Updates page when the store names a newer release.
+- Update checks for licensed items come from the store's license answer, not the catalog.
+- Install records are keyed by license key, and the installed version is read from the addon's pubvana.json.
+- A license assigned to another domain stops the install with an error.
+
+### Removed
+- Domain transfer requests.
+- The Site Health warning for expired licenses.
 ## [0.3.1] - 2026-10-05
 
 ### Added

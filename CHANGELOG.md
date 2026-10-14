@@ -5,11 +5,20 @@ Notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## [3.0.0-beta.10] - 2026-10-14
+
+### Added
+- Support for social SSO logins (plugin coming soon)
 
 ### Changed
 - Marketplace works with the new store
 - Theme options found in Core, removed
+- Licensed plugins and themes check before they can be enabled or activated.
+
+
+### Fixed
+- Post and page cover images filled the whole column.
+- The admin themes page didn't show theme images.
 
 ## [3.0.0-beta.9] - 2026-10-08
 

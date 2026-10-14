@@ -251,6 +251,7 @@ final class MarketplaceServiceTest extends TestCase
         $app = $this->app([
             'settings'    => fn (): SettingsStub => $settings,
             'trustClient' => fn (): InstallTrustStub => $trust,
+            'backups'     => fn (): BackupsStub => new BackupsStub(),
         ]);
         $app->set('environment', 'development');
 
@@ -444,5 +445,25 @@ final class InstallTrustStub
         $this->asked[] = $slug;
 
         return ['status' => $this->liveStatus, 'warning' => $this->liveWarning, 'answered' => true];
+    }
+}
+
+/**
+ * Backups stand-in: the pre-install backup runs against a temp dir and
+ * records its calls instead of touching the real plugin.
+ */
+final class BackupsStub
+{
+    /** @var list<array{0: string, 1: string}> */
+    public array $created = [];
+
+    public function getBackupDir(): string
+    {
+        return sys_get_temp_dir() . '/pv-mkt-backups-' . uniqid();
+    }
+
+    public function createBackup(string $trigger, string $triggeredBy): void
+    {
+        $this->created[] = [$trigger, $triggeredBy];
     }
 }

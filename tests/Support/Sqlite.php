@@ -664,24 +664,22 @@ final class Sqlite
             )"
         );
 
-        // Mirrors plugins/Marketplace/Database/Migrations/
-        // 2026-09-17-104830_CreateMarketplaceInstallsTable.php.
+        // Mirrors plugins/Marketplace/Database/Migrations/ through
+        // 2026-10-11-235900_SwitchMarketplaceInstallsToUpdateTiers.php: the
+        // update tier replaces the scope, expiry, and renewal columns, and
+        // the unique identity moved from the product to the license key.
         $pdo->exec(
             "CREATE TABLE marketplace_installs (
                 id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-                store_product_id    INTEGER NOT NULL UNIQUE,
+                store_product_id    INTEGER NOT NULL,
                 product_name        TEXT NOT NULL,
                 slug                TEXT,
                 item_type           TEXT NOT NULL DEFAULT 'plugin',
                 folder              TEXT,
-                installed_version   TEXT,
-                license_key         TEXT,
-                license_scope       TEXT NOT NULL DEFAULT 'single_site',
+                license_key         TEXT UNIQUE,
+                tier                TEXT,
                 license_valid       INTEGER NOT NULL DEFAULT 0,
                 license_last_checked TEXT,
-                expires_at          TEXT,
-                renews_at           TEXT,
-                is_subscription     INTEGER NOT NULL DEFAULT 0,
                 registered_domain   TEXT,
                 package_id          TEXT,
                 created_at          TEXT,

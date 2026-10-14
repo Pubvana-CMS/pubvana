@@ -4,7 +4,18 @@ All notable changes to the Default theme will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
+## [1.4.32] - 2026-10-14
 
+### Added
+- An All Pages choice for Show Sidebar On.
+- Sign-in options from auth plugins (social login, SSO) on the login page.
+
+### Changed
+- Blog Layout is now Sidebar Location, and Nowhere is now None.
+- The theme icon is now `img/icon.png`.
+
+### Fixed
+- Post and page cover images filled the whole column at full size.
 ## [1.4.31] - 2026-10-07
 
 ### Fixed

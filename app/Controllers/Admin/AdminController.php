@@ -393,7 +393,7 @@ class AdminController
      * The rules, in order:
      *   - The store goes first when Marketplace can answer: a licensed
      *     product has to hold a license for this site (the store says so),
-     *     free items activate with no restrictions at all, and an
+     *     an item with no license carries no store restriction, and an
      *     unreachable store warns like an unknown trust answer.
      *   - malicious, cached or live, force or not: BLOCK. Never forceable.
      *   - trusted, cached or live: proceed, no modal.
@@ -422,7 +422,8 @@ class AdminController
     {
         // The store decides whether this is a licensed product at all. A
         // licensed one must hold a license for this site before the trust
-        // check even runs; a free one activates with no restrictions.
+        // check even runs; an item with no license carries no store
+        // restriction and falls through to the trust rules below.
         if ($storeGate !== null) {
             $store = $storeGate();
             if (!empty($store['checked'])) {
@@ -435,15 +436,15 @@ class AdminController
                     return null;
                 }
                 if (empty($store['ok'])) {
-                    $reason = (string) ($store['reason'] ?? 'The store did not confirm this license for this site.');
+                    $reason = $store['reason'];
+                    if ($reason === '') {
+                        $reason = 'The store did not confirm this license for this site.';
+                    }
                     if ($isAjax) {
                         $this->app->jsonHalt(['blocked' => true, 'warning' => $reason]);
                     }
                     return $reason;
                 }
-            } else {
-                // Not a licensed store item: free means no restrictions.
-                return null;
             }
         }
 
@@ -512,9 +513,6 @@ class AdminController
             return $none;
         }
         $marketplace = $this->app->marketplace();
-        if (!$marketplace instanceof \Pubvana\Plugins\Marketplace\Services\MarketplaceService) {
-            return $none;
-        }
 
         $record = null;
         foreach ($packageCandidates as $candidate) {
@@ -536,7 +534,7 @@ class AdminController
         return [
             'checked'   => true,
             'ok'        => !empty($verdict['ok']),
-            'reason'    => (string) ($verdict['reason'] ?? ''),
+            'reason'    => $verdict['reason'],
             'reachable' => !empty($verdict['reachable']),
         ];
     }

@@ -1,6 +1,17 @@
 {
     "releases": [
         {
+            "version": "3.0.0-beta.10",
+            "release_date": "2026-10-14",
+            "min_php_version": "8.2",
+            "breaking_changes": [],
+            "migration_notes": [
+                "Default theme layout options were renamed: Blog Layout is now Sidebar Location, and Show Sidebar On gained All Pages. Re-check Appearance -> Themes -> Options after updating."
+            ],
+            "notices": [],
+            "download_url": "https://github.com/Pubvana-CMS/pubvana/releases/download/3.0.0-beta.10/release.zip"
+        },
+        {
             "version": "3.0.0-beta.9",
             "release_date": "2026-10-08",
             "min_php_version": "8.2",

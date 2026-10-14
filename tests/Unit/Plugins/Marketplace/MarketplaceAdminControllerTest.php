@@ -166,7 +166,7 @@ final class MarketplaceAdminControllerTest extends TestCase
         (new MarketplaceAdminController($this->engine()))->verify();
 
         self::assertTrue($this->marketplace->verified);
-        self::assertSame('Purchases verified against pubvanacms.com.', $this->flashes['success'][0]);
+        self::assertSame('Synced with Pubvana Store.', $this->flashes['success'][0]);
         self::assertSame(['/admin/marketplace/purchases'], $this->redirects);
     }
 
@@ -189,33 +189,47 @@ final class MarketplaceAdminControllerTest extends TestCase
     public function testAddToCartEmitsJson(): void
     {
         $this->marketplace->cartResult = ['ok' => true];
-        $app = $this->engine(data: ['product_id' => '7', 'currency' => 'EUR', 'scope' => 'multi_site']);
+        $app = $this->engine(data: ['product_id' => '7', 'tier' => 'minor', 'currency' => 'EUR']);
         (new MarketplaceAdminController($app))->addToCart();
 
         self::assertSame([['ok' => true]], $this->jsons);
-        self::assertSame([7, 'EUR', 'multi_site'], $this->marketplace->cartArgs);
+        self::assertSame([7, 'minor', 'EUR'], $this->marketplace->cartArgs);
     }
 
     public function testInstallSuccessAndFailure(): void
     {
+        $this->marketplace->installRecord = (object) ['item_type' => 'plugin'];
         $this->marketplace->installResult = ['ok' => true, 'reason' => 'Installed.'];
-        (new MarketplaceAdminController($this->engine(data: ['product_id' => '5'])))->install();
-        self::assertSame('Installed.', $this->flashes['success'][0]);
+        (new MarketplaceAdminController($this->engine(data: ['record_id' => '5'])))->install();
+        self::assertSame('Installed. You can enable it in Plugins > Manage.', $this->flashes['success'][0]);
+        self::assertSame([[5, '', false]], $this->marketplace->installByRecordArgs);
 
         $this->flashes = [];
         $this->redirects = [];
         $this->marketplace->installResult = ['ok' => false, 'reason' => 'Nope.'];
-        (new MarketplaceAdminController($this->engine(data: ['product_id' => '5'])))->install();
+        (new MarketplaceAdminController($this->engine(data: ['record_id' => '5'])))->install();
         self::assertSame('Nope.', $this->flashes['danger'][0]);
         self::assertSame(['/admin/marketplace/purchases'], $this->redirects);
     }
 
+    public function testInstallRefusesALicenseAssignedToAnotherDomain(): void
+    {
+        $this->marketplace->installRecord = (object) ['item_type' => 'plugin'];
+        $this->marketplace->domainMove = true;
+        (new MarketplaceAdminController($this->engine(data: ['record_id' => '5'])))->install();
+
+        self::assertSame('This license is assigned to another domain.', $this->flashes['danger'][0]);
+        self::assertSame(['/admin/marketplace/purchases'], $this->redirects);
+        self::assertSame(0, $this->marketplace->installByRecordCalls);
+    }
+
     public function testInstallFree(): void
     {
+        $this->marketplace->recordForPackage = (object) ['item_type' => 'plugin'];
         $this->marketplace->freeResult = ['ok' => true, 'reason' => 'Installed.'];
         (new MarketplaceAdminController($this->engine(data: ['package' => 'pubvana/blog'])))->installFree();
 
-        self::assertSame('Installed.', $this->flashes['success'][0]);
+        self::assertSame('Installed. You can enable it in Plugins > Manage.', $this->flashes['success'][0]);
         self::assertSame('pubvana/blog', $this->marketplace->freePackage);
         self::assertSame(['/admin/marketplace'], $this->redirects);
     }
@@ -412,6 +426,12 @@ final class FakeMarketplace
     /** @var array<string, mixed> */
     public array $freeResult = ['ok' => true, 'reason' => 'Installed.'];
     public string $freePackage = '';
+    public ?object $installRecord = null;
+    public ?object $recordForPackage = null;
+    public bool $domainMove = false;
+    /** @var list<array{0: int, 1: string, 2: bool}> */
+    public array $installByRecordArgs = [];
+    public int $installByRecordCalls = 0;
     /** @var array<string, mixed> */
     public array $reinstallResult = ['ok' => 0, 'skipped' => 0, 'failed' => []];
     public string $checkout = '';
@@ -474,16 +494,45 @@ final class FakeMarketplace
     }
 
     /** @return array<string, mixed> */
-    public function addToCart(int $id, string $currency, string $scope): array
+    public function cart(): array
     {
-        $this->cartArgs = [$id, $currency, $scope];
+        return ['ok' => true, 'items' => []];
+    }
+
+    public function siteDomain(): string
+    {
+        return 'example.test';
+    }
+
+    /** @return array<string, mixed> */
+    public function addToCart(int $id, string $tier, string $currency): array
+    {
+        $this->cartArgs = [$id, $tier, $currency];
 
         return $this->cartResult;
     }
 
-    /** @return array<string, mixed> */
-    public function install(int $id): array
+    public function installRecordById(int $id): ?object
     {
+        return $this->installRecord;
+    }
+
+    public function installRecordForPackage(string $package): ?object
+    {
+        return $this->recordForPackage;
+    }
+
+    public function needsDomainMoveForRecord(object $record): bool
+    {
+        return $this->domainMove;
+    }
+
+    /** @return array<string, mixed> */
+    public function installByRecordId(int $id, string $version = '', bool $clearDatabase = false): array
+    {
+        $this->installByRecordCalls++;
+        $this->installByRecordArgs[] = [$id, $version, $clearDatabase];
+
         return $this->installResult;
     }
 
