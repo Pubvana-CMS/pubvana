@@ -5,7 +5,7 @@ Keeps Pubvana current. Checks the release feed, tells you what is new, and appli
 ## Features
 
 - Version check against the project's `releases.json` feed, cached for 24 hours
-- Safe-target capping: updates stop below any plugin or theme compatibility limit
+- Safe-target capping: updates stop below any plugin or theme compatibility limit, with a Force Update button on the warning
 - Breaking changes, notices, and migration notes shown before anything runs
 - A full backup is taken before every update, and rollback is a restore in Tools → Backups
 - Granular live progress through every phase
@@ -16,7 +16,7 @@ Keeps Pubvana current. Checks the release feed, tells you what is new, and appli
 
 ## Usage
 
-The Updates screen is at **Tools → Updates**. Check for updates, review the notices and preflight table, then update. Addons are listed below with their update source.
+The Updates screen is at **Tools → Updates**. Check for updates, review the notices and pre-update checks, then update. Addons are listed below with their update source.
 
 Command line:
 

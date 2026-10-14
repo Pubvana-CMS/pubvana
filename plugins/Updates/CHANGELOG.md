@@ -4,7 +4,18 @@ All notable changes to the Updates plugin will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
+## [0.5.0] - 2026-10-14
 
+### Added
+- A Force Update button applies the newest release even though installed addon compatibility limits exclude it, after a confirmation.
+- The held-back warning lists each blocking addon, with an Update button when the store has a newer version and an Upgrade available link when the store can move the purchase to a newer tier.
+
+### Changed
+- The release feed request uses the user agent `Pubvana-CMS v3`.
+
+### Fixed
+- The preflight read the leftover backup lock file as a running backup, so updates were refused after the first backup.
+- An addon whose store version equaled the installed version still offered an Update button.
 ## [0.4.0] - 2026-10-07
 
 ### Added

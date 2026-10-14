@@ -5,6 +5,12 @@ Notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [3.0.0-beta.11] - 2026-10-14
+
+### Fixed
+- flock check was incorrect and bricks updates with beta.9 and beta.10 
+- added ability to force update over unsupported addons
+
 ## [3.0.0-beta.10] - 2026-10-14
 
 ### Added

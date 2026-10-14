@@ -1,6 +1,17 @@
 {
     "releases": [
         {
+            "version": "3.0.0-beta.11",
+            "release_date": "2026-10-14",
+            "min_php_version": "8.2",
+            "breaking_changes": [],
+            "migration_notes": [
+                "On beta.9 and beta.10 releases a leftover writable/backups/operation.lock was read as a running backup and updates were refused with no way to proceed. Delete this file then try again."
+            ],
+            "notices": [],
+            "download_url": "https://github.com/Pubvana-CMS/pubvana/releases/download/3.0.0-beta.11/release.zip"
+        },
+        {
             "version": "3.0.0-beta.10",
             "release_date": "2026-10-14",
             "min_php_version": "8.2",
