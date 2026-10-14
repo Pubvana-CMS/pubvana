@@ -250,8 +250,9 @@ final class UpdatesAdminController extends AdminController
     /**
      * Apply the pending update (POST, AJAX).
      *
-     * Prefers a backgrounded pubvana process; falls back to running
-     * synchronously when exec is unavailable.
+     * A force request applies the newest release even when installed addon
+     * version bounds exclude it. Prefers a backgrounded pubvana process;
+     * falls back to running synchronously when exec is unavailable.
      */
     public function apply(): void
     {
@@ -268,11 +269,21 @@ final class UpdatesAdminController extends AdminController
 
         $data    = $this->app->request()->data->getData();
         $confirm = isset($data['confirm_breaking']);
+        $force   = isset($data['force']);
         $user    = $this->app->auth()->user();
         $by      = is_object($user) && isset($user->username) ? (string) $user->username : 'admin';
 
         $state  = $this->service()->lastCheck();
         $target = (string) ($state['target_version'] ?? '');
+
+        // Force: apply the newest release even though installed addons'
+        // version bounds exclude it. The button only renders in the capped
+        // state; re-check newest-vs-installed here anyway.
+        if ($force
+            && version_compare((string) ($state['latest_version'] ?? ''), (string) ($state['current_version'] ?? ''), '>')
+        ) {
+            $target = (string) ($state['latest_version'] ?? '');
+        }
 
         if ($target === '') {
             $this->app->json(['status' => 'error', 'message' => 'No update is available to apply.']);

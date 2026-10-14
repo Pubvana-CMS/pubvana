@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Pubvana\Plugins\Updates\Services;
 
 use flight\Engine;
+use Pubvana\Plugins\Backups\Services\ProgressReporter as BackupProgressReporter;
 use Throwable;
 
 /**
@@ -798,7 +799,15 @@ class UpdateService
         $updateLocked = $storage !== '' && UpdateProgress::isLockedInDir($storage);
 
         $backupDir  = rtrim((string) (($this->app->get('pubvana.backups')['backup_path'] ?? $this->projectRoot() . '/writable/backups')), '/');
-        $backupLocked = is_file($backupDir . '/operation.lock');
+        $backupLocked = false;
+        try {
+            // The lock file stays on disk after every backup and restore by
+            // design; only the flock tells whether an operation is live.
+            $this->app->backups();
+            $backupLocked = BackupProgressReporter::isLocked($backupDir);
+        } catch (Throwable) {
+            // No Backups plugin: its own preflight check reports that.
+        }
 
         $ok = !$updateLocked && !$backupLocked;
 

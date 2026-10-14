@@ -15,7 +15,7 @@ return [
     'releases_url'  => 'https://raw.githubusercontent.com/Pubvana-CMS/pubvana/main/releases.json',
 
     // HTTP client behavior.
-    'user_agent'        => 'Pubvana-Updates/3.0',
+    'user_agent'        => 'Pubvana-CMS v3',
     'check_timeout'     => 5,
     'download_timeout'  => 300,
 

@@ -51,20 +51,56 @@ foreach ($preflight as $preflightCheck) {
 }
 
 /** Renders the installed addons holding back the newest release. */
-$renderConstraints = static function () use ($constraints, $latest): void {
+$renderConstraints = static function () use ($constraints, $latest, $addons, $adminBase): void {
+    // Match each capped addon to its inventory row by the identity the
+    // constraint was scanned under: plugins report their manifest name,
+    // themes their folder. Display name is included for older scan data.
+    $rowByIdentity = [];
+    foreach (array_merge(array_values($addons['plugins']), array_values($addons['themes'])) as $addonRow) {
+        foreach ([$addonRow['package'] ?? null, $addonRow['folder'] ?? null, $addonRow['name'] ?? null] as $identity) {
+            if (is_string($identity) && $identity !== '' && !isset($rowByIdentity[$identity])) {
+                $rowByIdentity[$identity] = $addonRow;
+            }
+        }
+    }
+
+    $rows      = [];
+    $anyAction = false;
+    foreach ($constraints as $constraint) {
+        $addonRow = $rowByIdentity[(string) $constraint['name']] ?? null;
+        $update   = is_array($addonRow['update'] ?? null) ? $addonRow['update'] : null;
+        $action   = null;
+        if ($addonRow !== null
+            && $update !== null
+            && ($addonRow['package'] ?? null) !== null
+            && ($update['latest_version'] ?? '') !== ''
+            && version_compare((string) $update['latest_version'], (string) ($addonRow['version'] ?? ''), '>')
+        ) {
+            $action    = ['package' => (string) $addonRow['package']];
+            $anyAction = true;
+        }
+        $rows[] = ['constraint' => $constraint, 'action' => $action];
+    }
     ?>
     <div class="alert alert-warning" role="alert">
         <div class="d-flex">
             <div><i class="ti ti-info-circle icon alert-icon"></i></div>
             <div class="flex-grow-1">
-                <strong>Version <?= htmlspecialchars($latest) ?> can't be installed yet.</strong>
-                These installed addons don't support it:
+                <div class="d-flex align-items-start justify-content-between gap-3">
+                    <strong>The addons below aren't supported by Pubvana <?= htmlspecialchars($latest) ?>. You may force the Pubvana update but doing so may break the addon.</strong>
+                    <button type="button" class="btn btn-sm btn-danger flex-shrink-0" id="force-update-btn">Force Update</button>
+                </div>
                 <table class="table table-sm mb-2 mt-2">
                     <thead>
-                        <tr><th>Name</th><th>Compatibility</th></tr>
+                        <tr>
+                            <th>Name</th>
+                            <th>Compatibility</th>
+                            <?php if ($anyAction): ?><th class="text-end pe-0">Action</th><?php endif; ?>
+                        </tr>
                     </thead>
                     <tbody>
-                    <?php foreach ($constraints as $constraint): ?>
+                    <?php foreach ($rows as $row): ?>
+                        <?php $constraint = $row['constraint']; ?>
                         <tr>
                             <td><?= htmlspecialchars((string) $constraint['name']) ?></td>
                             <td>
@@ -76,13 +112,25 @@ $renderConstraints = static function () use ($constraints, $latest): void {
                                     Supports up to <?= htmlspecialchars((string) $constraint['max']) ?>
                                 <?php endif; ?>
                             </td>
+                            <?php if ($anyAction): ?>
+                            <td class="text-end pe-0">
+                                <?php if ($row['action'] !== null): ?>
+                                    <form method="POST" action="<?= $adminBase ?>/addon-update" class="d-inline">
+                                        <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
+                                        <input type="hidden" name="package" value="<?= htmlspecialchars((string) $row['action']['package']) ?>">
+                                        <button type="submit" class="btn btn-sm btn-primary">
+                                            <i class="ti ti-download me-1"></i> Update
+                                        </button>
+                                    </form>
+                                <?php endif; ?>
+                            </td>
+                            <?php endif; ?>
                         </tr>
                     <?php endforeach; ?>
                     </tbody>
                 </table>
                 <p class="small text-muted mb-0">
-                    Update those addons through the Marketplace, or remove them, then check for updates again.
-                    A backup is created before every update.
+                    Update or remove the addons above, then check for updates again.
                 </p>
             </div>
         </div>
@@ -134,7 +182,7 @@ $renderSkipped = static function () use ($skipped, $adminBase): void {
             <div class="col-md-4 mb-3 mb-md-0">
                 <label class="d-block fw-bold small mb-1">Pubvana Auto-Update</label>
                 <small class="form-text text-muted d-block">
-                    When <b>Automatic</b>, Pubvana updates are applied automatically if there are no breaking changes.  Breaking changes require your approval. If Automatic and you visit this page it will trigger and automatic update if one is available.
+                    When <b>Automatic</b>, Pubvana updates are applied automatically if no breaking changes.  Breaking changes require your approval. If 'Automatic' and you visit this page it will trigger and automatic update if one is available.
                 </small>
                 <div class="btn-group" role="group" aria-label="Pubvana Auto-Update">
                     <input type="radio" class="btn-check" name="auto_update" id="auto-update-manual"
@@ -184,8 +232,8 @@ $renderSkipped = static function () use ($skipped, $adminBase): void {
     <div class="d-flex">
         <div><i class="ti ti-alert-triangle icon alert-icon"></i></div>
         <div>
-            <strong>The previous update did not finish.</strong>
-            A stopped process left its progress behind. Check the site, then apply the update again if it is needed.
+            <strong>A problem was encountered.</strong>
+            An update appears to have failed. Try the update again or visit <a target="_blank" href="https://pubvanacms.com/docs/user/v/3.0/maintenance/backups">Backups</a> for help.
         </div>
     </div>
 </div>
@@ -256,7 +304,7 @@ $renderSkipped = static function () use ($skipped, $adminBase): void {
 <?php if ($preflight !== []): ?>
 <div class="card mb-4">
     <div class="card-header py-3">
-        <h6 class="m-0 fw-bold">Preflight checks</h6>
+        <h6 class="m-0 fw-bold">Pre-update checks</h6>
     </div>
     <div class="table-responsive">
         <table class="table table-sm table-vcenter mb-0">
@@ -284,8 +332,7 @@ $renderSkipped = static function () use ($skipped, $adminBase): void {
 <?php endif; ?>
 
 <p class="text-muted small">
-    A full backup is taken before anything changes. If an update fails, restore the
-    pre-update snapshot from <a href="/admin/backups">Tools &gt; Backups</a>.
+    A backup is performed before updates. If an update fails, you can restore to the original site at <a href="/admin/backups">Tools &gt; Backups</a>.
     <a href="<?= htmlspecialchars($changelog_url) ?>" target="_blank" rel="noopener">Full changelog</a>.
 </p>
 
@@ -296,7 +343,7 @@ $renderSkipped = static function () use ($skipped, $adminBase): void {
     </button>
 </div>
 <?php if (!$allHardPass): ?>
-<p class="text-danger small">Preflight checks failed.</p>
+<p class="text-danger small">Pre-update check failed.</p>
 <?php endif; ?>
 
 <form method="POST" action="<?= $adminBase ?>/skip" class="d-inline ms-2">
@@ -314,8 +361,8 @@ $renderSkipped = static function () use ($skipped, $adminBase): void {
     <div class="d-flex">
         <div><i class="ti ti-alert-triangle icon alert-icon"></i></div>
         <div>
-            Pubvana <?= htmlspecialchars($latest) ?> is available, but it is held back by an installed addon.
-            Currently running version <?= htmlspecialchars($current) ?>.
+            Pubvana <?= htmlspecialchars($latest) ?> is available, but updating is prevented by an installed addon.
+            Your current version <?= htmlspecialchars($current) ?>.
             <small class="text-muted d-block">Last checked: <?= htmlspecialchars($checked) ?></small>
         </div>
     </div>
@@ -391,7 +438,7 @@ foreach ($addonSections as $addonLabel => $addonRows): ?>
                     <th title="The version currently installed on your site">Version</th>
                     <th title="The newest version. When nothing newer exists, this matches your installed version">Latest</th>
                     <th title="What the Pubvana trust service thinks of this addon">Trust</th>
-                    <th title="Where this addon came from and where updates come from">Source</th>
+                    <th title="Where this addon came from">Source</th>
                     <th class="text-end pe-3" title="Get the newer version now, or how this addon gets updates">Actions</th>
                 </tr>
             </thead>
@@ -403,7 +450,11 @@ foreach ($addonSections as $addonLabel => $addonRows): ?>
                     ? (string) ($addonRow['folder'] ?? '')
                     : (string) ($addonRow['package'] ?? '');
                 $update = $addonRow['update'] ?? null;
-                $hasUpdate = is_array($update) && ($update['latest_version'] ?? '') !== '';
+                $hasUpdate = is_array($update)
+                    && ($update['latest_version'] ?? '') !== ''
+                    && version_compare((string) $update['latest_version'], (string) ($addonRow['version'] ?? ''), '>');
+                $upgradeAvailable = is_array($update) && !empty($update['upgrade_available']);
+                $upgradeUrl = is_array($update) ? (string) ($update['upgrade_url'] ?? '') : '';
                 ?>
                 <tr>
                     <td class="ps-3"><?= htmlspecialchars($addonRow['name']) ?></td>
@@ -427,7 +478,7 @@ foreach ($addonSections as $addonLabel => $addonRows): ?>
                     <td>
                         <?php $viewSource = $addonRow['source'] ?? 'manual'; ?>
                         <?php if ($viewSource === 'marketplace'): ?>
-                            <span class="badge bg-secondary-lt" title="Bought from the Marketplace; updates come from the store">Marketplace</span>
+                            <span class="badge bg-secondary-lt" title="Bought from the Marketplace">Marketplace</span>
                         <?php elseif ($viewSource === 'core'): ?>
                             <span class="badge bg-info-lt" title="Included with Pubvana">Core</span>
                         <?php elseif ($viewSource === 'composer'): ?>
@@ -449,6 +500,18 @@ foreach ($addonSections as $addonLabel => $addonRows): ?>
                                     <i class="ti ti-download me-1"></i> Update
                                 </button>
                             </form>
+                            <?php if ($upgradeAvailable): ?>
+                                <?php if ($upgradeUrl !== ''): ?>
+                                    <a href="<?= htmlspecialchars($upgradeUrl) ?>" class="btn btn-sm btn-outline-primary ms-1">Upgrade available</a>
+                                <?php else: ?>
+                                    <span class="badge bg-orange-lt ms-1">Upgrade available</span>
+                                <?php endif; ?>
+                            <?php endif; ?>
+                        <?php elseif ($upgradeAvailable): ?>
+                            <span class="badge bg-orange-lt me-2">Upgrade available</span>
+                            <?php if ($upgradeUrl !== ''): ?>
+                                <a href="<?= htmlspecialchars($upgradeUrl) ?>" class="btn btn-sm btn-outline-primary">View in store</a>
+                            <?php endif; ?>
                         <?php elseif (($addonRow['source'] ?? 'manual') === 'notpurchased'): ?>
                             <span class="text-muted small me-2">Sold in the Marketplace</span>
                             <?php if ($marketplaceAdmin !== null): ?>
@@ -460,7 +523,7 @@ foreach ($addonSections as $addonLabel => $addonRows): ?>
                             <?php $viewSource = $addonRow['source'] ?? 'manual'; ?>
                             <span class="text-muted small">
                                 <?php if ($viewSource === 'marketplace' || $viewSource === 'free'): ?>Up to date
-                                <?php elseif ($viewSource === 'core' || $viewSource === 'composer'): ?>Updates when Pubvana updates
+                                <?php elseif ($viewSource === 'core' || $viewSource === 'composer'): ?>Updates with Pubvana
                                 <?php else: ?>No update source
                                 <?php endif; ?>
                             </span>
@@ -637,13 +700,14 @@ foreach ($addonSections as $addonLabel => $addonRows): ?>
 
     var breakingConfirmed = false;
 
-    function startApply() {
+    function startApply(force) {
         if (applyStarted) { return; }
         applyStarted = true;
 
         var body = new FormData();
         body.append('_csrf_token', '<?= csrf_token() ?>');
         if (breakingConfirmed) { body.append('confirm_breaking', '1'); }
+        if (force) { body.append('force', '1'); }
 
         fetch('<?= $adminBase ?>/apply', {
             method: 'POST',
@@ -684,12 +748,26 @@ foreach ($addonSections as $addonLabel => $addonRows): ?>
         showCard();
         bar.classList.remove('progress-bar-animated');
         bar.classList.add('bg-danger');
-        applyBtn.disabled = false;
+        if (applyBtn) { applyBtn.disabled = false; }
     }
 
     if (applyBtn) {
         applyBtn.addEventListener('click', openModal);
     }
+
+    // Force update: apply the newest release even though the installed
+    // addons' version bounds exclude it. One confirm(), then the same
+    // apply flow as the regular button.
+    var forceBtn = document.getElementById('force-update-btn');
+    if (forceBtn) {
+        forceBtn.addEventListener('click', function () {
+            if (!confirm('Force the Pubvana update? Doing so may break any addons listed.')) {
+                return;
+            }
+            startApply(true);
+        });
+    }
+
     if (confirmBtn) {
         confirmBtn.addEventListener('click', function () {
             closeModal();
