@@ -104,6 +104,31 @@ class PagesService
     }
 
     /**
+     * Insert a page for an import: exactly what the adaptor passes, purified,
+     * with the same revision snapshot createPage() takes.
+     *
+     * @param array<string, mixed> $data title, slug, content, status,
+     *        allow_comments, ai_generated, created_by, created_at, updated_at
+     */
+    public function importPage(array $data, int $userId): Page
+    {
+        // Validated before the insert so a bad status cannot leave a
+        // half-created page behind.
+        $data['status'] = $this->validStatus((string) ($data['status'] ?? 'draft'));
+        $data['content'] = $this->purifyContent((string) ($data['content'] ?? ''));
+        if (empty($data['created_by'])) {
+            $data['created_by'] = $userId;
+        }
+
+        $page = $this->pageModel->importPage($data);
+
+        $this->revisionModel->createFromPage($page, $userId);
+        $this->pruneRevisions((int) $page->id);
+
+        return $page;
+    }
+
+    /**
      * @param array<string, mixed> $data
     */
     public function updatePage(int $id, array $data, ?int $userId = null): ?Page

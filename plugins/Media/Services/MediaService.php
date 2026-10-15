@@ -47,12 +47,51 @@ class MediaService
 
     /**
      * @param array{name: string, type: string, tmp_name: string, error: int, size: int} $file $_FILES entry
-    */
+     */
     public function uploadImage(array $file, int $uploadedBy): Media
     {
         $mime = $this->validateUpload($file, 'image');
 
-        $ext    = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        return $this->storeImage($file, $mime, $uploadedBy, true);
+    }
+
+    /**
+     * Store a file that already exists on disk, for imports.
+     *
+     * Same validation, derivatives and row as an upload; the file is copied
+     * from $sourcePath instead of moved from an upload. The caller owns the
+     * source file. $kind is 'image' or 'video'.
+     */
+    public function storeFromPath(string $sourcePath, string $originalName, string $kind, int $uploadedBy): Media
+    {
+        if (!is_file($sourcePath)) {
+            throw new \InvalidArgumentException('The import file does not exist.');
+        }
+
+        $kind = $kind === 'video' ? 'video' : 'image';
+
+        /** @var array{name: string, type: string, tmp_name: string, error: int, size: int} $file */
+        $file = [
+            'name'     => $originalName,
+            'type'     => '',
+            'tmp_name' => $sourcePath,
+            'error'    => UPLOAD_ERR_OK,
+            'size'     => (int) filesize($sourcePath),
+        ];
+
+        $mime = $this->validateUpload($file, $kind);
+
+        return $kind === 'video'
+            ? $this->storeVideo($file, $mime, $uploadedBy, false)
+            : $this->storeImage($file, $mime, $uploadedBy, false);
+    }
+
+    /**
+     * @param array{name: string, type: string, tmp_name: string, error: int, size: int} $file
+     */
+    private function storeImage(array $file, string $mime, int $uploadedBy, bool $fromUpload): Media
+    {
+        $ext    = strtolower((string) pathinfo($file['name'], PATHINFO_EXTENSION));
         $hex    = bin2hex(random_bytes(16));
         $relDir = $this->config['upload_path'] . '/' . date('Y/m');
         $absDir = $this->publicPath . '/' . $relDir;
@@ -65,12 +104,15 @@ class MediaService
         $filename = $hex . '.' . $ext;
 
         $originalPath = $absDir . '/originals/' . $filename;
-        if (!move_uploaded_file($file['tmp_name'], $originalPath)) {
-            throw new \RuntimeException('Failed to store the uploaded image.');
+        $stored = $fromUpload
+            ? move_uploaded_file($file['tmp_name'], $originalPath)
+            : copy($file['tmp_name'], $originalPath);
+        if (!$stored) {
+            throw new \RuntimeException('Failed to store the image.');
         }
         if (!copy($originalPath, $absDir . '/' . $filename)) {
             @unlink($originalPath);
-            throw new \RuntimeException('Failed to stage the uploaded image.');
+            throw new \RuntimeException('Failed to stage the image.');
         }
 
         // A derivative failure must not leave the written files behind with no
@@ -97,12 +139,20 @@ class MediaService
 
     /**
      * @param array{name: string, type: string, tmp_name: string, error: int, size: int} $file $_FILES entry
-    */
+     */
     public function uploadVideo(array $file, int $uploadedBy): Media
     {
         $mime = $this->validateUpload($file, 'video');
 
-        $ext    = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        return $this->storeVideo($file, $mime, $uploadedBy, true);
+    }
+
+    /**
+     * @param array{name: string, type: string, tmp_name: string, error: int, size: int} $file
+     */
+    private function storeVideo(array $file, string $mime, int $uploadedBy, bool $fromUpload): Media
+    {
+        $ext    = strtolower((string) pathinfo($file['name'], PATHINFO_EXTENSION));
         $hex    = bin2hex(random_bytes(16));
         $relDir = $this->config['upload_path'] . '/' . date('Y/m');
         $absDir = $this->publicPath . '/' . $relDir;
@@ -111,8 +161,11 @@ class MediaService
 
         $videoName = $hex . '.' . $ext;
         $videoRel  = $relDir . '/' . $videoName;
-        if (!move_uploaded_file($file['tmp_name'], $absDir . '/' . $videoName)) {
-            throw new \RuntimeException('Failed to store the uploaded video.');
+        $stored = $fromUpload
+            ? move_uploaded_file($file['tmp_name'], $absDir . '/' . $videoName)
+            : copy($file['tmp_name'], $absDir . '/' . $videoName);
+        if (!$stored) {
+            throw new \RuntimeException('Failed to store the video.');
         }
 
         $posterPath = null;

@@ -321,6 +321,42 @@ class Page extends \Pubvana\Models\AbstractModel
     }
 
     /**
+     * Insert a page exactly as given, for imports.
+     *
+     * Unlike createPage(), nothing is derived here: slug and timestamps come
+     * from the caller. An empty slug still falls back to the same generator
+     * createPage() uses, so an adaptor with no slug to give gets a valid row.
+     *
+     * @param array<string, mixed> $data title, slug, content, status,
+     *        allow_comments, ai_generated, created_by, created_at, updated_at
+     * @return self The created page
+     */
+    public function importPage(array $data): self
+    {
+        $now = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
+
+        $createdAt = (string) ($data['created_at'] ?? '');
+        $updatedAt = (string) ($data['updated_at'] ?? '');
+
+        $page = new self($this->getDatabaseConnection());
+        $page->title = (string) ($data['title'] ?? '');
+        $page->slug = (string) ($data['slug'] ?? '');
+        if ($page->slug === '') {
+            $page->slug = $page->generateSlug((string) $page->title);
+        }
+        $page->content = (string) ($data['content'] ?? '');
+        $page->status = (string) ($data['status'] ?? 'draft');
+        $page->ai_generated = (int) ($data['ai_generated'] ?? 0);
+        $page->allow_comments = !empty($data['allow_comments']) ? 1 : 0;
+        $page->created_by = (int) ($data['created_by'] ?? 0);
+        $page->created_at = $createdAt !== '' ? $createdAt : $now;
+        $page->updated_at = $updatedAt !== '' ? $updatedAt : $page->created_at;
+        $page->insert();
+
+        return $page;
+    }
+
+    /**
      * Update this page.
      *
      * @param array{title?: string, content?: string|null, status?: string, allow_comments?: mixed, ai_generated?: mixed} $data Fields to update
