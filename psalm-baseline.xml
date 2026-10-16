@@ -9,6 +9,8 @@
     <TaintedFile>
       <code><![CDATA[$file['tmp_name']]]></code>
       <code><![CDATA[$file['tmp_name']]]></code>
+      <code><![CDATA[$file['tmp_name']]]></code>
+      <code><![CDATA[$file['tmp_name']]]></code>
     </TaintedFile>
   </file>
 </files>
