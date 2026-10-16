@@ -570,11 +570,11 @@ final class FakeRegions extends RegionManager
         return [];
     }
 
-    public function savePlacement(string $regionId, string $blockKey): ?BlockPlacement
+    public function savePlacement(string $regionId, string $blockKey): BlockPlacement
     {
         $this->placed[] = [$regionId, $blockKey];
 
-        return null;
+        return new BlockPlacement();
     }
 
     public function removePlacement(int $placementId): void

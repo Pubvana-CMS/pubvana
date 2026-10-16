@@ -70,23 +70,6 @@ class BlockPlacement extends AbstractModel
     }
 
     /**
-     * Find a specific placement by region and block key.
-     *
-     * @param string $regionId Region identifier
-     * @param string $blockKey Block key (e.g. 'pubvana.blog.recent-posts')
-     * @return self|null The placement, or null if not found
-     */
-    public function findPlacement(string $regionId, string $blockKey): ?self
-    {
-        $model = new self($this->getDatabaseConnection());
-        $model->eq('region_id', $regionId)
-              ->eq('block_key', $blockKey)
-              ->find();
-
-        return $model->isHydrated() ? $model : null;
-    }
-
-    /**
      * Get the next sort_order value for a region.
      *
      * Returns one more than the current highest sort_order in the region,

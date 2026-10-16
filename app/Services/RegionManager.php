@@ -255,20 +255,16 @@ class RegionManager
     /**
      * Place a block in a region.
      *
-     * Creates a new placement at the next available sort_order.
-     * If the block is already in the region, does nothing.
+     * Creates a new placement at the next available sort_order. The same
+     * block can be placed in a region more than once; each placement is
+     * its own instance with its own sort_order and options.
      *
      * @param string $regionId Region identifier
      * @param string $blockKey Block key from adext registration
-     * @return BlockPlacement|null The created placement, or null if block already placed
+     * @return BlockPlacement The created placement
      */
-    public function savePlacement(string $regionId, string $blockKey): ?BlockPlacement
+    public function savePlacement(string $regionId, string $blockKey): BlockPlacement
     {
-        $existing = $this->placements()->findPlacement($regionId, $blockKey);
-        if ($existing !== null) {
-            return null;
-        }
-
         $placement = new BlockPlacement($this->app->db());
         $placement->region_id = $regionId;
         $placement->block_key = $blockKey;
@@ -322,7 +318,8 @@ class RegionManager
     /**
      * Move a placement from one region to another.
      *
-     * If the block already exists in the target region, removes the old one.
+     * A move is a reparent: the placement keeps its options, and a block
+     * type already present in the target region stays. Repeats are allowed.
      *
      * @param int    $placementId Placement to move
      * @param string $newRegionId Destination region
@@ -333,14 +330,6 @@ class RegionManager
         $placement->eq('id', $placementId)->find();
 
         if (!$placement->isHydrated()) {
-            return;
-        }
-
-        // Check for duplicate in target region
-        $existing = $this->placements()->findPlacement($newRegionId, $placement->block_key);
-        if ($existing) {
-            $placement->delete();
-            $this->invalidatePlacementsCache();
             return;
         }
 

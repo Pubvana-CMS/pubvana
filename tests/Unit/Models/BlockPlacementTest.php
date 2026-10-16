@@ -54,18 +54,6 @@ final class BlockPlacementTest extends TestCase
         self::assertSame(['a-region', 'a-region', 'z-region'], array_column($rows, 'region_id'));
     }
 
-    public function testFindPlacementHitsOnlyExactMatch(): void
-    {
-        $this->createPlacement('sidebar', 'pubvana.widget-a', 0);
-
-        $hit = (new BlockPlacement($this->pdo))->findPlacement('sidebar', 'pubvana.widget-a');
-        self::assertInstanceOf(BlockPlacement::class, $hit);
-        self::assertSame('pubvana.widget-a', $hit->block_key);
-
-        self::assertNull((new BlockPlacement($this->pdo))->findPlacement('sidebar', 'pubvana.missing'));
-        self::assertNull((new BlockPlacement($this->pdo))->findPlacement('header', 'pubvana.widget-a'));
-    }
-
     public function testNextSortOrderIsZeroForEmptyRegion(): void
     {
         self::assertSame(0, (new BlockPlacement($this->pdo))->nextSortOrder('sidebar'));

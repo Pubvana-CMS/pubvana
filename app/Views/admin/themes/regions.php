@@ -155,11 +155,7 @@ $wysiwygSelectors = [];
                         <select name="block_key" class="form-select form-select-sm">
                             <option value="">Add block...</option>
                             <?php
-                            $placedKeys = array_map(fn($p) => $p->block_key, $regionPlacements);
                             foreach ($blocks as $bKey => $bInfo):
-                                if (in_array($bKey, $placedKeys, true)) {
-                                    continue;
-                                }
                             ?>
                             <option value="<?= htmlspecialchars($bKey) ?>"><?= htmlspecialchars($bInfo['label'] ?? $bKey) ?></option>
                             <?php endforeach; ?>

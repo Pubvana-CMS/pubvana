@@ -233,12 +233,15 @@ final class RegionManagerTest extends TestCase
         self::assertNotEmpty($placement->created_at);
     }
 
-    public function testSavePlacementRejectsADuplicateBlockInRegion(): void
+    public function testSavePlacementAllowsTheSameBlockTwiceInRegion(): void
     {
         $this->insertPlacement('footer', 'pubvana.one', 0);
 
-        self::assertNull($this->service->savePlacement('footer', 'pubvana.one'));
-        self::assertCount(1, $this->service->getAllPlacements()['footer']);
+        $second = $this->service->savePlacement('footer', 'pubvana.one');
+
+        self::assertSame('pubvana.one', $second->block_key);
+        self::assertSame(1, (int) $second->sort_order);
+        self::assertCount(2, $this->service->getAllPlacements()['footer']);
     }
 
     public function testSavePlacementSameBlockDifferentRegionIsAllowed(): void
@@ -287,14 +290,17 @@ final class RegionManagerTest extends TestCase
         self::assertSame(1, (int) $moved['sort_order'], 'appends after the existing placement');
     }
 
-    public function testMovePlacementDeletesSourceWhenTargetAlreadyHasBlock(): void
+    public function testMovePlacementKeepsBothWhenTargetAlreadyHasBlock(): void
     {
         $existing = $this->insertPlacement('sidebar', 'pubvana.block', 0);
         $moving = $this->insertPlacement('footer', 'pubvana.block', 0);
 
         $this->service->movePlacement((int) $moving->id, 'sidebar');
 
-        self::assertNull($this->fetchPlacement((int) $moving->id));
+        $moved = $this->fetchPlacement((int) $moving->id);
+        self::assertNotNull($moved);
+        self::assertSame('sidebar', $moved['region_id']);
+        self::assertSame(1, (int) $moved['sort_order'], 'appends after the existing placement');
         self::assertNotNull($this->fetchPlacement((int) $existing->id));
     }
 
