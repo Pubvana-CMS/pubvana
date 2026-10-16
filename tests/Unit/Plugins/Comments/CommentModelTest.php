@@ -54,6 +54,13 @@ final class CommentModelTest extends TestCase
         self::assertNotEmpty($comment->updated_at);
     }
 
+    public function testCreateRecordHonorsAProvidedCreatedAt(): void
+    {
+        $comment = $this->make(['created_at' => '2019-03-04 05:06:07']);
+
+        self::assertSame('2019-03-04 05:06:07', (string) $comment->created_at);
+    }
+
     public function testFindById(): void
     {
         self::assertNull((new Comment($this->pdo))->findById(99999));

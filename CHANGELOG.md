@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 - updates to allow the flexibility for Imports to work properly 
 
+### Changed
+- same block can be added multiple times in the same region now
+- imports keep original posting time in Comments
+
 
 ## [3.0.0-beta.11] - 2026-10-14
 

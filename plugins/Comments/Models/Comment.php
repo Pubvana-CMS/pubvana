@@ -159,7 +159,7 @@ class Comment extends \Pubvana\Models\AbstractModel
         $allowed = [
             'commentable_type', 'commentable_id', 'parent_id', 'user_id',
             'guest_name', 'guest_email', 'guest_website', 'body', 'status',
-            'ip_address',
+            'ip_address', 'created_at',
         ];
 
         foreach ($allowed as $key) {
@@ -168,7 +168,9 @@ class Comment extends \Pubvana\Models\AbstractModel
             }
         }
 
-        $record->created_at = $now;
+        // Imports carry the comment's original posting time; everything
+        // else stamps now.
+        $record->created_at = $record->created_at ?? $now;
         $record->updated_at = $now;
         $record->insert();
 

@@ -22,35 +22,39 @@ final class MediaUploadFailureGuardsTest extends TestCase
         $this->source = (string) file_get_contents($file);
     }
 
-    public function testImageUploadChecksMoveUploadedFile(): void
+    public function testImageUploadChecksTheStoreResult(): void
     {
         self::assertMatchesRegularExpression(
-            "/if \(!move_uploaded_file\(.+?\)\) \{\s*\n\s*throw new \\\\RuntimeException\('Failed to store the uploaded image\.'/s",
+            '/\$stored = \$fromUpload\s*\n\s*\? move_uploaded_file\(.+?\)\s*\n\s*: copy\(.+?\);\s*\n\s*if \(!\$stored\) \{\s*\n\s*throw new \\\\RuntimeException\(\'Failed to store the image\.\'/s',
             $this->source,
         );
     }
 
-    public function testImageUploadChecksCopy(): void
+    public function testImageUploadChecksTheStagingCopy(): void
     {
         self::assertMatchesRegularExpression(
-            "/if \(!copy\(.+?\)\) \{\s*\n\s*@unlink\(.+?\);\s*\n\s*throw new \\\\RuntimeException\('Failed to stage the uploaded image\.'/s",
+            '/if \(!copy\(.+?\)\) \{\s*\n\s*@unlink\(.+?\);\s*\n\s*throw new \\\\RuntimeException\(\'Failed to stage the image\.\'/s',
             $this->source,
         );
     }
 
-    public function testVideoUploadChecksMoveUploadedFile(): void
+    public function testVideoUploadChecksTheStoreResult(): void
     {
         self::assertMatchesRegularExpression(
-            "/if \(!move_uploaded_file\(.+?\)\) \{\s*\n\s*throw new \\\\RuntimeException\('Failed to store the uploaded video\.'/s",
+            '/\$stored = \$fromUpload\s*\n\s*\? move_uploaded_file\(.+?\)\s*\n\s*: copy\(.+?\);\s*\n\s*if \(!\$stored\) \{\s*\n\s*throw new \\\\RuntimeException\(\'Failed to store the video\.\'/s',
             $this->source,
         );
     }
 
-    public function testNoUncheckedMoveUploadedFileOrCopyRemains(): void
+    public function testNoUncheckedUploadMoveOrCopyRemains(): void
     {
-        // Every remaining move_uploaded_file/copy call site must sit behind
-        // a negating condition (nothing else is matched by these guards).
-        self::assertSame(2, substr_count($this->source, '!move_uploaded_file'));
-        self::assertSame(1, substr_count($this->source, '!copy('));
+        // copy() sites: the image and video $stored ternaries (checked by
+        // their !$stored guards), the negated image staging copy, and
+        // revert()'s working copy of an existing original. Both
+        // move_uploaded_file() calls ride the ternaries.
+        self::assertSame(2, substr_count($this->source, 'move_uploaded_file'));
+        self::assertSame(4, substr_count($this->source, 'copy('));
+        self::assertSame(2, substr_count($this->source, 'if (!$stored)'));
+        self::assertSame(1, substr_count($this->source, 'if (!copy('));
     }
 }
