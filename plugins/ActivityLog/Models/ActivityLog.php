@@ -176,6 +176,25 @@ class ActivityLog extends \Pubvana\Models\AbstractModel
     }
 
     /**
+     * Delete entries older than the cutoff.
+     *
+     * One statement for the whole batch: the pruning task runs daily and can
+     * face a year of rows, so loading them first would waste memory.
+     *
+     * @param string $cutoff DateTime string. Rows with an earlier created_at go.
+     * @return int Rows deleted.
+     */
+    public function pruneBefore(string $cutoff): int
+    {
+        $statement = $this->execute(
+            'DELETE FROM activity_logs WHERE created_at < :cutoff',
+            [':cutoff' => $cutoff]
+        );
+
+        return $statement->rowCount();
+    }
+
+    /**
      * Distinct action values, for the filter dropdown.
      *
      * @return string[]

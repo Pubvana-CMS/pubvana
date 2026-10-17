@@ -14,8 +14,8 @@ use flight\net\Router;
 /**
  * ActivityLog Plugin - Audit trail of admin actions.
  *
- * Registers the activityLog service, admin routes under Tools,
- * auto-tracking via flight.route.executed event, and dashboard card.
+ * Registers the activityLog service, admin routes under Tools, dashboard card,
+ * the daily prune cron task, and auto-tracking via flight.route.executed.
  *
  * @package Pubvana\Plugins\ActivityLog
  */
@@ -67,6 +67,17 @@ class Plugin implements PluginInterface
                     ],
                 ];
             },
+        ]);
+
+        // ─── Cron ───────────────────────────────────────────────────────
+        // Core cron system (build_docs/Cron.md): daily prune of rows past
+        // retention_days. This is what makes the config value in
+        // Config/Config.php real, and it drops the ip and user_agent
+        // columns along with the rest of the row.
+        $adext->register('cron', '24h', 'pubvana.activity-log', [
+            'label'    => 'Prune old activity log entries',
+            'priority' => 65,
+            'callable' => fn(): int => $app->activityLog()->pruneOldEntries(),
         ]);
 
         // ─── Auto-tracking via flight.route.executed ────────────────────

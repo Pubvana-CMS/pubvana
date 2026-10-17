@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - same block can be added multiple times in the same region now
 - imports keep original posting time in Comments
 
+## Fixed
+- Activity log didn't actually prune logs
 
 ## [3.0.0-beta.11] - 2026-10-14
 

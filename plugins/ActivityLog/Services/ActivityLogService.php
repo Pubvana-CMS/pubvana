@@ -173,6 +173,27 @@ class ActivityLogService
     }
 
     /**
+     * Delete entries past the retention window.
+     *
+     * Runs from the plugin's 24h cron task. A retention_days of zero or less
+     * keeps every row, so an owner can turn pruning off.
+     *
+     * @return int Rows deleted.
+     */
+    public function pruneOldEntries(): int
+    {
+        $days = (int) ($this->config['retention_days'] ?? 365);
+        if ($days <= 0) {
+            return 0;
+        }
+
+        $cutoff = (new \DateTimeImmutable('-' . $days . ' days'))->format('Y-m-d H:i:s');
+        $model = new ActivityLog($this->pdo);
+
+        return $model->pruneBefore($cutoff);
+    }
+
+    /**
      * Get distinct actions for filter dropdown.
      *
      * @return string[]

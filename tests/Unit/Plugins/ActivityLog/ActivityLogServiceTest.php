@@ -444,6 +444,63 @@ final class ActivityLogServiceTest extends TestCase
     }
 
     // -----------------------------------------------------------------
+    // pruneOldEntries()
+    // -----------------------------------------------------------------
+
+    public function testPruneOldEntriesDeletesRowsPastRetention(): void
+    {
+        $this->insertRow('Gone', date('Y-m-d H:i:s', strtotime('-400 days')));
+        $this->insertRow('Kept', date('Y-m-d H:i:s'));
+
+        $service = new ActivityLogService($this->pdo, ['retention_days' => 365]);
+
+        self::assertSame(1, $service->pruneOldEntries());
+
+        $rows = $this->rows();
+        self::assertCount(1, $rows);
+        self::assertSame('Kept', $rows[0]['entity_name']);
+    }
+
+    public function testPruneOldEntriesFallsBackTo365Days(): void
+    {
+        $this->insertRow('Gone', date('Y-m-d H:i:s', strtotime('-400 days')));
+        $this->insertRow('Kept', date('Y-m-d H:i:s'));
+
+        // No retention_days key: the service uses the Config.php default.
+        $service = new ActivityLogService($this->pdo, []);
+
+        self::assertSame(1, $service->pruneOldEntries());
+        self::assertCount(1, $this->rows());
+    }
+
+    public function testPruneOldEntriesKeepsEveryRowOnZeroOrNegativeRetention(): void
+    {
+        $this->insertRow('Gone', date('Y-m-d H:i:s', strtotime('-400 days')));
+
+        foreach ([0, -1] as $days) {
+            $service = new ActivityLogService($this->pdo, ['retention_days' => $days]);
+
+            self::assertSame(0, $service->pruneOldEntries());
+            self::assertCount(1, $this->rows());
+        }
+    }
+
+    public function testPruneBeforeKeepsRowsOnTheCutoff(): void
+    {
+        $cutoff = date('Y-m-d H:i:s', strtotime('-365 days'));
+        $this->insertRow('OnCutoff', $cutoff);
+        $this->insertRow('BeforeCutoff', date('Y-m-d H:i:s', strtotime('-366 days')));
+
+        $model = new ActivityLog($this->pdo);
+
+        self::assertSame(1, $model->pruneBefore($cutoff));
+
+        $rows = $this->rows();
+        self::assertCount(1, $rows);
+        self::assertSame('OnCutoff', $rows[0]['entity_name']);
+    }
+
+    // -----------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------
 
@@ -505,5 +562,24 @@ final class ActivityLogServiceTest extends TestCase
     private function rows(): array
     {
         return $this->pdo->query('SELECT * FROM activity_logs ORDER BY id')->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Insert one row with a chosen created_at.
+     */
+    private function insertRow(string $name, string $createdAt): void
+    {
+        $statement = $this->pdo->prepare(
+            'INSERT INTO activity_logs (user_name, action, entity_type, entity_name, ip, created_at)
+             VALUES (:user_name, :action, :entity_type, :entity_name, :ip, :created_at)'
+        );
+        $statement->execute([
+            ':user_name'   => 'ada',
+            ':action'      => 'create',
+            ':entity_type' => 'page',
+            ':entity_name' => $name,
+            ':ip'          => '198.51.100.7',
+            ':created_at'  => $createdAt,
+        ]);
     }
 }

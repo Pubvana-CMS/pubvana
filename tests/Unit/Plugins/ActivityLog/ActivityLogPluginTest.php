@@ -76,6 +76,9 @@ final class ActivityLogPluginTest extends TestCase
         self::assertSame(0, $rows[0]['value']);
         self::assertSame('secondary', $rows[0]['tone']);
         self::assertSame('No admin activity in the last 24 hours.', $rows[0]['description']);
+
+        // Daily prune task registered on the 24h interval.
+        self::assertArrayHasKey('pubvana.activity-log', $adext->get('cron', '24h'));
     }
 
     public function testDashboardCardReflectsRecentActivity(): void
@@ -121,6 +124,73 @@ final class ActivityLogPluginTest extends TestCase
         self::assertSame(1, $rows[0]['value']);
         self::assertSame('info', $rows[0]['tone']);
         self::assertSame('1 admin action in the last 24 hours.', $rows[0]['description']);
+    }
+
+    public function testDailyCronTaskPrunesEntriesPastRetention(): void
+    {
+        $pdo = Sqlite::recreate();
+        ActivityLogSchema::create($pdo);
+        $app = $this->pluginApp($pdo);
+        \Flight::setEngine($app);
+
+        (new Plugin())->register($app, new Router(), ['retention_days' => 30]);
+
+        $statement = $pdo->prepare(
+            'INSERT INTO activity_logs (user_name, action, entity_type, entity_name, ip, created_at)
+             VALUES (:user_name, :action, :entity_type, :entity_name, :ip, :created_at)'
+        );
+        $statement->execute([
+            ':user_name'   => 'ada',
+            ':action'      => 'create',
+            ':entity_type' => 'page',
+            ':entity_name' => 'Careers',
+            ':ip'          => '198.51.100.7',
+            ':created_at'  => date('Y-m-d H:i:s', strtotime('-90 days')),
+        ]);
+
+        /** @var ExtensionRegistry $adext */
+        $adext = $app->adext();
+        $tasks = $adext->get('cron', '24h');
+        self::assertArrayHasKey('pubvana.activity-log', $tasks);
+
+        $callable = $tasks['pubvana.activity-log']['callable'];
+        self::assertIsCallable($callable);
+
+        $removed = $callable();
+        self::assertSame(1, $removed);
+        self::assertSame(0, (int) $pdo->query('SELECT COUNT(*) FROM activity_logs')->fetchColumn());
+    }
+
+    /**
+     * Engine with the services Plugin::register() reads from.
+     */
+    private function pluginApp(\PDO $pdo): Engine
+    {
+        $app = new Engine();
+        $app->init();
+        $app->map('adext', static function (): ExtensionRegistry {
+            static $registry = null;
+            if ($registry === null) {
+                $registry = new ExtensionRegistry();
+            }
+
+            return $registry;
+        });
+        $app->map('pluginLoader', static fn(): object => new class {
+            public function routePrefix(string $id): string
+            {
+                return '/activity-log';
+            }
+        });
+        $app->map('db', static fn(): \PDO => $pdo);
+        $app->map('auth', static fn(): object => new class {
+            public function user(): ?object
+            {
+                return null;
+            }
+        });
+
+        return $app;
     }
 
     public function testConfigShape(): void
