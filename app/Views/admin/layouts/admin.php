@@ -40,19 +40,22 @@
     x-data="{ darkMode: localStorage.getItem('pv-dark-mode') === '1' }"
     x-init="$watch('darkMode', val => { localStorage.setItem('pv-dark-mode', val ? '1' : '0'); val ? document.body.setAttribute('data-bs-theme','dark') : document.body.removeAttribute('data-bs-theme') }); if(darkMode) document.body.setAttribute('data-bs-theme','dark')"
 >
+<!-- First focusable thing on the page, so a keyboard user reaches the
+     content without walking both nav bars. -->
+<a class="visually-hidden-focusable" href="#main">Skip to main content</a>
 <div class="page">
 
     <!-- ===== Top bar: branding + user ===== -->
     <header class="navbar navbar-expand-md d-print-none">
         <div class="container-xl">
-            <h1 class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+            <div class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
                 <a href="/" target="_blank" rel="noopener" class="me-2">
                     <img src="/admin-assets/img/pubvana-logo.png" alt="Pubvana" width="28" height="28">
                 </a>
                 <a href="/admin">
                     <span class="nav-link-title"><?= htmlspecialchars($siteName ?? 'Pubvana') ?></span>
                 </a>
-            </h1>
+            </div>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu"
                     aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,9 +64,10 @@
 
             <div class="navbar-nav flex-row order-md-last">
                 <div class="nav-item d-flex align-items-center">
-                    <a class="nav-link px-2" href="#" @click.prevent="darkMode = !darkMode" title="Toggle dark mode">
-                        <i class="ti" :class="darkMode ? 'ti-sun' : 'ti-moon'" style="font-size:1.25rem"></i>
-                    </a>
+                    <button type="button" class="nav-link px-2" @click="darkMode = !darkMode"
+                            aria-label="Dark mode" :aria-pressed="darkMode ? 'true' : 'false'">
+                        <i class="ti" :class="darkMode ? 'ti-sun' : 'ti-moon'" aria-hidden="true" style="font-size:1.25rem"></i>
+                    </button>
                 </div>
 
                 <div class="nav-item dropdown">
@@ -95,7 +99,7 @@
     </header>
 
     <!-- ===== Nav bar: categories ===== -->
-    <header class="navbar-expand-md">
+    <nav class="navbar-expand-md" aria-label="Admin sections">
         <div class="collapse navbar-collapse" id="navbar-menu">
             <div class="navbar">
                 <div class="container-xl">
@@ -165,14 +169,14 @@
                 </div>
             </div>
         </div>
-    </header>
+    </nav>
 
     <!-- ===== Page content ===== -->
-    <div class="page-wrapper">
+    <main class="page-wrapper" id="main" tabindex="-1">
         <div class="page-header d-print-none">
             <div class="container-xl">
                 <div class="page-pretitle">Pubvana CMS</div>
-                <h2 class="page-title"><?= htmlspecialchars($pageTitle ?? 'Dashboard') ?></h2>
+                <h1 class="page-title"><?= htmlspecialchars($pageTitle ?? 'Dashboard') ?></h1>
             </div>
         </div>
 
@@ -204,7 +208,7 @@
                 <?= $content ?>
             </div>
         </div>
-    </div>
+    </main>
 
 </div>
 

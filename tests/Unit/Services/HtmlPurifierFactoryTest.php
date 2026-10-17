@@ -88,4 +88,81 @@ final class HtmlPurifierFactoryTest extends TestCase
         self::assertStringNotContainsString('onerror', $out);
         self::assertStringNotContainsString('javascript:', $out);
     }
+
+    public function testKeepsRoleAndAriaAttributesOnAnyElement(): void
+    {
+        $out = $this->purify(
+            '<div role="note" aria-label="Heads up" aria-live="polite">body</div>'
+            . '<span aria-hidden="true">decorative</span>'
+            . '<img src="/a.jpg" alt="" aria-describedby="caption-1">'
+            . '<nav aria-labelledby="nav-heading" aria-current="page">menu</nav>'
+        );
+
+        self::assertStringContainsString('role="note"', $out);
+        self::assertStringContainsString('aria-label="Heads up"', $out);
+        self::assertStringContainsString('aria-live="polite"', $out);
+        self::assertStringContainsString('aria-hidden="true"', $out);
+        self::assertStringContainsString('aria-describedby="caption-1"', $out);
+        self::assertStringContainsString('aria-current="page"', $out);
+        self::assertStringContainsString('aria-labelledby="nav-heading"', $out);
+    }
+
+    public function testKeepsHtml5LandmarkElements(): void
+    {
+        $out = $this->purify(
+            '<main><section aria-label="Intro"><article><header>H</header>'
+            . '<aside>side</aside><footer>F</footer></article></section></main>'
+            . '<details open><summary>More</summary><p>body</p></details>'
+        );
+
+        self::assertStringContainsString('<main>', $out);
+        self::assertStringContainsString('<section aria-label="Intro">', $out);
+        self::assertStringContainsString('<article>', $out);
+        self::assertStringContainsString('<header>', $out);
+        self::assertStringContainsString('<aside>', $out);
+        self::assertStringContainsString('<footer>', $out);
+        self::assertStringContainsString('<details open="">', $out);
+        self::assertStringContainsString('<summary>', $out);
+    }
+
+    public function testKeepsTabindexIncludingNegativeAndZero(): void
+    {
+        $out = $this->purify(
+            '<div tabindex="-1">skip me</div><div tabindex="0">focus me</div><div tabindex="3">third</div>'
+        );
+
+        self::assertStringContainsString('tabindex="-1"', $out);
+        self::assertStringContainsString('tabindex="0"', $out);
+        self::assertStringContainsString('tabindex="3"', $out);
+    }
+
+    public function testDropsTabindexThatIsNotAnInteger(): void
+    {
+        $out = $this->purify('<div tabindex="first">x</div>');
+
+        self::assertStringNotContainsString('tabindex', $out);
+    }
+
+    public function testKeepsIdsSoAriaRelationshipsCanPointAtThem(): void
+    {
+        $out = $this->purify('<h2 id="section-1">Heading</h2><p aria-labelledby="section-1">Body</p>');
+
+        self::assertStringContainsString('id="section-1"', $out);
+        self::assertStringContainsString('aria-labelledby="section-1"', $out);
+    }
+
+    public function testKeepsOnlyTheFirstOfTwoIdenticalIds(): void
+    {
+        $out = $this->purify('<p id="dup">one</p><p id="dup">two</p>');
+
+        self::assertSame(1, substr_count($out, 'id="dup"'));
+    }
+
+    public function testDropsAttributesOutsideTheDefinition(): void
+    {
+        $out = $this->purify('<p data-track="click" onclick="steal()">x</p>');
+
+        self::assertStringNotContainsString('data-track', $out);
+        self::assertStringNotContainsString('onclick', $out);
+    }
 }

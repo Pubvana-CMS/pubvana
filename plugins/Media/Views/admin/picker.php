@@ -11,19 +11,20 @@ $hasImage = !empty($currentValue);
 $previewSrc = $hasImage ? '/' . ltrim($currentValue, '/') : '';
 ?>
 <div class="media-picker" id="<?= $pickerId ?>">
-    <div class="media-picker-preview border rounded p-2 d-inline-block" role="button"
-         style="cursor:pointer; min-width:80px; min-height:80px;"
-         data-bs-toggle="offcanvas" data-bs-target="#<?= $pickerId ?>-offcanvas">
+    <button type="button" class="media-picker-preview border rounded p-2 d-inline-block bg-transparent"
+            style="cursor:pointer; min-width:80px; min-height:80px;"
+            aria-label="<?= $hasImage ? 'Change the selected image' : 'Choose an image' ?>"
+            data-bs-toggle="offcanvas" data-bs-target="#<?= $pickerId ?>-offcanvas">
         <?php if ($hasImage): ?>
             <img src="<?= htmlspecialchars($previewSrc) ?>" alt="Selected image"
                  class="rounded" style="max-width:120px; max-height:120px; object-fit:cover;">
         <?php else: ?>
-            <div class="d-flex align-items-center justify-content-center text-secondary"
-                 style="width:80px; height:80px;">
+            <span class="d-flex align-items-center justify-content-center text-secondary"
+                  style="width:80px; height:80px;">
                 <i class="ti ti-photo-plus" style="font-size:2rem;"></i>
-            </div>
+            </span>
         <?php endif; ?>
-    </div>
+    </button>
     <input type="hidden" name="<?= htmlspecialchars($inputName) ?>" value="<?= htmlspecialchars($currentValue) ?>">
     <?php if ($hasImage): ?>
         <button type="button" class="btn btn-ghost-danger btn-sm mt-1 media-picker-clear">
@@ -35,14 +36,17 @@ $previewSrc = $hasImage ? '/' . ltrim($currentValue, '/') : '';
 <div id="<?= $pickerId ?>-offcanvas" class="offcanvas offcanvas-end" tabindex="-1" style="width:450px;">
     <div class="offcanvas-header">
         <h5 class="offcanvas-title">Select Image</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body">
-        <div id="<?= $pickerId ?>-upload-zone" class="border border-dashed rounded p-3 text-center mb-3" style="cursor:pointer;">
+        <button type="button" id="<?= $pickerId ?>-upload-zone"
+                class="border border-dashed rounded p-3 text-center mb-3 w-100 bg-transparent"
+                style="cursor:pointer;"
+                aria-label="Upload an image">
             <i class="ti ti-cloud-upload" style="font-size:1.5rem;"></i>
-            <p class="mb-0 mt-1 small">Drop image or click to upload</p>
-            <input type="file" class="d-none" accept="image/jpeg,image/png,image/gif,image/webp">
-        </div>
+            <span class="d-block mt-1 small">Drop image or click to upload</span>
+        </button>
+        <input type="file" id="<?= $pickerId ?>-upload-input" class="d-none" accept="image/jpeg,image/png,image/gif,image/webp">
         <div class="row row-cols-3 g-2" id="<?= $pickerId ?>-grid">
             <div class="text-center text-secondary py-4 w-100">Loading...</div>
         </div>
@@ -73,7 +77,7 @@ $previewSrc = $hasImage ? '/' . ltrim($currentValue, '/') : '';
     }
 
     const uploadZone = document.getElementById('<?= $pickerId ?>-upload-zone');
-    const uploadInput = uploadZone.querySelector('input[type="file"]');
+    const uploadInput = document.getElementById('<?= $pickerId ?>-upload-input');
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
     const adminBase = '<?= $adminBase ?>';
 

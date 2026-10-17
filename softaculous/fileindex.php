@@ -7,8 +7,6 @@ $files = [
     'CHANGELOG.md',
     'CODE_OF_CONDUCT.md',
     'CONTRIBUTING.md',
-    'HARDENING.md',
-    'INSTALL.md',
     'LICENSE',
     'README.md',
     'SECURITY.md',

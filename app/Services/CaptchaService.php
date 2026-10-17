@@ -210,7 +210,15 @@ class CaptchaService
 
         $siteKey = htmlspecialchars($this->siteKey(), ENT_QUOTES);
 
-        return '<div class="' . self::PROVIDERS[$provider]['class'] . '" data-sitekey="' . $siteKey . '"></div>' . "\n"
+        // The provider's div carries no accessible name of its own, and what
+        // it holds is a cognitive function test, so the instruction is
+        // written out for every user and the wrapper is named. Both
+        // providers draw an audio challenge inside their own widget, which
+        // is the alternative WCAG 3.3.8 asks for.
+        return '<p class="pv-captcha-hint">Confirm you are not a robot.</p>' . "\n"
+            . '<div class="' . self::PROVIDERS[$provider]['class'] . '"'
+            . ' role="group" aria-label="Confirm you are not a robot"'
+            . ' data-sitekey="' . $siteKey . '"></div>' . "\n"
             . '<script src="' . self::PROVIDERS[$provider]['script'] . '" async defer></script>';
     }
 

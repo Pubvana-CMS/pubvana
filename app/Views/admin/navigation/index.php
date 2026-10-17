@@ -69,18 +69,18 @@ $topLevelItems = array_filter($items, fn($i) => empty($i->parent_id));
                     <?php endif; ?>
 
                     <div class="mb-3">
-                        <label class="form-label">Label</label>
+                        <label class="form-label" for="navLabel">Label</label>
                         <input type="text" name="label" id="navLabel" class="form-control" required
                                placeholder="e.g. About Us">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">URL</label>
+                        <label class="form-label" for="navUrl">URL</label>
                         <input type="text" name="url" id="navUrl" class="form-control" required
                                placeholder="/about">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Parent</label>
-                        <select name="parent_id" class="form-select">
+                        <label class="form-label" for="navParent">Parent</label>
+                        <select name="parent_id" id="navParent" class="form-select">
                             <option value="">Top level</option>
                             <?php foreach ($topLevelItems as $item): ?>
                             <option value="<?= (int) $item->id ?>"><?= htmlspecialchars($item->label) ?></option>
@@ -88,8 +88,8 @@ $topLevelItems = array_filter($items, fn($i) => empty($i->parent_id));
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Target</label>
-                        <select name="target" class="form-select">
+                        <label class="form-label" for="navTarget">Target</label>
+                        <select name="target" id="navTarget" class="form-select">
                             <option value="_self">Same window</option>
                             <option value="_blank">New window</option>
                         </select>

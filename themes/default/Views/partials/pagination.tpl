@@ -1,5 +1,6 @@
 {# Pagination partial: the numbered page list, included by post-list.tpl and archive.tpl. #}
-<nav>
+{# Labelled so it is a distinct landmark from the navbar and breadcrumbs. #}
+<nav aria-label="Pagination">
     <ul class="pagination justify-content-center">
         {# Conditional: previous link, or a disabled placeholder. #}
         {% if pagination.prev_url %}

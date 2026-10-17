@@ -16,6 +16,10 @@
 </head>
 <body>
 
+    {# First focusable thing on the page: a keyboard user reaches the content
+       without walking the navbar. #main is the <main> element below. #}
+    <a class="visually-hidden-focusable" href="#main">Skip to main content</a>
+
     {# Include: renders partials/navbar.tpl inline. Included templates see the same variables. #}
     {% include 'partials/navbar' %}
 
@@ -40,15 +44,16 @@
     {# (all | not_home | home | none) decides whether it renders on this #}
     {# page, layout.sidebar_location (sidebar-left | sidebar-right) picks #}
     {# the side. An empty sidebar region collapses the row to one column. #}
-    <main class="container my-4">
+    {# tabindex="-1" lets the skip link put focus here. #}
+    <main class="container my-4" id="main" tabindex="-1">
         {% if theme_options.layout.show_sidebar_on | default('not_home') == 'all'
             or (theme_options.layout.show_sidebar_on | default('not_home') == 'home' and is_homepage)
             or (theme_options.layout.show_sidebar_on | default('not_home') == 'not_home' and not is_homepage) %}
         <div class="row">
             {% if theme_options.layout.sidebar_location | default('sidebar-right') == 'sidebar-left' %}
-            <div class="col-lg-4">
+            <aside class="col-lg-4" aria-label="Sidebar">
                 {% region 'sidebar' %}
-            </div>
+            </aside>
             <div class="col-lg-8">
                 {# Raw output: the page content, assembled by PublicController. #}
                 {! content !}
@@ -64,9 +69,9 @@
                 {# Region: content blocks placed below the docs, inside the content column. #}
                 {% region 'after-content' %}
             </div>
-            <div class="col-lg-4">
+            <aside class="col-lg-4" aria-label="Sidebar">
                 {% region 'sidebar' %}
-            </div>
+            </aside>
             {% endif %}
         </div>
         {% else %}

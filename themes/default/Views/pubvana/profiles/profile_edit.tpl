@@ -1,6 +1,8 @@
 {# Profile edit form. Content-only; the layout owns the sidebar. #}
+{# The h1: this page has no other heading, so the section title is the top
+   level one. The class keeps the size the design already used. #}
 <div class="pv-profile-card">
-    <h3 class="pv-profile-section-title">Edit Profile</h3>
+    <h1 class="pv-profile-section-title">Edit Profile</h1>
     {# Plain HTML form: POSTs to the profile update endpoint. #}
     <form method="post" action="{{ profileBase }}/{{ user.id }}/update" class="pv-profile-form">
         {# Custom tag: emits the hidden CSRF token input the framework validates on POST. #}

@@ -70,7 +70,7 @@ class Plugin implements PluginInterface
         ]);
 
         // ─── Cron ───────────────────────────────────────────────────────
-        // Core cron system (build_docs/Cron.md): daily prune of rows past
+        // Core cron system (https://pubvanacms.com/docs/dev/v/3.0/services/cron): daily prune of rows past
         // retention_days. This is what makes the config value in
         // Config/Config.php real, and it drops the ip and user_agent
         // columns along with the rest of the row.

@@ -23,7 +23,7 @@
     {# Conditional: the bio section renders only when a bio exists. #}
     {% if profile.bio %}
     <div class="pv-profile-section">
-        <h5 class="pv-profile-section-title">Bio</h5>
+        <h2 class="pv-profile-section-title">Bio</h2>
         {# Escaped output: bio is plain text. #}
         <p class="pv-profile-bio">{{ profile.bio }}</p>
     </div>
@@ -32,7 +32,7 @@
     {# Conditional: the links section renders only when at least one social field is set. #}
     {% if safe_website or twitter_url or facebook_url or linkedin_url %}
     <div class="pv-profile-section">
-        <h5 class="pv-profile-section-title">Links</h5>
+        <h2 class="pv-profile-section-title">Links</h2>
         <ul class="pv-profile-links">
             {# One conditional per network: each renders only when the field is filled. #}
             {# rel="nofollow noopener" keeps these user-entered links from passing ranking or window access. #}

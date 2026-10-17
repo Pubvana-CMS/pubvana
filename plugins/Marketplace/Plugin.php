@@ -74,7 +74,7 @@ class Plugin implements PluginInterface
             ]);
         }
 
-        // Core cron system (build_docs/Cron.md): the 24h task enforces the
+        // Core cron system (https://pubvanacms.com/docs/dev/v/3.0/services/cron): the 24h task enforces the
         // verify_days cadence internally, so the store is actually phoned
         // home about every two weeks. Real failures throw (CronService logs
         // FAILED and exits 2); graceful "not due / nothing to do" stays quiet.

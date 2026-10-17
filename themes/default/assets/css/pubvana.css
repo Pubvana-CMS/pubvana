@@ -161,8 +161,6 @@
 
 .block-input:focus {
     border-color: var(--bs-primary, #0d6efd);
-    outline: 0;
-    box-shadow: 0 0 0 .25rem rgba(13, 110, 253, .25);
 }
 
 .block-button {
@@ -284,14 +282,12 @@ footer .block-content {
     font-size: 1rem;
     color: #212529;
     background-color: #fff;
-    border: 1px solid #ced4da;
+    border: 1px solid #767676;
     border-radius: 0.375rem;
 }
 
 .auth-input:focus {
-    outline: none;
     border-color: #2c3e50;
-    box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.15);
 }
 
 .auth-code {
@@ -326,6 +322,133 @@ footer .block-content {
 
 .auth-links a:hover {
     text-decoration: underline;
+}
+
+/* ==========================================================================
+   Accessibility overrides
+
+   Values here are measured against the surfaces this theme actually uses,
+   not the Bootstrap defaults. Keep the ratios in the comments and re-measure
+   before changing a colour.
+   ========================================================================== */
+
+:root {
+    /* Focus indicator. The page is white and the navbar and footer are dark,
+       so the ring is drawn twice: a white inner ring for the dark surfaces
+       and a dark outer ring for the light ones. */
+    --pv-focus-ring: #2c3e50;
+
+    /* Body links. Flatly paints them #18bc9c, which measures 2.41:1 on white
+       and fails 1.4.3. Same hue, darkened to 5.26:1. */
+    --bs-link-color: #0f7a66;
+    --bs-link-color-rgb: 15, 122, 102;
+    --bs-link-hover-color: #0b5c4d;
+    --bs-link-hover-color-rgb: 11, 92, 77;
+}
+
+/* 1.4.11 non-text contrast. Component borders identify a control, so they
+   need 3:1. Flatly uses #dee2e6 (1.30:1 on white) on form controls and
+   #ced4da (1.50:1) on the auth inputs. #767676 measures 4.54:1. */
+.form-control,
+.form-select,
+.form-check-input,
+.block-input {
+    --bs-border-color: #767676;
+}
+
+/* 1.4.11, 2.4.7. Bootstrap's own focus rings are translucent and land near
+   1.5:1. Every indicator is restated as the two ring pair. */
+.form-control:focus-visible,
+.form-select:focus-visible,
+.form-check-input:focus-visible,
+.form-range:focus-visible,
+.btn:focus-visible,
+.btn-close:focus-visible,
+.btn-link:focus-visible,
+.page-link:focus-visible,
+.navbar-toggler:focus-visible,
+.block-input:focus-visible,
+.auth-input:focus-visible,
+summary:focus-visible,
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 0;
+    box-shadow: 0 0 0 4px var(--pv-focus-ring);
+}
+
+/* 1.4.3. The footer sits on Flatly's bg-dark, which is #7b8a8b. White text on
+   it measures 3.13:1, and the copyright line's .text-muted 3.02:1. Darkening
+   the surface to the theme's primary puts white text at 11.1:1. */
+footer.bg-dark {
+    --bs-dark: #2c3e50;
+    --bs-dark-rgb: 44, 62, 80;
+}
+
+/* .text-muted carries !important from Bootstrap and its grey is meant for
+   light surfaces, where it measures 1.3:1 on the footer. 7.4:1 here. */
+footer .text-muted {
+    color: rgba(255, 255, 255, .8) !important;
+}
+
+/* Footer block text. rgba(255, 255, 255, .5) reads 4.07:1 on the new
+   surface, short of the 4.5:1 small text needs. */
+footer .block-meta,
+footer .block-count,
+footer .block-comment-on {
+    color: rgba(255, 255, 255, .75);
+}
+
+/* Footer input borders: rgba(255, 255, 255, .2) reads 1.30:1 against the
+   surface behind it. .6 measures 5.18:1 and 3.79:1 against the field. */
+footer .block-input {
+    border-color: rgba(255, 255, 255, .6);
+}
+
+/* The captcha hint every form prints above the provider's widget. */
+.pv-captcha-hint {
+    margin-bottom: .5rem;
+}
+
+/* 1.4.3. Flatly's --bs-secondary is #95a5a6. White text on it measures
+   2.55:1, and it measures 2.55:1 on white, so both the .bg-secondary tags
+   and the .text-secondary text fail. #6c757d measures 4.69:1 both ways. */
+.text-secondary {
+    color: #6c757d !important;
+}
+
+.bg-secondary {
+    background-color: #6c757d !important;
+}
+
+/* The footer needs the light reading of the same class: 7.4:1 on the
+   surface set above. */
+footer .text-secondary {
+    color: rgba(255, 255, 255, .8) !important;
+}
+
+/* 1.4.3. Flatly's pagination is white on #18bc9c (2.41:1) and its disabled
+   state #ecf0f1 on #3be6c4 (1.37:1). Rebuilt on the theme's own colours. */
+.pagination {
+    --bs-pagination-color: #0f7a66;
+    --bs-pagination-bg: #fff;
+    --bs-pagination-border-width: 1px;
+    --bs-pagination-border-color: #767676;
+    --bs-pagination-hover-color: #0b5c4d;
+    --bs-pagination-hover-bg: #f1f3f5;
+    --bs-pagination-hover-border-color: #767676;
+    --bs-pagination-focus-color: #0b5c4d;
+    --bs-pagination-focus-bg: #f1f3f5;
+    --bs-pagination-active-color: #fff;
+    --bs-pagination-active-bg: #2c3e50;
+    --bs-pagination-active-border-color: #2c3e50;
+    --bs-pagination-disabled-color: #6c757d;
+    --bs-pagination-disabled-bg: #fff;
+    --bs-pagination-disabled-border-color: #ced4da;
 }
 
 .auth-sep {

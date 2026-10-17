@@ -16,3 +16,94 @@
 .pv-busy * {
     cursor: progress !important;
 }
+
+/* ==========================================================================
+   Accessibility overrides
+
+   Measured with axe-core 4.14 against the shipped light theme. Dark mode keeps
+   Tabler's own values, which are tuned for a dark surface.
+   ========================================================================== */
+
+/* 1.4.3. Tabler's -lt badge variants paint a colour on a 10% tint of itself.
+   Eight of the thirteen pairs miss 4.5:1 in light mode. These are the same
+   hues darkened until each clears it against its own tint. */
+body:not([data-bs-theme="dark"]) .bg-secondary-lt { color: #606d7b !important; } /* 4.68 */
+body:not([data-bs-theme="dark"]) .bg-success-lt,
+body:not([data-bs-theme="dark"]) .bg-green-lt { color: #217e30 !important; } /* 4.65 */
+body:not([data-bs-theme="dark"]) .bg-danger-lt,
+body:not([data-bs-theme="dark"]) .bg-red-lt { color: #cb2a2a !important; } /* 4.66 */
+body:not([data-bs-theme="dark"]) .bg-warning-lt,
+body:not([data-bs-theme="dark"]) .bg-orange-lt { color: #b74c05 !important; } /* 4.65 */
+body:not([data-bs-theme="dark"]) .bg-azure-lt,
+body:not([data-bs-theme="dark"]) .bg-info-lt { color: #1d71b7 !important; } /* 4.64 */
+body:not([data-bs-theme="dark"]) .bg-yellow-lt { color: #996300 !important; } /* 4.69 */
+body:not([data-bs-theme="dark"]) .bg-purple-lt { color: #a636c2 !important; } /* 4.67 */
+/* .bg-blue-lt and .bg-primary-lt already measure 6.36:1. */
+
+/* 1.4.3. The same colours as plain text on white: success 2.74:1, azure and
+   info 3.05:1, warning and orange 3.04:1. */
+body:not([data-bs-theme="dark"]) .text-success { color: #217e30 !important; }
+body:not([data-bs-theme="dark"]) .text-azure,
+body:not([data-bs-theme="dark"]) .text-info { color: #1d71b7 !important; }
+body:not([data-bs-theme="dark"]) .text-warning,
+body:not([data-bs-theme="dark"]) .text-orange { color: #b74c05 !important; }
+
+/* 1.4.3. The outline button variants put the status colour on white text:
+   success 2.74:1, warning 3.04:1, azure and info 3.05:1. Tabler reads the
+   border and the hover fill from the same variables, so all of them move. */
+body:not([data-bs-theme="dark"]) .btn-outline-success,
+body:not([data-bs-theme="dark"]) .btn-outline-green {
+    --tblr-btn-color: #217e30;
+    --tblr-btn-border-color: #217e30;
+    --tblr-btn-hover-bg: #217e30;
+    --tblr-btn-active-bg: #217e30;
+    --tblr-btn-disabled-color: #217e30;
+    --tblr-btn-disabled-border-color: #217e30;
+}
+
+body:not([data-bs-theme="dark"]) .btn-outline-warning,
+body:not([data-bs-theme="dark"]) .btn-outline-orange {
+    --tblr-btn-color: #b74c05;
+    --tblr-btn-border-color: #b74c05;
+    --tblr-btn-hover-bg: #b74c05;
+    --tblr-btn-active-bg: #b74c05;
+    --tblr-btn-disabled-color: #b74c05;
+    --tblr-btn-disabled-border-color: #b74c05;
+}
+
+body:not([data-bs-theme="dark"]) .btn-outline-azure,
+body:not([data-bs-theme="dark"]) .btn-outline-info {
+    --tblr-btn-color: #1d71b7;
+    --tblr-btn-border-color: #1d71b7;
+    --tblr-btn-hover-bg: #1d71b7;
+    --tblr-btn-active-bg: #1d71b7;
+    --tblr-btn-disabled-color: #1d71b7;
+    --tblr-btn-disabled-border-color: #1d71b7;
+}
+
+/* 1.4.1. A link sitting inside a run of text has to be told apart from it by
+   more than colour. Tabler's default link sits 1.53:1 from the surrounding
+   text and carries no underline. */
+p a,
+.small a,
+small a {
+    text-decoration: underline;
+}
+
+/* 2.5.8 Target Size (Minimum). Icon-only buttons in the list tables measure
+   22x18 (comments) and 22x23 (regions). Tabler's .btn-icon is 32px, these do
+   not carry the class. */
+.btn:has(> .ti:only-child),
+.btn:has(> i:only-child) {
+    min-width: 1.5rem;
+    min-height: 1.5rem;
+    padding: .25rem;
+    justify-content: center;
+}
+
+/* 1.4.3 exempts the text of inactive components, but Tabler's disabled page
+   link is #dadfe5 on white, which nobody can read. #6c757d measured 4.40:1
+   against the pagination strip's own #f6f8fb, hence the darker grey. */
+body:not([data-bs-theme="dark"]) .pagination {
+    --tblr-pagination-disabled-color: #636b73;
+}

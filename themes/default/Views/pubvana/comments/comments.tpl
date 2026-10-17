@@ -18,7 +18,8 @@
             <span class="text-muted small ms-1">{{ comment.created_at | date('F j, Y g:ia') }}</span>
             <div class="mt-1">{! comment.body !}</div>
             {% if comments_open %}
-            <button type="button" class="btn btn-sm btn-link p-0 mt-1 comment-reply-btn" data-parent-id="{{ comment.id }}" data-author="{{ comment.author }}">Reply</button>
+            {# The p-0 left this button 21px tall, under the 24px 2.5.8 wants. #}
+            <button type="button" class="btn btn-sm btn-link mt-1 comment-reply-btn" data-parent-id="{{ comment.id }}" data-author="{{ comment.author }}" aria-label="Reply to {{ comment.author }}">Reply</button>
             {% endif %}
         </div>
     </div>
@@ -30,7 +31,7 @@
     {% if comments_open %}
     <div class="mt-4" id="comment-form-wrapper">
         <h5 id="comment-form-title">Leave a Comment</h5>
-        <div id="reply-indicator" class="alert alert-info d-none mb-3">
+        <div id="reply-indicator" class="alert alert-info d-none mb-3" role="status">
             Replying to <span id="reply-indicator-author"></span> (<a href="#" id="cancel-reply">cancel</a>)
         </div>
         <form method="post" action="{{ comment_post_url }}" id="comment-form">
@@ -40,19 +41,23 @@
             {% if comments_is_guest %}
             <div class="row mb-3">
                 <div class="col-md-4">
-                    <input type="text" name="guest_name" class="form-control" placeholder="Name *" required>
+                    <label class="form-label" for="comment-guest-name">Name <span aria-hidden="true">*</span></label>
+                    <input type="text" name="guest_name" id="comment-guest-name" class="form-control" autocomplete="name" required>
                 </div>
                 <div class="col-md-4">
-                    <input type="email" name="guest_email" class="form-control" placeholder="Email">
+                    <label class="form-label" for="comment-guest-email">Email (optional)</label>
+                    <input type="email" name="guest_email" id="comment-guest-email" class="form-control" autocomplete="email">
                 </div>
                 <div class="col-md-4">
-                    <input type="url" name="guest_website" class="form-control" placeholder="Website">
+                    <label class="form-label" for="comment-guest-website">Website (optional)</label>
+                    <input type="url" name="guest_website" id="comment-guest-website" class="form-control" autocomplete="url">
                 </div>
             </div>
             {% endif %}
 
             <div class="mb-3">
-                <textarea name="body" class="form-control" rows="4" placeholder="Your comment..." required></textarea>
+                <label class="form-label" for="comment-body">Comment <span aria-hidden="true">*</span></label>
+                <textarea name="body" id="comment-body" class="form-control" rows="4" required></textarea>
             </div>
 
             {% captcha 'comments' %}
@@ -79,8 +84,10 @@ document.addEventListener('DOMContentLoaded', function() {
     btns.forEach(function(btn) {
         btn.addEventListener('click', function() {
             parentInput.value = this.getAttribute('data-parent-id');
-            if (indicatorAuthor) { indicatorAuthor.textContent = this.getAttribute('data-author') || ''; }
+            // Reveal the live region before filling it. A change made while
+            // it is still display:none is not announced.
             indicator.classList.remove('d-none');
+            if (indicatorAuthor) { indicatorAuthor.textContent = this.getAttribute('data-author') || ''; }
             formTitle.textContent = 'Reply';
             formWrapper.scrollIntoView({ behavior: 'smooth' });
         });

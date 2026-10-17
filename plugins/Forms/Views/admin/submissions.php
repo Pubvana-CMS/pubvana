@@ -12,7 +12,7 @@
 
 <div class="d-flex align-items-center justify-content-between mb-4">
     <form method="GET" action="<?= $adminBase ?>/submissions" class="d-flex gap-2">
-        <select name="form_id" class="form-select" onchange="this.form.submit()">
+        <select name="form_id" class="form-select" aria-label="Filter submissions by form" onchange="this.form.submit()">
             <option value="">All forms</option>
             <?php foreach ($forms as $form): ?>
                 <option value="<?= (int) $form->id ?>" <?= $filterFormId === (int) $form->id ? 'selected' : '' ?>>

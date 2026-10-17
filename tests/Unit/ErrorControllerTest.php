@@ -116,6 +116,103 @@ final class ErrorControllerTest extends TestCase
     }
 
     // -----------------------------------------------------------------
+    // wantsAdminErrorPage()
+    // -----------------------------------------------------------------
+
+    public function testWantsAdminErrorPageTrueForSignedInAdminRequest(): void
+    {
+        $controller = new ErrorController($this->signedInEngine());
+        $_SERVER['REQUEST_URI'] = '/admin/themes/regions/1';
+        $_SERVER['HTTP_ACCEPT'] = 'text/html';
+
+        self::assertTrue($controller->wantsAdminErrorPage());
+    }
+
+    public function testWantsAdminErrorPageFalseWithoutASession(): void
+    {
+        $controller = new ErrorController($this->anonymousEngine());
+        $_SERVER['REQUEST_URI'] = '/admin/blog/edit';
+        $_SERVER['HTTP_ACCEPT'] = 'text/html';
+
+        self::assertFalse($controller->wantsAdminErrorPage());
+    }
+
+    public function testWantsAdminErrorPageFalseWhenNoAuthServiceIsMapped(): void
+    {
+        // $app->auth() throws: nothing is signed in, so no admin page.
+        $controller = new ErrorController($this->engine(['CMS.siteName' => 'Pubvana']));
+        $_SERVER['REQUEST_URI'] = '/admin/blog/edit';
+        $_SERVER['HTTP_ACCEPT'] = 'text/html';
+
+        self::assertFalse($controller->wantsAdminErrorPage());
+    }
+
+    public function testWantsAdminLoginRedirectTrueForAnonymousAdminRequest(): void
+    {
+        $controller = new ErrorController($this->anonymousEngine());
+        $_SERVER['REQUEST_URI'] = '/admin/themes/regions/1';
+        $_SERVER['HTTP_ACCEPT'] = 'text/html';
+
+        self::assertTrue($controller->wantsAdminLoginRedirect());
+    }
+
+    public function testWantsAdminLoginRedirectFalseOnceSignedIn(): void
+    {
+        $controller = new ErrorController($this->signedInEngine());
+        $_SERVER['REQUEST_URI'] = '/admin/themes/regions/1';
+        $_SERVER['HTTP_ACCEPT'] = 'text/html';
+
+        self::assertFalse($controller->wantsAdminLoginRedirect());
+    }
+
+    public function testWantsAdminLoginRedirectFalseForPublicPathsAndJson(): void
+    {
+        $_SERVER['HTTP_ACCEPT'] = 'text/html';
+
+        foreach (['/blog/missing', '/api/posts', '/'] as $path) {
+            $controller = new ErrorController($this->anonymousEngine());
+            $_SERVER['REQUEST_URI'] = $path;
+            self::assertFalse($controller->wantsAdminLoginRedirect(), "path {$path}");
+        }
+
+        $controller = new ErrorController($this->anonymousEngine());
+        $_SERVER['REQUEST_URI'] = '/admin/themes';
+        $_SERVER['HTTP_ACCEPT'] = 'application/json';
+        self::assertFalse($controller->wantsAdminLoginRedirect());
+    }
+
+    public function testWantsAdminErrorPageFalseForPublicAndApiPaths(): void
+    {
+        $_SERVER['HTTP_ACCEPT'] = 'text/html';
+
+        foreach (['/blog/missing', '/api/posts', '/'] as $path) {
+            $controller = new ErrorController($this->signedInEngine());
+            $_SERVER['REQUEST_URI'] = $path;
+            self::assertFalse($controller->wantsAdminErrorPage(), "path {$path}");
+        }
+    }
+
+    public function testWantsAdminErrorPageFalseForJsonAccept(): void
+    {
+        $controller = new ErrorController($this->signedInEngine());
+        $_SERVER['REQUEST_URI'] = '/admin/themes';
+        $_SERVER['HTTP_ACCEPT'] = 'application/json';
+
+        self::assertFalse($controller->wantsAdminErrorPage());
+    }
+
+    public function testWantsHtmlPageTracksJsonAndAjax(): void
+    {
+        $_SERVER['REQUEST_URI'] = '/anything';
+        $controller = new ErrorController($this->engine(['CMS.siteName' => 'Pubvana']));
+        self::assertTrue($controller->wantsHtmlPage());
+
+        $_SERVER['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest';
+        $controller = new ErrorController($this->engine(['CMS.siteName' => 'Pubvana']));
+        self::assertFalse($controller->wantsHtmlPage());
+    }
+
+    // -----------------------------------------------------------------
     // The rendered page
     // -----------------------------------------------------------------
 
@@ -171,6 +268,60 @@ final class ErrorControllerTest extends TestCase
     // -----------------------------------------------------------------
     // Fixture helpers
     // -----------------------------------------------------------------
+
+    /**
+     * Engine with a signed-in auth service, for the admin page branch.
+     */
+    private function signedInEngine(): Engine
+    {
+        return $this->app([
+            'adext' => static fn(): ExtensionRegistry => new ExtensionRegistry(),
+            'settings' => static fn(): object => new class {
+                public function get(string $key, mixed $default = null): mixed
+                {
+                    return $default;
+                }
+            },
+            'auth' => static fn(): object => new class {
+                public function loggedIn(): bool
+                {
+                    return true;
+                }
+
+                public function user(): object
+                {
+                    return new stdClass();
+                }
+            },
+        ]);
+    }
+
+    /**
+     * Engine with an auth service that reports nobody signed in.
+     */
+    private function anonymousEngine(): Engine
+    {
+        return $this->app([
+            'adext' => static fn(): ExtensionRegistry => new ExtensionRegistry(),
+            'settings' => static fn(): object => new class {
+                public function get(string $key, mixed $default = null): mixed
+                {
+                    return $default;
+                }
+            },
+            'auth' => static fn(): object => new class {
+                public function loggedIn(): bool
+                {
+                    return false;
+                }
+
+                public function user(): ?object
+                {
+                    return null;
+                }
+            },
+        ]);
+    }
 
     /**
      * Fresh Engine mapped the way services.php wires public pages.

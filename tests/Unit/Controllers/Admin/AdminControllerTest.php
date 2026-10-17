@@ -393,6 +393,25 @@ final class AdminControllerTest extends TestCase
         self::assertSame('Dashboard', $this->renders[0]['data']['pageTitle']);
     }
 
+    public function testRenderErrorPageFetchesBodyAndWrapsItInTheLayout(): void
+    {
+        $app = $this->engine();
+        $app->set('admin.topNav', []);
+        $controller = new AdminController($app);
+
+        // The engine double records the layout render instead of echoing it,
+        // so the returned string is empty and the call is the assertion.
+        $html = $controller->renderErrorPage(404, 'Page not found');
+
+        self::assertSame('', $html);
+        self::assertSame('admin/errors/error', $this->fetches[0]['view']);
+        self::assertSame(404, $this->fetches[0]['data']['status']);
+        self::assertSame('Page not found', $this->fetches[0]['data']['message']);
+        self::assertSame('admin/layouts/admin', $this->renders[0]['template']);
+        self::assertSame('Page not found', $this->renders[0]['data']['pageTitle']);
+        self::assertSame('CONTENT:admin/errors/error', $this->renders[0]['data']['content']);
+    }
+
     /**
      * @return array{type: string, slug: string, version: string, author: string, origin: string}
      */

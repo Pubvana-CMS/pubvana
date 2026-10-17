@@ -84,7 +84,7 @@ $currentFilter = $status ?? 'all';
                                     <?php if ($comment->status !== 'approved'): ?>
                                         <form method="post" action="<?= $adminBase ?>/<?= (int) $comment->id ?>/approve" class="d-inline">
                                             <?= csrf_field() ?>
-                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Approve">
+                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Approve" aria-label="Approve">
                                                 <i class="ti ti-check"></i>
                                             </button>
                                         </form>
@@ -92,14 +92,14 @@ $currentFilter = $status ?? 'all';
                                     <?php if ($comment->status !== 'rejected'): ?>
                                         <form method="post" action="<?= $adminBase ?>/<?= (int) $comment->id ?>/reject" class="d-inline">
                                             <?= csrf_field() ?>
-                                            <button type="submit" class="btn btn-sm btn-outline-warning" title="Reject">
+                                            <button type="submit" class="btn btn-sm btn-outline-warning" title="Reject" aria-label="Reject">
                                                 <i class="ti ti-x"></i>
                                             </button>
                                         </form>
                                     <?php endif; ?>
                                     <form method="post" action="<?= $adminBase ?>/<?= (int) $comment->id ?>/delete" class="d-inline" onsubmit="return confirm('Delete this comment permanently?')">
                                         <?= csrf_field() ?>
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete" aria-label="Delete">
                                             <i class="ti ti-trash"></i>
                                         </button>
                                     </form>

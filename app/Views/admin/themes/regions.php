@@ -152,7 +152,8 @@ $wysiwygSelectors = [];
                     <?= csrf_field() ?>
                     <input type="hidden" name="region_id" value="<?= htmlspecialchars($regionId) ?>">
                     <div class="input-group">
-                        <select name="block_key" class="form-select form-select-sm">
+                        <select name="block_key" class="form-select form-select-sm"
+                                aria-label="Block to add to the <?= htmlspecialchars($regionInfo['label']) ?> region">
                             <option value="">Add block...</option>
                             <?php
                             foreach ($blocks as $bKey => $bInfo):

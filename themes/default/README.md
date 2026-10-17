@@ -64,3 +64,55 @@ For further help creating themes you should find the [Theme Docs](https://pubvan
 - Icon: `icon.svg` (shown in the admin theme picker)
 
 The AssetService serves these at `/assets/theme/default/{path}`. It reads them from the theme's `assets/` folder.
+
+## Accessibility
+
+The theme targets WCAG 2.2 AA. Anything a replacement theme swaps out has to
+hold that line. This is what the theme supplies and what a replacement must
+keep. See `ACCESSIBILITY.md` for the audit and the limits of the claim.
+
+### Shell
+
+- `layout.tpl` opens with a skip link to `#main`. The `<main>` element carries
+  `id="main"` and `tabindex="-1"` so the link has somewhere to land.
+- The navbar is `<nav aria-label="Main">`. The mobile toggler carries
+  `aria-label`, `aria-controls`, and `aria-expanded`.
+- The sidebar column is `<aside aria-label="Sidebar">`.
+- The footer sets its own surface through `footer.bg-dark`. White text on it
+  measures 11.1:1.
+- `<html lang="en">` is hardcoded. There is no locale setting to read, so a
+  theme in another language has to change that line itself.
+
+### Headings
+
+- One `<h1>` per page, owned by the content template: `post.tpl`, `page.tpl`,
+  `search.tpl`, `archive.tpl`, `categories.tpl`, `tags.tpl`, `profile.tpl`.
+- `home.tpl` prints a visually hidden `<h1>` because the design has no visible
+  page title.
+- `partials/hero.tpl` prints a `<p>`, not a heading. An `<h1>` there gives every
+  hero page two of them.
+- Block titles are `<h3>`. A block in `before-content` or the sidebar sits above
+  the page `<h1>`, so the outline skips a level there.
+
+### Colour
+
+Every ratio in `pubvana.css` is measured against the surface it actually sits
+on, and the comment beside the rule says which. The short version: Flatly's link
+colour measures 2.41:1 on white and its secondary grey 2.55:1, so both are
+overridden. Re-measure before changing a colour.
+
+### Focus
+
+Every focus indicator is a white outline plus a dark outer ring, so it stays
+visible on the white page and on the dark navbar and footer. The rules use
+`:focus-visible`, so a mouse click does not draw a ring.
+
+### Forms
+
+- Every field carries a real `<label for>`. A placeholder is not a label.
+- The guest comment fields carry `autocomplete` tokens.
+- Input borders are `#767676`, which measures 4.54:1. Flatly's `#dee2e6`
+  measures 1.30:1 and misses the 3:1 that 1.4.11 asks for.
+- The captcha widget prints a visible instruction and wraps the provider's div
+  in a labelled `role="group"`.
+

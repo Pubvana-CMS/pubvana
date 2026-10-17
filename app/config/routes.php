@@ -115,10 +115,11 @@ $app->route('GET /', function () use ($app) {
 | Themed Error Pages
 |--------------------------------------------------------------------------
 | 404s (an unmatched URL, or a halt(404) from a missing post, page, tag,
-| etc.) render inside the active theme's layout for browser requests.
-| Registered after plugins load, so the Redirects plugin's 404 logging
-| hooks run first. Admin, API, JSON, CLI, and AJAX requests keep the
-| framework's plain responses.
+| etc.) render inside the active theme's layout for browser requests. A
+| signed-in request under /admin renders the admin layout instead, and an
+| anonymous one goes to the sign-in page. Registered after plugins load,
+| so the Redirects plugin's 404 logging hooks run first. API, JSON, CLI,
+| and AJAX requests keep the framework's plain responses.
 */
 $app->before('notFound', function () use ($app) {
     (new \Pubvana\Controllers\Public\ErrorController($app))->showNotFound();

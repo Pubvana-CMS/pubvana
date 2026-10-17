@@ -385,7 +385,7 @@ class RestoreService
         throw new \RuntimeException(
             'The restore was not started: the web server user cannot write to '
             . $preview . $more
-            . '. Fix the file ownership (see INSTALL.md) or run the restore from the command line.'
+            . '. Fix the file ownership (see the install docs) or run the restore from the command line.'
         );
     }
 

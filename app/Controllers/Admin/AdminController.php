@@ -332,6 +332,36 @@ class AdminController
     }
 
     /**
+     * A full admin page for an error status, as a finished HTML string.
+     *
+     * The public ErrorController calls this for a signed-in browser request
+     * to an /admin path. The framework's plain 404 body has no layout, no
+     * title, no lang, and two h1 elements, so an admin miss gets the admin
+     * shell instead.
+     *
+     * @param int    $status  HTTP status code
+     * @param string $display Headline for the page title and the body
+     *
+     * @return string Rendered layout HTML
+     */
+    public function renderErrorPage(int $status, string $display): string
+    {
+        ob_start();
+        try {
+            $this->render('admin/errors/error', [
+                'pageTitle' => $display,
+                'status'    => $status,
+                'message'   => $display,
+            ]);
+
+            return (string) ob_get_clean();
+        } catch (\Throwable $e) {
+            ob_end_clean();
+            throw $e;
+        }
+    }
+
+    /**
      * Get a config value for this plugin.
      */
     protected function getConfig(string $key, mixed $default = null): mixed

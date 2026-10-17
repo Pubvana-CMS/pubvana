@@ -84,7 +84,7 @@ A run in flight owns the lock and the progress file: a second `apply()` that can
 
 `UpdateService::runAutoUpdateChain()` is the single implementation: force-check, then apply only when `Updates.autoUpdate` is on, a target exists, and no breaking changes are in range. It returns `status` (ok|noop|refused|error), `message`, and `version`. Two consumers share it: the `updates:auto-update` command (prints, exit 1 on error) and the core cron task. The web equivalent is the index page: when the check is stale it refreshes; when auto is on and the target is clean, it backgrounds `php pubvana updates:auto-update --user {name}`. Both web paths are 24h cache-gated.
 
-**Core cron wiring:** the plugin registers a `24h` task (`pubvana.updates`) with the core cron system (`docs/Cron.md`, `CronService`). The task callable throws only on `error`, so a real failure shows as FAILED in the error log and exits the run with code 2; `noop` and `refused` return quietly. Never register additional intervals; long-running update work belongs in `24h` only.
+**Core cron wiring:** the plugin registers a `24h` task (`pubvana.updates`) with the core cron system (Cron Service: https://pubvanacms.com/docs/dev/v/3.0/services/cron, and `CronService`). The task callable throws only on `error`, so a real failure shows as FAILED in the error log and exits the run with code 2; `noop` and `refused` return quietly. Never register additional intervals; long-running update work belongs in `24h` only.
 
 ## Development and testing
 

@@ -39,12 +39,12 @@
 }
 
 .pv-profile-username {
-    color: #777;
+    color: #6c757d;
     margin: 0;
 }
 
 .pv-profile-meta {
-    color: #777;
+    color: #6c757d;
     margin: 0;
 }
 
@@ -109,7 +109,7 @@
 }
 
 .pv-profile-btn-secondary {
-    color: #777;
+    color: #6c757d;
     background-color: transparent;
     border-color: #ccc;
 }

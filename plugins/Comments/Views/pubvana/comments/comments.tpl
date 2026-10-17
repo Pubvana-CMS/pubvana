@@ -14,7 +14,7 @@
                     </div>
                     <div class="pv-comment-body">{! comment.body !}</div>
                     {% if comments_open %}
-                    <button type="button" class="pv-comment-reply" data-parent-id="{{ comment.id }}" data-author="{{ comment.author }}">Reply</button>
+                    <button type="button" class="pv-comment-reply" data-parent-id="{{ comment.id }}" data-author="{{ comment.author }}" aria-label="Reply to {{ comment.author }}">Reply</button>
                     {% endif %}
                 </li>
                 {% endfor %}
@@ -27,15 +27,19 @@
             <form method="POST" action="{{ comment_post_url }}" class="pv-comment-form" id="pv-comment-form" autocomplete="off">
                 {% csrf_field %}
                 <input type="hidden" name="parent_id" id="pv-comment-parent-id" value="">
-                <div class="pv-comment-replying" id="pv-comment-replying" hidden>
+                <div class="pv-comment-replying" id="pv-comment-replying" role="status" hidden>
                     Replying to <span id="pv-comment-replying-author"></span>
                     <button type="button" class="pv-comment-cancel-reply" id="pv-comment-cancel-reply">Cancel</button>
                 </div>
-                <textarea name="body" rows="4" placeholder="Leave a comment..." required></textarea>
+                <label for="pv-comment-body">Comment <span aria-hidden="true">*</span></label>
+                <textarea name="body" id="pv-comment-body" rows="4" required></textarea>
                 {% if comments_is_guest %}
-                <input type="text" name="guest_name" placeholder="Name" required>
-                <input type="email" name="guest_email" placeholder="Email (optional)">
-                <input type="text" name="guest_website" placeholder="Website (optional)">
+                <label for="pv-comment-guest-name">Name <span aria-hidden="true">*</span></label>
+                <input type="text" name="guest_name" id="pv-comment-guest-name" autocomplete="name" required>
+                <label for="pv-comment-guest-email">Email (optional)</label>
+                <input type="email" name="guest_email" id="pv-comment-guest-email" autocomplete="email">
+                <label for="pv-comment-guest-website">Website (optional)</label>
+                <input type="text" name="guest_website" id="pv-comment-guest-website">
                 {% endif %}
                 {% captcha 'comments' %}
                 <button type="submit">Post Comment</button>
@@ -63,11 +67,13 @@
                 if (reply) {
                     event.preventDefault();
                     parentInput.value = reply.getAttribute('data-parent-id') || '';
-                    if (bannerAuthor) {
-                        bannerAuthor.textContent = reply.getAttribute('data-author') || '';
-                    }
+                    // Reveal the live region before filling it. A change made
+                    // while it is still hidden is not announced.
                     if (banner) {
                         banner.hidden = false;
+                    }
+                    if (bannerAuthor) {
+                        bannerAuthor.textContent = reply.getAttribute('data-author') || '';
                     }
                     if (textarea) {
                         textarea.focus();

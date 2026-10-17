@@ -3,7 +3,7 @@
    adext public.css. Plugin CSS loads before the theme stylesheet, so a theme
    overrides these selectors with plain rules at equal specificity. A theme
    can also replace this file entirely by shipping
-   themes/{theme}/assets/Comments/css/comments.css (see build_docs/Themes.md). */
+   themes/{theme}/assets/Comments/css/comments.css (see https://pubvanacms.com/docs/dev/v/3.0/dev-for-pubvana/themes). */
 .pv-comments { margin-top: 2rem; }
 .pv-comments-list { list-style: none; margin: 0; padding: 0; }
 .pv-comment { padding: .75rem .75rem 0 0; }

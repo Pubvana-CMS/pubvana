@@ -120,7 +120,8 @@
                                  server-side invariant in PluginsController::save()
                                  never disables required plugins. -->
                             <label class="form-check form-switch mb-0 d-flex justify-content-center" title="Required core plugin: cannot be disabled">
-                                <input class="form-check-input" type="checkbox" checked disabled>
+                                <input class="form-check-input" type="checkbox" checked disabled
+                                       aria-label="Required core plugin, always enabled">
                             </label>
                         <?php else: ?>
                             <form method="post" action="/admin/plugins/save" class="d-inline-flex align-items-center justify-content-center gap-1 js-trust-toggle" data-plugin-name="<?= htmlspecialchars($plugin['name'], ENT_QUOTES, 'UTF-8') ?>">
