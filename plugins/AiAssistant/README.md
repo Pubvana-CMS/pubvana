@@ -11,6 +11,7 @@ The AI Assistant lets an AI assistant you trust create and manage content on you
 - Triage the 404s the site has collected, turning them into redirects
 - Keep navigation menus tidy
 - Fact check posts and pages, on your terms
+- Let other plugins add their own permissions to the assistant
 
 ## Installation
 

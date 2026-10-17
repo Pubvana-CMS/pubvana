@@ -5,6 +5,14 @@ All notable changes to the Comments plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.13] - 2026-10-17
+
+### Added
+- An import can set a comment's original posting time.
+
+### Changed
+- Accessibility: the comment form fields carry labels and `autocomplete` tokens, reply buttons name the author, and the admin row buttons carry an `aria-label`.
+
 ## [0.2.12] - 2026-10-06
 
 ### Fixed

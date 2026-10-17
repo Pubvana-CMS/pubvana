@@ -5,6 +5,14 @@ All notable changes to the AI Assistant plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.16] - 2026-10-17
+
+### Added
+- The `ai.grant` extension type lets a plugin register its own permissions. They appear in `/api/ai/help`, the Help page, and the grant form, and a plugin cannot replace a built-in token.
+
+### Changed
+- Saving a key's grants keeps the grants the form did not render, so a grant whose plugin is disabled or removed is not revoked.
+
 ## [0.3.15] - 2026-10-07
 
 ### Added

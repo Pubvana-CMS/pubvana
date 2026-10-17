@@ -4,6 +4,22 @@ All notable changes to the Default theme will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
+
+## [1.4.33] - 2026-10-17
+
+### Added
+- A skip link to `#main`, and `id="main"` with `tabindex="-1"` on the content element.
+- A screen-reader-only `h1` on the homepage.
+
+### Changed
+- Contrast and focus colours are measured against the surface they sit on.
+- The sidebar is an `aside` landmark. The navbar and pagination are labelled `nav` landmarks.
+- Form input borders measure 4.54:1.
+
+### Fixed
+- The hero title was an `h1`, so a page with the hero had two top-level headings.
+- The mobile navbar toggler had no label or `aria-expanded`.
+
 ## [1.4.32] - 2026-10-14
 
 ### Added

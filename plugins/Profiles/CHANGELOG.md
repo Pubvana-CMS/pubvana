@@ -5,6 +5,11 @@ All notable changes to the Profiles plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.2] - 2026-10-17
+
+### Changed
+- Accessibility: secondary text uses a colour that meets contrast on the page background.
+
 ## [0.3.1] - 2026-10-07
 
 ### Added

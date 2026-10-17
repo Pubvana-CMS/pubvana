@@ -5,6 +5,14 @@ All notable changes to the Forms plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.12] - 2026-10-17
+
+### Changed
+- Accessibility: the submissions filter carries an `aria-label`, fields use a 4.54:1 border, and focus draws a visible outline.
+
+### Fixed
+- A select wore the focus border at rest, because it was left out of the focus selector.
+
 ## [0.2.11] - 2026-10-06
 
 ### Fixed

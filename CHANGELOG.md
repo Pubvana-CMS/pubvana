@@ -5,16 +5,18 @@ Notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## [3.0.0-beta.12] - 2026-10-17
 
 ### Added
 - updates to allow the flexibility for Imports to work properly 
 - .well-known/security.txt
 - plugins can register with AI Assistant
+- WCAG 2.2 AA Accessibility compliance for admin and default theme
 
 ### Changed
 - same block can be added multiple times in the same region now
 - imports keep original posting time in Comments
+- README.md updated
 
 ## Fixed
 - Activity log didn't actually prune logs

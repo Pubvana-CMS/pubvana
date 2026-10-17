@@ -5,6 +5,14 @@ All notable changes to the Media plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.4] - 2026-10-17
+
+### Added
+- `storeFromPath()` stores a file that already exists on disk, for imports. It runs the same validation and derivatives as an upload.
+
+### Changed
+- Accessibility: the picker preview and the upload zone are buttons with labels, and the close button is named.
+
 ## [0.2.3] - 2026-10-07
 
 ### Fixed
