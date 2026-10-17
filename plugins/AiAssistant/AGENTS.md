@@ -164,6 +164,28 @@ Grants are deny-all and per key. A request that needs an ungranted permission fa
 
 Fact checking has no per-key grants; its endpoints open to every authenticated key when the admin accepts the terms and switches the service on.
 
+### Plugin grants
+
+A plugin adds its own grants through the `ai.grant` extension type in `ExtensionRegistry::TYPES`. The contributor key is the grant token, so a plugin registers its tokens in batch mode, one entry per token:
+
+```php
+$app->adext()->register('ai.grant', 'default', [
+    'marketplace.installs.read' => [
+        'group'   => 'marketplace',
+        'label'   => 'View installs',
+        'summary' => 'List the installed marketplace items.',
+        'method'  => 'GET',
+        'path'    => '/api/ai/marketplace/installs',
+    ],
+]);
+```
+
+`AiService::helpCatalog()` merges these over the built-in entries, so one registration puts the grant in `/api/ai/help`, the admin Help page, the per-key grant form, and the check `updateGrants()` runs before storing a grant. A plugin cannot replace a built-in token, and a collision is logged and ignored, so `posts.read` always means what this plugin says it means. `endpoints` is optional, for one grant whose label spans more than one route.
+
+The plugin owns the endpoint. It registers its own routes under the API base and its controller extends `AiApiController` for `requireKey()`, `requireGrant()`, `log()`, and the envelope, which leaves it with the same auth, audit, and response rules as the built-in endpoints. Grants stay deny-all.
+
+Saving a key's grants only changes the tokens the form rendered, so a grant whose plugin is not loaded (disabled, or removed) survives the save. `AiAdminController::updateGrants()` passes the rendered token list for that reason. Omitting it makes `updateGrants()` replace the whole set, which is what a programmatic caller wants.
+
 ### Content rules
 
 - Lists and single fetches need the matching read grant. `GET /api/ai/posts` and `GET /api/ai/pages` paginate over every status, drafts included. Query params: `page` (default 1), `per_page` (default 25, max 100), `status`, `search` (adds a `snippet` around the first match).
@@ -230,7 +252,7 @@ Steps that go beyond the repo-wide style, derived from the existing code:
 1. `declare(strict_types=1);` first line in every class file.
 2. Class name, file name, and namespace must align: `Pubvana\Plugins\AiAssistant\Services\AiService` is in `Services/AiService.php`.
 3. Endpoints keep the sequence: authenticate, require grant, validate input, act, log, respond through `ok()`/`fail()`. On validation failure, log a specific `error` detail before `fail()`.
-4. Every new permission must be added to `AiService::helpCatalog()` with its route group, label, summary, and endpoints. The catalog drives `/api/ai/help`, the admin help page, and grant-form rendering, so it is the point of truth for grants.
+4. Every new permission must be added to `AiService::helpCatalog()` with its route group, label, summary, and endpoints. The catalog drives `/api/ai/help`, the admin help page, and grant-form rendering, so it is the point of truth for grants. A plugin adds its own permissions through the `ai.grant` extension type instead, and `helpCatalog()` merges them in.
 5. All API reads return display-safe arrays; HTML content is served as Markdown and never raw. Serializers (`serializePost`, `serializePage`, `serializeComment`, `serializeRedirect`, `serializeNavigationItem`) must stay in `AiService`.
 6. Keep pagination bounded: `per_page` is clamped to `[1, 100]` and `page` to `>= 1` for every list endpoint (see `AiPostsApiController::posts()`). Do not introduce an unbounded list.
 7. Grant-check before acting: posting a `published` status requires the `publish` grant, not the bare create/update grant. Do not publish or schedule under the write grant alone; moving an existing schedule's date takes `posts.schedule` too. State changes gate both ways: demoting a live item (`published`/`scheduled` -> `draft`) takes the grant for the state being torn down (`AiService::demoteGrant()`), and omitting `status` on an update leaves the current state untouched.
@@ -251,6 +273,7 @@ Steps that go beyond the repo-wide style, derived from the existing code:
 | Goal | Where to look |
 |------|---------------|
 | Add a permission (and its endpoint) | `AiService::helpCatalog()`, then the API methods in the matching `Ai*ApiController.php`, then a route in `Plugin::register()` |
+| Add a grant for a plugin's own endpoint | `ai.grant` registration in the plugin's `Plugin::register()`, merged by `AiService::helpCatalog()` (see Plugin grants above) |
 | Change the fact-checking gate, prompt fetch, report rules, or staleness | `FactCheckService.php` |
 | Change the fact-check prompt text or version | `Config/fact-check-prompt.json` (bundled copy) and the hosted source at `factcheck_prompt_url` |
 | Change the public fact-check block | provider data in `FactCheckService::blockData()`, template `Views/public/blocks/fact-check-summary.tpl`, registration in `Plugin::register()` |

@@ -84,7 +84,11 @@ class AiAdminController extends AdminController
     }
 
     /**
-     * Replace a key's entire grant set from submitted checkboxes.
+     * Replace a key's grant set from submitted checkboxes.
+     *
+     * The tokens the manage page rendered are handed along with the ticked
+     * ones, so a grant whose source plugin is not loaded does not get
+     * revoked by a save it could not appear in.
      */
     public function updateGrants(string $id): void
     {
@@ -98,7 +102,14 @@ class AiAdminController extends AdminController
             }
         }
 
-        if ($this->app->ai()->updateGrants($keyId, $permissions)) {
+        $visible = [];
+        foreach ($this->app->ai()->helpGroups() as $group) {
+            foreach (array_keys($group) as $permission) {
+                $visible[] = (string) $permission;
+            }
+        }
+
+        if ($this->app->ai()->updateGrants($keyId, $permissions, $visible)) {
             $this->app->session()->flash('success', 'Key grants updated.');
         } else {
             $this->app->session()->flash('error', 'API key not found.');

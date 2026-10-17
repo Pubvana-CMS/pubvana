@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use Pubvana\Plugins\AiAssistant\Controllers\AiPagesApiController;
 use Pubvana\Plugins\AiAssistant\Services\AiService;
 use Pubvana\Plugins\AiAssistant\Services\MarkdownService;
+use Pubvana\Services\ExtensionRegistry;
 use Pubvana\Tests\Support\Sqlite;
 use Pubvana\Tests\Support\TestCase;
 use flight\util\Collection;
@@ -189,7 +190,7 @@ final class AiPagesUpdateTest extends TestCase
 
     private function service(): AiService
     {
-        $app = $this->app([]);
+        $app = $this->app(['adext' => static fn(): ExtensionRegistry => new ExtensionRegistry()]);
         $service = new AiService($this->pdo, $app, ['route_prefix' => '/api/ai']);
         $app->map('ai', static fn(): AiService => $service);
 

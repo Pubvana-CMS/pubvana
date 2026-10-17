@@ -12,6 +12,7 @@ use Pubvana\Plugins\AiAssistant\Controllers\Ai404sApiController;
 use Pubvana\Plugins\AiAssistant\Services\AiService;
 use Pubvana\Plugins\Redirects\Services\RedirectLinksService;
 use Pubvana\Plugins\Redirects\Services\RedirectsService;
+use Pubvana\Services\ExtensionRegistry;
 use Pubvana\Tests\Support\Sqlite;
 use Pubvana\Tests\Support\TestCase;
 
@@ -420,7 +421,7 @@ final class Ai404sApiControllerTest extends TestCase
 
     private function service(): AiService
     {
-        $app = $this->app([]);
+        $app = $this->app(['adext' => static fn(): ExtensionRegistry => new ExtensionRegistry()]);
         $service = new AiService($this->pdo, $app, self::AI_CONFIG);
         $app->map('ai', static fn(): AiService => $service);
 

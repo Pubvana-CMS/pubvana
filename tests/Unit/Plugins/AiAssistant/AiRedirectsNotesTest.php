@@ -10,6 +10,7 @@ use Pubvana\Plugins\AiAssistant\Controllers\AiRedirectsApiController;
 use Pubvana\Plugins\AiAssistant\Services\AiService;
 use Pubvana\Plugins\Redirects\Models\Redirect;
 use Pubvana\Plugins\Redirects\Services\RedirectsService;
+use Pubvana\Services\ExtensionRegistry;
 use Pubvana\Tests\Support\Sqlite;
 use Pubvana\Tests\Support\TestCase;
 use flight\Engine;
@@ -219,7 +220,7 @@ final class AiRedirectsNotesTest extends TestCase
 
     private function service(): AiService
     {
-        $app = $this->app([]);
+        $app = $this->app(['adext' => static fn(): ExtensionRegistry => new ExtensionRegistry()]);
         $service = new AiService($this->pdo, $app, self::AI_CONFIG);
         $app->map('ai', static fn(): AiService => $service);
 

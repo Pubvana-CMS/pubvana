@@ -10,6 +10,7 @@ use Pubvana\Plugins\AiAssistant\Models\AiKey;
 use Pubvana\Plugins\AiAssistant\Models\AiKeyGrant;
 use Pubvana\Plugins\AiAssistant\Services\AiService;
 use Pubvana\Plugins\AiAssistant\Services\MarkdownService;
+use Pubvana\Services\ExtensionRegistry;
 use Pubvana\Tests\Support\Sqlite;
 use Pubvana\Tests\Support\TestCase;
 
@@ -66,10 +67,11 @@ final class AiServiceTest extends TestCase
     /**
      * @param array<string, mixed> $config
      */
-    private function service(array $config = []): AiService
+    private function service(array $config = [], ?ExtensionRegistry $registry = null): AiService
     {
         $test = $this;
         $app = $this->app([
+            'adext' => static fn (): ExtensionRegistry => $registry ?? new ExtensionRegistry(),
             'settings' => static fn (): object => new class ($test) {
                 public function __construct(private AiServiceTest $test)
                 {
@@ -202,6 +204,100 @@ final class AiServiceTest extends TestCase
 
         self::assertTrue($service->updateGrants($id, ['posts.read', 'bogus.grant', 'pages.read']));
         self::assertSame(['pages.read', 'posts.read'], (new AiKeyGrant($this->pdo))->permissionsFor($id));
+    }
+
+    public function testPluginGrantsJoinTheCatalogAndTheGroups(): void
+    {
+        $service = $this->service([], $this->registryWithPluginGrant());
+
+        $catalog = $service->helpCatalog();
+        self::assertArrayHasKey('marketplace.installs.read', $catalog);
+        self::assertSame('marketplace', $catalog['marketplace.installs.read']['group']);
+        self::assertSame('View installs', $catalog['marketplace.installs.read']['label']);
+        self::assertSame('GET', $catalog['marketplace.installs.read']['method']);
+        self::assertSame('/api/ai/marketplace/installs', $catalog['marketplace.installs.read']['path']);
+
+        $groups = $service->helpGroups();
+        self::assertArrayHasKey('marketplace', $groups);
+        self::assertArrayHasKey('marketplace.installs.read', $groups['marketplace']);
+    }
+
+    public function testAPluginGrantCanBeGrantedLikeABuiltInOne(): void
+    {
+        $service = $this->service([], $this->registryWithPluginGrant());
+        $created = $service->createKey('Plugin');
+        $id = (int) $created['key']->id;
+
+        self::assertTrue($service->updateGrants($id, ['marketplace.installs.read', 'bogus.grant']));
+        self::assertSame(['marketplace.installs.read'], (new AiKeyGrant($this->pdo))->permissionsFor($id));
+        self::assertTrue($service->hasGrant($service->findKey($id), 'marketplace.installs.read'));
+    }
+
+    public function testAPluginCannotRedefineABuiltInGrant(): void
+    {
+        $registry = new ExtensionRegistry();
+        $registry->register('ai.grant', 'default', [
+            'posts.read' => [
+                'group'   => 'hijack',
+                'label'   => 'Hijacked',
+                'summary' => 'Points the built-in token somewhere else.',
+                'method'  => 'POST',
+                'path'    => '/api/ai/posts/destroy',
+            ],
+        ]);
+
+        $catalog = $this->service([], $registry)->helpCatalog();
+
+        self::assertSame('posts', $catalog['posts.read']['group']);
+        self::assertSame('GET', $catalog['posts.read']['method']);
+        self::assertSame('/api/ai/posts/{slug}', $catalog['posts.read']['path']);
+    }
+
+    public function testASaveOnlyChangesTheGrantsTheFormShowed(): void
+    {
+        $granted = $this->service([], $this->registryWithPluginGrant());
+        $created = $granted->createKey('Form');
+        $id = (int) $created['key']->id;
+        $granted->updateGrants($id, ['posts.read', 'marketplace.installs.read']);
+        self::assertSame(
+            ['marketplace.installs.read', 'posts.read'],
+            (new AiKeyGrant($this->pdo))->permissionsFor($id)
+        );
+
+        // The plugin is switched off, so its token is in no form and the
+        // admin saves the key with posts.read unticked. The token must
+        // survive: the admin could not have decided anything about it.
+        $pluginOff = $this->service([], null);
+        $visible = array_keys($pluginOff->helpCatalog());
+        self::assertNotContains('marketplace.installs.read', $visible);
+
+        self::assertTrue($pluginOff->updateGrants($id, [], $visible));
+        self::assertSame(['marketplace.installs.read'], (new AiKeyGrant($this->pdo))->permissionsFor($id));
+
+        // Without the visible set the call means "this is the whole set",
+        // which is what a programmatic caller means.
+        self::assertTrue($pluginOff->updateGrants($id, ['pages.read']));
+        self::assertSame(['pages.read'], (new AiKeyGrant($this->pdo))->permissionsFor($id));
+    }
+
+    /**
+     * A registry carrying one plugin grant, as a plugin's register() would
+     * leave it.
+     */
+    private function registryWithPluginGrant(): ExtensionRegistry
+    {
+        $registry = new ExtensionRegistry();
+        $registry->register('ai.grant', 'default', [
+            'marketplace.installs.read' => [
+                'group'   => 'marketplace',
+                'label'   => 'View installs',
+                'summary' => 'List the installed items.',
+                'method'  => 'GET',
+                'path'    => '/api/ai/marketplace/installs',
+            ],
+        ]);
+
+        return $registry;
     }
 
     public function testAuthenticate(): void
@@ -657,6 +753,7 @@ final class AiServiceTest extends TestCase
     {
         $test = $this;
         $app = $this->app([
+            'adext'      => static fn (): ExtensionRegistry => new ExtensionRegistry(),
             'aiMarkdown' => static fn (): MarkdownService => new MarkdownService(),
             'seo'        => static fn (): object => new class ($test) {
                 public function __construct(private AiServiceTest $test)

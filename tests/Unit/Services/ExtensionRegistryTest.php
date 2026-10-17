@@ -53,6 +53,56 @@ final class ExtensionRegistryTest extends TestCase
         self::assertTrue($registry->has('admin.menu', 'content'));
     }
 
+    public function testAiGrantRegistrationStoresEachTokenAsItsOwnGrant(): void
+    {
+        $registry = new ExtensionRegistry();
+
+        $registry->register('ai.grant', 'default', [
+            'marketplace.installs.read' => [
+                'group'    => 'marketplace',
+                'label'    => 'View installs',
+                'summary'  => 'List the installed items.',
+                'method'   => 'GET',
+                'path'     => '/api/ai/marketplace/installs',
+                'priority' => 10,
+            ],
+            'marketplace.installs.delete' => [
+                'group'     => 'marketplace',
+                'label'     => 'Delete installs',
+                'summary'   => 'Remove an installed item.',
+                'method'    => 'POST',
+                'path'      => '/api/ai/marketplace/installs/{id}/delete',
+                'endpoints' => ['/api/ai/marketplace/installs/{id}/delete'],
+                'priority'  => 30,
+            ],
+        ]);
+
+        $grants = $registry->get('ai.grant', 'default');
+
+        // The contributor key is the grant token, so one plugin owns as many
+        // tokens as it needs without a separate token key in the schema.
+        self::assertSame(['marketplace.installs.read', 'marketplace.installs.delete'], array_keys($grants));
+        self::assertSame('marketplace', $grants['marketplace.installs.read']['group']);
+        self::assertSame(['/api/ai/marketplace/installs/{id}/delete'], $grants['marketplace.installs.delete']['endpoints']);
+    }
+
+    public function testAiGrantRefusesAMissingRequiredKey(): void
+    {
+        $registry = new ExtensionRegistry();
+
+        self::assertFalse($registry->register('ai.grant', 'default', 'marketplace.installs.read', [
+            'group'   => 'marketplace',
+            'label'   => 'View installs',
+            'summary' => 'List the installed items.',
+            'method'  => 'GET',
+        ]));
+
+        $errors = $registry->errors();
+        self::assertCount(1, $errors);
+        self::assertStringContainsString('missing required keys [path]', $errors[0]['reason']);
+        self::assertFalse($registry->has('ai.grant', 'default'));
+    }
+
     public function testAdminUrlsGetPrefixedWithAdmin(): void
     {
         $registry = new ExtensionRegistry();

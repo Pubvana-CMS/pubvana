@@ -125,13 +125,21 @@ class AiService
     }
 
     /**
-     * Replace a key's entire grant set.
+     * Replace a key's grant set from a submitted grant form.
      *
-     * @param int      $keyId
-     * @param string[] $permissions
+     * $permissions is what the form had ticked. $visible is every token the
+     * form rendered, and passing it is what keeps a save from revoking
+     * grants the admin could not see: a token whose source plugin is not
+     * currently loaded (disabled, or removed) is in neither list, so it
+     * survives. Without $visible the whole set is replaced by the
+     * catalog-valid subset of $permissions.
+     *
+     * @param int           $keyId
+     * @param string[]      $permissions Ticked tokens
+     * @param string[]|null $visible     Every token the form showed
      * @return bool False when the key does not exist
      */
-    public function updateGrants(int $keyId, array $permissions): bool
+    public function updateGrants(int $keyId, array $permissions, ?array $visible = null): bool
     {
         $key = $this->findKey($keyId);
         if ($key === null) {
@@ -144,6 +152,15 @@ class AiService
             $permission = (string) $permission;
             if (isset($catalog[$permission])) {
                 $cleaned[] = $permission;
+            }
+        }
+
+        if ($visible !== null) {
+            $shown = array_flip(array_map('strval', $visible));
+            foreach ($this->grantModel()->permissionsFor($keyId) as $existing) {
+                if (!isset($shown[$existing])) {
+                    $cleaned[] = $existing;
+                }
             }
         }
 
@@ -345,13 +362,18 @@ class AiService
      * so the catalog is a single source of truth. `label` is the plain
      * English name shown to site admins; `summary` is the one-liner.
      *
+     * Grants plugins registered under the 'ai.grant' extension type are
+     * merged in, so a plugin's own endpoints sit beside the built-in ones
+     * with no other change. The built-in entries are written first, because
+     * a plugin does not get to redefine a token this plugin already owns.
+     *
      * @return array<string, array{method: string, path: string, group: string, label: string, summary: string, endpoints?: list<string>}>
      */
     public function helpCatalog(): array
     {
         $base = $this->apiBase();
 
-        return [
+        $catalog = [
             'posts.read'             => ['method' => 'GET',  'path' => $base . '/posts/{slug}',          'group' => 'posts',      'label' => 'View posts',           'summary' => 'List and view posts. Lists show every status and support page, status, and search params.', 'endpoints' => [$base . '/posts', $base . '/posts/{slug}']],
             'posts.create'           => ['method' => 'POST', 'path' => $base . '/posts',                 'group' => 'posts',      'label' => 'Create drafts',        'summary' => 'Write a new blog post as a draft.'],
             'posts.update'           => ['method' => 'POST', 'path' => $base . '/posts/{id}/update',     'group' => 'posts',      'label' => 'Edit posts',           'summary' => 'Change an existing post.'],
@@ -387,6 +409,16 @@ class AiService
             'brokenlinks.dismiss'    => ['method' => 'POST', 'path' => $base . '/broken-links/{id}/dismiss','group' => 'brokenlinks', 'label' => 'Dismiss a broken link',    'summary' => 'Permanently dismiss a broken link entry so scans stop reporting it.'],
             'analytics.read'         => ['method' => 'GET',  'path' => $base . '/analytics',                'group' => 'analytics',   'label' => 'View analytics',       'summary' => 'See page view totals, trends, top content, and referrers for a period.'],
         ];
+
+        foreach ($this->pluginGrants() as $grant => $entry) {
+            if (isset($catalog[$grant])) {
+                error_log("AiService: plugin grant '{$grant}' is already a built-in grant, ignored.");
+                continue;
+            }
+            $catalog[$grant] = $entry;
+        }
+
+        return $catalog;
     }
 
     /**
@@ -409,6 +441,40 @@ class AiService
             $groups[$entry['group']][$permission] = $entry;
         }
         return $groups;
+    }
+
+    /**
+     * Grant entries plugins registered under the 'ai.grant' extension type.
+     *
+     * The contributor key is the grant token, so the registry already keys
+     * these the way the catalog does. Values are cast because register()
+     * stores plugin config as it was given, while the catalog shape is what
+     * the help view, the grant form, and updateGrants() read.
+     *
+     * @return array<string, array{method: string, path: string, group: string, label: string, summary: string, endpoints?: list<string>}>
+     */
+    private function pluginGrants(): array
+    {
+        $grants = [];
+
+        foreach ($this->app->adext()->get('ai.grant', 'default') as $grant => $entry) {
+            $grants[$grant] = [
+                'method'  => (string) ($entry['method'] ?? ''),
+                'path'    => (string) ($entry['path'] ?? ''),
+                'group'   => (string) ($entry['group'] ?? ''),
+                'label'   => (string) ($entry['label'] ?? ''),
+                'summary' => (string) ($entry['summary'] ?? ''),
+            ];
+
+            $endpoints = $entry['endpoints'] ?? null;
+            if (is_array($endpoints)) {
+                $grants[$grant]['endpoints'] = array_values(
+                    array_map(static fn(mixed $url): string => (string) $url, $endpoints)
+                );
+            }
+        }
+
+        return $grants;
     }
 
     // -----------------------------------------------------------------

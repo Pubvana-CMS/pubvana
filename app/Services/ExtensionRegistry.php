@@ -448,6 +448,53 @@ class ExtensionRegistry
             'required' => [],
             'optional' => ['prefix', 'pattern', 'label', 'description', 'priority'],
         ],
+
+        /*
+        |------------------------------------------------------------------
+        | AI Grant Type
+        |------------------------------------------------------------------
+        | Plugins register the permission tokens their own endpoints accept
+        | from the AI Assistant's sessionless API. Each registration is one
+        | grant: the contributor key is the token (namespaced dot notation,
+        | e.g. 'marketplace.installs.read') and the config describes the
+        | endpoint the token opens.
+        |
+        | AiService::helpCatalog() merges these over its built-in catalog,
+        | so one registration puts the grant in /api/ai/help, the admin Help
+        | page, the per-key grant form, and the check AiService::updateGrants()
+        | runs before storing a grant. A plugin cannot replace a built-in
+        | token, and a collision is logged and ignored.
+        |
+        | Registration (from a plugin's Plugin.php register()):
+        |   $app->adext()->register('ai.grant', 'default', [
+        |       'marketplace.installs.read' => [
+        |           'group'   => 'marketplace',
+        |           'label'   => 'View installs',
+        |           'summary' => 'List the installed marketplace items.',
+        |           'method'  => 'GET',
+        |           'path'    => '/api/ai/marketplace/installs',
+        |       ],
+        |   ]);
+        |
+        | Batch mode is the normal call: one plugin usually contributes
+        | several grants, and batch mode is how it gives each one its own
+        | token.
+        |
+        | The plugin owns the endpoint. It registers its own routes under
+        | the API base and its controller extends AiApiController for
+        | requireKey(), requireGrant(), log(), and the response envelope.
+        | Grants stay deny-all: a token opens nothing until an admin ticks
+        | it on a key.
+        |
+        | 'endpoints' lists the extra URLs one grant covers, for grants
+        | whose one label spans more than one route (the built-in
+        | posts.read covers a list and a single fetch).
+        */
+        'ai.grant' => [
+            'slots'    => ['default'],
+            'required' => ['group', 'label', 'summary', 'method', 'path'],
+            'optional' => ['endpoints', 'priority'],
+        ],
     ];
 
     /**

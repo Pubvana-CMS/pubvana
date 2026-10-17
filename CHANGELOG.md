@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 - updates to allow the flexibility for Imports to work properly 
+- .well-known/security.txt
+- plugins can register with AI Assistant
 
 ### Changed
 - same block can be added multiple times in the same region now
