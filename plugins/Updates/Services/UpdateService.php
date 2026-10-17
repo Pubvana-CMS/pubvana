@@ -33,8 +33,6 @@ class UpdateService
     /** @var array<string, mixed> */
     private array $config;
 
-    private ?string $currentVersion = null;
-
     /**
      * @param Engine<object>          $app
      * @param array<string, mixed>    $config
@@ -117,14 +115,13 @@ class UpdateService
 
     /**
      * The installed Pubvana version from the root pubvana.json manifest.
+     *
+     * Read on every call. The apply path replaces this manifest mid-run, so a
+     * value held from before the copy would outlive the file it came from.
      */
     public function currentVersion(): string
     {
-        if ($this->currentVersion === null) {
-            $this->currentVersion = self::readManifestVersion($this->manifestPath()) ?? '0.0.0';
-        }
-
-        return $this->currentVersion;
+        return self::readManifestVersion($this->manifestPath()) ?? '0.0.0';
     }
 
     /**

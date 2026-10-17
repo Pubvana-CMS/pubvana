@@ -94,6 +94,11 @@ final class UpdateApplyService
             $backupFile      = $this->runBackup($reporter, $triggeredBy);
             $zipPath         = $this->runDownload($reporter, $targetVersion);
             $source          = $this->runExtract($reporter, $zipPath);
+
+            // The copy replaces pubvana.json, so read the outgoing version
+            // before it lands.
+            $previousVersion = $this->updates->currentVersion();
+
             $this->runCopy($reporter, $source);
 
             // The installed version changed on disk, so the cached check is
@@ -117,7 +122,7 @@ final class UpdateApplyService
             $refresh = $this->updates->refreshSiteState();
 
             $reporter->complete([
-                'previous_version' => $this->updates->currentVersion(),
+                'previous_version' => $previousVersion,
                 'new_version'      => $newVersion,
                 'target_version'   => $targetVersion,
                 'backup_file'      => basename($backupFile),

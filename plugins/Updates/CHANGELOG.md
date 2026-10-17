@@ -4,6 +4,11 @@ All notable changes to the Updates plugin will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
+## [0.5.1] - 2026-10-17
+
+### Fixed
+- After an update finished, the Updates page still showed the version it replaced. The post-update recheck read the version from before the file copy and recorded it as current.
+
 ## [0.5.0] - 2026-10-14
 
 ### Added

@@ -5,6 +5,11 @@ Notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+- After an update finished, the Updates page still showed the version it replaced
+
+
 ## [3.0.0-beta.12] - 2026-10-17
 
 ### Added
