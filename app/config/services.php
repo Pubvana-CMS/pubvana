@@ -60,15 +60,17 @@ require(__DIR__ . $ds . 'env-overrides.php');
 |--------------------------------------------------------------------------
 | Tracy Debugger / Error Reporting
 |--------------------------------------------------------------------------
-| APP_ENV decides who owns error reporting; APP_DEBUG (flight.debug) decides
-| how verbose development is:
+| APP_ENV is the only switch. env-overrides.php derives flight.debug from it
+| (flight.debug = environment === 'development'), so APP_DEBUG in .env does
+| nothing:
 |
-|   development + APP_DEBUG=true  -> Tracy DEVELOPMENT mode: debug bar,
-|                                    full trace pages, strict mode
-|   development + APP_DEBUG=false -> Tracy PRODUCTION mode: exceptions are
-|                                    logged to writable/logs/, generic page
-|   production                    -> Flight owns errors: mapped 'error'
-|                                    handler logs + renders JSON/HTML below
+|   development -> Tracy DEVELOPMENT mode: debug bar, full trace pages,
+|                  strict mode
+|   production  -> Flight owns errors: the mapped 'error' handler logs and
+|                  renders JSON or HTML below
+|
+| The PRODUCTION branch below covers a development boot where something set
+| flight.debug to false directly. Nothing in a stock install does.
 */
 
 // Tracy is a dev-only dependency (require-dev): release builds install with

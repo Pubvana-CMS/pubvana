@@ -16,7 +16,7 @@ Pubvana targets **WCAG 2.2 level AA** for the admin UI and the default theme.
 - Author content: What someone typed into the editor. Sanitizing keeps the
   attributes (see `app/Services/HtmlPurifierFactory.php`). It cannot add alt
   text or a heading structure.
-- Debug bar: (on development sites) It renders on `APP_ENV=local` and fails the target
+- Debug bar: (on development sites) It renders on `APP_ENV=development` and fails the target
   size rule.
 
 ## How it was verified

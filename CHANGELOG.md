@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## Unreleased
 
+### Fixes
+
 - After an update finished, the Updates page still showed the version it replaced
+- Fixed stale docs
 
 
 ## [3.0.0-beta.12] - 2026-10-17

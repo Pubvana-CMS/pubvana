@@ -67,7 +67,7 @@ jobs:
             pubvana.json releases.json CHANGELOG.md README.md ACCESSIBILITY.md \
             LICENSE SECURITY.md CODE_OF_CONDUCT.md CONTRIBUTING.md \
             .env.example .htaccess pubvana cron \
-            composer.json composer.lock \
+            composer.json composer.lock nginx.conf.sample \
             -x "*.DS_Store"
 
       - name: Attach release.zip to the release

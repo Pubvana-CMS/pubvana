@@ -30,8 +30,8 @@ use flight\Engine;
  *
  * Callables: a contribution may carry a 'callable'. The registry invokes it
  * only for slots read with a non-empty $context, which today is
- * admin.dashboard and content.edit.panel. Every other type is read with no
- * context, so the consumer service invokes the callable itself.
+ * admin.dashboard, content.edit.panel, and auth.login. Every other type is
+ * read with no context, so the consumer service invokes the callable itself.
  *
  * Usage from a plugin:
  *   $app->adext()->register('admin.menu', 'content', 'pubvana.blog', [
@@ -785,8 +785,8 @@ class ExtensionRegistry
      * An empty $context means callables are NOT invoked: the raw
      * contributions come back and the consumer calls them itself. The check
      * is on the context, not on the type, so a slot read without a context
-     * never triggers a callable. Only admin.dashboard and content.edit.panel
-     * are read with a context today.
+     * never triggers a callable. admin.dashboard, content.edit.panel, and
+     * auth.login are read with a context today.
      *
      * @param string                                 $type    The extension type (e.g. 'admin.menu', 'public.nav')
      * @param string                                 $slot    The slot name (e.g. 'content', 'main')

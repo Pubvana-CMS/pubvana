@@ -68,7 +68,7 @@ Two settings, and which one to read is decided by where the value is edited.
 EG: recently 'redirects' and 'incoming_broken_links' in the database, 'redirects' and 'redirects_links' should have been the names. This way they group in the database.
 - Files: pretty much the same. name the files so 1: they don't conflict with others, and 2: so anyone can look at a file and get a good sense of what it's for (complemented by which folder it's in).
 - Controllers: {package}AdminController, {package}PublicController.
-- Models: Models/{package}Model
+- Models: Models/{Entity}.php, named for the row it represents (EG: Post, Page, RedirectLink)
 - Services: Service/{package}Service (if singleton)
 
 in General, follow this rule, when there's two services {package} is flexible especially for integrating composer packages, etc.   Just use common sense with edge cases.
