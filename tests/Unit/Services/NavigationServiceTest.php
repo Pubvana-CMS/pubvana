@@ -130,11 +130,11 @@ final class NavigationServiceTest extends TestCase
 
     public function testCreateAppliesDefaultsAndAutoSortOrder(): void
     {
-        $first = $this->service->create(['label' => 'One']);
-        $second = $this->service->create(['label' => 'Two']);
+        $first = $this->created(['label' => 'One', 'url' => '/one']);
+        $second = $this->created(['label' => 'Two', 'url' => '/two']);
 
         self::assertSame('One', $first->label);
-        self::assertSame('/', $first->url, 'default url');
+        self::assertSame('/one', $first->url);
         self::assertSame('_self', $first->target, 'default target');
         self::assertSame('primary', $first->nav_group, 'default group');
         self::assertNull($first->parent_id);
@@ -147,15 +147,15 @@ final class NavigationServiceTest extends TestCase
 
     public function testCreateCastsParentIdToNullWhenEmpty(): void
     {
-        $item = $this->service->create(['label' => 'L', 'parent_id' => '']);
+        $item = $this->created(['label' => 'L', 'url' => '/l', 'parent_id' => '']);
 
         self::assertNull($item->parent_id);
     }
 
     public function testCreateStoresProvidedValues(): void
     {
-        $parent = $this->service->create(['label' => 'Parent']);
-        $item = $this->service->create([
+        $parent = $this->created(['label' => 'Parent', 'url' => '/parent']);
+        $item = $this->created([
             'label'      => 'Child',
             'url'        => '/child',
             'nav_group'  => 'footer',
@@ -171,14 +171,170 @@ final class NavigationServiceTest extends TestCase
         self::assertSame(7, (int) $item->sort_order);
     }
 
+    public function testCreateTrimsLabel(): void
+    {
+        $item = $this->created(['label' => '  Spaced  ', 'url' => '/spaced']);
+
+        self::assertSame('Spaced', $item->label);
+    }
+
+    public function testCreateRejectsBlankLabel(): void
+    {
+        $result = $this->service->create(['label' => '   ', 'url' => '/x']);
+
+        self::assertFalse($result->isOK());
+        self::assertSame('A label is required.', $result->reason());
+    }
+
+    public function testCreateRejectsOverlongLabel(): void
+    {
+        $result = $this->service->create(['label' => str_repeat('a', 101), 'url' => '/x']);
+
+        self::assertFalse($result->isOK());
+        self::assertSame('The label is limited to 100 characters.', $result->reason());
+    }
+
+    public function testCreateRejectsBlankUrl(): void
+    {
+        $result = $this->service->create(['label' => 'L', 'url' => '   ']);
+
+        self::assertFalse($result->isOK());
+        self::assertSame('A URL is required.', $result->reason());
+    }
+
+    public function testCreateRejectsOverlongUrl(): void
+    {
+        $result = $this->service->create(['label' => 'L', 'url' => '/' . str_repeat('a', 500)]);
+
+        self::assertFalse($result->isOK());
+        self::assertSame('The URL is limited to 500 characters.', $result->reason());
+    }
+
+    public function testCreateRejectsUnknownTarget(): void
+    {
+        $result = $this->service->create(['label' => 'L', 'url' => '/x', 'target' => '_top']);
+
+        self::assertFalse($result->isOK());
+        self::assertSame('The link target must open in the same window or a new one.', $result->reason());
+    }
+
+    public function testCreateWritesNothingWhenRejected(): void
+    {
+        $this->service->create(['label' => '', 'url' => '/x']);
+
+        self::assertSame([], $this->service->getByGroup('primary'));
+    }
+
+    // -----------------------------------------------------------------
+    // Find
+    // -----------------------------------------------------------------
+
+    public function testFindReturnsItemOrNull(): void
+    {
+        $item = $this->created(['label' => 'L', 'url' => '/l']);
+
+        $found = $this->service->find((int) $item->id);
+        self::assertNotNull($found);
+        self::assertSame((int) $item->id, (int) $found->id);
+        self::assertNull($this->service->find(4242));
+    }
+
+    // -----------------------------------------------------------------
+    // Update
+    // -----------------------------------------------------------------
+
+    public function testUpdateChangesLabelUrlAndTarget(): void
+    {
+        $item = $this->created(['label' => 'Old', 'url' => '/old', 'target' => '_self']);
+
+        $result = $this->service->update((int) $item->id, [
+            'label'  => 'New',
+            'url'    => '/new',
+            'target' => '_blank',
+        ]);
+
+        self::assertTrue($result->isOK(), (string) $result->reason());
+
+        $reloaded = (new NavigationItem($this->pdo))->findById((int) $item->id);
+        self::assertNotNull($reloaded);
+        self::assertSame('New', $reloaded->label);
+        self::assertSame('/new', $reloaded->url);
+        self::assertSame('_blank', $reloaded->target);
+    }
+
+    public function testUpdateLeavesParentGroupAndSortOrderAlone(): void
+    {
+        $parent = $this->created(['label' => 'Parent', 'url' => '/p']);
+        $child = $this->created([
+            'label'     => 'Child',
+            'url'       => '/c',
+            'nav_group' => 'footer',
+            'parent_id' => (string) $parent->id,
+            'sort_order' => '3',
+        ]);
+
+        $this->service->update((int) $child->id, ['label' => 'Child 2', 'url' => '/c2', 'target' => '_self']);
+
+        $reloaded = (new NavigationItem($this->pdo))->findById((int) $child->id);
+        self::assertNotNull($reloaded);
+        self::assertSame((int) $parent->id, (int) $reloaded->parent_id);
+        self::assertSame('footer', $reloaded->nav_group);
+        self::assertSame(3, (int) $reloaded->sort_order);
+    }
+
+    public function testUpdateStampsUpdatedAt(): void
+    {
+        $item = $this->insertItem('L', '/x', 'primary', null, 0);
+        self::assertNull($item->updated_at);
+
+        $this->service->update((int) $item->id, ['label' => 'L2', 'url' => '/x2', 'target' => '_self']);
+
+        $reloaded = (new NavigationItem($this->pdo))->findById((int) $item->id);
+        self::assertNotNull($reloaded);
+        self::assertNotNull($reloaded->updated_at);
+    }
+
+    public function testUpdateSanitizesDangerousUrl(): void
+    {
+        $item = $this->created(['label' => 'L', 'url' => '/ok']);
+
+        $this->service->update((int) $item->id, ['label' => 'L', 'url' => 'javascript:alert(1)', 'target' => '_self']);
+
+        $reloaded = (new NavigationItem($this->pdo))->findById((int) $item->id);
+        self::assertNotNull($reloaded);
+        self::assertSame('#', (string) $reloaded->url);
+    }
+
+    public function testUpdateRejectsBlankLabelAndKeepsStoredValue(): void
+    {
+        $item = $this->created(['label' => 'L', 'url' => '/x']);
+
+        $result = $this->service->update((int) $item->id, ['label' => '', 'url' => '/x', 'target' => '_self']);
+
+        self::assertFalse($result->isOK());
+        self::assertSame('A label is required.', $result->reason());
+
+        $reloaded = (new NavigationItem($this->pdo))->findById((int) $item->id);
+        self::assertNotNull($reloaded);
+        self::assertSame('L', $reloaded->label);
+    }
+
+    public function testUpdateMissingItemIsDenied(): void
+    {
+        $result = $this->service->update(4242, ['label' => 'L', 'url' => '/x', 'target' => '_self']);
+
+        self::assertFalse($result->isOK());
+        self::assertSame('That navigation item no longer exists.', $result->reason());
+    }
+
     // -----------------------------------------------------------------
     // Delete
     // -----------------------------------------------------------------
 
     public function testDeleteReParentsChildrenToTopLevel(): void
     {
-        $parent = $this->service->create(['label' => 'Parent']);
-        $child = $this->service->create(['label' => 'Child', 'parent_id' => $parent->id]);
+        $parent = $this->created(['label' => 'Parent', 'url' => '/parent']);
+        $child = $this->created(['label' => 'Child', 'url' => '/child', 'parent_id' => $parent->id]);
 
         self::assertTrue($this->service->delete((int) $parent->id));
 
@@ -190,8 +346,8 @@ final class NavigationServiceTest extends TestCase
 
     public function testDeleteOnlyReParentsChildrenInSameGroup(): void
     {
-        $parent = $this->service->create(['label' => 'Parent', 'nav_group' => 'primary']);
-        $child = $this->service->create(['label' => 'Child', 'parent_id' => $parent->id]);
+        $parent = $this->created(['label' => 'Parent', 'url' => '/parent', 'nav_group' => 'primary']);
+        $child = $this->created(['label' => 'Child', 'url' => '/child', 'parent_id' => $parent->id]);
         // A child in another group that shares the parent id must not be touched.
         $otherGroup = $this->insertItem('Other group child', '/og', 'footer', (int) $parent->id, 0);
 
@@ -216,9 +372,9 @@ final class NavigationServiceTest extends TestCase
 
     public function testReorderAppliesArrayPositionsAsSortOrder(): void
     {
-        $a = $this->service->create(['label' => 'A']);
-        $b = $this->service->create(['label' => 'B']);
-        $c = $this->service->create(['label' => 'C']);
+        $a = $this->created(['label' => 'A', 'url' => '/a']);
+        $b = $this->created(['label' => 'B', 'url' => '/b']);
+        $c = $this->created(['label' => 'C', 'url' => '/c']);
 
         $this->service->reorder([(int) $c->id, (int) $b->id, (int) $a->id]);
 
@@ -230,7 +386,7 @@ final class NavigationServiceTest extends TestCase
 
     public function testReorderSkipsUnknownIds(): void
     {
-        $this->service->create(['label' => 'A']);
+        $this->created(['label' => 'A', 'url' => '/a']);
         $this->service->reorder([9999, 10000]);
 
         self::assertCount(1, $this->service->getByGroup('primary'));
@@ -303,7 +459,7 @@ final class NavigationServiceTest extends TestCase
 
     public function testCreateSanitizesDangerousUrlScheme(): void
     {
-        $item = $this->service->create(['label' => 'Bad', 'url' => 'javascript:alert(1)']);
+        $item = $this->created(['label' => 'Bad', 'url' => 'javascript:alert(1)']);
 
         self::assertSame('#', (string) $item->url);
     }
@@ -333,6 +489,22 @@ final class NavigationServiceTest extends TestCase
     // -----------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------
+
+    /**
+     * Create through the service and hand back the saved item.
+     *
+     * @param array<string, mixed> $data Item data
+     */
+    private function created(array $data): NavigationItem
+    {
+        $result = $this->service->create($data);
+        self::assertTrue($result->isOK(), (string) $result->reason());
+
+        $item = $result->extraInfo();
+        self::assertInstanceOf(NavigationItem::class, $item);
+
+        return $item;
+    }
 
     /**
      * Insert a row directly so read-side tests control exact data.

@@ -71,12 +71,12 @@ $topLevelItems = array_filter($items, fn($i) => empty($i->parent_id));
                     <div class="mb-3">
                         <label class="form-label" for="navLabel">Label</label>
                         <input type="text" name="label" id="navLabel" class="form-control" required
-                               placeholder="e.g. About Us">
+                               maxlength="100" placeholder="e.g. About Us">
                     </div>
                     <div class="mb-3">
                         <label class="form-label" for="navUrl">URL</label>
                         <input type="text" name="url" id="navUrl" class="form-control" required
-                               placeholder="/about">
+                               maxlength="500" placeholder="/about">
                     </div>
                     <div class="mb-3">
                         <label class="form-label" for="navParent">Parent</label>
@@ -126,11 +126,15 @@ $topLevelItems = array_filter($items, fn($i) => empty($i->parent_id));
                             <i class="ti ti-external-link text-secondary ms-1" style="font-size: 0.75rem;"></i>
                             <?php endif; ?>
                         </span>
-                        <form method="POST" action="/admin/navigation/<?= (int) $item->id ?>/delete"
-                              class="d-inline" onsubmit="return confirm('Delete this item?')">
-                            <?= csrf_field() ?>
-                            <button class="btn btn-sm btn-outline-danger">Delete</button>
-                        </form>
+                        <span class="d-flex gap-2">
+                            <a href="/admin/navigation/<?= (int) $item->id ?>/edit"
+                               class="btn btn-sm btn-outline-secondary">Edit</a>
+                            <form method="POST" action="/admin/navigation/<?= (int) $item->id ?>/delete"
+                                  class="d-inline" onsubmit="return confirm('Delete this item?')">
+                                <?= csrf_field() ?>
+                                <button class="btn btn-sm btn-outline-danger">Delete</button>
+                            </form>
+                        </span>
                     </li>
                     <?php endforeach; ?>
                 </ul>

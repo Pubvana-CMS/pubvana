@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pubvana\Services;
 
+use Enlivenapp\FlightShield\Result;
 use Pubvana\Models\NavigationItem;
 use flight\Engine;
 
@@ -21,6 +22,15 @@ class NavigationService
 
     /** @var Engine<object> The FlightPHP app instance */
     protected Engine $app;
+
+    /** @var int Longest label the navigation.label column accepts */
+    protected const MAX_LABEL = 100;
+
+    /** @var int Longest URL the navigation.url column accepts */
+    protected const MAX_URL = 500;
+
+    /** @var list<string> Link targets the admin offers */
+    protected const TARGETS = ['_self', '_blank'];
 
     /**
      * @param Engine<object> $app
@@ -84,6 +94,17 @@ class NavigationService
     }
 
     /**
+     * Find one navigation item by its primary key.
+     *
+     * @param int $id Navigation item primary key
+     * @return NavigationItem|null Hydrated item, or null if not found
+     */
+    public function find(int $id): ?NavigationItem
+    {
+        return $this->model()->findById($id);
+    }
+
+    /**
      * Reduce a stored navigation URL to a safe href.
      *
      * Allows root-relative paths, in-page anchors, and the http, https,
@@ -117,28 +138,68 @@ class NavigationService
     /**
      * Create a new navigation item.
      *
-     * Auto-calculates sort_order if not provided. Sets timestamps.
+     * Validates the label, URL, and target, auto-calculates sort_order when
+     * it is not supplied, and sets both timestamps.
      *
      * @param array<string, mixed> $data Item data (label, url, nav_group, parent_id, target)
-     * @return \Pubvana\Models\NavigationItem The created item
+     * @return Result Success carrying the new item, or the first problem found
      */
-    public function create(array $data): \Pubvana\Models\NavigationItem
+    public function create(array $data): Result
     {
+        $problem = $this->validate($data);
+        if ($problem !== null) {
+            return $this->deny($problem);
+        }
+
         $now = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
-        $group = $data['nav_group'] ?? 'primary';
+        $group = (string) ($data['nav_group'] ?? 'primary');
 
         $item = $this->model();
-        $item->label      = $data['label'] ?? '';
-        $item->url        = $this->safeUrl($data['url'] ?? '/');
+        $item->label      = trim((string) ($data['label'] ?? ''));
+        $item->url        = $this->safeUrl((string) ($data['url'] ?? ''));
         $item->parent_id  = !empty($data['parent_id']) ? (int) $data['parent_id'] : null;
         $item->sort_order = (int) ($data['sort_order'] ?? $this->model()->nextSortOrder($group));
-        $item->target     = $data['target'] ?? '_self';
+        $item->target     = (string) ($data['target'] ?? '_self');
         $item->nav_group  = $group;
         $item->created_at = $now;
         $item->updated_at = $now;
         $item->insert();
 
-        return $item;
+        return $this->ok($item);
+    }
+
+    /**
+     * Update the editable fields of a navigation item.
+     *
+     * Label, URL, and target change. Parent, group, and sort order keep
+     * their stored values.
+     *
+     * @param int                  $id   Navigation item primary key
+     * @param array<string, mixed> $data Submitted fields
+     * @return Result Success carrying the saved item, or the first problem found
+     */
+    public function update(int $id, array $data): Result
+    {
+        $item = $this->model()->findById($id);
+        if ($item === null) {
+            return $this->deny('That navigation item no longer exists.');
+        }
+
+        $problem = $this->validate($data);
+        if ($problem !== null) {
+            return $this->deny($problem);
+        }
+
+        // Direct writes to the model's typed properties land in update()
+        // through syncDirtyFromProperties(), which compares them against the
+        // hydrated row.
+        $item->label      = trim((string) ($data['label'] ?? ''));
+        $item->url        = $this->safeUrl((string) ($data['url'] ?? ''));
+        $item->target     = (string) ($data['target'] ?? '_self');
+        $item->updated_at = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
+        $item->save();
+
+        return $this->ok($item);
     }
 
     /**
@@ -253,6 +314,58 @@ class NavigationService
     // -----------------------------------------------------------------
     // Private Helpers
     // -----------------------------------------------------------------
+
+    /**
+     * Check the fields both write paths share.
+     *
+     * @param array<string, mixed> $data Submitted fields
+     * @return string|null Problem message, or null when the data is usable
+     */
+    protected function validate(array $data): ?string
+    {
+        $label = trim((string) ($data['label'] ?? ''));
+        if ($label === '') {
+            return 'A label is required.';
+        }
+
+        if (mb_strlen($label) > self::MAX_LABEL) {
+            return 'The label is limited to ' . self::MAX_LABEL . ' characters.';
+        }
+
+        $url = trim((string) ($data['url'] ?? ''));
+        if ($url === '') {
+            return 'A URL is required.';
+        }
+
+        if (mb_strlen($url) > self::MAX_URL) {
+            return 'The URL is limited to ' . self::MAX_URL . ' characters.';
+        }
+
+        $target = (string) ($data['target'] ?? '_self');
+        if (!in_array($target, self::TARGETS, true)) {
+            return 'The link target must open in the same window or a new one.';
+        }
+
+        return null;
+    }
+
+    /**
+     * Build a failed Result.
+     */
+    protected function deny(string $reason): Result
+    {
+        return (new Result())->setSuccess(false)->setReason($reason);
+    }
+
+    /**
+     * Build a successful Result.
+     *
+     * @param NavigationItem|null $item Saved item, when there is one
+     */
+    protected function ok(?NavigationItem $item = null): Result
+    {
+        return (new Result())->setSuccess(true)->setExtraInfo($item);
+    }
 
     /**
      * Get a new NavigationItem model instance.

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pubvana\Tests\Unit\Controllers\Admin;
 
+use Enlivenapp\FlightShield\Result;
 use flight\Engine;
 use flight\util\Collection;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -79,6 +80,74 @@ final class NavigationControllerTest extends TestCase
         self::assertSame(['/admin/navigation?group=primary'], $this->redirects);
     }
 
+    public function testStoreReportsRejectedInput(): void
+    {
+        $this->nav->failCreate = 'A label is required.';
+        $app = $this->engine(data: ['nav_group' => 'footer', 'label' => '', '_csrf_token' => 'x']);
+        (new NavigationController($app))->store();
+
+        self::assertSame(['/admin/navigation?group=footer'], $this->redirects);
+        self::assertSame('A label is required.', $this->flashes['error'][0]);
+        self::assertArrayNotHasKey('success', $this->flashes);
+    }
+
+    public function testEditRendersTheForm(): void
+    {
+        $this->nav->item = $this->navItem(7, 'primary');
+        (new NavigationController($this->engine()))->edit('7');
+
+        self::assertSame('admin/navigation/edit', $this->fetches[0]['view']);
+        self::assertSame(7, (int) $this->fetches[0]['data']['item']->id);
+        self::assertSame('Edit Navigation Item', $this->fetches[0]['data']['pageTitle']);
+    }
+
+    public function testEditRedirectsWhenTheItemIsGone(): void
+    {
+        (new NavigationController($this->engine()))->edit('7');
+
+        self::assertSame(['/admin/navigation'], $this->redirects);
+        self::assertSame('That navigation item no longer exists.', $this->flashes['error'][0]);
+        self::assertSame([], $this->fetches);
+    }
+
+    public function testUpdateSavesAndReturnsToTheGroup(): void
+    {
+        $this->nav->item = $this->navItem(7, 'footer');
+        $app = $this->engine(data: [
+            'label'       => 'Label',
+            'url'         => '/label',
+            'target'      => '_blank',
+            '_csrf_token' => 'x',
+        ]);
+        (new NavigationController($app))->update('7');
+
+        self::assertSame(7, $this->nav->lastUpdate['id'] ?? null);
+        self::assertSame('Label', $this->nav->lastUpdate['data']['label'] ?? null);
+        self::assertArrayNotHasKey('_csrf_token', $this->nav->lastUpdate['data'] ?? []);
+        self::assertSame(['/admin/navigation?group=footer'], $this->redirects);
+        self::assertSame('Navigation item updated.', $this->flashes['success'][0]);
+    }
+
+    public function testUpdateFailureReturnsToTheForm(): void
+    {
+        $this->nav->item = $this->navItem(7, 'primary');
+        $this->nav->failUpdate = 'A URL is required.';
+        (new NavigationController($this->engine(data: ['label' => 'Label'])))->update('7');
+
+        self::assertSame(['/admin/navigation/7/edit'], $this->redirects);
+        self::assertSame('A URL is required.', $this->flashes['error'][0]);
+        self::assertArrayNotHasKey('success', $this->flashes);
+    }
+
+    public function testUpdateRedirectsWhenTheItemIsGone(): void
+    {
+        (new NavigationController($this->engine()))->update('7');
+
+        self::assertSame(['/admin/navigation'], $this->redirects);
+        self::assertNull($this->nav->lastUpdate);
+        self::assertSame('That navigation item no longer exists.', $this->flashes['error'][0]);
+    }
+
     public function testDeleteRemovesAndRedirects(): void
     {
         $app = $this->engine(query: ['group' => 'footer']);
@@ -126,6 +195,18 @@ final class NavigationControllerTest extends TestCase
 
         self::assertContains('primary', $groups);
         self::assertContains('footer', $groups);
+    }
+
+    /**
+     * Minimal item double: the controller reads id and nav_group.
+     */
+    private function navItem(int $id, string $group): object
+    {
+        return new class ($id, $group) {
+            public function __construct(public int $id, public string $nav_group)
+            {
+            }
+        };
     }
 
     private function engine(array $data = [], array $query = []): Engine
@@ -217,6 +298,11 @@ final class FakeNav
     public ?int $lastDelete = null;
     /** @var list<int>|null */
     public ?array $lastReorder = null;
+    public ?object $item = null;
+    public ?string $failCreate = null;
+    public ?string $failUpdate = null;
+    /** @var array{id: int, data: array<string, mixed>}|null */
+    public ?array $lastUpdate = null;
 
     /** @return list<string> */
     public function getGroups(): array
@@ -247,11 +333,32 @@ final class FakeNav
     }
 
     /** @param array<string, mixed> $post */
-    public function create(array $post): object
+    public function create(array $post): Result
     {
         $this->lastCreate = $post;
 
-        return (object) ['id' => 1];
+        if ($this->failCreate !== null) {
+            return (new Result())->setSuccess(false)->setReason($this->failCreate);
+        }
+
+        return (new Result())->setSuccess(true)->setExtraInfo((object) ['id' => 1]);
+    }
+
+    public function find(int $id): ?object
+    {
+        return $this->item;
+    }
+
+    /** @param array<string, mixed> $post */
+    public function update(int $id, array $post): Result
+    {
+        $this->lastUpdate = ['id' => $id, 'data' => $post];
+
+        if ($this->failUpdate !== null) {
+            return (new Result())->setSuccess(false)->setReason($this->failUpdate);
+        }
+
+        return (new Result())->setSuccess(true)->setExtraInfo($this->item);
     }
 
     public function delete(int $id): bool

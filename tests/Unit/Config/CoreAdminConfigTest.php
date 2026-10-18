@@ -247,8 +247,8 @@ final class CoreAdminConfigTest extends TestCase
         $routes = $adext->getRoutes();
 
         // 11 users + 6 groups + 4 permissions + 12 themes + 2 settings
-        // + 2 login + 2 captcha + 3 email + 3 plugins + 4 navigation = 49.
-        self::assertCount(49, $routes);
+        // + 2 login + 2 captcha + 3 email + 3 plugins + 6 navigation = 51.
+        self::assertCount(51, $routes);
         foreach ($routes as $route) {
             self::assertSame('admin', $route['scope']);
             self::assertTrue($route['isCore']);
@@ -283,6 +283,8 @@ final class CoreAdminConfigTest extends TestCase
             'POST /plugins/recheck'          => 'plugins.manage',
             'GET /navigation'                => 'navigation.edit',
             'POST /navigation/store'         => 'navigation.edit',
+            'GET /navigation/@id/edit'       => 'navigation.edit',
+            'POST /navigation/@id/update'    => 'navigation.edit',
             'POST /navigation/@id/delete'    => 'navigation.edit',
             'POST /navigation/reorder'       => 'navigation.edit',
         ];

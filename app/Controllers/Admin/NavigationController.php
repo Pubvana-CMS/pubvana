@@ -9,7 +9,7 @@ use Pubvana\Services\NavigationService;
 /**
  * NavigationController - Admin CRUD for navigation menus.
  *
- * Manages navigation items: listing by group, creating, deleting,
+ * Manages navigation items: listing by group, creating, editing, deleting,
  * and drag-and-drop reordering. The view provides a two-column layout
  * with a Quick Add form (autocomplete from linkable items) and a
  * sortable item list.
@@ -54,7 +54,8 @@ class NavigationController extends AdminController
      * Create a new navigation item from POST data.
      *
      * Strips CSRF token, delegates to the service, then redirects
-     * back to the group the item was added to.
+     * back to the group the item was added to. Input the service
+     * rejects is reported instead of written.
      */
     public function store(): void
     {
@@ -62,11 +63,70 @@ class NavigationController extends AdminController
         unset($post['_csrf_token']);
 
         $nav = $this->app->navigation();
-        $nav->create($post);
+        $result = $nav->create($post);
 
-        $group = $post['nav_group'] ?? 'primary';
+        $group = (string) ($post['nav_group'] ?? 'primary');
+
+        if (!$result->isOK()) {
+            $this->app->session()->flash('error', $result->reason() ?? 'The item could not be added.');
+            $this->app->redirect('/admin/navigation?group=' . urlencode($group));
+            return;
+        }
+
         $this->app->session()->flash('success', 'Navigation item added.');
         $this->app->redirect('/admin/navigation?group=' . urlencode($group));
+    }
+
+    /**
+     * Show the form for editing one navigation item.
+     *
+     * Label, URL, and target are editable. Parent and group are not.
+     */
+    public function edit(string $id): void
+    {
+        $item = $this->app->navigation()->find((int) $id);
+
+        if ($item === null) {
+            $this->app->session()->flash('error', 'That navigation item no longer exists.');
+            $this->app->redirect('/admin/navigation');
+            return;
+        }
+
+        $this->render('admin/navigation/edit', [
+            'pageTitle' => 'Edit Navigation Item',
+            'item'      => $item,
+        ]);
+    }
+
+    /**
+     * Save an edited navigation item and return to its group.
+     *
+     * Invalid input sends the editor back to the form with the reason.
+     */
+    public function update(string $id): void
+    {
+        $post = $this->app->request()->data->getData();
+        unset($post['_csrf_token']);
+
+        $nav = $this->app->navigation();
+        $item = $nav->find((int) $id);
+
+        if ($item === null) {
+            $this->app->session()->flash('error', 'That navigation item no longer exists.');
+            $this->app->redirect('/admin/navigation');
+            return;
+        }
+
+        $result = $nav->update((int) $id, $post);
+
+        if (!$result->isOK()) {
+            $this->app->session()->flash('error', $result->reason() ?? 'The item could not be updated.');
+            $this->app->redirect('/admin/navigation/' . (int) $id . '/edit');
+            return;
+        }
+
+        $this->app->session()->flash('success', 'Navigation item updated.');
+        $this->app->redirect('/admin/navigation?group=' . urlencode((string) $item->nav_group));
     }
 
     /**

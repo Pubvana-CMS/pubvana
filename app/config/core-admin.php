@@ -379,6 +379,8 @@ $navigationPerm = new PermissionMiddleware($app, 'navigation.edit');
 $adext->addRoutes('admin', [
     ['GET',  '/navigation',              [NavigationController::class, 'index'],   [$navigationPerm]],
     ['POST', '/navigation/store',        [NavigationController::class, 'store'],   [$navigationPerm]],
+    ['GET',  '/navigation/@id/edit',     [NavigationController::class, 'edit'],    [$navigationPerm]],
+    ['POST', '/navigation/@id/update',   [NavigationController::class, 'update'],  [$navigationPerm]],
     ['POST', '/navigation/@id/delete',   [NavigationController::class, 'delete'],  [$navigationPerm]],
     ['POST', '/navigation/reorder',      [NavigationController::class, 'reorder'], [$navigationPerm]],
 ], 'pubvana.core', true);
