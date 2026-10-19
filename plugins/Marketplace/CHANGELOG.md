@@ -4,6 +4,12 @@ All notable changes to the Marketplace plugin will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
+
+## [0.4.1] - 2026-10-18
+
+### Fixed
+- Connecting used the signed-in admin's address and ignored the email box, so an admin could not connect the site as another store account. The typed email wins now, and the admin's own address is only the fallback when the box is empty.
+
 ## [0.4.0] - 2026-10-14
 
 ### Added

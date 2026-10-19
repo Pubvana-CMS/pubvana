@@ -5,7 +5,7 @@ Notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## [3.0.0-beta.14] - 2026-10-18
 
 ### Added
 
@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Fixed stale docs
 - couldn't edit the nav label/url or target
 
+## [3.0.0-beta.13] - 2026-03-13 - skipped cuz superstitious, lulz
 
 ## [3.0.0-beta.12] - 2026-10-17
 
