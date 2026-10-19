@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## Unreleased
 
+### Added
+
+- Admin panel breadcrumbs
+
 ### Fixes
 
 - After an update finished, the Updates page still showed the version it replaced

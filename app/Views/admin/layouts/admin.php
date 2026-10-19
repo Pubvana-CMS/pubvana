@@ -15,6 +15,7 @@
  *
  * @var string $content    Page content (rendered by AdminController::render)
  * @var string $pageTitle  Page title
+ * @var array  $breadcrumbs Trail for the current page (label + url, last one unlinked)
  * @var string $siteName   Site name from config
  * @var object|null $user  Authenticated user entity
  * @var string $userGroups Comma-separated group names
@@ -171,11 +172,35 @@
         </div>
     </nav>
 
+    <!-- ===== Breadcrumbs: full-width band tucked under the nav ===== -->
+    <?php if (!empty($breadcrumbs)): ?>
+        <?php $lastCrumb = count($breadcrumbs) - 1; ?>
+        <div class="pv-breadcrumb-bar d-print-none">
+            <div class="container-xl">
+                <ol class="breadcrumb breadcrumb-arrows mb-0" aria-label="Breadcrumb">
+                    <?php foreach ($breadcrumbs as $crumbIndex => $crumb): ?>
+                        <?php if (!empty($crumb['url'])): ?>
+                            <li class="breadcrumb-item">
+                                <a href="<?= htmlspecialchars((string) $crumb['url']) ?>"><?= htmlspecialchars((string) $crumb['label']) ?></a>
+                            </li>
+                        <?php else: ?>
+                            <li class="breadcrumb-item<?= $crumbIndex === $lastCrumb ? ' active' : '' ?>"<?= $crumbIndex === $lastCrumb ? ' aria-current="page"' : '' ?>>
+                                <?= htmlspecialchars((string) $crumb['label']) ?>
+                            </li>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </ol>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <!-- ===== Page content ===== -->
     <main class="page-wrapper" id="main" tabindex="-1">
         <div class="page-header d-print-none">
             <div class="container-xl">
-                <div class="page-pretitle">Pubvana CMS</div>
+                <?php if (empty($breadcrumbs)): ?>
+                    <div class="page-pretitle">Pubvana CMS</div>
+                <?php endif; ?>
                 <h1 class="page-title"><?= htmlspecialchars($pageTitle ?? 'Dashboard') ?></h1>
             </div>
         </div>

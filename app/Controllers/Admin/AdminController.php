@@ -322,13 +322,155 @@ class AdminController
         }
 
         $this->app->render('admin/layouts/admin', [
-            'content'    => $content,
-            'pageTitle'  => $data['pageTitle'] ?? 'Dashboard',
-            'siteName'   => (string) $this->app->settings()->get('CMS.siteName'),
-            'user'       => $user,
-            'userGroups' => $userGroups,
-            'nav'        => $nav,
+            'content'     => $content,
+            'pageTitle'   => $data['pageTitle'] ?? 'Dashboard',
+            'siteName'    => (string) $this->app->settings()->get('CMS.siteName'),
+            'user'        => $user,
+            'userGroups'  => $userGroups,
+            'nav'         => $nav,
+            'breadcrumbs' => $this->breadcrumbs($nav, $this->currentPath()),
         ]);
+    }
+
+    /**
+     * The breadcrumb trail for the current page, read off the admin menu.
+     *
+     * Dashboard first, then the menu path the request sits under. The
+     * deepest match wins, so /admin/themes/regions reads Appearance >
+     * Themes > Regions instead of stopping at Appearance > Themes. Parent
+     * crumbs keep a link when they own a page themselves, which is what
+     * makes a sibling one click away. The last crumb is the page being
+     * viewed and never links. An empty array means the page is not in the
+     * menu, and the layout falls back to its plain pretitle.
+     *
+     * @param array<int, array<string, mixed>> $nav  Built nav tree (see render())
+     * @param string                           $path Request path, without the query string
+     * @return list<array{label: string, url: ?string}>
+     */
+    protected function breadcrumbs(array $nav, string $path): array
+    {
+        if ($path === '') {
+            return [];
+        }
+
+        if ($path === '/admin') {
+            return [['label' => 'Dashboard', 'url' => null]];
+        }
+
+        $parents = [];
+        $matchedUrl = '';
+        $pageLabel = '';
+
+        foreach ($nav as $navItem) {
+            $navLabel = (string) ($navItem['label'] ?? '');
+
+            foreach ((array) ($navItem['entries'] ?? []) as $entry) {
+                $entry = (array) $entry;
+
+                if (($entry['type'] ?? '') === 'label') {
+                    foreach ((array) ($entry['items'] ?? []) as $link) {
+                        $link = (array) $link;
+                        $url = (string) ($link['url'] ?? '');
+
+                        if ($this->urlCovers($path, $url) && strlen($url) > strlen($matchedUrl)) {
+                            $matchedUrl = $url;
+                            $pageLabel = (string) ($link['label'] ?? '');
+                            $parents = [
+                                [$navLabel, null],
+                                [(string) ($entry['label'] ?? ''), null],
+                            ];
+                        }
+                    }
+
+                    continue;
+                }
+
+                $item = (array) ($entry['item'] ?? []);
+                $url = (string) ($item['url'] ?? '');
+
+                if ($this->urlCovers($path, $url) && strlen($url) > strlen($matchedUrl)) {
+                    $matchedUrl = $url;
+                    $pageLabel = (string) ($item['label'] ?? '');
+                    $parents = [[$navLabel, null]];
+                }
+
+                // A submenu entry is a page of its own (Themes > Regions), so
+                // matching one leaves the parent crumb jumpable.
+                foreach ((array) ($item['submenu'] ?? []) as $sub) {
+                    $sub = (array) $sub;
+                    $subUrl = (string) ($sub['url'] ?? '');
+
+                    if ($this->urlCovers($path, $subUrl) && strlen($subUrl) > strlen($matchedUrl)) {
+                        $matchedUrl = $subUrl;
+                        $pageLabel = (string) ($sub['label'] ?? '');
+                        $parents = [
+                            [$navLabel, null],
+                            [(string) ($item['label'] ?? ''), $url],
+                        ];
+                    }
+                }
+            }
+        }
+
+        if ($pageLabel === '') {
+            return [];
+        }
+
+        $crumbs = [$this->crumb('Dashboard', '/admin')];
+
+        foreach ($parents as $parent) {
+            $crumbs[] = $this->crumb($parent[0], $parent[1]);
+        }
+
+        $crumbs[] = $this->crumb($pageLabel, null);
+
+        return $crumbs;
+    }
+
+    /**
+     * One crumb: a label, and the page it links to when it has one.
+     *
+     * @return array{label: string, url: ?string}
+     */
+    protected function crumb(string $label, ?string $url): array
+    {
+        return ['label' => $label, 'url' => $url];
+    }
+
+    /**
+     * Whether a menu URL is the page being viewed or a section of it.
+     *
+     * /admin/navigation covers /admin/navigation/1/edit, so editing an
+     * item still reads Appearance > Navigation.
+     */
+    protected function urlCovers(string $path, string $url): bool
+    {
+        if ($url === '' || $url === '/') {
+            return false;
+        }
+
+        $url = rtrim($url, '/');
+
+        return $path === $url || str_starts_with($path, $url . '/');
+    }
+
+    /**
+     * The request path without the query string.
+     *
+     * Empty when there is no request to read (CLI, or a test double that
+     * maps no request service), which leaves the breadcrumbs off.
+     */
+    protected function currentPath(): string
+    {
+        try {
+            $url = (string) ($this->app->request()->url ?? '');
+        } catch (\Throwable $e) {
+            return '';
+        }
+
+        $path = (string) parse_url($url, PHP_URL_PATH);
+
+        return $path === '/' ? '/' : rtrim($path, '/');
     }
 
     /**

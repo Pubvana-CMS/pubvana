@@ -107,3 +107,21 @@ small a {
 body:not([data-bs-theme="dark"]) .pagination {
     --tblr-pagination-disabled-color: #636b73;
 }
+
+/* ==========================================================================
+   Breadcrumbs
+
+   A full-width band tucked under the nav bar, the same shape as the bar
+   itself. The nav's own bottom border is the line above it, so this band
+   draws a bottom border only. Tighter than Tabler's default padding so the
+   band reads as part of the topbar rather than the page.
+   ========================================================================== */
+
+.pv-breadcrumb-bar {
+    border-bottom: 1px solid var(--tblr-border-color);
+}
+
+.pv-breadcrumb-bar .breadcrumb {
+    padding: .5rem 0;
+    margin-bottom: 0;
+}

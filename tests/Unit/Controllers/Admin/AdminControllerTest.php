@@ -381,6 +381,138 @@ final class AdminControllerTest extends TestCase
         self::assertSame('item', $layout['data']['nav'][0]['entries'][1]['type']);
     }
 
+    public function testBreadcrumbsFollowLabelLinks(): void
+    {
+        $controller = new AdminController($this->engine());
+
+        // Deeper than the menu link: the page still belongs to Blog.
+        $trail = $this->invoke($controller, 'breadcrumbs', [$this->navTree(), '/admin/blog/12/edit']);
+
+        self::assertSame([
+            ['label' => 'Dashboard', 'url' => '/admin'],
+            ['label' => 'Content', 'url' => null],
+            ['label' => 'Links', 'url' => null],
+            ['label' => 'Blog', 'url' => null],
+        ], $trail);
+    }
+
+    public function testBreadcrumbsLeaveTheParentOfASubmenuPageJumpable(): void
+    {
+        $controller = new AdminController($this->engine());
+
+        $trail = $this->invoke($controller, 'breadcrumbs', [$this->navTree(), '/admin/themes/regions']);
+
+        self::assertSame([
+            ['label' => 'Dashboard', 'url' => '/admin'],
+            ['label' => 'Appearance', 'url' => null],
+            ['label' => 'Themes', 'url' => '/admin/themes'],
+            ['label' => 'Regions', 'url' => null],
+        ], $trail);
+    }
+
+    public function testBreadcrumbsStopAtTheDeepestMenuMatch(): void
+    {
+        $controller = new AdminController($this->engine());
+
+        // Themes is in the menu, but a new nav item shares the Appearance
+        // section and must not swallow the page.
+        $trail = $this->invoke($controller, 'breadcrumbs', [$this->navTree(), '/admin/navigation/1/edit']);
+
+        self::assertSame([
+            ['label' => 'Dashboard', 'url' => '/admin'],
+            ['label' => 'Appearance', 'url' => null],
+            ['label' => 'Navigation', 'url' => null],
+        ], $trail);
+    }
+
+    public function testBreadcrumbsForTheDashboardAndUnlistedPages(): void
+    {
+        $controller = new AdminController($this->engine());
+
+        self::assertSame(
+            [['label' => 'Dashboard', 'url' => null]],
+            $this->invoke($controller, 'breadcrumbs', [$this->navTree(), '/admin'])
+        );
+
+        self::assertSame(
+            [],
+            $this->invoke($controller, 'breadcrumbs', [$this->navTree(), '/admin/not-in-the-menu'])
+        );
+    }
+
+    public function testRenderPassesBreadcrumbsFromTheRequestPath(): void
+    {
+        $app = $this->engine(requestPath: '/admin/pages/3/edit?tab=meta');
+        $app->set('admin.topNav', [
+            'content' => ['label' => 'Content', 'icon' => 'ti-a', 'subLabels' => []],
+        ]);
+        $app->adext()->register('admin.menu', 'content', 'pubvana.pages', [
+            'label' => 'Pages',
+            'url' => '/pages',
+        ]);
+
+        $this->invoke(new AdminController($app), 'render', ['admin/x', ['pageTitle' => 'Edit Page']]);
+
+        self::assertSame([
+            ['label' => 'Dashboard', 'url' => '/admin'],
+            ['label' => 'Content', 'url' => null],
+            ['label' => 'Pages', 'url' => null],
+        ], $this->renders[0]['data']['breadcrumbs']);
+    }
+
+    public function testRenderOmitsBreadcrumbsWithoutARequestPath(): void
+    {
+        $app = $this->engine();
+        $app->set('admin.topNav', []);
+        $this->invoke(new AdminController($app), 'render', ['admin/x', []]);
+
+        self::assertSame([], $this->renders[0]['data']['breadcrumbs']);
+    }
+
+    /**
+     * A nav tree shaped the way render() builds one.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function navTree(): array
+    {
+        return [
+            [
+                'key'     => 'content',
+                'label'   => 'Content',
+                'icon'    => 'ti-file-text',
+                'entries' => [
+                    [
+                        'type'  => 'label',
+                        'label' => 'Links',
+                        'icon'  => 'ti-link',
+                        'items' => [['label' => 'Blog', 'url' => '/admin/blog']],
+                    ],
+                    ['type' => 'item', 'item' => ['label' => 'Pages', 'url' => '/admin/pages']],
+                ],
+            ],
+            [
+                'key'     => 'appearance',
+                'label'   => 'Appearance',
+                'icon'    => 'ti-palette',
+                'entries' => [
+                    ['type' => 'item', 'item' => ['label' => 'Navigation', 'url' => '/admin/navigation']],
+                    [
+                        'type' => 'item',
+                        'item' => [
+                            'label'   => 'Themes',
+                            'url'     => '/admin/themes',
+                            'submenu' => [
+                                ['label' => 'All Themes', 'url' => '/admin/themes'],
+                                ['label' => 'Regions', 'url' => '/admin/themes/regions'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+    }
+
     public function testRenderSurvivesAuthFailure(): void
     {
         $app = $this->engine(authThrow: true);
@@ -446,7 +578,8 @@ final class AdminControllerTest extends TestCase
         ?array $trustCached = null,
         ?array $trustLive = null,
         bool $trustThrow = false,
-        bool $authThrow = false
+        bool $authThrow = false,
+        ?string $requestPath = null
     ): Engine {
         $test = $this;
         $app = $this->app([
@@ -465,6 +598,11 @@ final class AdminControllerTest extends TestCase
                 public function get(string $key, mixed $default = null): mixed
                 {
                     return \Flight::app()->get($key) ?? $default;
+                }
+            },
+            'request' => static fn(): object => new class ($requestPath) {
+                public function __construct(public ?string $url)
+                {
                 }
             },
             'auth' => static fn(): object => $authThrow
