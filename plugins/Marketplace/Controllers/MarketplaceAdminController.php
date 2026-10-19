@@ -123,9 +123,15 @@ class MarketplaceAdminController extends AdminController
 
     public function connect(): void
     {
-        $email = $this->currentUserEmail();
+        // The email box is authoritative: the admin may connect as any store
+        // account, not only their own admin address. Fall back to the admin's
+        // own email when the field is empty.
+        $email = strtolower(trim((string) ($this->app->request()->data->email ?? '')));
         if ($email === '') {
-            $this->app->session()->flash('danger', 'No logged-in admin email is available to connect with.');
+            $email = $this->currentUserEmail();
+        }
+        if ($email === '') {
+            $this->app->session()->flash('danger', 'An email address is required to connect.');
             $this->app->redirect($this->adminBase());
             return;
         }
@@ -142,8 +148,8 @@ class MarketplaceAdminController extends AdminController
     }
 
     /**
-     * The pubvanacms account email for the account connecting: the current
-     * admin's email, so each admin owns their own store account.
+     * The logged-in admin's email, used to prefill the connect form and as a
+     * fallback when the submitted email is empty.
      */
     private function currentUserEmail(): string
     {

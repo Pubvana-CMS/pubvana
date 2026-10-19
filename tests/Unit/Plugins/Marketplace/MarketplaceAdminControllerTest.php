@@ -116,8 +116,26 @@ final class MarketplaceAdminControllerTest extends TestCase
     {
         (new MarketplaceAdminController($this->engine(userEmail: null)))->connect();
 
-        self::assertSame('No logged-in admin email is available to connect with.', $this->flashes['danger'][0]);
+        self::assertSame('An email address is required to connect.', $this->flashes['danger'][0]);
         self::assertSame(['/admin/marketplace'], $this->redirects);
+    }
+
+    public function testConnectUsesThePostedEmail(): void
+    {
+        // The email box is authoritative, so an admin may connect as any
+        // store account. The value is trimmed and lowercased on the way.
+        (new MarketplaceAdminController(
+            $this->engine(data: ['email' => '  Store@Example.COM ', 'password' => 's'])
+        ))->connect();
+
+        self::assertSame(['store@example.com'], $this->marketplace->connectEmails);
+    }
+
+    public function testConnectFallsBackToTheAdminEmail(): void
+    {
+        (new MarketplaceAdminController($this->engine(data: ['password' => 's'])))->connect();
+
+        self::assertSame(['admin@example.com'], $this->marketplace->connectEmails);
     }
 
     public function testConnectSuccessAndFailure(): void
@@ -414,6 +432,8 @@ final class FakeMarketplace
     /** @var array<string, mixed> */
     public array $connectResult = ['ok' => true];
     public bool $disconnected = false;
+    /** @var list<string> Emails connectAccount() was called with */
+    public array $connectEmails = [];
     public bool $verified = false;
     /** @var array<string, mixed> */
     public array $verifyResult = ['ok' => true, 'reason' => '', 'purchases' => []];
@@ -475,8 +495,10 @@ final class FakeMarketplace
     }
 
     /** @return array<string, mixed> */
-    public function connectAccount(string $e, string $p, string $c): array
+    public function connectAccount(string $e, string $p, string $c, string $action = 'login'): array
     {
+        $this->connectEmails[] = $e;
+
         return $this->connectResult;
     }
 
