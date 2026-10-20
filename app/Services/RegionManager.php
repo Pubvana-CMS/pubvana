@@ -26,9 +26,10 @@ use flight\Engine;
  *      tag for one, but it has to declare that region in its manifest.
  *   2. Theme regions: declared in themes/{name}/pubvana.json
  *
- * Blocks are registered via adext with type 'block' and provide:
+ * Blocks are registered via adext with type 'block' or declared by the
+ * active theme in pubvana.json. Both sources provide:
  *   - label: display name
- *   - provider: callable that returns template data
+ *   - provider: callable that returns template data (plugins only)
  *   - template: bare Vision .tpl file name (the author and package come
  *     from the registration key; the file lives under public/blocks/)
  *   - options: configurable settings with defaults
@@ -58,6 +59,18 @@ class RegionManager
 
     /** @var array<string, mixed> Current page context handed to every block provider */
     private array $context = [];
+
+    /** @var array<string, array{id: string, label: string, description: string, source: string}>|null Regions for this request */
+    private ?array $regionsCache = null;
+
+    /** @var array<string, array<string, mixed>>|null Available blocks for this request */
+    private ?array $blocksCache = null;
+
+    /** @var array<string, mixed> Active theme manifest, read once per request */
+    private array $themeManifest = [];
+
+    /** @var bool Whether the active theme manifest has been read */
+    private bool $themeManifestLoaded = false;
 
     /**
      * @param Engine<object> $app Flight application for accessing db(), adext(), view()
@@ -95,6 +108,10 @@ class RegionManager
      */
     public function getRegions(): array
     {
+        if ($this->regionsCache !== null) {
+            return $this->regionsCache;
+        }
+
         $regions = [];
 
         // Platform regions
@@ -122,6 +139,8 @@ class RegionManager
             ];
         }
 
+        $this->regionsCache = $regions;
+
         return $regions;
     }
 
@@ -135,24 +154,7 @@ class RegionManager
      */
     protected function getThemeDeclaredRegions(): array
     {
-        $active = $this->app->themes()->getActive();
-        if (!$active) {
-            return [];
-        }
-
-        $manifestPath = PROJECT_ROOT . DIRECTORY_SEPARATOR . 'themes'
-            . DIRECTORY_SEPARATOR . $active->folder . DIRECTORY_SEPARATOR . 'pubvana.json';
-
-        if (!file_exists($manifestPath)) {
-            return [];
-        }
-
-        $raw = file_get_contents($manifestPath);
-        if ($raw === false) {
-            return [];
-        }
-
-        $manifest = json_decode($raw, true);
+        $manifest = $this->getThemeManifest();
         $regions = $manifest['provides']['regions'] ?? [];
         if (!is_array($regions)) {
             return [];
@@ -176,6 +178,117 @@ class RegionManager
         return $declared;
     }
 
+    /**
+     * Read the active theme's manifest once per request.
+     *
+     * Called lazily at render time. The active theme lives in the database,
+     * so boot-time reads would fail on a fresh install before the themes
+     * table exists.
+     *
+     * @return array<string, mixed> Manifest data, or [] when unavailable
+     */
+    protected function getThemeManifest(): array
+    {
+        if ($this->themeManifestLoaded) {
+            return $this->themeManifest;
+        }
+        $this->themeManifestLoaded = true;
+
+        $active = $this->app->themes()->getActive();
+        if (!$active) {
+            return [];
+        }
+
+        $manifestPath = PROJECT_ROOT . DIRECTORY_SEPARATOR . 'themes'
+            . DIRECTORY_SEPARATOR . $active->folder . DIRECTORY_SEPARATOR . 'pubvana.json';
+
+        if (!is_file($manifestPath)) {
+            return [];
+        }
+
+        $raw = file_get_contents($manifestPath);
+        if ($raw === false) {
+            return [];
+        }
+
+        $manifest = json_decode($raw, true);
+        if (!is_array($manifest)) {
+            return [];
+        }
+
+        /** @var array<string, mixed> $manifest */
+        $this->themeManifest = $manifest;
+
+        return $manifest;
+    }
+
+    /**
+     * Read theme-declared blocks from the active theme's pubvana.json.
+     *
+     * Each entry in provides.blocks becomes a block definition keyed by
+     * '{author}.{slug}.{id}', the same key form plugins use. Theme blocks
+     * carry no provider: RegionManager passes saved values layered over the
+     * option defaults to the template.
+     *
+     * @return array<string, array<string, mixed>> Block definitions keyed by registration key
+     */
+    protected function getThemeDeclaredBlocks(): array
+    {
+        $manifest = $this->getThemeManifest();
+        $blocks = $manifest['provides']['blocks'] ?? [];
+        if (!is_array($blocks)) {
+            return [];
+        }
+
+        $author = is_string($manifest['author'] ?? null) && $manifest['author'] !== ''
+            ? $manifest['author']
+            : 'pubvana';
+        $slug = is_string($manifest['slug'] ?? null) ? $manifest['slug'] : '';
+        if ($slug === '') {
+            return [];
+        }
+
+        $declared = [];
+        foreach ($blocks as $block) {
+            if (!is_array($block)) {
+                continue;
+            }
+
+            $id = $block['id'] ?? null;
+            $label = $block['label'] ?? null;
+            $template = $block['template'] ?? null;
+
+            if (!is_string($id) || $id === ''
+                || !is_string($label) || $label === ''
+                || !is_string($template)) {
+                continue;
+            }
+
+            $name = $this->templateName($template);
+            if ($name === '') {
+                continue;
+            }
+
+            $key = $author . '.' . $slug . '.' . $id;
+            if (isset($declared[$key])) {
+                continue;
+            }
+
+            /** @var array<string, array<string, mixed>> $options */
+            $options = is_array($block['options'] ?? null) ? $block['options'] : [];
+
+            $declared[$key] = [
+                'label'       => $label,
+                'description' => is_string($block['description'] ?? null) ? $block['description'] : '',
+                'template'    => $name . '.tpl',
+                'priority'    => is_int($block['priority'] ?? null) ? $block['priority'] : 50,
+                'options'     => $options,
+            ];
+        }
+
+        return $declared;
+    }
+
     // -----------------------------------------------------------------
     // Block Discovery
     // -----------------------------------------------------------------
@@ -187,8 +300,24 @@ class RegionManager
      */
     public function getAvailableBlocks(): array
     {
+        if ($this->blocksCache !== null) {
+            return $this->blocksCache;
+        }
+
         $blocks = $this->app->adext()->get('block', 'available');
+
+        // Theme blocks enter the same pipeline as plugin blocks. A plugin
+        // key wins when both declare the same key.
+        foreach ($this->getThemeDeclaredBlocks() as $key => $block) {
+            if (!isset($blocks[$key])) {
+                $blocks[$key] = $block;
+            }
+        }
+
         uasort($blocks, fn($a, $b) => ($a['priority'] ?? 50) <=> ($b['priority'] ?? 50));
+
+        $this->blocksCache = $blocks;
+
         return $blocks;
     }
 

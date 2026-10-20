@@ -259,17 +259,27 @@ class ThemesController extends AdminController
 
         $info = $this->readThemeInfo($theme->folder);
         $optionDefs = $info['provides']['options'] ?? [];
+        if (!is_array($optionDefs)) {
+            $optionDefs = [];
+        }
 
         $saved = [];
         $service = $this->service();
         foreach ($optionDefs as $key => $def) {
-            if (($def['type'] ?? '') === 'group') {
-                foreach (($def['fields'] ?? []) as $fKey => $fDef) {
+            if (!is_array($def)) {
+                continue;
+            }
+            $key = (string) $key;
+            if (($def['type'] ?? '') === 'group' && is_array($def['fields'] ?? null)) {
+                foreach ($def['fields'] as $fKey => $fDef) {
+                    if (!is_array($fDef)) {
+                        continue;
+                    }
                     $dbKey = $key . '.' . $fKey;
-                    $saved[$dbKey] = $service->getThemeOption((int) $id, $dbKey, $fDef['default'] ?? '');
+                    $saved[$dbKey] = $this->readOptionValue($service, (int) $id, $dbKey, $fDef);
                 }
             } else {
-                $saved[$key] = $service->getThemeOption((int) $id, $key, $def['default'] ?? '');
+                $saved[$key] = $this->readOptionValue($service, (int) $id, $key, $def);
             }
         }
 
@@ -277,8 +287,14 @@ class ThemesController extends AdminController
         try {
             $media = $this->app->media();
             foreach ($optionDefs as $key => $def) {
-                if (($def['type'] ?? '') === 'group') {
-                    foreach (($def['fields'] ?? []) as $fKey => $fDef) {
+                if (!is_array($def)) {
+                    continue;
+                }
+                if (($def['type'] ?? '') === 'group' && is_array($def['fields'] ?? null)) {
+                    foreach ($def['fields'] as $fKey => $fDef) {
+                        if (!is_array($fDef)) {
+                            continue;
+                        }
                         if (($fDef['type'] ?? '') === 'media') {
                             $dbKey = $key . '.' . $fKey;
                             $mediaPickers[$dbKey] = $media->picker("options[{$key}][{$fKey}]", $saved[$dbKey] ?? '');
@@ -298,6 +314,7 @@ class ThemesController extends AdminController
             'options'   => $optionDefs,
             'saved'     => $saved,
             'mediaPickers' => $mediaPickers,
+            'fontChoices' => $this->fontChoices(),
         ]);
     }
 
@@ -316,22 +333,37 @@ class ThemesController extends AdminController
 
         $info = $this->readThemeInfo($theme->folder);
         $optionDefs = $info['provides']['options'] ?? [];
+        if (!is_array($optionDefs)) {
+            $optionDefs = [];
+        }
 
         $post = $this->app->request()->data->getData();
         unset($post['_csrf_token']);
 
         $service = $this->service();
         $posted = $post['options'] ?? [];
+        if (!is_array($posted)) {
+            $posted = [];
+        }
+
         foreach ($optionDefs as $key => $def) {
-            if (($def['type'] ?? '') === 'group') {
-                foreach (array_keys($def['fields'] ?? []) as $fKey) {
+            if (!is_array($def)) {
+                continue;
+            }
+            $key = (string) $key;
+            if (($def['type'] ?? '') === 'group' && is_array($def['fields'] ?? null)) {
+                $group = is_array($posted[$key] ?? null) ? $posted[$key] : [];
+                foreach ($def['fields'] as $fKey => $fDef) {
+                    if (!is_array($fDef)) {
+                        continue;
+                    }
                     $dbKey = $key . '.' . $fKey;
-                    $value = $posted[$key][$fKey] ?? '';
-                    $service->saveThemeOption((int) $id, $dbKey, (string) $value);
+                    $value = $group[$fKey] ?? '';
+                    $service->saveThemeOption((int) $id, $dbKey, $this->storedOptionValue($value, $fDef));
                 }
             } else {
                 $value = $posted[$key] ?? '';
-                $service->saveThemeOption((int) $id, $key, (string) $value);
+                $service->saveThemeOption((int) $id, $key, $this->storedOptionValue($value, $def));
             }
         }
 
@@ -365,6 +397,7 @@ class ThemesController extends AdminController
             'blocks'      => $rm->getAvailableBlocks(),
             'orphaned'    => $rm->getOrphanedPlacements(),
             'savedValues' => $savedValues,
+            'fontChoices' => $this->fontChoices(),
         ]);
     }
 
@@ -377,7 +410,9 @@ class ThemesController extends AdminController
         $regionId = $post['region_id'] ?? '';
         $blockKey = $post['block_key'] ?? '';
 
-        if ($regionId !== '' && $blockKey !== '') {
+        if (is_string($regionId) && $regionId !== ''
+            && is_string($blockKey) && $blockKey !== ''
+            && isset($this->regionManager()->getAvailableBlocks()[$blockKey])) {
             $this->regionManager()->savePlacement($regionId, $blockKey);
         }
 
@@ -505,6 +540,9 @@ class ThemesController extends AdminController
 
             $rows = [];
             foreach ($value as $rowKey => $row) {
+                if ((string) $rowKey === '__INDEX__') {
+                    continue;
+                }
                 $rows[$rowKey] = is_array($row)
                     ? $this->sanitizeOptionValues($row, $subDefs)
                     : (string) $row;
@@ -551,6 +589,116 @@ class ThemesController extends AdminController
             $isAjax,
             fn (): array => $this->storeGateFor((string) $theme->folder, (string) $theme->name)
         );
+    }
+
+    /**
+     * Font stacks offered by the font option field.
+     *
+     * @return array<string, string> Label => CSS font-family stack
+     */
+    protected function fontChoices(): array
+    {
+        return [
+            'System Default'    => 'system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+            'Arial'             => 'Arial, Helvetica, sans-serif',
+            'Verdana'           => 'Verdana, Geneva, sans-serif',
+            'Tahoma'            => 'Tahoma, Geneva, sans-serif',
+            'Trebuchet MS'      => '"Trebuchet MS", Helvetica, sans-serif',
+            'Georgia'           => 'Georgia, "Times New Roman", serif',
+            'Times New Roman'   => '"Times New Roman", Times, serif',
+            'Palatino'          => 'Palatino, "Palatino Linotype", "Book Antiqua", serif',
+            'Garamond'          => 'Garamond, "Times New Roman", serif',
+            'Courier New'       => '"Courier New", Courier, monospace',
+            'Monospace'         => 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+        ];
+    }
+
+    /**
+     * Read one stored theme option, decoding repeater JSON into rows.
+     *
+     * @param array<string, mixed> $def Field definition
+     * @return mixed
+     */
+    private function readOptionValue(ThemeService $service, int $themeId, string $dbKey, array $def): mixed
+    {
+        $default = $def['default'] ?? '';
+        if (is_array($default)) {
+            $default = json_encode($default);
+        }
+
+        $value = $service->getThemeOption($themeId, $dbKey, is_string($default) ? $default : '');
+
+        if (($def['type'] ?? '') === 'repeater') {
+            $decoded = json_decode((string) $value, true);
+            return is_array($decoded) ? $decoded : [];
+        }
+
+        return $value;
+    }
+
+    /**
+     * Turn a posted theme option value into the string stored in the table.
+     * Repeater rows are stored as JSON.
+     *
+     * @param mixed                $value
+     * @param array<string, mixed> $def
+     */
+    private function storedOptionValue(mixed $value, array $def): string
+    {
+        if (($def['type'] ?? '') === 'repeater') {
+            $rows = is_array($value) ? $this->sanitizeThemeRepeaterRows($value, $def) : [];
+            $encoded = json_encode($rows);
+
+            return $encoded === false ? '[]' : $encoded;
+        }
+
+        if (($def['type'] ?? '') === 'textarea' && is_string($value)) {
+            return $this->purifyHtml($value);
+        }
+
+        return is_scalar($value) ? (string) $value : '';
+    }
+
+    /**
+     * Purify textarea subfields in repeater rows, matching the block side.
+     *
+     * @param array<array-key, mixed> $rows
+     * @param array<string, mixed>    $def
+     * @return array<array-key, mixed>
+     */
+    private function sanitizeThemeRepeaterRows(array $rows, array $def): array
+    {
+        $fields = is_array($def['fields'] ?? null) ? $def['fields'] : [];
+        $clean = [];
+
+        foreach ($rows as $rowKey => $row) {
+            if ((string) $rowKey === '__INDEX__') {
+                continue;
+            }
+            if (!is_array($row)) {
+                $clean[$rowKey] = is_scalar($row) ? (string) $row : '';
+                continue;
+            }
+
+            foreach ($row as $subKey => $subValue) {
+                $subDef = $fields[$subKey] ?? [];
+                if (!is_array($subDef)) {
+                    $subDef = [];
+                }
+
+                if (($subDef['type'] ?? '') === 'textarea' && is_string($subValue)) {
+                    $row[$subKey] = $this->purifyHtml($subValue);
+                } elseif (is_scalar($subValue)) {
+                    $row[$subKey] = (string) $subValue;
+                } else {
+                    $row[$subKey] = '';
+                }
+            }
+
+            $clean[$rowKey] = $row;
+        }
+
+        return $clean;
     }
 
     /**

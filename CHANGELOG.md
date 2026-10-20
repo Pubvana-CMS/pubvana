@@ -5,6 +5,23 @@ Notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- A theme can declare blocks in `pubvana.json` under `provides.blocks`.
+- Block and theme option fields support number, range, font picker with preview, textarea, and repeater.
+- Block option fields and repeater subfields render `help` text in the admin form.
+- Repeater subfields render their declared type: input, textarea, select, toggle, color, number, or range.
+
+### Fixed
+
+- Theme option repeaters decode from JSON on the public site, so templates can loop them.
+- Repeater template rows no longer save an empty entry.
+- Repeater defaults that are arrays seed as JSON instead of throwing during theme sync.
+- `placeBlock()` refuses a block key that no plugin or theme registers.
+- Region and block discovery reads the active theme manifest once per request.
+
 ## [3.0.0-beta.14] - 2026-10-18
 
 ### Added

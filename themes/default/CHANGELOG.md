@@ -5,6 +5,12 @@ All notable changes to the Default theme will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- `provides.blocks` in `pubvana.json`. The list is empty in this theme, ready for themes that ship their own blocks.
+
 ## [1.4.33] - 2026-10-17
 
 ### Added

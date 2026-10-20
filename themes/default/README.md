@@ -27,6 +27,8 @@ Manage options in **Admin > Appearance > Themes > Options**. The admin form grou
 | Footer Bottom | Footer Bottom | toggle | on | Bottom strip of the footer with the copyright line and `<hr>` |
 | Footer Bottom | Footer Text | input | (none) | Copyright or site text, falls back to the site copyright setting when blank |
 
+Theme option repeaters decode to arrays in `theme_options`, so templates can loop them.
+
 ### Layout behavior
 
 - **Sidebar Location** sets the sidebar side: left or right.
@@ -44,6 +46,20 @@ Place blocks in regions under **Admin > Appearance > Themes > Regions**.
 | `footer-col-3` | Footer Column 3 | Third column of the footer |
 
 The theme also uses the platform regions (`before-content`, `after-content`, `footer`) from the core.
+
+## Blocks
+
+A theme can declare its own blocks in `pubvana.json` under `provides.blocks`. This theme ships an empty list.
+
+Each entry carries `id`, `label`, `template`, and optionally `description`, `priority`, and `options`.
+
+- The registration key is `{author}.{slug}.{id}`. For this theme that is `pubvana.default.{id}`.
+- The template resolves at `Views/{author}/{slug}/public/blocks/{template}`. For this theme: `Views/pubvana/default/public/blocks/{template}`.
+- Theme blocks have no provider. The template receives the saved option values, with defaults filled in.
+- Block option field types: `input`, `textarea`, `number`, `range`, `select`, `color`, `toggle`, `font`, `repeater`.
+- Any block option field or repeater subfield can carry `help` text, printed under the control in the admin form.
+- Repeater subfields support `input`, `textarea`, `select`, `toggle`, `color`, `number`, `range`. Wysiwyg and media stay out of repeaters.
+- A plugin block wins if it registers the same key.
 
 ## Templates
 

@@ -343,6 +343,28 @@ class ThemeService
     }
 
     /**
+     * Read a theme's pubvana.json.
+     *
+     * @return array<string, mixed> Manifest data, or [] when unavailable
+     */
+    public function getManifest(string $folder): array
+    {
+        $path = $this->getThemesPath() . $folder . '/pubvana.json';
+        if (!is_file($path)) {
+            return [];
+        }
+
+        $raw = file_get_contents($path);
+        if ($raw === false) {
+            return [];
+        }
+
+        $decoded = json_decode($raw, true);
+
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
      * Get all options for a theme as key => value.
      *
      * @return array<string, string|null>
@@ -376,27 +398,53 @@ class ThemeService
     protected function syncDefaultOptions(\Pubvana\Models\Theme $theme, array $info): void
     {
         $options = $info['provides']['options'] ?? [];
-        if (empty($options)) {
+        if (!is_array($options) || $options === []) {
             return;
         }
 
         foreach ($options as $key => $def) {
-            if (($def['type'] ?? '') === 'group') {
-                foreach (($def['fields'] ?? []) as $fKey => $fDef) {
+            if (!is_array($def)) {
+                continue;
+            }
+
+            $key = (string) $key;
+            if (($def['type'] ?? '') === 'group' && is_array($def['fields'] ?? null)) {
+                foreach ($def['fields'] as $fKey => $fDef) {
+                    if (!is_array($fDef)) {
+                        continue;
+                    }
                     $this->optionModel()->seedDefault(
                         (int) $theme->id,
                         $key . '.' . $fKey,
-                        $fDef['default'] ?? ''
+                        $this->seedValue($fDef)
                     );
                 }
             } else {
                 $this->optionModel()->seedDefault(
                     (int) $theme->id,
                     $key,
-                    $def['default'] ?? ''
+                    $this->seedValue($def)
                 );
             }
         }
+    }
+
+    /**
+     * Turn a manifest default into the string stored in theme_options.
+     * Repeater defaults are stored as JSON.
+     *
+     * @param array<string, mixed> $def Field definition
+     */
+    private function seedValue(array $def): string
+    {
+        $default = $def['default'] ?? '';
+        if (is_array($default)) {
+            $encoded = json_encode($default);
+
+            return $encoded === false ? '[]' : $encoded;
+        }
+
+        return is_scalar($default) ? (string) $default : '';
     }
 
     protected function getThemesPath(): string

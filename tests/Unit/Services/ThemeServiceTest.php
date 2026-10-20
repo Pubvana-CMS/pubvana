@@ -381,6 +381,46 @@ final class ThemeServiceTest extends TestCase
         self::assertSame([], $service->getThemeOptions(9999));
     }
 
+    public function testSyncSeedsArrayRepeaterDefaultsAsJson(): void
+    {
+        $this->makeThemeDir('alpha', [
+            'display_name' => 'Alpha',
+            'provides' => [
+                'options' => [
+                    'links' => [
+                        'type' => 'repeater',
+                        'label' => 'Links',
+                        'fields' => ['label' => ['type' => 'input']],
+                        'default' => [['label' => 'One']],
+                    ],
+                ],
+            ],
+        ]);
+
+        $service = $this->service();
+        $service->sync();
+        $themeId = (int) (new Theme($this->pdo))->findByFolder('alpha')->id;
+
+        self::assertSame(
+            '[{"label":"One"}]',
+            $service->getThemeOption($themeId, 'links'),
+            'array defaults are stored as JSON'
+        );
+    }
+
+    public function testGetManifestReadsTheThemeJson(): void
+    {
+        $this->makeThemeDir('alpha', [
+            'display_name' => 'Alpha',
+            'provides' => ['regions' => []],
+        ]);
+
+        $service = $this->service();
+
+        self::assertSame('Alpha', $service->getManifest('alpha')['display_name']);
+        self::assertSame([], $service->getManifest('missing'));
+    }
+
     public function testThemeOptionsAreMemoizedPerRequest(): void
     {
         $this->makeThemeDir('alpha', ['display_name' => 'Alpha']);

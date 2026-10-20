@@ -374,6 +374,12 @@ final class ErrorControllerTest extends TestCase
                     {
                         return [];
                     }
+
+                    /** @return array<string, mixed> */
+                    public function getManifest(string $folder): array
+                    {
+                        return [];
+                    }
                 };
             },
             'session' => fn(): object => new class {

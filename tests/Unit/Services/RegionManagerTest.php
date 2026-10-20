@@ -160,6 +160,111 @@ final class RegionManagerTest extends TestCase
         self::assertSame(['early.plugin', 'late.plugin'], array_keys($blocks));
     }
 
+    public function testGetAvailableBlocksMergesThemeBlocksAndSortsByPriority(): void
+    {
+        $this->seedActiveTheme(self::FIXTURE_THEME);
+        $themeDir = PROJECT_ROOT . '/themes/' . self::FIXTURE_THEME;
+        mkdir($themeDir, 0777, true);
+        file_put_contents($themeDir . '/pubvana.json', (string) json_encode([
+            'author' => 'pubvana',
+            'slug'   => 'fixture',
+            'provides' => [
+                'blocks' => [
+                    [
+                        'id'       => 'hero',
+                        'label'    => 'Hero',
+                        'template' => 'hero.tpl',
+                        'priority' => 5,
+                        'options'  => [
+                            'title' => ['type' => 'input', 'label' => 'Title', 'default' => ''],
+                        ],
+                    ],
+                    [
+                        'id'       => 'promo',
+                        'label'    => 'Promo',
+                        'template' => 'promo.tpl',
+                        'priority' => 95,
+                    ],
+                ],
+            ],
+        ]));
+
+        $this->app->adext()->register('block', 'available', 'pubvana.plugin', [
+            'label'    => 'Plugin',
+            'template' => 'card.tpl',
+            'priority' => 50,
+        ]);
+
+        $blocks = (new RegionManager($this->app))->getAvailableBlocks();
+
+        self::assertSame(
+            ['pubvana.fixture.hero', 'pubvana.plugin', 'pubvana.fixture.promo'],
+            array_keys($blocks),
+            'theme and plugin blocks share one priority sort'
+        );
+        self::assertSame('Hero', $blocks['pubvana.fixture.hero']['label']);
+        self::assertSame('hero.tpl', $blocks['pubvana.fixture.hero']['template']);
+        self::assertSame(
+            ['title'],
+            array_keys($blocks['pubvana.fixture.hero']['options']),
+            'theme block option definitions reach the admin form'
+        );
+    }
+
+    public function testThemeBlockMalformedEntriesAreSkippedAndPluginWinsKeyCollision(): void
+    {
+        $this->seedActiveTheme(self::FIXTURE_THEME);
+        $themeDir = PROJECT_ROOT . '/themes/' . self::FIXTURE_THEME;
+        mkdir($themeDir, 0777, true);
+        file_put_contents($themeDir . '/pubvana.json', (string) json_encode([
+            'author' => 'pubvana',
+            'slug'   => 'fixture',
+            'provides' => [
+                'blocks' => [
+                    ['label' => 'No id', 'template' => 'x.tpl'],
+                    ['id' => 'no-label', 'template' => 'x.tpl'],
+                    ['id' => 'no-template', 'label' => 'X'],
+                    ['id' => 'nested', 'label' => 'Nested', 'template' => 'sub/x.tpl'],
+                    ['id' => 'dup', 'label' => 'Theme Dup', 'template' => 'dup.tpl'],
+                    ['id' => 'ok', 'label' => 'OK', 'template' => 'ok.tpl'],
+                    'not-an-array',
+                ],
+            ],
+        ]));
+
+        $this->app->adext()->register('block', 'available', 'pubvana.fixture.dup', [
+            'label'    => 'Plugin Dup',
+            'template' => 'dup.tpl',
+        ]);
+
+        $blocks = (new RegionManager($this->app))->getAvailableBlocks();
+
+        self::assertArrayHasKey('pubvana.fixture.ok', $blocks);
+        self::assertSame('Plugin Dup', $blocks['pubvana.fixture.dup']['label'], 'plugin wins a key collision');
+        self::assertArrayNotHasKey('pubvana.fixture.no-label', $blocks);
+        self::assertArrayNotHasKey('pubvana.fixture.no-template', $blocks);
+        self::assertArrayNotHasKey('pubvana.fixture.nested', $blocks);
+        self::assertCount(2, $blocks);
+    }
+
+    public function testThemeBlockTemplateResolvesThroughTheExistingThemeTier(): void
+    {
+        $view = new PluginView();
+        $view->setThemePath($this->tmpRoot . '/theme-views');
+
+        $dir = $this->tmpRoot . '/theme-views/pubvana/fixture/public/blocks';
+        mkdir($dir, 0777, true);
+        file_put_contents($dir . '/hero.tpl', '{{ title }}');
+
+        $resolved = $this->invoke(
+            $this->service,
+            'resolveBlockTemplate',
+            ['hero.tpl', 'pubvana.fixture.hero', $view]
+        );
+
+        self::assertSame($dir . '/hero.tpl', $resolved);
+    }
+
     // -----------------------------------------------------------------
     // Placement reads and the per-request cache
     // -----------------------------------------------------------------
@@ -373,6 +478,7 @@ final class RegionManagerTest extends TestCase
             'db' => fn(): PDO => $this->pdo,
             'adext' => $this->adextProvider(),
             'view' => fn(): object => new stdClass(),
+            'themes' => fn(): ThemeService => new ThemeService($this->app),
         ]);
         $this->registerCardTemplate();
         $this->registerCardBlock($app);
@@ -391,6 +497,7 @@ final class RegionManagerTest extends TestCase
             'db' => fn(): PDO => $this->pdo,
             'adext' => $this->adextProvider(),
             'view' => $this->pluginViewProvider(),
+            'themes' => fn(): ThemeService => new ThemeService($this->app),
         ]);
         $service = new RegionManager($app);
 
@@ -430,6 +537,7 @@ final class RegionManagerTest extends TestCase
             'db' => fn(): PDO => $this->pdo,
             'adext' => $this->adextProvider(),
             'view' => $this->pluginViewProvider(),
+            'themes' => fn(): ThemeService => new ThemeService($this->app),
         ]);
         $this->insertPlacement('footer', 'pubvana.gone', 0);
 

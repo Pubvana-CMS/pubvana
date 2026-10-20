@@ -108,6 +108,7 @@
                 "description": "Third footer column",
                 "fallback": "footer"
             }
-        ]
+        ],
+        "blocks": []
     }
 }

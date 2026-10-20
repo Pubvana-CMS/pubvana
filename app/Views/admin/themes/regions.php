@@ -8,6 +8,7 @@
  * @var array  $blocks       block_key => {label, description, options, ...}
  * @var array  $orphaned     BlockPlacement[], placements with no matching region
  * @var array  $savedValues  placement_id => options array
+ * @var array  $fontChoices  Label => CSS font stack for font fields
  */
 $wysiwygSelectors = [];
 ?>
@@ -79,7 +80,7 @@ $wysiwygSelectors = [];
 <?php if (empty($blocks)): ?>
 <div class="alert alert-info mb-4">
     <i class="ti ti-info-circle me-2"></i>
-    No blocks are registered. Plugins register blocks during startup. Install a plugin that provides blocks to get started.
+    No blocks are registered. Plugins register blocks during startup, and the active theme can declare blocks in its pubvana.json.
 </div>
 <?php endif; ?>
 
@@ -206,36 +207,41 @@ $wysiwygSelectors = [];
                         <div class="modal-body">
                             <?php foreach ($optionDefs as $fieldKey => $fieldDef): ?>
                                 <?php $fieldType = $fieldDef['type'] ?? 'input'; ?>
+                                <?php $blockFieldId = 'block-option-' . (int) $placement->id . '-' . preg_replace('/[^a-z0-9_-]/i', '-', $fieldKey); ?>
 
                                 <?php if ($fieldType === 'repeater'): ?>
                                     <?php
-                                    $repeaterFields = $fieldDef['fields'] ?? [];
-                                    $repeaterRows = $vals[$fieldKey] ?? [];
+                                    $repeaterFields = is_array($fieldDef['fields'] ?? null) ? $fieldDef['fields'] : [];
+                                    $repeaterRows = is_array($vals[$fieldKey] ?? null) ? $vals[$fieldKey] : [];
+                                    $repeaterRows = array_filter(
+                                        $repeaterRows,
+                                        static fn($rowKey): bool => (string) $rowKey !== '__INDEX__',
+                                        ARRAY_FILTER_USE_KEY
+                                    );
+                                    $inputPrefix = 'values[' . $fieldKey . ']';
+                                    $idPrefix = $blockFieldId;
                                     ?>
                                     <div class="mb-3">
                                         <label class="form-label"><?= htmlspecialchars($fieldDef['label'] ?? $fieldKey) ?></label>
-                                        <div class="repeater-group" data-field="<?= htmlspecialchars($fieldKey) ?>">
+                                        <div class="repeater-group"
+                                             data-input-prefix="<?= htmlspecialchars($inputPrefix) ?>"
+                                             data-id-prefix="<?= htmlspecialchars($idPrefix) ?>">
                                             <?php foreach ($repeaterRows as $rowIndex => $row): ?>
-                                            <div class="repeater-row card card-body p-2 mb-2">
-                                                <div class="d-flex gap-2 align-items-end">
-                                                    <?php foreach ($repeaterFields as $subKey => $subDef): ?>
-                                                    <div class="flex-fill">
-                                                        <label class="form-label small mb-1"><?= htmlspecialchars($subDef['label'] ?? $subKey) ?></label>
-                                                        <input type="text" class="form-control form-control-sm"
-                                                               name="values[<?= htmlspecialchars($fieldKey) ?>][<?= (int) $rowIndex ?>][<?= htmlspecialchars($subKey) ?>]"
-                                                               value="<?= htmlspecialchars($row[$subKey] ?? '') ?>">
-                                                    </div>
-                                                    <?php endforeach; ?>
-                                                    <button type="button" class="btn btn-sm btn-ghost-danger btn-icon repeater-remove" title="Remove row">
-                                                        <i class="ti ti-trash"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
+                                                <?php
+                                                $row = is_array($row) ? $row : [];
+                                                $rowIndex = (string) $rowIndex;
+                                                $isTemplate = false;
+                                                include __DIR__ . '/_repeater_row.php';
+                                                ?>
                                             <?php endforeach; ?>
+                                            <?php
+                                            $row = [];
+                                            $rowIndex = '__INDEX__';
+                                            $isTemplate = true;
+                                            include __DIR__ . '/_repeater_row.php';
+                                            ?>
                                         </div>
-                                        <button type="button" class="btn btn-sm btn-outline-primary repeater-add"
-                                                data-field="<?= htmlspecialchars($fieldKey) ?>"
-                                                data-fields='<?= htmlspecialchars(json_encode($repeaterFields)) ?>'>
+                                        <button type="button" class="btn btn-sm btn-outline-primary" data-repeater-add>
                                             <i class="ti ti-plus me-1"></i>Add
                                         </button>
                                     </div>
@@ -263,6 +269,95 @@ $wysiwygSelectors = [];
                                         </label>
                                     </div>
 
+                                <?php elseif ($fieldType === 'select'): ?>
+                                    <?php $choices = is_array($fieldDef['choices'] ?? null) ? $fieldDef['choices'] : [];
+                                    $current = (string) ($vals[$fieldKey] ?? $fieldDef['default'] ?? ''); ?>
+                                    <div class="mb-3">
+                                        <label class="form-label" for="<?= htmlspecialchars($blockFieldId) ?>"><?= htmlspecialchars($fieldDef['label'] ?? $fieldKey) ?></label>
+                                        <select class="form-select" id="<?= htmlspecialchars($blockFieldId) ?>"
+                                                name="values[<?= htmlspecialchars($fieldKey) ?>]">
+                                            <?php foreach ($choices as $choiceValue => $choiceLabel): ?>
+                                                <option value="<?= htmlspecialchars((string) $choiceValue) ?>"
+                                                        <?= $current === (string) $choiceValue ? 'selected' : '' ?>>
+                                                    <?= htmlspecialchars((string) $choiceLabel) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+
+                                <?php elseif ($fieldType === 'color'): ?>
+                                    <div class="mb-3">
+                                        <label class="form-label" for="<?= htmlspecialchars($blockFieldId) ?>"><?= htmlspecialchars($fieldDef['label'] ?? $fieldKey) ?></label>
+                                        <input type="color" class="form-control form-control-color"
+                                               id="<?= htmlspecialchars($blockFieldId) ?>"
+                                               name="values[<?= htmlspecialchars($fieldKey) ?>]"
+                                               value="<?= htmlspecialchars((string) ($vals[$fieldKey] ?? $fieldDef['default'] ?? '')) ?>">
+                                    </div>
+
+                                <?php elseif ($fieldType === 'number'): ?>
+                                    <div class="mb-3">
+                                        <label class="form-label" for="<?= htmlspecialchars($blockFieldId) ?>"><?= htmlspecialchars($fieldDef['label'] ?? $fieldKey) ?></label>
+                                        <input type="number" class="form-control"
+                                               id="<?= htmlspecialchars($blockFieldId) ?>"
+                                               name="values[<?= htmlspecialchars($fieldKey) ?>]"
+                                               value="<?= htmlspecialchars((string) ($vals[$fieldKey] ?? $fieldDef['default'] ?? '')) ?>"
+                                               <?php if (isset($fieldDef['min'])): ?>min="<?= htmlspecialchars((string) $fieldDef['min']) ?>"<?php endif; ?>
+                                               <?php if (isset($fieldDef['max'])): ?>max="<?= htmlspecialchars((string) $fieldDef['max']) ?>"<?php endif; ?>
+                                               <?php if (isset($fieldDef['step'])): ?>step="<?= htmlspecialchars((string) $fieldDef['step']) ?>"<?php endif; ?>>
+                                    </div>
+
+                                <?php elseif ($fieldType === 'range'): ?>
+                                    <?php $rangeOutputId = $blockFieldId . '-output'; ?>
+                                    <div class="mb-3">
+                                        <label class="form-label" for="<?= htmlspecialchars($blockFieldId) ?>"><?= htmlspecialchars($fieldDef['label'] ?? $fieldKey) ?></label>
+                                        <div class="d-flex align-items-center gap-3">
+                                            <input type="range" class="form-range"
+                                                   id="<?= htmlspecialchars($blockFieldId) ?>"
+                                                   name="values[<?= htmlspecialchars($fieldKey) ?>]"
+                                                   value="<?= htmlspecialchars((string) ($vals[$fieldKey] ?? $fieldDef['default'] ?? '')) ?>"
+                                                   min="<?= htmlspecialchars((string) ($fieldDef['min'] ?? 0)) ?>"
+                                                   max="<?= htmlspecialchars((string) ($fieldDef['max'] ?? 100)) ?>"
+                                                   step="<?= htmlspecialchars((string) ($fieldDef['step'] ?? 1)) ?>"
+                                                   data-range-output="<?= htmlspecialchars($rangeOutputId) ?>">
+                                            <output id="<?= htmlspecialchars($rangeOutputId) ?>" for="<?= htmlspecialchars($blockFieldId) ?>"><?= htmlspecialchars((string) ($vals[$fieldKey] ?? $fieldDef['default'] ?? '')) ?></output>
+                                        </div>
+                                    </div>
+
+                                <?php elseif ($fieldType === 'font'): ?>
+                                    <?php
+                                    $fontStack = (string) ($vals[$fieldKey] ?? $fieldDef['default'] ?? '');
+                                    $fontChoices = $fontChoices ?? [];
+                                    $choices = is_array($fieldDef['choices'] ?? null) ? $fieldDef['choices'] : $fontChoices;
+                                    if ($choices === []) {
+                                        $choices = $fontChoices;
+                                    }
+                                    if ($fontStack !== '' && !in_array($fontStack, $choices, true)) {
+                                        $choices = ['Custom (' . $fontStack . ')' => $fontStack] + $choices;
+                                    }
+                                    $fontPreviewId = $blockFieldId . '-preview';
+                                    $fontPreviewText = is_string($fieldDef['preview'] ?? null)
+                                        ? $fieldDef['preview']
+                                        : 'The quick brown fox jumps over the lazy dog.';
+                                    ?>
+                                    <div class="mb-3">
+                                        <label class="form-label" for="<?= htmlspecialchars($blockFieldId) ?>"><?= htmlspecialchars($fieldDef['label'] ?? $fieldKey) ?></label>
+                                        <select class="form-select" id="<?= htmlspecialchars($blockFieldId) ?>"
+                                                name="values[<?= htmlspecialchars($fieldKey) ?>]"
+                                                data-font-preview="<?= htmlspecialchars($fontPreviewId) ?>">
+                                            <?php foreach ($choices as $fontLabel => $stack): ?>
+                                                <option value="<?= htmlspecialchars((string) $stack) ?>"
+                                                        style="font-family: <?= htmlspecialchars((string) $stack) ?>"
+                                                        <?= $fontStack === (string) $stack ? 'selected' : '' ?>>
+                                                    <?= htmlspecialchars((string) $fontLabel) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <p class="border rounded p-2 mt-2 mb-0" id="<?= htmlspecialchars($fontPreviewId) ?>"
+                                           style="font-family: <?= htmlspecialchars($fontStack) ?>">
+                                            <?= htmlspecialchars($fontPreviewText) ?>
+                                        </p>
+                                    </div>
+
                                 <?php else: ?>
                                     <div class="mb-3">
                                         <label class="form-label"><?= htmlspecialchars($fieldDef['label'] ?? $fieldKey) ?></label>
@@ -270,6 +365,10 @@ $wysiwygSelectors = [];
                                                name="values[<?= htmlspecialchars($fieldKey) ?>]"
                                                value="<?= htmlspecialchars($vals[$fieldKey] ?? $fieldDef['default'] ?? '') ?>">
                                     </div>
+                                <?php endif; ?>
+
+                                <?php if (!empty($fieldDef['help'])): ?>
+                                    <span class="form-hint d-block mb-3"><?= htmlspecialchars((string) $fieldDef['help']) ?></span>
                                 <?php endif; ?>
                             <?php endforeach; ?>
                         </div>
@@ -295,63 +394,10 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 <?php endforeach; ?>
 
+<?php include __DIR__ . '/_repeater_script.php'; ?>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-
-    // Repeater: add row
-    document.querySelectorAll('.repeater-add').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var fieldKey = this.dataset.field;
-            var fields = JSON.parse(this.dataset.fields);
-            var group = this.previousElementSibling;
-            var index = group.querySelectorAll('.repeater-row').length;
-
-            var row = document.createElement('div');
-            row.className = 'repeater-row card card-body p-2 mb-2';
-
-            var inner = '<div class="d-flex gap-2 align-items-end">';
-            for (var subKey in fields) {
-                var subDef = fields[subKey];
-                inner += '<div class="flex-fill">';
-                inner += '<label class="form-label small mb-1">' + subDef.label + '</label>';
-                inner += '<input type="text" class="form-control form-control-sm" name="values[' + fieldKey + '][' + index + '][' + subKey + ']" value="">';
-                inner += '</div>';
-            }
-            inner += '<button type="button" class="btn btn-sm btn-ghost-danger btn-icon repeater-remove" title="Remove row"><i class="ti ti-trash"></i></button>';
-            inner += '</div>';
-
-            row.innerHTML = inner;
-            group.appendChild(row);
-
-            row.querySelector('.repeater-remove').addEventListener('click', function() {
-                row.remove();
-                reindexRepeater(group, fieldKey);
-            });
-        });
-    });
-
-    // Repeater: remove row
-    document.querySelectorAll('.repeater-remove').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var row = this.closest('.repeater-row');
-            var group = row.closest('.repeater-group');
-            var fieldKey = group.dataset.field;
-            row.remove();
-            reindexRepeater(group, fieldKey);
-        });
-    });
-
-    function reindexRepeater(group, fieldKey) {
-        group.querySelectorAll('.repeater-row').forEach(function(row, index) {
-            row.querySelectorAll('input').forEach(function(input) {
-                var name = input.name;
-                input.name = name.replace(
-                    /values\[[^\]]+\]\[\d+\]/,
-                    'values[' + fieldKey + '][' + index + ']'
-                );
-            });
-        });
-    }
 
     // Sortable reordering via drag-and-drop
     document.querySelectorAll('[data-region]').forEach(function(list) {

@@ -2,12 +2,16 @@
 /**
  * Theme options form, renders fields from pubvana.json provides.options.
  *
- * Supported field types: toggle, input, select, color, media, group.
+ * Supported field types: toggle, input, textarea, number, range, select,
+ * color, media, font, repeater, group.
  * Groups render as a card with their fields nested inside.
+ * Repeater subfields support input, textarea, select, toggle, color, number,
+ * and range. Wysiwyg and media are not available inside a repeater.
  *
  * @var object $theme   Theme record
  * @var array  $options Option definitions from pubvana.json
  * @var array  $saved   Current saved values (key => value, groups use "group.field" keys)
+ * @var array  $fontChoices Label => CSS font stack for font fields
  */
 ?>
 
@@ -62,3 +66,5 @@
         <?php endif; ?>
     </div>
 </div>
+
+<?php include __DIR__ . '/_repeater_script.php'; ?>

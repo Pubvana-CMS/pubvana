@@ -480,9 +480,35 @@ abstract class PublicController
         }
 
         $flat = $this->app->themes()->getThemeOptions((int) $active->id);
+        $manifest = $this->app->themes()->getManifest((string) $active->folder);
+        $defs = $manifest['provides']['options'] ?? [];
+        $repeaters = [];
+
+        if (is_array($defs)) {
+            foreach ($defs as $key => $def) {
+                if (!is_array($def)) {
+                    continue;
+                }
+                if (($def['type'] ?? '') === 'group' && is_array($def['fields'] ?? null)) {
+                    foreach ($def['fields'] as $fKey => $fDef) {
+                        if (is_array($fDef) && ($fDef['type'] ?? '') === 'repeater') {
+                            $repeaters[$key . '.' . $fKey] = true;
+                        }
+                    }
+                } elseif (($def['type'] ?? '') === 'repeater') {
+                    $repeaters[(string) $key] = true;
+                }
+            }
+        }
+
         $nested = [];
 
         foreach ($flat as $key => $value) {
+            if (isset($repeaters[$key])) {
+                $decoded = json_decode((string) $value, true);
+                $value = is_array($decoded) ? $decoded : [];
+            }
+
             $parts = explode('.', $key);
             if (count($parts) === 2) {
                 $group = $parts[0];

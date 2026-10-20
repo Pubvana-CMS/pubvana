@@ -208,6 +208,61 @@ final class PublicControllerTest extends TestCase
         self::assertSame([], $this->invoke($controller, 'getThemeOptions'));
     }
 
+    public function testThemeOptionsDecodeRepeatersForTemplates(): void
+    {
+        $app = $this->engine(
+            ['CMS.siteName' => 'Pubvana'],
+            themeOptions: [
+                'links' => '[{"label":"One","url":"/one"},{"label":"Two","url":"/two"}]',
+                'items.list' => '[{"label":"Grouped"}]',
+                'hero.show' => '1',
+            ],
+            manifest: [
+                'provides' => [
+                    'options' => [
+                        'links' => [
+                            'type' => 'repeater',
+                            'label' => 'Links',
+                            'fields' => [
+                                'label' => ['type' => 'input'],
+                                'url' => ['type' => 'input'],
+                            ],
+                        ],
+                        'items' => [
+                            'type' => 'group',
+                            'label' => 'Items',
+                            'fields' => [
+                                'list' => [
+                                    'type' => 'repeater',
+                                    'label' => 'List',
+                                    'fields' => ['label' => ['type' => 'input']],
+                                ],
+                            ],
+                        ],
+                        'hero' => [
+                            'type' => 'group',
+                            'label' => 'Hero',
+                            'fields' => ['show' => ['type' => 'toggle']],
+                        ],
+                    ],
+                ],
+            ],
+        );
+        $controller = new class($app) extends PublicController {};
+
+        $options = $this->invoke($controller, 'getThemeOptions');
+
+        self::assertSame(
+            [
+                ['label' => 'One', 'url' => '/one'],
+                ['label' => 'Two', 'url' => '/two'],
+            ],
+            $options['links']
+        );
+        self::assertSame([['label' => 'Grouped']], $options['items']['list']);
+        self::assertSame('1', $options['hero']['show'], 'non-repeater options stay strings');
+    }
+
     // -----------------------------------------------------------------
     // buildCommentsHtml()
     // -----------------------------------------------------------------
@@ -778,11 +833,13 @@ final class PublicControllerTest extends TestCase
      * @param array<string, string|null> $settings   Settings-store rows
      * @param bool                       $noActiveTheme getActive() answers null
      * @param array<string, string>      $themeOptions Theme option rows
+     * @param array<string, mixed>       $manifest     Active theme manifest
      */
     private function engine(
         array $settings = [],
         bool $noActiveTheme = false,
-        array $themeOptions = []
+        array $themeOptions = [],
+        array $manifest = []
     ): Engine {
         $test = $this;
         $app = $this->app([
@@ -816,11 +873,16 @@ final class PublicControllerTest extends TestCase
                     }
                 };
             },
-            'themes' => function () use ($noActiveTheme, $themeOptions) {
-                return new class($noActiveTheme, $themeOptions) {
+            'themes' => function () use ($noActiveTheme, $themeOptions, $manifest) {
+                return new class($noActiveTheme, $themeOptions, $manifest) {
+                    /**
+                     * @param array<string, string> $themeOptions
+                     * @param array<string, mixed>  $manifest
+                     */
                     public function __construct(
                         private bool $noActive,
-                        private array $themeOptions
+                        private array $themeOptions,
+                        private array $manifest
                     ) {}
 
                     public function getActive(): ?object
@@ -838,6 +900,12 @@ final class PublicControllerTest extends TestCase
                     public function getThemeOptions(int $themeId): array
                     {
                         return $this->themeOptions;
+                    }
+
+                    /** @return array<string, mixed> */
+                    public function getManifest(string $folder): array
+                    {
+                        return $this->manifest;
                     }
                 };
             },

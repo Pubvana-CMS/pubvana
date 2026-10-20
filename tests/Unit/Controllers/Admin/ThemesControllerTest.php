@@ -262,9 +262,15 @@ final class ThemesControllerTest extends TestCase
         (new ThemesController($this->engine()))->regions();
         self::assertSame('admin/themes/regions', $this->fetches[0]['view']);
 
+        $this->regions->blocks = ['b' => ['label' => 'B', 'template' => 'b.tpl']];
         (new ThemesController($this->engine(data: ['region_id' => 'r', 'block_key' => 'b'])))->placeBlock();
         self::assertSame([['r', 'b']], $this->regions->placed);
         self::assertSame(['/admin/themes/regions'], $this->redirects);
+
+        // An unregistered key never reaches savePlacement().
+        $this->regions->placed = [];
+        (new ThemesController($this->engine(data: ['region_id' => 'r', 'block_key' => 'nope'])))->placeBlock();
+        self::assertSame([], $this->regions->placed);
 
         $this->redirects = [];
         (new ThemesController($this->engine(data: [])))->placeBlock();
@@ -336,6 +342,36 @@ final class ThemesControllerTest extends TestCase
         self::assertStringNotContainsString('<script>', (string) ($items[0]['body'] ?? ''));
         // A text sub-field is left alone, only textareas are purified.
         self::assertSame('<i>L</i>', $items[0]['label'] ?? null);
+    }
+
+    public function testSaveBlockValuesDropsTheRepeaterTemplatePlaceholder(): void
+    {
+        $pid = $this->seedPlacement('sidebar', 'core/list');
+        $this->regions->blocks = [
+            'core/list' => [
+                'options' => [
+                    'items' => [
+                        'type'   => 'repeater',
+                        'fields' => ['label' => ['type' => 'text']],
+                    ],
+                ],
+            ],
+        ];
+        $app = $this->engine(data: [
+            'placement_id' => (string) $pid,
+            'values' => [
+                'items' => [
+                    '__INDEX__' => ['label' => ''],
+                    0           => ['label' => 'First'],
+                ],
+            ],
+        ]);
+        (new ThemesController($app))->saveBlockValues();
+
+        $items = $this->regions->savedValues['items'] ?? null;
+        self::assertIsArray($items);
+        self::assertArrayNotHasKey('__INDEX__', $items);
+        self::assertSame([['label' => 'First']], array_values($items));
     }
 
     public function testSaveBlockValuesKeepsLinkTargetsAndMedia(): void
