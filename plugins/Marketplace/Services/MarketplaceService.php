@@ -8,6 +8,7 @@ use Enlivenapp\Migrations\Services\MigrationSetup;
 use Pubvana\Models\TrustCache;
 use Pubvana\Plugins\Backups\Services\ProgressReporter as BackupProgressReporter;
 use Pubvana\Plugins\Marketplace\Models\MarketplaceInstall;
+use Pubvana\Services\HtmlPurifierFactory;
 use flight\Engine;
 
 /**
@@ -185,12 +186,27 @@ class MarketplaceService
             return ['reason' => $this->catalogFailureReason()] + $empty;
         }
 
+        // The store writes descriptions as HTML. Purify them here so the
+        // view can print them as markup instead of escaped tags.
+        //
+        // The image is a site-relative path there too, so it is resolved
+        // against the store before the view uses it.
+        $items = $json['items'];
+        foreach ($items as $index => $item) {
+            if (isset($item['description'])) {
+                $items[$index]['description'] = $this->purifyDescription((string) $item['description']);
+            }
+            if (isset($item['image'])) {
+                $items[$index]['image'] = $this->storeAssetUrl((string) $item['image']);
+            }
+        }
+
         return [
             'ok'       => true,
             'reason'   => '',
             'tabs'     => $json['tabs'],
             'open_tab' => $json['open_tab'],
-            'items'    => $json['items'],
+            'items'    => $items,
             'total'    => $json['total'],
             'page'     => $json['page'],
             'per_page' => $json['per_page'],
@@ -288,6 +304,24 @@ class MarketplaceService
         return $this->catalogReason !== ''
             ? $this->catalogReason
             : 'The store could not be reached. Try again in a minute.';
+    }
+
+    /**
+     * An item description from the store, sanitized.
+     *
+     * Descriptions arrive as HTML. When HTMLPurifier is unavailable, strip
+     * tags rather than return the raw input, the same fallback BlogService
+     * and CommentService use.
+     */
+    protected function purifyDescription(string $html): string
+    {
+        if (trim($html) === '') {
+            return '';
+        }
+        if (!class_exists(\HTMLPurifier_Config::class)) {
+            return strip_tags($html);
+        }
+        return (new \HTMLPurifier(HtmlPurifierFactory::create()))->purify($html);
     }
 
     // -----------------------------------------------------------------
@@ -2184,6 +2218,23 @@ class MarketplaceService
             return $this->environment() === 'development';
         }
         return false;
+    }
+
+    /**
+     * An item image path from the store as a full URL on the store host.
+     *
+     * The store sends `/uploads/...` paths. Anything that does not resolve
+     * to the store host comes back empty, so the view renders no image.
+     */
+    protected function storeAssetUrl(string $path): string
+    {
+        $path = trim($path);
+        if ($path === '') {
+            return '';
+        }
+        $url = $this->resolveHttpUrl($this->apiUrl('items'), $path);
+
+        return $url !== null && $this->isAllowedStoreUrl($url) ? $url : '';
     }
 
     protected function environment(): string

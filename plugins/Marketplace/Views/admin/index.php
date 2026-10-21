@@ -316,7 +316,7 @@
                 ?>
                 <?php
                 // Whether the card has a details modal to open at all.
-                $hasInfo = !empty($item['description']) || !empty($item['versions']) || !empty($item['package']);
+                $hasInfo = !empty($item['description']) || !empty($item['versions']) || !empty($item['package']) || !empty($item['image']);
                 ?>
                 <div class="col-md-6 col-lg-4">
                     <div class="card h-100">
@@ -405,8 +405,13 @@
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
+                                    <?php if (!empty($item['image'])): ?>
+                                    <img src="<?= htmlspecialchars((string) $item['image']) ?>"
+                                         alt="<?= htmlspecialchars((string) ($item['name'] ?? '')) ?>"
+                                         class="img-fluid rounded mb-3" loading="lazy">
+                                    <?php endif; ?>
                                     <?php if (!empty($item['description'])): ?>
-                                    <p class="text-secondary"><?= htmlspecialchars((string) $item['description']) ?></p>
+                                    <div class="text-secondary"><?= (string) $item['description'] ?></div>
                                     <?php endif; ?>
                                     <?php if (!empty($item['versions'])): ?>
                                     <table class="table table-sm mt-3 mb-0">

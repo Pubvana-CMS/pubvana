@@ -34,6 +34,8 @@ namespace Pubvana\Middleware;
  *     widget's script, challenge iframe, styles, and XHR all have to be
  *     allowed. Without these the div renders and the browser blocks the
  *     script, leaving an empty box that looks like a missing field.
+ *   - pubvanacms.com: item images in the Marketplace catalog, which the
+ *     store sends as URLs on its own host.
  *   - object-src 'none' and base-uri 'self': standard hardening, nothing
  *     in the app loads plugins, applets, or a different base URI
  *
@@ -77,7 +79,8 @@ class SecurityHeadersMiddleware
                 . ' https://hcaptcha.com https://*.hcaptcha.com https://www.google.com/recaptcha/',
             "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
             "img-src 'self' data: blob:"
-                . ' https://hcaptcha.com https://*.hcaptcha.com https://www.google.com/recaptcha/',
+                . ' https://hcaptcha.com https://*.hcaptcha.com https://www.google.com/recaptcha/'
+                . ' https://pubvanacms.com',
             "connect-src 'self' https://cdn.jsdelivr.net"
                 . ' https://hcaptcha.com https://*.hcaptcha.com https://www.google.com/recaptcha/',
             "frame-src 'self'"
