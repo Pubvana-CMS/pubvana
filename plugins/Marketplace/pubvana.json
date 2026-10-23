@@ -6,7 +6,7 @@
     "pubver_min": "3.0.0",
     "pubver_max": "",
     "category": "commerce",
-    "semver": "0.4.1",
+    "semver": "0.4.2",
     "provides": {
         "admin.menu": {
             "tools": {

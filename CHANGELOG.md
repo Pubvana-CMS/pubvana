@@ -7,12 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [3.0.0-beta.15] - 2026-10-23
+
 ### Added
 
 - A theme can declare blocks in `pubvana.json` under `provides.blocks`.
 - Block and theme option fields support number, range, font picker with preview, textarea, and repeater.
 - Block option fields and repeater subfields render `help` text in the admin form.
 - Repeater subfields render their declared type: input, textarea, select, toggle, color, number, or range.
+- Images to Marketplace
 
 ### Fixed
 
@@ -21,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Repeater defaults that are arrays seed as JSON instead of throwing during theme sync.
 - `placeBlock()` refuses a block key that no plugin or theme registers.
 - Region and block discovery reads the active theme manifest once per request.
+- HTML markup showing in marketplace
 
 ## [3.0.0-beta.14] - 2026-10-18
 

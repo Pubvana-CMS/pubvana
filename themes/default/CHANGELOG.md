@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.4.34] - 2026-10-23
+
 ### Added
 
 - `provides.blocks` in `pubvana.json`. The list is empty in this theme, ready for themes that ship their own blocks.
