@@ -22,10 +22,21 @@ require(PROJECT_ROOT . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'a
 // HTTPS policy, same rule as app/config/env-overrides.php: only an explicit
 // FORCE_HTTPS enables the upgrade. Default off, so http or https both work
 // regardless of APP_ENV.
+//
+// Dotenv::parse reads the file without touching $_ENV or getenv(), so this
+// stays a plain read. It also matches the grammar env-overrides.php loads with:
+// parse_ini_file() treats '#' as text, not a comment, and returns false on any
+// comment line holding a bare '(' such as the key-generation example.
 $assetEnv = [];
 $envFile = PROJECT_ROOT . '/.env';
 if (is_file($envFile)) {
-    $assetEnv = parse_ini_file($envFile) ?: [];
+    try {
+        $assetEnv = \Dotenv\Dotenv::parse((string) file_get_contents($envFile));
+    } catch (\Throwable) {
+        // A malformed .env falls back to the defaults below, never a fatal
+        // error on an asset request.
+        $assetEnv = [];
+    }
 }
 
 $forceHttps = $assetEnv['FORCE_HTTPS'] ?? null;
