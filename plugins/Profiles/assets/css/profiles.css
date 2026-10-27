@@ -167,6 +167,81 @@
     margin-top: .5rem;
 }
 
+/* ── Profile tabs ── */
+
+.pv-profile-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #767676;
+}
+
+.pv-profile-tab {
+    display: inline-block;
+    margin-bottom: -1px;
+    padding: .5rem .9rem;
+    font-size: .95rem;
+    font-weight: 600;
+    color: #6c757d;
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+}
+
+.pv-profile-tab:hover {
+    color: #1a6b3c;
+}
+
+.pv-profile-tab-active {
+    color: #1a6b3c;
+    border-bottom-color: #1a6b3c;
+}
+
+.pv-profile-tab:focus-visible {
+    outline: 2px solid #1a6b3c;
+    outline-offset: 2px;
+}
+
+.pv-profile-form-section {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.pv-profile-table {
+    width: 100%;
+    margin-bottom: 1rem;
+    border-collapse: collapse;
+    font-size: .95rem;
+}
+
+.pv-profile-table th,
+.pv-profile-table td {
+    padding: .5rem .4rem;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+    vertical-align: middle;
+}
+
+.pv-profile-table th {
+    font-weight: 600;
+}
+
+.pv-profile-table form {
+    margin: 0;
+}
+
+.pv-profile-badge {
+    display: inline-block;
+    margin-left: .35rem;
+    padding: .1rem .4rem;
+    font-size: .75rem;
+    font-weight: 600;
+    color: #145530;
+    background-color: #d8efe2;
+    border-radius: .25rem;
+}
+
 /* ── Author Card block ── */
 
 .pv-author-card {

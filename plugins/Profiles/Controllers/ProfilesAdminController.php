@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Pubvana\Plugins\Profiles\Controllers;
 
 use Pubvana\Controllers\Admin\AdminController;
+use Pubvana\Plugins\Profiles\Services\ProfileSecurityService;
+use Pubvana\Plugins\Profiles\Services\ProfileTabService;
 
 class ProfilesAdminController extends AdminController
 {
@@ -30,6 +32,8 @@ class ProfilesAdminController extends AdminController
             $avatarPicker = '';
         }
 
+        $tabs = $this->tabsService()->tabs($user, $user, $this->requestedTab());
+
         $this->render('pubvana/profiles/admin/profile/index', [
             'pageTitle'    => 'My Profile',
             'profile'      => $profile,
@@ -37,6 +41,9 @@ class ProfilesAdminController extends AdminController
             'avatarPicker' => $avatarPicker,
             'returnUrl'    => $this->adminBase(),
             'adminBase'    => $this->adminBase(),
+            'profileUrl'   => $this->adminBase(),
+            'tabs'         => $tabs,
+            'security'     => $this->securityData($user),
         ]);
     }
 
@@ -75,6 +82,9 @@ class ProfilesAdminController extends AdminController
             $avatarPicker = '';
         }
 
+        $isOwner = (int) ($currentUser?->id) === (int) $userId;
+        $tabs = $this->tabsService()->tabs($user, $currentUser ?? $user, $this->requestedTab());
+
         $this->render('pubvana/profiles/admin/profile/index', [
             'pageTitle'    => 'Edit Profile: ' . htmlspecialchars((string) ($user->username ?? '')),
             'profile'      => $profile,
@@ -82,6 +92,9 @@ class ProfilesAdminController extends AdminController
             'avatarPicker' => $avatarPicker,
             'returnUrl'    => '/admin/users/' . (int) $userId . '/edit',
             'adminBase'    => $this->adminBase(),
+            'profileUrl'   => $this->adminBase() . '/' . (int) $userId,
+            'tabs'         => $tabs,
+            'security'     => $isOwner ? $this->securityData($user) : null,
         ]);
     }
 
@@ -197,5 +210,159 @@ class ProfilesAdminController extends AdminController
     private function adminBase(): string
     {
         return '/admin' . rtrim((string) $this->app->pluginLoader()->routePrefix('pubvana/profiles'), '/');
+    }
+
+    protected function tabsService(): ProfileTabService
+    {
+        return new ProfileTabService($this->app);
+    }
+
+    protected function securityService(): ProfileSecurityService
+    {
+        return new ProfileSecurityService($this->app);
+    }
+
+    // ── Security tab ────────────────────────────────────────────────
+
+    /**
+     * Change the signed-in user's own email address.
+     *
+     * Owner only. An admin editing someone else's profile never reaches
+     * this action: the Security tab is not offered for another account.
+     */
+    public function updateCredentials(string $userId): void
+    {
+        $user = $this->requireSelf($userId);
+        if ($user === null) {
+            return;
+        }
+
+        $post = $this->app->request()->data->getData();
+        $postedReturn = isset($post['return_url']) ? (string) $post['return_url'] : null;
+        unset($post['_csrf_token'], $post['return_url']);
+
+        $result = $this->securityService()->updateCredentials($user, $post);
+
+        if (!$result->isOK()) {
+            $this->app->session()->flash('error', $result->reason() ?: 'Could not update the account.');
+            $this->app->redirect($this->app->url()->sameSite($postedReturn, $this->securityUrl($userId)));
+            return;
+        }
+
+        $this->app->session()->flash('success', 'Account updated.');
+        $this->app->redirect($this->app->url()->sameSite($postedReturn, $this->securityUrl($userId)));
+    }
+
+    /**
+     * Change the signed-in user's own password.
+     */
+    public function updatePassword(string $userId): void
+    {
+        $user = $this->requireSelf($userId);
+        if ($user === null) {
+            return;
+        }
+
+        $post = $this->app->request()->data->getData();
+        $postedReturn = isset($post['return_url']) ? (string) $post['return_url'] : null;
+
+        $result = $this->securityService()->updatePassword(
+            $user,
+            (string) ($post['current_password'] ?? ''),
+            (string) ($post['password'] ?? ''),
+            (string) ($post['password_confirm'] ?? '')
+        );
+
+        if (!$result->isOK()) {
+            $this->app->session()->flash('error', $result->reason() ?: 'Could not change the password.');
+            $this->app->redirect($this->app->url()->sameSite($postedReturn, $this->securityUrl($userId)));
+            return;
+        }
+
+        $this->app->session()->flash('success', 'Password changed. Other sessions were signed out.');
+        $this->app->redirect($this->app->url()->sameSite($postedReturn, $this->securityUrl($userId)));
+    }
+
+    /**
+     * Sign out other devices.
+     *
+     * A posted session_id signs out that one row. No id signs out every
+     * session except the one making the request.
+     */
+    public function revokeSessions(string $userId): void
+    {
+        $user = $this->requireSelf($userId);
+        if ($user === null) {
+            return;
+        }
+
+        $post = $this->app->request()->data->getData();
+        $postedReturn = isset($post['return_url']) ? (string) $post['return_url'] : null;
+        $sessionId = (int) ($post['session_id'] ?? 0);
+
+        if ($sessionId > 0) {
+            $revoked = $this->securityService()->revokeSession($user, $sessionId);
+            $this->app->session()->flash(
+                $revoked ? 'success' : 'error',
+                $revoked ? 'Session signed out.' : 'That session is already gone or is the one you are using.'
+            );
+        } else {
+            $count = $this->securityService()->revokeOtherSessions($user);
+            $this->app->session()->flash('success', 'Signed out ' . $count . ' other session' . ($count === 1 ? '.' : 's.'));
+        }
+
+        $this->app->redirect($this->app->url()->sameSite($postedReturn, $this->securityUrl($userId)));
+    }
+
+    /**
+     * The signed-in user, only when they are the profile owner.
+     *
+     * @return \Enlivenapp\FlightShield\Models\User|null Null after flashing and redirecting a non-owner
+     */
+    private function requireSelf(string $userId): ?object
+    {
+        $currentUser = $this->app->auth()->user();
+
+        if ($currentUser === null || (int) $currentUser->id !== (int) $userId) {
+            $this->app->session()->flash('error', 'You can only change your own security settings.');
+            $this->app->redirect($this->adminBase());
+
+            return null;
+        }
+
+        return $currentUser;
+    }
+
+    /**
+     * Everything the Security tab renders for the owner.
+     *
+     * @param object $user Profile owner (a Shield User at runtime)
+     *
+     * @return array{email: ?string, two_factor: bool, sessions: list<array<string, mixed>>}
+     */
+    private function securityData(object $user): array
+    {
+        /** @var \Enlivenapp\FlightShield\Models\User $user */
+        return [
+            'email'      => $this->app->auth()->users()->getEmail($user),
+            'two_factor' => $this->securityService()->twoFactorEnabled(),
+            'sessions'   => $this->securityService()->sessions($user),
+        ];
+    }
+
+    /**
+     * The current ?tab= value, or an empty string for the first tab.
+     */
+    private function requestedTab(): string
+    {
+        return (string) ($this->app->request()->query->tab ?? '');
+    }
+
+    /**
+     * The Security tab's own URL, used as the redirect fallback.
+     */
+    private function securityUrl(string $userId): string
+    {
+        return $this->adminBase() . '/' . (int) $userId . '?tab=' . \Pubvana\Plugins\Profiles\Services\ProfileTabService::CORE_SECURITY_TAB;
     }
 }

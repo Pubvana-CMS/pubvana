@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Pubvana\Plugins\Profiles\Controllers;
 
 use Pubvana\Controllers\Public\PublicController;
+use Pubvana\Plugins\Profiles\Services\ProfileSecurityService;
+use Pubvana\Plugins\Profiles\Services\ProfileTabService;
 use Pubvana\Services\UrlService;
 use Enlivenapp\FlightShield\Models\User;
 
@@ -90,6 +92,13 @@ class ProfilesPublicController extends PublicController
             $avatarPicker = '';
         }
 
+        $tabs = $this->tabsService()->tabs(
+            $user,
+            $this->app->auth()->user() ?? $user,
+            $this->requestedTab()
+        );
+        $activeTab = $this->activeTab($tabs);
+
         $this->render('pubvana/profiles/profile_edit', [
             'title'          => 'Edit Profile',
             'profileBase'    => $this->profileBase(),
@@ -97,6 +106,11 @@ class ProfilesPublicController extends PublicController
             'user'           => $user,
             'avatarUploadUrl' => $this->profileBase() . '/' . (int) $user->id . '/avatar',
             'avatarPicker'   => $avatarPicker,
+            'tabs'           => $tabs,
+            'hasTabs'        => count($tabs) > 1,
+            'activeTabId'    => $activeTab['id'],
+            'activeTabOutput' => $activeTab['output'],
+            'security'       => $this->securityData($user),
         ]);
     }
 
@@ -226,6 +240,177 @@ class ProfilesPublicController extends PublicController
     private function profileBase(): string
     {
         return '/' . trim($this->getRoutePrepend(), '/');
+    }
+
+    /**
+     * The current ?tab= value, or an empty string for the first tab.
+     */
+    private function requestedTab(): string
+    {
+        return (string) ($this->app->request()->query->tab ?? '');
+    }
+
+    /**
+     * The tab the template should print.
+     *
+     * @param list<array{id: string, label: string, active: bool, output: string}> $tabs
+     *
+     * @return array{id: string, label: string, active: bool, output: string}
+     */
+    private function activeTab(array $tabs): array
+    {
+        foreach ($tabs as $tab) {
+            if (!empty($tab['active'])) {
+                return $tab;
+            }
+        }
+
+        return $tabs[0] ?? [
+            'id'     => 'profile',
+            'label'  => 'Profile',
+            'active' => true,
+            'output' => '',
+        ];
+    }
+
+    // ── Security tab ────────────────────────────────────────────────
+
+    /**
+     * Change the signed-in user's own email address.
+     */
+    public function updateCredentials(string $id): void
+    {
+        $user = $this->requireSelf($id);
+        if ($user === null) {
+            return;
+        }
+
+        $post = $this->app->request()->data->getData();
+        $postedReturn = isset($post['return_url']) ? (string) $post['return_url'] : null;
+        unset($post['_csrf_token'], $post['return_url']);
+
+        $result = $this->securityService()->updateCredentials($user, $post);
+
+        if (!$result->isOK()) {
+            $this->app->session()->flash('danger', $result->reason() ?: 'Could not update the account.');
+            $this->app->redirect($this->app->url()->sameSite($postedReturn, $this->securityUrl($user)));
+            return;
+        }
+
+        $this->app->session()->flash('success', 'Account updated.');
+        $this->app->redirect($this->app->url()->sameSite($postedReturn, $this->securityUrl($user)));
+    }
+
+    /**
+     * Change the signed-in user's own password.
+     */
+    public function updatePassword(string $id): void
+    {
+        $user = $this->requireSelf($id);
+        if ($user === null) {
+            return;
+        }
+
+        $post = $this->app->request()->data->getData();
+        $postedReturn = isset($post['return_url']) ? (string) $post['return_url'] : null;
+
+        $result = $this->securityService()->updatePassword(
+            $user,
+            (string) ($post['current_password'] ?? ''),
+            (string) ($post['password'] ?? ''),
+            (string) ($post['password_confirm'] ?? '')
+        );
+
+        if (!$result->isOK()) {
+            $this->app->session()->flash('danger', $result->reason() ?: 'Could not change the password.');
+            $this->app->redirect($this->app->url()->sameSite($postedReturn, $this->securityUrl($user)));
+            return;
+        }
+
+        $this->app->session()->flash('success', 'Password changed. Other sessions were signed out.');
+        $this->app->redirect($this->app->url()->sameSite($postedReturn, $this->securityUrl($user)));
+    }
+
+    /**
+     * Sign out other devices.
+     */
+    public function revokeSessions(string $id): void
+    {
+        $user = $this->requireSelf($id);
+        if ($user === null) {
+            return;
+        }
+
+        $post = $this->app->request()->data->getData();
+        $postedReturn = isset($post['return_url']) ? (string) $post['return_url'] : null;
+        $sessionId = (int) ($post['session_id'] ?? 0);
+
+        if ($sessionId > 0) {
+            $revoked = $this->securityService()->revokeSession($user, $sessionId);
+            $this->app->session()->flash(
+                $revoked ? 'success' : 'danger',
+                $revoked ? 'Session signed out.' : 'That session is already gone or is the one you are using.'
+            );
+        } else {
+            $count = $this->securityService()->revokeOtherSessions($user);
+            $this->app->session()->flash('success', 'Signed out ' . $count . ' other session' . ($count === 1 ? '.' : 's.'));
+        }
+
+        $this->app->redirect($this->app->url()->sameSite($postedReturn, $this->securityUrl($user)));
+    }
+
+    /**
+     * The profile owner, only when the request comes from that account.
+     */
+    private function requireSelf(string $id): ?User
+    {
+        $user = $this->findUser($id);
+        if ($user === null) {
+            $this->app->halt(404, 'User not found');
+
+            return null;
+        }
+
+        if ((int) ($this->app->auth()->user()?->id) !== (int) $user->id) {
+            $this->app->session()->flash('danger', 'You can only change your own security settings.');
+            $this->app->redirect('/');
+
+            return null;
+        }
+
+        return $user;
+    }
+
+    /**
+     * Everything the Security tab renders for the owner.
+     *
+     * @return array{email: ?string, two_factor: bool, sessions: list<array<string, mixed>>}
+     */
+    private function securityData(User $user): array
+    {
+        return [
+            'email'      => $this->app->auth()->users()->getEmail($user),
+            'two_factor' => $this->securityService()->twoFactorEnabled(),
+            'sessions'   => $this->securityService()->sessions($user),
+        ];
+    }
+
+    /**
+     * The Security tab's own URL, used as the redirect fallback.
+     */
+    private function securityUrl(User $user): string
+    {
+        return $this->profileBase() . '/' . (int) $user->id . '?tab=' . ProfileTabService::CORE_SECURITY_TAB;
+    }
+
+    protected function tabsService(): ProfileTabService
+    {
+        return new ProfileTabService($this->app);
+    }
+
+    protected function securityService(): ProfileSecurityService
+    {
+        return new ProfileSecurityService($this->app);
     }
 
     /**

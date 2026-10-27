@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Profile pages are tabbed on the admin profile page and the public profile edit page. Core tabs are Profile and Security.
+- Plugins add a profile tab with the `profile.tab` extension type. One registration shows on both pages.
+- The Security tab changes the account email and password, lists signed-in devices, and signs one or all other devices out.
+
+### Fixed
+
+- Session rows record the signed-in user id, so per-user session lists work.
+- parse error of env file. was causing log file fill up and FORCE_HTTPS not honored
+
 ## [3.0.0-beta.15] - 2026-10-23
 
 ### Added

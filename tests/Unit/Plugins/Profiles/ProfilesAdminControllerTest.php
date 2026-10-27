@@ -5,20 +5,88 @@ declare(strict_types=1);
 namespace Pubvana\Tests\Unit\Plugins\Profiles;
 
 use Enlivenapp\FlightShield\Models\User;
+use Enlivenapp\FlightShield\Result;
 use flight\Engine;
 use flight\util\Collection;
 use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
-use Pubvana\Plugins\Profiles\Controllers\ProfilesAdminController;
+use Pubvana\Plugins\Profiles\Controllers\ProfilesAdminController as RealProfilesAdminController;
 use Pubvana\Plugins\Profiles\Models\Profile;
+use Pubvana\Plugins\Profiles\Services\ProfileSecurityService;
 use Pubvana\Services\UrlService;
 use Pubvana\Tests\Support\Sqlite;
 use Pubvana\Tests\Support\TestCase;
 
 /**
+ * Test double for the admin controller.
+ *
+ * The controller builds its security service directly, so this subclass
+ * replaces it with a recorder. The static pointer is set by setUp().
+ */
+final class ProfilesAdminController extends RealProfilesAdminController
+{
+    public static ?ProfilesAdminControllerTest $test = null;
+
+    protected function securityService(): ProfileSecurityService
+    {
+        $test = self::$test;
+        if ($test === null) {
+            return parent::securityService();
+        }
+
+        return new class ($this->app, $test) extends ProfileSecurityService {
+            public function __construct(Engine $app, private ProfilesAdminControllerTest $t)
+            {
+                parent::__construct($app);
+            }
+
+            public function twoFactorEnabled(): bool
+            {
+                return $this->t->twoFactor;
+            }
+
+            /** @return list<array<string, mixed>> */
+            public function sessions(object $user): array
+            {
+                return $this->t->securitySessions;
+            }
+
+            /** @param array<string, mixed> $data */
+            public function updateCredentials(object $user, array $data): Result
+            {
+                $this->t->securityCalls['credentials'][] = $data;
+
+                return $this->t->securityResult;
+            }
+
+            public function updatePassword(object $user, string $current, string $new, string $confirm): Result
+            {
+                $this->t->securityCalls['password'][] = [$current, $new, $confirm];
+
+                return $this->t->securityResult;
+            }
+
+            public function revokeSession(object $user, int $id): bool
+            {
+                $this->t->securityCalls['revoke'][] = $id;
+
+                return $this->t->sessionRevoked;
+            }
+
+            public function revokeOtherSessions(object $user): int
+            {
+                $this->t->securityCalls['revokeOthers'][] = true;
+
+                return $this->t->revokedOthers;
+            }
+        };
+    }
+}
+
+/**
  * ProfilesAdminController over the real Profile model.
  */
-#[CoversClass(ProfilesAdminController::class)]
+#[CoversClass(RealProfilesAdminController::class)]
 final class ProfilesAdminControllerTest extends TestCase
 {
     private PDO $pdo;
@@ -35,6 +103,14 @@ final class ProfilesAdminControllerTest extends TestCase
     public array $legacyDeletes = [];
     public int $currentUserId = 7;
     public bool $canEditAny = false;
+    public Result $securityResult;
+    public bool $twoFactor = false;
+    /** @var list<array<string, mixed>> */
+    public array $securitySessions = [];
+    public bool $sessionRevoked = true;
+    public int $revokedOthers = 0;
+    /** @var array<string, list<mixed>> */
+    public array $securityCalls = [];
 
     protected function setUp(): void
     {
@@ -48,6 +124,13 @@ final class ProfilesAdminControllerTest extends TestCase
         $this->legacyDeletes = [];
         $this->currentUserId = 7;
         $this->canEditAny = false;
+        $this->securityResult = (new Result())->setSuccess(true);
+        $this->twoFactor = false;
+        $this->securitySessions = [];
+        $this->sessionRevoked = true;
+        $this->revokedOthers = 0;
+        $this->securityCalls = [];
+        ProfilesAdminController::$test = $this;
     }
 
     public function testIndexRendersOwnProfile(): void
@@ -185,10 +268,112 @@ final class ProfilesAdminControllerTest extends TestCase
         self::assertNull($profile->avatar);
     }
 
+    public function testIndexOffersProfileAndSecurityTabs(): void
+    {
+        (new ProfilesAdminController($this->engine()))->index();
+
+        $data = $this->fetches[0]['data'];
+        self::assertSame(['profile', 'security'], array_column($data['tabs'], 'id'));
+        self::assertTrue($data['tabs'][0]['active']);
+        self::assertFalse($data['tabs'][1]['active']);
+        self::assertSame('ada@example.com', $data['security']['email']);
+    }
+
+    public function testRequestedSecurityTabIsActive(): void
+    {
+        (new ProfilesAdminController($this->engine([], ['tab' => 'security'])))->index();
+
+        $data = $this->fetches[0]['data'];
+        self::assertFalse($data['tabs'][0]['active']);
+        self::assertTrue($data['tabs'][1]['active']);
+    }
+
+    public function testShowOtherUserHasNoSecurityTab(): void
+    {
+        $this->pdo->exec("INSERT INTO users (id, username, active) VALUES (9, 'grace', 1)");
+        $this->canEditAny = true;
+
+        (new ProfilesAdminController($this->engine()))->show('9');
+
+        $data = $this->fetches[0]['data'];
+        self::assertSame(['profile'], array_column($data['tabs'], 'id'));
+        self::assertNull($data['security']);
+    }
+
+    public function testUpdatePasswordPassesFieldsToService(): void
+    {
+        $controller = new ProfilesAdminController($this->engine([
+            'current_password' => 'old-pass',
+            'password'         => 'new-pass',
+            'password_confirm' => 'new-pass',
+            'return_url'       => '/admin/profile?tab=security',
+        ]));
+
+        $controller->updatePassword('7');
+
+        self::assertSame([['old-pass', 'new-pass', 'new-pass']], $this->securityCalls['password']);
+        self::assertSame('Password changed. Other sessions were signed out.', $this->flashes['success'][0]);
+    }
+
+    public function testUpdatePasswordFailureFlashesReason(): void
+    {
+        $this->securityResult = (new Result())->setSuccess(false)->setReason('Your current password is incorrect.');
+
+        (new ProfilesAdminController($this->engine([
+            'current_password' => 'wrong',
+            'password'         => 'new-pass',
+            'password_confirm' => 'new-pass',
+        ])))->updatePassword('7');
+
+        self::assertSame('Your current password is incorrect.', $this->flashes['error'][0]);
+        self::assertCount(1, $this->redirects);
+    }
+
+    public function testUpdateCredentialsPassesOnlyTheEmail(): void
+    {
+        (new ProfilesAdminController($this->engine([
+            '_csrf_token' => 'token',
+            'email'       => 'ada@example.com',
+            'return_url'  => '/admin/profile?tab=security',
+        ])))->updateCredentials('7');
+
+        self::assertSame([['email' => 'ada@example.com']], $this->securityCalls['credentials']);
+        self::assertSame('Account updated.', $this->flashes['success'][0]);
+    }
+
+    public function testSecurityActionRequiresOwner(): void
+    {
+        (new ProfilesAdminController($this->engine()))->updatePassword('9');
+
+        self::assertSame('You can only change your own security settings.', $this->flashes['error'][0]);
+        self::assertSame(['/admin/profile'], $this->redirects);
+        self::assertSame([], $this->securityCalls);
+    }
+
+    public function testRevokeSessionsSignsOutOtherDevices(): void
+    {
+        $this->revokedOthers = 2;
+
+        (new ProfilesAdminController($this->engine()))->revokeSessions('7');
+
+        self::assertSame('Signed out 2 other sessions.', $this->flashes['success'][0]);
+    }
+
+    public function testRevokeSingleSessionReportsRefusal(): void
+    {
+        $this->sessionRevoked = false;
+
+        (new ProfilesAdminController($this->engine(['session_id' => '5'])))->revokeSessions('7');
+
+        self::assertSame([5], $this->securityCalls['revoke']);
+        self::assertSame('That session is already gone or is the one you are using.', $this->flashes['error'][0]);
+    }
+
     /**
      * @param array<string, mixed> $data
+     * @param array<string, mixed> $query
      */
-    private function engine(array $data = []): Engine
+    private function engine(array $data = [], array $query = []): Engine
     {
         $test = $this;
         $pdo = $this->pdo;
@@ -200,14 +385,17 @@ final class ProfilesAdminControllerTest extends TestCase
                     return \Flight::app()->get($key) ?? $default;
                 }
             },
-            'request' => static fn(): object => new class($data) {
+            'request' => static fn(): object => new class($data, $query) {
                 public Collection $data;
                 public Collection $query;
-                /** @param array<string, mixed> $d */
-                public function __construct(array $d)
+                /**
+                 * @param array<string, mixed> $d
+                 * @param array<string, mixed> $q
+                 */
+                public function __construct(array $d, array $q)
                 {
                     $this->data = new Collection($d);
-                    $this->query = new Collection([]);
+                    $this->query = new Collection($q);
                 }
             },
             'profiles' => static fn(): Profile => new Profile($pdo),
@@ -248,6 +436,16 @@ final class ProfilesAdminControllerTest extends TestCase
                         }
                     };
                 }
+
+                public function users(): object
+                {
+                    return new class {
+                        public function getEmail(object $user): ?string
+                        {
+                            return 'ada@example.com';
+                        }
+                    };
+                }
             },
             'media' => static fn(): object => new class($test) {
                 public function __construct(private ProfilesAdminControllerTest $t)
@@ -278,6 +476,11 @@ final class ProfilesAdminControllerTest extends TestCase
             'session' => static fn(): object => new class($test) {
                 public function __construct(private ProfilesAdminControllerTest $t)
                 {
+                }
+
+                public function id(): ?string
+                {
+                    return 'current-session';
                 }
 
                 public function flash(string $k, mixed $v): void

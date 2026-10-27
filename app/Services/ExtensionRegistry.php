@@ -20,6 +20,7 @@ use flight\Engine;
  * Types use dot notation for scope clarity:
  *   - admin.menu, admin.dashboard, admin.css, admin.js  (admin area)
  *   - public.nav, public.css, public.js                 (public site)
+ *   - profile.tab                                     (user profile pages)
  *   - block                                             (region system)
  *
  * This class is schema-validated. Every type, slot, and required key is
@@ -30,8 +31,9 @@ use flight\Engine;
  *
  * Callables: a contribution may carry a 'callable'. The registry invokes it
  * only for slots read with a non-empty $context, which today is
- * admin.dashboard, content.edit.panel, and auth.login. Every other type is
- * read with no context, so the consumer service invokes the callable itself.
+ * admin.dashboard, content.edit.panel, auth.login, and profile.tab. Every
+ * other type is read with no context, so the consumer service invokes the
+ * callable itself.
  *
  * Usage from a plugin:
  *   $app->adext()->register('admin.menu', 'content', 'pubvana.blog', [
@@ -167,6 +169,30 @@ class ExtensionRegistry
             // 'output', which is why neither key can be required alone.
             'required' => [],
             'optional' => ['output', 'callable', 'priority'],
+        ],
+
+        /*
+        |------------------------------------------------------------------
+        | Profile Tab Type
+        |------------------------------------------------------------------
+        | A plugin adds a tab to the profile edit pages. One registration
+        | shows on the admin profile page and the owner's public edit page.
+        |
+        | The callable receives the profile owner (a Shield User) and
+        | returns the tab body as an HTML string. The tab id in ?tab= comes
+        | from the last part of the contributor key: 'pubvana/addresses'
+        | registers the 'addresses' tab.
+        |
+        | Registration:
+        |   $app->adext()->register('profile.tab', 'default', 'pubvana/addresses', [
+        |       'label'    => 'Addresses',
+        |       'callable' => fn($user) => '<input name="street">',
+        |   ]);
+        */
+        'profile.tab' => [
+            'slots'    => ['default'],
+            'required' => ['label', 'callable'],
+            'optional' => [],
         ],
 
         /*
@@ -785,8 +811,8 @@ class ExtensionRegistry
      * An empty $context means callables are NOT invoked: the raw
      * contributions come back and the consumer calls them itself. The check
      * is on the context, not on the type, so a slot read without a context
-     * never triggers a callable. admin.dashboard, content.edit.panel, and
-     * auth.login are read with a context today.
+     * never triggers a callable. admin.dashboard, content.edit.panel,
+     * auth.login, and profile.tab are read with a context today.
      *
      * @param string                                 $type    The extension type (e.g. 'admin.menu', 'public.nav')
      * @param string                                 $slot    The slot name (e.g. 'content', 'main')

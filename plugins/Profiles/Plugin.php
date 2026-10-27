@@ -42,6 +42,9 @@ class Plugin implements PluginInterface
             ['GET',  $prefix . '/@userId',     [ProfilesAdminController::class, 'show'],   []],
             ['POST', $prefix . '/@userId/update', [ProfilesAdminController::class, 'update'], []],
             ['POST', $prefix . '/@userId/avatar', [ProfilesAdminController::class, 'avatar'], []],
+            ['POST', $prefix . '/@userId/security/credentials', [ProfilesAdminController::class, 'updateCredentials'], []],
+            ['POST', $prefix . '/@userId/security/password',    [ProfilesAdminController::class, 'updatePassword'],    []],
+            ['POST', $prefix . '/@userId/security/sessions/revoke', [ProfilesAdminController::class, 'revokeSessions'], []],
         ], 'pubvana.profiles');
 
         // Public routes
@@ -50,6 +53,9 @@ class Plugin implements PluginInterface
             ['GET',  $prefix . '/@id/edit',      [ProfilesPublicController::class, 'edit']],
             ['POST', $prefix . '/@id/update',    [ProfilesPublicController::class, 'update']],
             ['POST', $prefix . '/@id/avatar',    [ProfilesPublicController::class, 'avatar']],
+            ['POST', $prefix . '/@id/security/credentials', [ProfilesPublicController::class, 'updateCredentials']],
+            ['POST', $prefix . '/@id/security/password',    [ProfilesPublicController::class, 'updatePassword']],
+            ['POST', $prefix . '/@id/security/sessions/revoke', [ProfilesPublicController::class, 'revokeSessions']],
         ], 'pubvana.profiles');
 
         // The avatar upload endpoint is a file POST from an authenticated

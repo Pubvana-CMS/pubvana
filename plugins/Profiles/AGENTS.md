@@ -4,9 +4,9 @@ Guidance for AI agents contributing to this plugin, which is part of the main Pu
 
 ## Overview
 
-Profiles gives each user a browsable public profile and a self-service edit page: display name, bio, avatar, website, and social links, plus a job title and employer. Profiles are created lazily per user and belong to the `users` table through a cascade foreign key.
+Profiles gives each user a browsable public profile and a self-service edit page: display name, bio, avatar, website, and social links, plus a job title and employer. Profiles are created lazily per user and belong to the `users` table through a cascade foreign key. Profile pages are tabbed. Profile and Security are core tabs, and a plugin adds more through `profile.tab`.
 
-- **Package:** `pubvana/profiles` (`pubvana.json:2`), semver `0.3.0`, category `admin`
+- **Package:** `pubvana/profiles` (`pubvana.json:2`), semver `0.4.0`, category `admin`
 - **License:** MIT, matching the main project (repo `composer.json` declares `"license": "MIT"`)
    - **PHP floor:** not declared in the plugin; the main project requires PHP `^8.2` (repo `composer.json`), and the code stays within that floor (e.g. nullable return type `?User` at `Controllers/ProfilesPublicController.php:220`)
 - **Namespace:** `Pubvana\Plugins\Profiles` (`Plugin.php:5`), with `Controllers`, `Models`, and `Database\Migrations` sub-namespaces
@@ -30,6 +30,8 @@ Profiles gives each user a browsable public profile and a self-service edit page
 11. **A public profile URL carries the user id, never the username.** The route param is `@id` (`Plugin.php:48-53`), the controller resolves it with `findUser()` (`Controllers/ProfilesPublicController.php:220`), and every link builder produces `{prefix}/{id}` (`ProfileBlockService::provide()` and `nameAndUrlFor()`, `Seo/Services/SeoService`). Reason: a username in a URL publishes account names for free. The handle is never rendered either, and the author block payload does not carry it. Editors pass `profileBase` to the profile templates rather than writing the path out.
 12. **A soft-deleted account still resolves on its public page.** `findUser()` reads the row by `id` with no `deleted_at` filter, because the profile row survives the soft delete and posts the account wrote keep their byline link. Attribution outlives the account; do not reintroduce `findById()`, which filters deleted rows. Only a user with no row at all is a 404.
 13. **An avatar file is deleted when the row stops pointing at it, never before.** `storeAvatar()` names each file `{user id}-{token}.webp` so a replacement gets a fresh URL instead of a cached one, and removes nothing. `update()` runs the cleanup after a successful save (`removeUnusedAvatar()` in both controllers): `MediaService::sweepAvatars()` drops the user's other avatar files, keeping the one the row now points at, and a previous path outside the avatar directory goes through `deleteLegacyAvatar()`. Reason: the row is the record of the live file, so an abandoned form cannot leave it pointing at a deleted file.
+14. **One tab registration serves both profile surfaces.** A plugin registers the `profile.tab` type with a `label` and a `callable` (`app/Services/ExtensionRegistry.php`, the type block). `ProfileTabService::tabs()` builds the strip and calls only the open tab, passing the profile owner (a Shield `User`). The tab id comes from the last part of the contributor key, so `pubvana/addresses` opens with `?tab=addresses`. Do not add per-surface types, permissions, icons or priorities. Reason: the admin profile page and the owner's public edit page show the same information.
+15. **Build the tab and security services with `new`.** Both controllers call `$this->tabsService()` and `$this->securityService()`, which return `new ProfileTabService($this->app)` and `new ProfileSecurityService($this->app)`. Keep the factories `protected` so tests can replace them. Reason: core services (`UserAdminService`, `PasswordResetService`) use the same pattern, and it needs no `phpstan-stubs.php` entry.
 
 ## Repository layout
 
@@ -44,9 +46,12 @@ plugins/Profiles/
 │   │                                  profiles (user_id unique, FK to users with CASCADE delete)
 │   └── Seeds/Seed.php                 Seed: profile.edit, profile.edit.any
 ├── Models/Profile.php                 profiles table; findOrCreate, whitelisted updateFromArray
+├── Services/
+│   ├── ProfileTabService.php          Profile, Security, then plugin tabs; calls the open tab only
+│   └── ProfileSecurityService.php     Email change, password change, signed-in device list
 ├── Plugin.php                         Entry point; profiles facade, routes, public CSS
 ├── pubvana.json                       Manifest; name, semver and plugin metadata
-├── Views/admin/profile/index.php      Shared profile edit form (own or other user)
+├── Views/admin/profile/index.php      Tabbed page: Profile, Security, plugin tabs (own or other user)
 ├── Views/public/blocks/author-card.tpl  Author Card block template (plugin default layout)
 ├── assets/css/profiles.css            Public .pv-profile-* styles for the theme templates
 └── README.md
@@ -62,11 +67,15 @@ plugins/Profiles/
 
 **Admin tenant.** `index()` renders the shared `pubvana/profiles/admin/profile/index` view for the current user with the Media avatar picker; `show(@userId)` renders the same view for another user when permitted, seeding the `returnUrl` differently (`Controllers/ProfilesAdminController.php`).
 
+**Tabs.** `ProfileTabService::tabs($user, $viewer, $open)` returns Profile, Security (owner only), then every `profile.tab` registration in registration order. Only the open tab's callable runs, and the open tab comes from `?tab=`. An unknown value falls back to Profile. The admin page and the public edit page pass the list to their view, which draws the strip as plain links.
+
+**Security tab.** `ProfileSecurityService` changes the email through Shield `users()->updateProfile()`, changes the password after a `CredentialVerifier` check, and lists devices from the `sessions` table through `app/Models/Session.php`. A password change clears the force-reset flag, deletes remember-me tokens and removes the other sessions. `app/config/bootstrap.php` calls `setUserContext()` on every request, without which `sessions.user_id` stays null.
+
 **No dashboard surface.** The manifest declares no `provides` entries and `Plugin.php` registers no `admin.dashboard` items, so Profiles adds no dashboard card or section. The admin profile page is reached through the core admin layout's Profile menu entry (`/admin/profile`).
 
 ## Development and testing
 
-The plugin has no `composer.json` (it is in-tree), but it has a test suite under `tests/Unit/Plugins/Profiles/` (12 test files: `ProfilesPluginTest`, `ProfilesBlockRegistrationTest`, `ProfileWebsiteValidationTest`, `ProfilesAdminReturnUrlTest`, `ProfilesPublicControllerTest`, `ProfilesPublicWebsiteGuardTest`, `ProfilesAdminControllerUrlTest`, `ProfilesAdminControllerTest`, `ProfilesAvatarEndpointTest`, `ProfileModelTest`, `ProfileBlockServiceTest`, `ProfilesMigrationsSeedTest`). It is also exercised through the full app.
+The plugin has no `composer.json` (it is in-tree), but it has a test suite under `tests/Unit/Plugins/Profiles/` (14 test files: `ProfilesPluginTest`, `ProfilesBlockRegistrationTest`, `ProfileWebsiteValidationTest`, `ProfilesAdminReturnUrlTest`, `ProfilesPublicControllerTest`, `ProfilesPublicWebsiteGuardTest`, `ProfilesAdminControllerUrlTest`, `ProfilesAdminControllerTest`, `ProfilesAvatarEndpointTest`, `ProfileModelTest`, `ProfileBlockServiceTest`, `ProfileTabServiceTest`, `ProfileSecurityServiceTest`, `ProfilesMigrationsSeedTest`). It is also exercised through the full app.
 
 - Lint/static analysis (app-wide, from the repo root; the plugin is in-tree):
   - `composer phpstan` (level 8, sees `app/` plus `plugins/`; ignored-error baseline covers the migration/activerecord internals)
@@ -83,6 +92,8 @@ The plugin has no `composer.json` (it is in-tree), but it has a test suite under
   - [ ] `GET /assets/plugin/Profiles/css/profiles.css` returns the stylesheet
   - [ ] No dashboard card or section appears for Profiles (matches current code, despite the manifest declaration)
   - [ ] Deleting a user cascades the profile row (foreign key `CASCADE`)
+  - [ ] A `profile.tab` registration shows on `/admin/profile` and `/profile/{id}/edit`, and `?tab=<key>` opens it
+  - [ ] The Security tab lists the current device, and signing out another device removes its row
 
 Coverage: the suite covers the model, both controllers (URLs, website validation, return-url, guards), the block service, migrations/seeds, and the plugin registration.
 
@@ -108,6 +119,8 @@ Coverage: the suite covers the model, both controllers (URLs, website validation
 
 | Goal | Where to look |
 |------|---------------|
+| Add a profile tab from a plugin | `profile.tab` in `app/Services/ExtensionRegistry.php`, built by `Services/ProfileTabService.php` |
+| Change what the Security tab offers | `Services/ProfileSecurityService.php` plus `Views/admin/profile/index.php` and the theme's `profile_edit.tpl` |
 | Add a profile field | Migration (`2026-09-17-105234_CreateProfilesTable.php`) + `updateFromArray()` whitelist + admin view + theme template |
 | Change the public route prefix | `Config/Config.php` (`routePrepend`) |
 | Gate other-user editing differently | The `profile.edit.any` checks in `ProfilesAdminController` (`show()`, `update()`, `avatar()`) |
@@ -131,3 +144,4 @@ Coverage: the suite covers the model, both controllers (URLs, website validation
 - No hard profile delete; profiles disappear only through the `users` cascade delete.
 - No external avatar sources (Gravatar, Uploadcare, etc.); the avatar is a stored image path picked via the Media plugin.
 - No pagination, search, or discovery of profiles; a profile is reached by a known user id.
+- No per-user 2FA switch. Shield turns email 2FA on for the whole site in `app/config/shield.php`, and the Security tab only reports the state.

@@ -5,6 +5,22 @@ All notable changes to the Profiles plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] - 2026-10-27
+
+### Added
+- Profile pages are tabbed. Profile and Security are core tabs.
+- Plugins add a tab with the `profile.tab` extension type. One registration shows on the admin profile page and the owner's public edit page.
+- Security tab: change the account email, change the password, list signed-in devices, sign one out, or sign out all others.
+- Two-factor status shows when Shield enables email 2FA for the site.
+
+### Changed
+- The admin profile page and the public profile edit page show the same tabs.
+- A password change signs out other devices and revokes remember-me tokens.
+- Session rows record the signed-in user id, so the device list is populated.
+
+### Removed
+- Username editing. The username is the account's stable identity.
+
 ## [0.3.2] - 2026-10-17
 
 ### Changed

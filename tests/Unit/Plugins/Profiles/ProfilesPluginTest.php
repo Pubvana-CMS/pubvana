@@ -56,10 +56,16 @@ final class ProfilesPluginTest extends TestCase
         self::assertContains('admin GET /profile/@userId', $handlers);
         self::assertContains('admin POST /profile/@userId/update', $handlers);
         self::assertContains('admin POST /profile/@userId/avatar', $handlers);
+        self::assertContains('admin POST /profile/@userId/security/credentials', $handlers);
+        self::assertContains('admin POST /profile/@userId/security/password', $handlers);
+        self::assertContains('admin POST /profile/@userId/security/sessions/revoke', $handlers);
         self::assertContains('public GET /profile/@id', $handlers);
         self::assertContains('public GET /profile/@id/edit', $handlers);
         self::assertContains('public POST /profile/@id/update', $handlers);
         self::assertContains('public POST /profile/@id/avatar', $handlers);
+        self::assertContains('public POST /profile/@id/security/credentials', $handlers);
+        self::assertContains('public POST /profile/@id/security/password', $handlers);
+        self::assertContains('public POST /profile/@id/security/sessions/revoke', $handlers);
 
         // The avatar upload is a file POST from the owner's own form. It
         // carries the CSRF token in the form's hidden input, not a meta tag,

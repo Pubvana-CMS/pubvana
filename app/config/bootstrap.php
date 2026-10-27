@@ -70,6 +70,28 @@ if (php_sapi_name() !== 'cli') {
     (new \Pubvana\Middleware\ForcedPasswordResetCheck($app))->enforce();
 }
 
+/*
+|--------------------------------------------------------------------------
+| Session User Context
+|--------------------------------------------------------------------------
+| enlivenapp/flight-sessions writes a session row's user_id only when
+| SessionManager::setUserContext() has been called, and every request
+| rewrites the row. Binding the id here keeps per-user session lists and
+| remote sign-out working. Reading the session field costs no query, and
+| the forced-reset check above has already resolved remember-me logins.
+*/
+if (php_sapi_name() !== 'cli' && $app->session()->isActive()) {
+    $shieldConfig = (array) ($app->get('enlivenapp.flight-shield') ?? []);
+    $userField = (string) ($shieldConfig['session']['field'] ?? 'user');
+    $sessionUserId = $_SESSION[$userField] ?? null;
+
+    $app->session()->setUserContext(
+        is_int($sessionUserId) || (is_string($sessionUserId) && ctype_digit($sessionUserId))
+            ? (int) $sessionUserId
+            : null
+    );
+}
+
 // Core admin: registers users/groups/permissions via adext (menu items + routes)
 require(__DIR__ . $ds . 'core-admin.php');
 
