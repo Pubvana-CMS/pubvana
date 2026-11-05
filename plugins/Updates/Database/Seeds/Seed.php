@@ -11,10 +11,12 @@ declare(strict_types=1);
  */
 
 return [
-    [
-        'table' => 'auth_permissions',
-        'rows'  => [
-            ['alias' => 'updates.manage', 'description' => 'Check for and apply Pubvana updates'],
+    'install' => [
+        [
+            'table' => 'auth_permissions',
+            'rows'  => [
+                ['alias' => 'updates.manage', 'description' => 'Check for and apply Pubvana updates'],
+            ],
         ],
     ],
 ];

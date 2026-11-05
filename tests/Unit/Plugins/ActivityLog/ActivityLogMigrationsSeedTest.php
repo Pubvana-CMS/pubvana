@@ -52,17 +52,21 @@ final class ActivityLogMigrationsSeedTest extends TestCase
         $seed = require PROJECT_ROOT . '/plugins/ActivityLog/Database/Seeds/Seed.php';
 
         self::assertNotEmpty($seed);
-        $tables = array_column($seed, 'table');
+        self::assertArrayHasKey('install', $seed, 'the runner only reads install and versions blocks');
+
+        /** @var list<array<string, mixed>> $entries */
+        $entries = $seed['install'];
+        $tables = array_column($entries, 'table');
         self::assertContains('auth_permissions', $tables);
 
-        foreach ($seed as $entry) {
+        foreach ($entries as $entry) {
             self::assertArrayHasKey('table', $entry);
             self::assertArrayHasKey('rows', $entry);
             self::assertNotEmpty($entry['rows']);
         }
 
         $perms = null;
-        foreach ($seed as $entry) {
+        foreach ($entries as $entry) {
             if ($entry['table'] === 'auth_permissions') {
                 $perms = $entry['rows'];
             }
