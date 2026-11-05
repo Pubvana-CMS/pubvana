@@ -225,6 +225,12 @@ class UsersController extends AdminController
 
         $groups = $this->visibleGroups();
 
+        // The Profile button opens the Profiles plugin admin screen, which
+        // requires profile.edit.any to edit anyone but yourself. Hide the
+        // button when the viewer would only be bounced back to the list.
+        $canEditProfile = (string) $this->app->auth()->id() === (string) $user->id
+            || (bool) ($this->app->auth()->user()?->can('profile.edit.any') ?? false);
+
         $this->render('admin/users/edit', [
             'pageTitle'       => 'Edit User',
             'editUser'        => $user,
@@ -235,6 +241,7 @@ class UsersController extends AdminController
             'banned'          => $user->isBanned(),
             'banMessage'      => $user->getBanMessage(),
             'requiresReset'   => $user->requiresPasswordReset(),
+            'canEditProfile'  => $canEditProfile,
         ]);
     }
 

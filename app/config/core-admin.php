@@ -283,18 +283,25 @@ $adext->register('admin.menu', 'appearance', 'pubvana.navigation', [
 */
 
 // Users
+// Each action carries its Shield-seeded permission. The panel-wide
+// admin.access gate is still applied automatically by the route registry.
+$usersList   = new PermissionMiddleware($app, 'users.list');
+$usersCreate = new PermissionMiddleware($app, 'users.create');
+$usersEdit   = new PermissionMiddleware($app, 'users.edit');
+$usersDelete = new PermissionMiddleware($app, 'users.delete');
+
 $adext->addRoutes('admin', [
-    ['GET',    '/users',              [UsersController::class, 'index'],   []],
-    ['GET',    '/users/create',       [UsersController::class, 'create'],  []],
-    ['POST',   '/users/store',        [UsersController::class, 'store'],   []],
-    ['POST',   '/users/invite',       [UsersController::class, 'invite'],  []],
-    ['GET',    '/users/@id/edit',     [UsersController::class, 'edit'],    []],
-    ['POST',   '/users/@id/update',   [UsersController::class, 'update'],  []],
-    ['POST',   '/users/@id/delete',   [UsersController::class, 'delete'],  []],
-    ['POST',   '/users/@id/toggle',   [UsersController::class, 'toggle'],  []],
-    ['POST',   '/users/@id/ban',      [UsersController::class, 'ban'],     []],
-    ['POST',   '/users/@id/unban',    [UsersController::class, 'unban'],   []],
-    ['POST',   '/users/@id/force-reset', [UsersController::class, 'forceReset'], []],
+    ['GET',    '/users',              [UsersController::class, 'index'],   [$usersList]],
+    ['GET',    '/users/create',       [UsersController::class, 'create'],  [$usersCreate]],
+    ['POST',   '/users/store',        [UsersController::class, 'store'],   [$usersCreate]],
+    ['POST',   '/users/invite',       [UsersController::class, 'invite'],  [$usersCreate]],
+    ['GET',    '/users/@id/edit',     [UsersController::class, 'edit'],    [$usersEdit]],
+    ['POST',   '/users/@id/update',   [UsersController::class, 'update'],  [$usersEdit]],
+    ['POST',   '/users/@id/delete',   [UsersController::class, 'delete'],  [$usersDelete]],
+    ['POST',   '/users/@id/toggle',   [UsersController::class, 'toggle'],  [$usersEdit]],
+    ['POST',   '/users/@id/ban',      [UsersController::class, 'ban'],     [$usersEdit]],
+    ['POST',   '/users/@id/unban',    [UsersController::class, 'unban'],   [$usersEdit]],
+    ['POST',   '/users/@id/force-reset', [UsersController::class, 'forceReset'], [$usersEdit]],
 ], 'pubvana.core', true);
 
 // Groups
@@ -322,44 +329,54 @@ $adext->addRoutes('admin', [
 ], 'pubvana.core', true);
 
 // Themes & Regions
+$themesPerm = new PermissionMiddleware($app, 'themes.manage');
+
 $adext->addRoutes('admin', [
-    ['GET',    '/themes',                      [ThemesController::class, 'index'],            []],
-    ['POST',   '/themes/@id/activate',         [ThemesController::class, 'activate'],         []],
-    ['POST',   '/themes/@id/recheck',          [ThemesController::class, 'recheck'],          []],
-    ['POST',   '/themes/recheck',              [ThemesController::class, 'recheckByFolder'],  []],
-    ['GET',    '/themes/@id/options',          [ThemesController::class, 'options'],          []],
-    ['POST',   '/themes/@id/options',          [ThemesController::class, 'saveOptions'],      []],
-    ['GET',    '/themes/regions',              [ThemesController::class, 'regions'],          []],
-    ['POST',   '/themes/regions/place',        [ThemesController::class, 'placeBlock'],       []],
-    ['POST',   '/themes/regions/remove',       [ThemesController::class, 'removePlacement'],  []],
-    ['POST',   '/themes/regions/reorder',      [ThemesController::class, 'reorderPlacements'],[]],
-    ['POST',   '/themes/regions/move',         [ThemesController::class, 'movePlacement'],    []],
-    ['POST',   '/themes/regions/values',       [ThemesController::class, 'saveBlockValues'],  []],
+    ['GET',    '/themes',                      [ThemesController::class, 'index'],            [$themesPerm]],
+    ['POST',   '/themes/@id/activate',         [ThemesController::class, 'activate'],         [$themesPerm]],
+    ['POST',   '/themes/@id/recheck',          [ThemesController::class, 'recheck'],          [$themesPerm]],
+    ['POST',   '/themes/recheck',              [ThemesController::class, 'recheckByFolder'],  [$themesPerm]],
+    ['GET',    '/themes/@id/options',          [ThemesController::class, 'options'],          [$themesPerm]],
+    ['POST',   '/themes/@id/options',          [ThemesController::class, 'saveOptions'],      [$themesPerm]],
+    ['GET',    '/themes/regions',              [ThemesController::class, 'regions'],          [$themesPerm]],
+    ['POST',   '/themes/regions/place',        [ThemesController::class, 'placeBlock'],       [$themesPerm]],
+    ['POST',   '/themes/regions/remove',       [ThemesController::class, 'removePlacement'],  [$themesPerm]],
+    ['POST',   '/themes/regions/reorder',      [ThemesController::class, 'reorderPlacements'],[$themesPerm]],
+    ['POST',   '/themes/regions/move',         [ThemesController::class, 'movePlacement'],    [$themesPerm]],
+    ['POST',   '/themes/regions/values',       [ThemesController::class, 'saveBlockValues'],  [$themesPerm]],
 ], 'pubvana.core', true);
 
 // Settings (General page - tabbed)
+$settingsPerm = new PermissionMiddleware($app, 'settings.manage');
+
 $adext->addRoutes('admin', [
-    ['GET',  '/settings',       [SettingsController::class, 'general'], []],
-    ['POST', '/settings/save',  [SettingsController::class, 'save'],    []],
+    ['GET',  '/settings',       [SettingsController::class, 'general'], [$settingsPerm]],
+    ['POST', '/settings/save',  [SettingsController::class, 'save'],    [$settingsPerm]],
 ], 'pubvana.core', true);
 
 // Login (Shield sign-in features - Settings > Login)
+$loginPerm = new PermissionMiddleware($app, 'login.manage');
+
 $adext->addRoutes('admin', [
-    ['GET',  '/login-sec',       [LoginSecController::class, 'index'], []],
-    ['POST', '/login-sec/save',  [LoginSecController::class, 'save'],  []],
+    ['GET',  '/login-sec',       [LoginSecController::class, 'index'], [$loginPerm]],
+    ['POST', '/login-sec/save',  [LoginSecController::class, 'save'],  [$loginPerm]],
 ], 'pubvana.core', true);
 
 // Captcha (site-wide human verification - Settings > Captcha)
+$captchaPerm = new PermissionMiddleware($app, 'captcha.manage');
+
 $adext->addRoutes('admin', [
-    ['GET',  '/captcha',       [CaptchaAdminController::class, 'index'], []],
-    ['POST', '/captcha/save',  [CaptchaAdminController::class, 'save'],  []],
+    ['GET',  '/captcha',       [CaptchaAdminController::class, 'index'], [$captchaPerm]],
+    ['POST', '/captcha/save',  [CaptchaAdminController::class, 'save'],  [$captchaPerm]],
 ], 'pubvana.core', true);
 
 // Email (SMTP settings - Settings > Email)
+$mailPerm = new PermissionMiddleware($app, 'mail.manage');
+
 $adext->addRoutes('admin', [
-    ['GET',  '/email',       [EmailAdminController::class, 'index'], []],
-    ['POST', '/email/save',  [EmailAdminController::class, 'save'],  []],
-    ['POST', '/email/test',  [EmailAdminController::class, 'test'],  []],
+    ['GET',  '/email',       [EmailAdminController::class, 'index'], [$mailPerm]],
+    ['POST', '/email/save',  [EmailAdminController::class, 'save'],  [$mailPerm]],
+    ['POST', '/email/test',  [EmailAdminController::class, 'test'],  [$mailPerm]],
 ], 'pubvana.core', true);
 
 // Plugins (enable/disable + priority, trust status, forced recheck)

@@ -7,6 +7,11 @@ return [
             'rows'  => [
                 ['alias' => 'navigation.edit', 'description' => 'Manage navigation menus'],
                 ['alias' => 'plugins.manage', 'description' => 'View and manage installed plugins'],
+                ['alias' => 'themes.manage', 'description' => 'Manage themes, theme options, and regions'],
+                ['alias' => 'settings.manage', 'description' => 'Edit the site settings'],
+                ['alias' => 'login.manage', 'description' => 'Edit the sign-in security settings'],
+                ['alias' => 'captcha.manage', 'description' => 'Edit the site captcha settings'],
+                ['alias' => 'mail.manage', 'description' => 'Edit the SMTP settings and send test mail'],
             ],
         ],
         [

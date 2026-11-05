@@ -127,10 +127,12 @@
                             <?= !empty($requiresReset) ? 'Clear' : 'Force Reset' ?>
                         </button>
                     </div>
+                    <?php if (!empty($canEditProfile)): ?>
                     <div class="d-flex align-items-center justify-content-between">
                         <span>Profile</span>
                         <a href="/admin/profile/<?= (int) $editUser->id ?>" class="btn btn-sm btn-outline-primary">Edit</a>
                     </div>
+                    <?php endif; ?>
                     <div class="text-secondary small mt-3">
                         Last active: <?= htmlspecialchars($editUser->last_active ?? 'Never') ?>
                     </div>
