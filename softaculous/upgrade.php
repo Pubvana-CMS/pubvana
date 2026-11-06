@@ -1,13 +1,34 @@
 <?php
 
-function __runCmd(string $cmd, string $cwd)
-{
-    $full = 'cd ' . escapeshellarg($cwd) . ' && ' . $cmd . ' 2>&1';
+if (!defined('SOFTACULOUS')) {
+    die('Hacking Attempt');
+}
 
-    if (function_exists('sshell_exec')) {
-        @sshell_exec($full);
-    } else {
-        @shell_exec($full);
+if (!function_exists('__runCmd')) {
+    function __runCmd(string $cmd, string $cwd): string
+    {
+        $full = 'cd ' . escapeshellarg($cwd) . ' && ' . $cmd . ' 2>&1';
+
+        if (function_exists('sshell_exec')) {
+            return (string) @sshell_exec($full);
+        }
+
+        $out = @shell_exec($full);
+
+        return is_string($out) ? $out : '';
+    }
+}
+
+if (!function_exists('__fail')) {
+    function __fail(string $message): bool
+    {
+        if (!isset($GLOBALS['error']) || !is_array($GLOBALS['error'])) {
+            $GLOBALS['error'] = [];
+        }
+
+        $GLOBALS['error'][] = $message;
+
+        return false;
     }
 }
 
@@ -21,7 +42,7 @@ if (!function_exists('__upgrade')) {
         $path = rtrim((string) ($s['softpath'] ?? ''), '/');
 
         if ($path === '' || !is_file($path . '/.env')) {
-            exit(1);
+            return __fail('The existing installation could not be found.');
         }
 
         @chmod($path . '/writable', 0777);
@@ -30,5 +51,7 @@ if (!function_exists('__upgrade')) {
         $php = '/usr/local/bin/php';
 
         __runCmd($php . ' ' . escapeshellarg($path . '/pubvana') . ' migrate:all', $path);
+
+        return true;
     }
 }

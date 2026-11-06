@@ -11,7 +11,7 @@
 	<languages>
 		<language>
 			<name>english</name>
-			<overview><![CDATA[Pubvana CMS is a modern open source PHP content management system. It ships with a clean, responsive default theme, flat-file friendly plugin and theme management, a widget-free block system, built in security hardening and a one click update path through the Pubvana release service.]]></overview>
+			<overview><![CDATA[Pubvana CMS is a modern open source PHP content management system. It ships with a clean, responsive default theme, flat-file friendly plugin and theme management, a block-based content system, built in security hardening and a one click update path through the Pubvana release service.]]></overview>
 			<features><![CDATA[<ul>
 <li>Open source, MIT licensed PHP 8.2 CMS</li>
 <li>Modern block based content regions via the extension registry</li>

@@ -12,7 +12,7 @@ people still install from old cPanel and DirectAdmin panels.
 | `install.xml` | Install form (site name + admin account), MySQL requirement, and the three cron jobs. |
 | `install.php` | Softaculous `__install()`. Writes `.env`, runs migrations, creates the superadmin user. |
 | `install.js` | Client side form validation. |
-| `upgrade.xml` | Upgrade definition. Keeps `.env`, `.runway-config.json` and `writable/`, replaces everything else. |
+| `upgrade.xml` | Upgrade definition. Keeps `.env` and `writable/`, replaces everything else. |
 | `upgrade.php` | Softaculous `__upgrade()`. Runs pending migrations on the existing database. |
 | `upgrade.js` | Upgrade form validation (no inputs, always allowed). |
 | `fileindex.php` | Top level files and folders to remove on uninstall. |

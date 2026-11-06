@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - blog used `posts.create` for everything.
 - own profile edits needed no permission.
 - groups and permissions pages checked superadmin group membership.
+- Softaculous fixes and bring up to thier docs
 
 ## [3.0.0-beta.15] - 2026-10-23
 

@@ -195,7 +195,7 @@ class BlogAdminController extends AdminController
 
         $publishedAt = null;
         if ($status === 'published') {
-            $publishedAt = ($existing && $existing->status === 'published')
+            $publishedAt = ($existing->status === 'published')
                 ? $existing->published_at
                 : (new \DateTimeImmutable())->format('Y-m-d H:i:s');
         } elseif ($status === 'scheduled') {
