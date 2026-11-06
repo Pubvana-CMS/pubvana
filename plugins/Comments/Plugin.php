@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pubvana\Plugins\Comments;
 
+use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 use Pubvana\Plugins\Comments\Controllers\CommentsAdminController;
 use Pubvana\Plugins\Comments\Controllers\CommentsPublicController;
 use Pubvana\Services\PluginInterface;
@@ -53,14 +54,16 @@ class Plugin implements PluginInterface
 
         // ─── Admin Routes ──────────────────────────────────────────────
 
+        $moderatePerm = new PermissionMiddleware($app, 'comments.moderate');
+
         $adext->addRoutes('admin', [
-            ['GET',  $prefix,                  [CommentsAdminController::class, 'index'],            []],
-            ['GET',  $prefix . '/settings',    [CommentsAdminController::class, 'settingsIndex'],    []],
-            ['POST', $prefix . '/settings',    [CommentsAdminController::class, 'settingsSave'],     []],
-            ['GET',  $prefix . '/@id',         [CommentsAdminController::class, 'show'],             []],
-            ['POST', $prefix . '/@id/approve', [CommentsAdminController::class, 'approve'],          []],
-            ['POST', $prefix . '/@id/reject',  [CommentsAdminController::class, 'reject'],           []],
-            ['POST', $prefix . '/@id/delete',  [CommentsAdminController::class, 'delete'],           []],
+            ['GET',  $prefix,                  [CommentsAdminController::class, 'index'],            [$moderatePerm]],
+            ['GET',  $prefix . '/settings',    [CommentsAdminController::class, 'settingsIndex'],    [$moderatePerm]],
+            ['POST', $prefix . '/settings',    [CommentsAdminController::class, 'settingsSave'],     [$moderatePerm]],
+            ['GET',  $prefix . '/@id',         [CommentsAdminController::class, 'show'],             [$moderatePerm]],
+            ['POST', $prefix . '/@id/approve', [CommentsAdminController::class, 'approve'],          [$moderatePerm]],
+            ['POST', $prefix . '/@id/reject',  [CommentsAdminController::class, 'reject'],           [$moderatePerm]],
+            ['POST', $prefix . '/@id/delete',  [CommentsAdminController::class, 'delete'],           [$moderatePerm]],
         ], 'pubvana.comments');
 
         // ─── Public Routes ─────────────────────────────────────────────

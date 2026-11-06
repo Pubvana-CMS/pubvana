@@ -68,6 +68,26 @@ final class CoreAdminConfigTest extends TestCase
         self::assertArrayHasKey('pubvana.navigation', $appearance);
     }
 
+    public function testEveryCoreMenuItemCarriesAPermission(): void
+    {
+        $app = $this->boot();
+        /** @var ExtensionRegistry $adext */
+        $adext = $app->adext();
+
+        $slots = ['settings.general', 'settings.access', 'settings.captcha', 'settings.email', 'plugins', 'appearance'];
+        $checked = 0;
+
+        foreach ($slots as $slot) {
+            foreach ($adext->get('admin.menu', $slot) as $key => $item) {
+                self::assertArrayHasKey('permission', $item, "{$slot}:{$key}");
+                self::assertNotSame('', $item['permission'], "{$slot}:{$key}");
+                $checked++;
+            }
+        }
+
+        self::assertGreaterThan(0, $checked);
+    }
+
     public function testSettingsDeclarations(): void
     {
         $app = $this->boot();

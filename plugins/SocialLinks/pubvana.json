@@ -14,7 +14,8 @@
                     "label": "Social Links",
                     "url": "/social-links",
                     "icon": "ti-share",
-                    "priority": 25
+                    "priority": 25,
+                    "permission": "social.manage"
                 }
             }
         },

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pubvana\Plugins\Profiles;
 
+use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 use Pubvana\Plugins\Profiles\Controllers\ProfilesAdminController;
 use Pubvana\Plugins\Profiles\Controllers\ProfilesPublicController;
 use Pubvana\Plugins\Profiles\Services\ProfileBlockService;
@@ -48,11 +49,17 @@ class Plugin implements PluginInterface
         ], 'pubvana.profiles');
 
         // Public routes
+        // Public routes. Editing your own profile needs profile.edit, which
+        // Shield grants to the user group at install. The security actions
+        // stay reachable without it: a user who cannot edit a profile still
+        // has to be able to change their password.
+        $editPerm = new PermissionMiddleware($app, 'profile.edit');
+
         $adext->addRoutes('public', [
             ['GET',  $prefix . '/@id',           [ProfilesPublicController::class, 'show']],
-            ['GET',  $prefix . '/@id/edit',      [ProfilesPublicController::class, 'edit']],
-            ['POST', $prefix . '/@id/update',    [ProfilesPublicController::class, 'update']],
-            ['POST', $prefix . '/@id/avatar',    [ProfilesPublicController::class, 'avatar']],
+            ['GET',  $prefix . '/@id/edit',      [ProfilesPublicController::class, 'edit'], [$editPerm]],
+            ['POST', $prefix . '/@id/update',    [ProfilesPublicController::class, 'update'], [$editPerm]],
+            ['POST', $prefix . '/@id/avatar',    [ProfilesPublicController::class, 'avatar'], [$editPerm]],
             ['POST', $prefix . '/@id/security/credentials', [ProfilesPublicController::class, 'updateCredentials']],
             ['POST', $prefix . '/@id/security/password',    [ProfilesPublicController::class, 'updatePassword']],
             ['POST', $prefix . '/@id/security/sessions/revoke', [ProfilesPublicController::class, 'revokeSessions']],

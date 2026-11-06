@@ -14,7 +14,8 @@
                     "label": "SEO",
                     "url": "/seo",
                     "icon": "ti-seo",
-                    "priority": 15
+                    "priority": 15,
+                    "permission": "seo.manage"
                 }
             }
         },

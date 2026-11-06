@@ -14,7 +14,8 @@
                     "label": "Updates",
                     "url": "/updates",
                     "icon": "ti-refresh",
-                    "priority": 2
+                    "priority": 2,
+                    "permission": "updates.manage"
                 }
             }
         },

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pubvana\Plugins\Redirects;
 
+use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 use Pubvana\Plugins\Redirects\Controllers\RedirectsAdminController;
 use Pubvana\Plugins\Redirects\Controllers\RedirectLinksAdminController;
 use Pubvana\Plugins\Redirects\Services\RedirectsService;
@@ -52,17 +53,19 @@ class Plugin implements PluginInterface
 
         // ─── Admin Routes ──────────────────────────────────────────────
 
+        $managePerm = new PermissionMiddleware($app, 'redirects.manage');
+
         $adext->addRoutes('admin', [
-            ['GET',  $prefix,                             [RedirectsAdminController::class, 'index'],        []],
-            ['GET',  $prefix . '/create',                 [RedirectsAdminController::class, 'create'],       []],
-            ['POST', $prefix . '/store',                  [RedirectsAdminController::class, 'store'],        []],
-            ['GET',  $prefix . '/@id/edit',               [RedirectsAdminController::class, 'edit'],         []],
-            ['POST', $prefix . '/@id/update',             [RedirectsAdminController::class, 'update'],       []],
-            ['POST', $prefix . '/@id/delete',             [RedirectsAdminController::class, 'delete'],       []],
-            ['GET',  $prefix . '/404-manager',            [RedirectLinksAdminController::class, 'index'],    []],
-            ['POST', $prefix . '/404-manager/@id/ignore',   [RedirectLinksAdminController::class, 'ignore'],   []],
-            ['POST', $prefix . '/404-manager/@id/unignore', [RedirectLinksAdminController::class, 'unignore'], []],
-            ['POST', $prefix . '/404-manager/@id/delete',   [RedirectLinksAdminController::class, 'delete'],   []],
+            ['GET',  $prefix,                             [RedirectsAdminController::class, 'index'],        [$managePerm]],
+            ['GET',  $prefix . '/create',                 [RedirectsAdminController::class, 'create'],       [$managePerm]],
+            ['POST', $prefix . '/store',                  [RedirectsAdminController::class, 'store'],        [$managePerm]],
+            ['GET',  $prefix . '/@id/edit',               [RedirectsAdminController::class, 'edit'],         [$managePerm]],
+            ['POST', $prefix . '/@id/update',             [RedirectsAdminController::class, 'update'],       [$managePerm]],
+            ['POST', $prefix . '/@id/delete',             [RedirectsAdminController::class, 'delete'],       [$managePerm]],
+            ['GET',  $prefix . '/404-manager',            [RedirectLinksAdminController::class, 'index'],    [$managePerm]],
+            ['POST', $prefix . '/404-manager/@id/ignore',   [RedirectLinksAdminController::class, 'ignore'],   [$managePerm]],
+            ['POST', $prefix . '/404-manager/@id/unignore', [RedirectLinksAdminController::class, 'unignore'], [$managePerm]],
+            ['POST', $prefix . '/404-manager/@id/delete',   [RedirectLinksAdminController::class, 'delete'],   [$managePerm]],
         ], 'pubvana.redirects');
 
         // ─── Dashboard ──────────────────────────────────────────────────

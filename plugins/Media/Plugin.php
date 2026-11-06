@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pubvana\Plugins\Media;
 
+use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 use Pubvana\Plugins\Media\Controllers\MediaAdminController;
 use Pubvana\Services\PluginInterface;
 use flight\Engine;
@@ -30,26 +31,25 @@ class Plugin implements PluginInterface
         });
 
         $adext = $app->adext();
-        // Admin routes are gated on `admin.access` automatically by
-        // ExtensionRegistry::registerRoutes(). For a finer-grained gate,
-        // pass a PermissionMiddleware in the route's middleware slot, e.g.:
-        //   [new PermissionMiddleware($app, 'media.manage')]
+        // Admin routes carry admin.access automatically. The media library has
+        // its own alias so a superadmin can hand it out on its own.
+        $managePerm = new PermissionMiddleware($app, 'media.manage');
 
         // ─── Admin Routes ──────────────────────────────────────────────
 
         $adext->addRoutes('admin', [
-            ['GET',  $prefix,                       [MediaAdminController::class, 'index'],        []],
-            ['GET',  $prefix . '/json',             [MediaAdminController::class, 'json'],         []],
-            ['GET',  $prefix . '/capabilities',     [MediaAdminController::class, 'capabilities'], []],
-            ['GET',  $prefix . '/@id/editor',       [MediaAdminController::class, 'editor'],       []],
-            ['POST', $prefix . '/upload/image',     [MediaAdminController::class, 'uploadImage'],  []],
-            ['POST', $prefix . '/upload/video',     [MediaAdminController::class, 'uploadVideo'],  []],
-            ['POST', $prefix . '/embed',            [MediaAdminController::class, 'storeEmbed'],   []],
-            ['POST', $prefix . '/@id/poster',       [MediaAdminController::class, 'uploadPoster'], []],
-            ['POST', $prefix . '/@id/update',       [MediaAdminController::class, 'update'],       []],
-            ['POST', $prefix . '/@id/delete',       [MediaAdminController::class, 'destroy'],      []],
-            ['POST', $prefix . '/@id/edit',         [MediaAdminController::class, 'applyEdit'],    []],
-            ['POST', $prefix . '/@id/revert',       [MediaAdminController::class, 'revert'],       []],
+            ['GET',  $prefix,                       [MediaAdminController::class, 'index'],        [$managePerm]],
+            ['GET',  $prefix . '/json',             [MediaAdminController::class, 'json'],         [$managePerm]],
+            ['GET',  $prefix . '/capabilities',     [MediaAdminController::class, 'capabilities'], [$managePerm]],
+            ['GET',  $prefix . '/@id/editor',       [MediaAdminController::class, 'editor'],       [$managePerm]],
+            ['POST', $prefix . '/upload/image',     [MediaAdminController::class, 'uploadImage'],  [$managePerm]],
+            ['POST', $prefix . '/upload/video',     [MediaAdminController::class, 'uploadVideo'],  [$managePerm]],
+            ['POST', $prefix . '/embed',            [MediaAdminController::class, 'storeEmbed'],   [$managePerm]],
+            ['POST', $prefix . '/@id/poster',       [MediaAdminController::class, 'uploadPoster'], [$managePerm]],
+            ['POST', $prefix . '/@id/update',       [MediaAdminController::class, 'update'],       [$managePerm]],
+            ['POST', $prefix . '/@id/delete',       [MediaAdminController::class, 'destroy'],      [$managePerm]],
+            ['POST', $prefix . '/@id/edit',         [MediaAdminController::class, 'applyEdit'],    [$managePerm]],
+            ['POST', $prefix . '/@id/revert',       [MediaAdminController::class, 'revert'],       [$managePerm]],
         ], 'pubvana.media');
 
         // ─── Dashboard ──────────────────────────────────────────────────

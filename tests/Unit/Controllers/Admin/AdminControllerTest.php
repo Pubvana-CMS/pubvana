@@ -360,12 +360,14 @@ final class AdminControllerTest extends TestCase
         /** @var ExtensionRegistry $adext */
         $adext = $app->adext();
         $adext->register('admin.menu', 'content.links', 'pubvana.blog', [
-            'label' => 'Blog',
-            'url' => '/blog',
+            'label'      => 'Blog',
+            'url'        => '/blog',
+            'permission' => 'blog.view',
         ]);
         $adext->register('admin.menu', 'content', 'pubvana.pages', [
-            'label' => 'Pages',
-            'url' => '/pages',
+            'label'      => 'Pages',
+            'url'        => '/pages',
+            'permission' => 'pages.view',
         ]);
 
         $controller = new AdminController($app);
@@ -379,6 +381,37 @@ final class AdminControllerTest extends TestCase
         self::assertSame('content', $layout['data']['nav'][0]['key']);
         self::assertSame('label', $layout['data']['nav'][0]['entries'][0]['type']);
         self::assertSame('item', $layout['data']['nav'][0]['entries'][1]['type']);
+    }
+
+    public function testRenderHidesMenuEntriesTheViewerCannotUse(): void
+    {
+        $app = $this->engine(deniedPermissions: ['pages.view', 'blog.tags']);
+        $app->set('admin.topNav', [
+            'content' => ['label' => 'Content', 'icon' => 'ti-a', 'subLabels' => []],
+        ]);
+        $adext = $app->adext();
+        $adext->register('admin.menu', 'content', 'pubvana.pages', [
+            'label'      => 'Pages',
+            'url'        => '/pages',
+            'permission' => 'pages.view',
+        ]);
+        $adext->register('admin.menu', 'content', 'pubvana.blog', [
+            'label'      => 'Blog',
+            'url'        => '/blog',
+            'permission' => 'blog.view',
+            'submenu'    => [
+                ['label' => 'Posts', 'url' => '/blog', 'permission' => 'blog.view'],
+                ['label' => 'Tags', 'url' => '/blog/tags', 'permission' => 'blog.tags'],
+            ],
+        ]);
+
+        $this->invoke(new AdminController($app), 'render', ['admin/x', []]);
+
+        $entries = $this->renders[0]['data']['nav'][0]['entries'];
+        self::assertCount(1, $entries, 'the denied item is dropped');
+        self::assertSame('Blog', $entries[0]['item']['label']);
+        self::assertCount(1, $entries[0]['item']['submenu'], 'the denied submenu child is dropped');
+        self::assertSame('Posts', $entries[0]['item']['submenu'][0]['label']);
     }
 
     public function testBreadcrumbsFollowLabelLinks(): void
@@ -447,8 +480,9 @@ final class AdminControllerTest extends TestCase
             'content' => ['label' => 'Content', 'icon' => 'ti-a', 'subLabels' => []],
         ]);
         $app->adext()->register('admin.menu', 'content', 'pubvana.pages', [
-            'label' => 'Pages',
-            'url' => '/pages',
+            'label'      => 'Pages',
+            'url'        => '/pages',
+            'permission' => 'pages.view',
         ]);
 
         $this->invoke(new AdminController($app), 'render', ['admin/x', ['pageTitle' => 'Edit Page']]);
@@ -579,7 +613,8 @@ final class AdminControllerTest extends TestCase
         ?array $trustLive = null,
         bool $trustThrow = false,
         bool $authThrow = false,
-        ?string $requestPath = null
+        ?string $requestPath = null,
+        ?array $deniedPermissions = null
     ): Engine {
         $test = $this;
         $app = $this->app([
@@ -613,14 +648,31 @@ final class AdminControllerTest extends TestCase
                         throw new \RuntimeException('no auth');
                     }
                 }
-                : new class {
+                : new class ($deniedPermissions) {
+                    /** @param list<string>|null $denied */
+                    public function __construct(private ?array $denied)
+                    {
+                    }
+
                     public function user(): object
                     {
-                        return new class {
+                        $denied = $this->denied ?? [];
+
+                        return new class ($denied) {
+                            /** @param list<string> $denied */
+                            public function __construct(private array $denied)
+                            {
+                            }
+
                             /** @return list<string> */
                             public function getGroups(): array
                             {
                                 return ['Test User'];
+                            }
+
+                            public function can(string $permission): bool
+                            {
+                                return $permission !== '' && !in_array($permission, $this->denied, true);
                             }
                         };
                     }

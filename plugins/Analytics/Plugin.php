@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pubvana\Plugins\Analytics;
 
+use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 use Pubvana\Plugins\Analytics\Controllers\AnalyticsAdminController;
 use Pubvana\Plugins\Analytics\Services\AnalyticsService;
 use Pubvana\Services\PluginInterface;
@@ -38,10 +39,12 @@ class Plugin implements PluginInterface
 
         // ─── Admin Routes ──────────────────────────────────────────────
 
+        $viewPerm = new PermissionMiddleware($app, 'analytics.view');
+
         $adext->addRoutes('admin', [
-            ['GET',  $prefix,                [AnalyticsAdminController::class, 'index'],          []],
-            ['GET',  $prefix . '/data',      [AnalyticsAdminController::class, 'data'],           []],
-            ['POST', $prefix . '/tracking',  [AnalyticsAdminController::class, 'toggleTracking'], []],
+            ['GET',  $prefix,                [AnalyticsAdminController::class, 'index'],          [$viewPerm]],
+            ['GET',  $prefix . '/data',      [AnalyticsAdminController::class, 'data'],           [$viewPerm]],
+            ['POST', $prefix . '/tracking',  [AnalyticsAdminController::class, 'toggleTracking'], [$viewPerm]],
         ], 'pubvana.analytics');
 
         // ─── Page View Tracking ────────────────────────────────────────

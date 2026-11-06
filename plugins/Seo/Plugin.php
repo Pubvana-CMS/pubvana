@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pubvana\Plugins\Seo;
 
+use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 use Pubvana\Plugins\Seo\Controllers\SeoAdminController;
 use Pubvana\Plugins\Seo\Controllers\SeoPublicController;
 use Pubvana\Plugins\Seo\Models\SeoMeta;
@@ -86,11 +87,13 @@ class Plugin implements PluginInterface
 
         // ─── Admin Routes ──────────────────────────────────────────────
 
+        $managePerm = new PermissionMiddleware($app, 'seo.manage');
+
         $adext->addRoutes('admin', [
-            ['GET',  '/seo',         [SeoAdminController::class, 'settings'],     []],
-            ['POST', '/seo',         [SeoAdminController::class, 'saveSettings'], []],
-            ['POST', '/seo/meta',    [SeoAdminController::class, 'saveMeta'],     []],
-            ['POST', '/seo/analyze', [SeoAdminController::class, 'analyze'],      []],
+            ['GET',  '/seo',         [SeoAdminController::class, 'settings'],     [$managePerm]],
+            ['POST', '/seo',         [SeoAdminController::class, 'saveSettings'], [$managePerm]],
+            ['POST', '/seo/meta',    [SeoAdminController::class, 'saveMeta'],     [$managePerm]],
+            ['POST', '/seo/analyze', [SeoAdminController::class, 'analyze'],      [$managePerm]],
         ], 'pubvana.seo');
 
         // ─── Public Routes (root-level, no prefix) ──────────────────────

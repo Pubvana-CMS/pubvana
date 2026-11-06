@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pubvana\Plugins\Search;
 
+use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 use Pubvana\Plugins\Search\Controllers\SearchPublicController;
 use Pubvana\Plugins\Search\Controllers\SearchAdminController;
 use Pubvana\Plugins\Search\Services\SearchService;
@@ -40,9 +41,11 @@ class Plugin implements PluginInterface
         $adext = $app->adext();
 
         // Admin route, adext auto-prefixes with /admin
+        $managePerm = new PermissionMiddleware($app, 'search.manage');
+
         $adext->addRoutes('admin', [
-            ['GET',    '/search',       [SearchAdminController::class, 'index'],  []],
-            ['POST',   '/search',       [SearchAdminController::class, 'save'],   []],
+            ['GET',    '/search',       [SearchAdminController::class, 'index'],  [$managePerm]],
+            ['POST',   '/search',       [SearchAdminController::class, 'save'],   [$managePerm]],
         ], 'pubvana.search');
 
         // Public route: root-level /search

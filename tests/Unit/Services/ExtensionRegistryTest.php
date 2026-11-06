@@ -22,15 +22,17 @@ final class ExtensionRegistryTest extends TestCase
         $registry = new ExtensionRegistry();
 
         $registry->register('admin.menu', 'content', 'pubvana.blog', [
-            'label'    => 'Blog',
-            'icon'     => 'ti-pencil',
-            'url'      => '/blog',
-            'priority' => 20,
+            'label'      => 'Blog',
+            'icon'       => 'ti-pencil',
+            'url'        => '/blog',
+            'priority'   => 20,
+            'permission' => 'blog.view',
         ]);
         $registry->register('admin.menu', 'content', 'pubvana.pages', [
-            'label'    => 'Pages',
-            'url'      => '/pages',
-            'priority' => 10,
+            'label'      => 'Pages',
+            'url'        => '/pages',
+            'priority'   => 10,
+            'permission' => 'pages.view',
         ]);
 
         $items = $registry->get('admin.menu', 'content');
@@ -45,8 +47,8 @@ final class ExtensionRegistryTest extends TestCase
         $registry = new ExtensionRegistry();
 
         $registry->register('admin.menu', 'content', [
-            'pubvana.one' => ['label' => 'One', 'url' => '/one'],
-            'pubvana.two' => ['label' => 'Two', 'url' => '/two'],
+            'pubvana.one' => ['label' => 'One', 'url' => '/one', 'permission' => 'one.view'],
+            'pubvana.two' => ['label' => 'Two', 'url' => '/two', 'permission' => 'two.view'],
         ]);
 
         self::assertCount(2, $registry->get('admin.menu', 'content'));
@@ -108,8 +110,9 @@ final class ExtensionRegistryTest extends TestCase
         $registry = new ExtensionRegistry();
 
         $registry->register('admin.menu', 'content', 'pubvana.users', [
-            'label' => 'Users',
-            'url'   => '/users',
+            'label'      => 'Users',
+            'url'        => '/users',
+            'permission' => 'users.list',
         ]);
 
         $items = $registry->get('admin.menu', 'content');
@@ -121,9 +124,10 @@ final class ExtensionRegistryTest extends TestCase
         $registry = new ExtensionRegistry();
 
         $registry->register('admin.menu', 'content', 'pubvana.seo', [
-            'label'   => 'Seo',
-            'url'     => '/seo',
-            'submenu' => [
+            'label'      => 'Seo',
+            'url'        => '/seo',
+            'permission' => 'seo.manage',
+            'submenu'    => [
                 'sitemaps' => ['label' => 'Sitemaps', 'url' => '/seo/sitemaps'],
             ],
         ]);
@@ -166,8 +170,9 @@ final class ExtensionRegistryTest extends TestCase
         $registry = new ExtensionRegistry();
 
         self::assertTrue($registry->register('admin.menu', 'content', 'pubvana.blog', [
-            'label' => 'Blog',
-            'url'   => '/blog',
+            'label'      => 'Blog',
+            'url'        => '/blog',
+            'permission' => 'blog.view',
         ]));
         self::assertFalse($registry->register('admin.menu', 'not-a-slot', 'pubvana.bad', [
             'label' => 'Bad',
@@ -192,7 +197,11 @@ final class ExtensionRegistryTest extends TestCase
     public function testASuccessfulRegistrationRecordsNothing(): void
     {
         $registry = new ExtensionRegistry();
-        $registry->register('admin.menu', 'content', 'pubvana.blog', ['label' => 'Blog', 'url' => '/blog']);
+        $registry->register('admin.menu', 'content', 'pubvana.blog', [
+            'label'      => 'Blog',
+            'url'        => '/blog',
+            'permission' => 'blog.view',
+        ]);
 
         self::assertSame([], $registry->errors());
     }
@@ -206,9 +215,9 @@ final class ExtensionRegistryTest extends TestCase
             'priority'   => ['cron', '1m', ['priority' => '10', 'callable' => static fn (): null => null]],
             'url'        => ['public.css', 'default', ['url' => ['/x.css']]],
             'middleware' => ['public.nav', 'main', ['label' => 'X', 'url' => '/x', 'middleware' => 'nope']],
-            'submenu'    => ['admin.menu', 'content', ['label' => 'X', 'url' => '/x', 'submenu' => 'nope']],
+            'submenu'    => ['admin.menu', 'content', ['label' => 'X', 'url' => '/x', 'permission' => 'x.view', 'submenu' => 'nope']],
             'fields'     => ['admin.settings', 'general', ['label' => 'X', 'fields' => 'nope']],
-            'route'      => ['admin.menu', 'content', ['label' => 'X', 'url' => '/x', 'route' => ['GET', '/x']]],
+            'route'      => ['admin.menu', 'content', ['label' => 'X', 'url' => '/x', 'permission' => 'x.view', 'route' => ['GET', '/x']]],
         ];
 
         foreach ($cases as $key => $case) {
@@ -258,8 +267,8 @@ final class ExtensionRegistryTest extends TestCase
         $registry = new ExtensionRegistry();
 
         $stored = $registry->register('admin.menu', 'content', [
-            'pubvana.good' => ['label' => 'Good', 'url' => '/good'],
-            'pubvana.bad'  => ['label' => 'Bad', 'nope' => 'x'],
+            'pubvana.good' => ['label' => 'Good', 'url' => '/good', 'permission' => 'good.view'],
+            'pubvana.bad'  => ['label' => 'Bad', 'permission' => 'bad.view', 'nope' => 'x'],
         ]);
 
         self::assertFalse($stored);
@@ -284,10 +293,11 @@ final class ExtensionRegistryTest extends TestCase
         $registry = new ExtensionRegistry();
 
         $registry->register('admin.menu', 'tools.links', 'pubvana.brokenlinks', [
-            'label'    => 'Broken Links',
-            'icon'     => 'ti-link-off',
-            'url'      => '/broken-links',
-            'priority' => 30,
+            'label'      => 'Broken Links',
+            'icon'       => 'ti-link-off',
+            'url'        => '/broken-links',
+            'priority'   => 30,
+            'permission' => 'brokenlinks.manage',
         ]);
 
         $items = $registry->get('admin.menu', 'tools.links');
@@ -328,6 +338,20 @@ final class ExtensionRegistryTest extends TestCase
         self::assertFalse($registry->has('admin.menu', 'content'));
     }
 
+    public function testAdminMenuRequiresAPermission(): void
+    {
+        $registry = new ExtensionRegistry();
+
+        $stored = $registry->register('admin.menu', 'content', 'pubvana.x', [
+            'label' => 'X',
+            'url'   => '/x',
+        ]);
+
+        self::assertFalse($stored);
+        self::assertStringContainsString('permission', $registry->errors()[0]['reason']);
+        self::assertFalse($registry->has('admin.menu', 'content'));
+    }
+
     public function testUnknownConfigKeyIsRejected(): void
     {
         $registry = new ExtensionRegistry();
@@ -339,8 +363,8 @@ final class ExtensionRegistryTest extends TestCase
     public function testDuplicateKeyIsRejected(): void
     {
         $registry = new ExtensionRegistry();
-        $registry->register('admin.menu', 'content', 'pubvana.x', ['label' => 'X', 'url' => '/x']);
-        $registry->register('admin.menu', 'content', 'pubvana.x', ['label' => 'Y', 'url' => '/y']);
+        $registry->register('admin.menu', 'content', 'pubvana.x', ['label' => 'X', 'url' => '/x', 'permission' => 'x.view']);
+        $registry->register('admin.menu', 'content', 'pubvana.x', ['label' => 'Y', 'url' => '/y', 'permission' => 'x.view']);
 
         $items = $registry->get('admin.menu', 'content');
         self::assertCount(1, $items);
@@ -452,9 +476,10 @@ final class ExtensionRegistryTest extends TestCase
         $registry = new ExtensionRegistry();
 
         $registry->register('admin.menu', 'content', 'pubvana.users', [
-            'label' => 'Users',
-            'url'   => '/users',
-            'route' => ['GET', '/users', [\stdClass::class, 'index']],
+            'label'      => 'Users',
+            'url'        => '/users',
+            'permission' => 'users.list',
+            'route'      => ['GET', '/users', [\stdClass::class, 'index']],
         ]);
 
         $routes = $registry->getRoutes();

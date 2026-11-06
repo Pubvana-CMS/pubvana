@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pubvana\Plugins\Forms;
 
+use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 use Pubvana\Plugins\Forms\Controllers\FormsAdminController;
 use Pubvana\Plugins\Forms\Controllers\FormSubmissionsAdminController;
 use Pubvana\Plugins\Forms\Controllers\FormsPublicController;
@@ -36,16 +37,18 @@ class Plugin implements PluginInterface
 
         // ─── Admin Routes ──────────────────────────────────────────────
 
+        $managePerm = new PermissionMiddleware($app, 'forms.manage');
+
         $adext->addRoutes('admin', [
-            ['GET',  $prefix,                          [FormsAdminController::class, 'index'],            []],
-            ['GET',  $prefix . '/create',              [FormsAdminController::class, 'create'],           []],
-            ['POST', $prefix . '/store',               [FormsAdminController::class, 'store'],            []],
-            ['GET',  $prefix . '/@id/edit',            [FormsAdminController::class, 'edit'],             []],
-            ['POST', $prefix . '/@id/update',          [FormsAdminController::class, 'update'],           []],
-            ['POST', $prefix . '/@id/delete',          [FormsAdminController::class, 'delete'],           []],
-            ['GET',  $prefix . '/submissions',         [FormSubmissionsAdminController::class, 'index'],  []],
-            ['GET',  $prefix . '/@formId/submissions', [FormSubmissionsAdminController::class, 'index'],  []],
-            ['GET',  $prefix . '/submissions/@id',     [FormSubmissionsAdminController::class, 'show'],   []],
+            ['GET',  $prefix,                          [FormsAdminController::class, 'index'],            [$managePerm]],
+            ['GET',  $prefix . '/create',              [FormsAdminController::class, 'create'],           [$managePerm]],
+            ['POST', $prefix . '/store',               [FormsAdminController::class, 'store'],            [$managePerm]],
+            ['GET',  $prefix . '/@id/edit',            [FormsAdminController::class, 'edit'],             [$managePerm]],
+            ['POST', $prefix . '/@id/update',          [FormsAdminController::class, 'update'],           [$managePerm]],
+            ['POST', $prefix . '/@id/delete',          [FormsAdminController::class, 'delete'],           [$managePerm]],
+            ['GET',  $prefix . '/submissions',         [FormSubmissionsAdminController::class, 'index'],  [$managePerm]],
+            ['GET',  $prefix . '/@formId/submissions', [FormSubmissionsAdminController::class, 'index'],  [$managePerm]],
+            ['GET',  $prefix . '/submissions/@id',     [FormSubmissionsAdminController::class, 'show'],   [$managePerm]],
         ], 'pubvana.forms');
 
         // ─── Public Routes ──────────────────────────────────────────────

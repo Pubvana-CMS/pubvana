@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pubvana\Plugins\Backups;
 
+use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 use Pubvana\Plugins\Backups\Controllers\BackupsAdminController;
 use Pubvana\Plugins\Backups\Services\BackupService;
 use Pubvana\Services\PluginInterface;
@@ -40,13 +41,15 @@ class Plugin implements PluginInterface
             return $instance;
         });
 
+        $managePerm = new PermissionMiddleware($app, 'backups.manage');
+
         $app->adext()->addRoutes('admin', [
-            ['GET',  $prefix,                      [BackupsAdminController::class, 'index'],    []],
-            ['POST', $prefix . '/create',          [BackupsAdminController::class, 'create'],   []],
-            ['GET',  $prefix . '/status',          [BackupsAdminController::class, 'status'],   []],
-            ['GET',  $prefix . '/download/@filename', [BackupsAdminController::class, 'download'], []],
-            ['POST', $prefix . '/@filename/delete',   [BackupsAdminController::class, 'delete'],   []],
-            ['POST', $prefix . '/restore/@filename',  [BackupsAdminController::class, 'restore'],  []],
+            ['GET',  $prefix,                      [BackupsAdminController::class, 'index'],    [$managePerm]],
+            ['POST', $prefix . '/create',          [BackupsAdminController::class, 'create'],   [$managePerm]],
+            ['GET',  $prefix . '/status',          [BackupsAdminController::class, 'status'],   [$managePerm]],
+            ['GET',  $prefix . '/download/@filename', [BackupsAdminController::class, 'download'], [$managePerm]],
+            ['POST', $prefix . '/@filename/delete',   [BackupsAdminController::class, 'delete'],   [$managePerm]],
+            ['POST', $prefix . '/restore/@filename',  [BackupsAdminController::class, 'restore'],  [$managePerm]],
         ], 'pubvana.backups');
     }
 }

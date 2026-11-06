@@ -18,6 +18,27 @@ class BlogAdminController extends AdminController
         return '/admin' . rtrim((string) $this->app->pluginLoader()->routePrefix('pubvana/blog'), '/');
     }
 
+    /**
+     * Whether the viewer may edit this post.
+     *
+     * posts.edit.any reaches every author. posts.edit.own reaches only the
+     * viewer's own posts, so the route gate alone is not enough.
+     */
+    private function mayEditPost(object $post): bool
+    {
+        $user = $this->app->auth()->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        if ($user->can('posts.edit.any')) {
+            return true;
+        }
+
+        return (int) ($post->author_id ?? 0) === (int) $user->id;
+    }
+
     // ─── Posts ─────────────────────────────────────────────────────────────
 
     public function index(): void
@@ -120,6 +141,12 @@ class BlogAdminController extends AdminController
             return;
         }
 
+        if (!$this->mayEditPost($post)) {
+            $this->app->session()->flash('error', 'You can only edit your own posts.');
+            $this->app->redirect($this->adminBase());
+            return;
+        }
+
         $categories   = $this->app->blog()->listCategories();
         $selectedCats = $this->app->blog()->getPostCategoryIds((int) $id);
         $tagsRaw      = implode(', ', $this->app->blog()->getPostTagNames((int) $id));
@@ -153,6 +180,19 @@ class BlogAdminController extends AdminController
         $user = $this->app->auth()->user();
 
         $existing = $this->app->blog()->findPost((int) $id);
+
+        if ($existing === null) {
+            $this->app->session()->flash('error', 'Post not found.');
+            $this->app->redirect($this->adminBase());
+            return;
+        }
+
+        if (!$this->mayEditPost($existing)) {
+            $this->app->session()->flash('error', 'You can only edit your own posts.');
+            $this->app->redirect($this->adminBase());
+            return;
+        }
+
         $publishedAt = null;
         if ($status === 'published') {
             $publishedAt = ($existing && $existing->status === 'published')
@@ -213,6 +253,12 @@ class BlogAdminController extends AdminController
             return;
         }
 
+        if (!$this->mayEditPost($post)) {
+            $this->app->session()->flash('error', 'You can only edit your own posts.');
+            $this->app->redirect($this->adminBase());
+            return;
+        }
+
         $revisions = $this->app->blog()->getRevisions((int) $id);
 
         $this->render('pubvana/blog/admin/revisions', [
@@ -225,6 +271,14 @@ class BlogAdminController extends AdminController
 
     public function restore(string $id, string $revisionId): void
     {
+        $post = $this->app->blog()->findPost((int) $id);
+
+        if ($post === null || !$this->mayEditPost($post)) {
+            $this->app->session()->flash('error', 'You can only edit your own posts.');
+            $this->app->redirect($this->adminBase());
+            return;
+        }
+
         $user = $this->app->auth()->user();
         $restored = $this->app->blog()->restoreRevision((int) $id, (int) $revisionId, (int) ($user?->id));
 

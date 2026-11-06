@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - Session rows record the signed-in user id, so per-user session lists work.
 - parse error of env file. was causing log file fill up and FORCE_HTTPS not honored
+- 2 seed files wouldn't install.  they weren't in install[] array
+- profile editing permissions
+- admin screens checked only `admin.access`.
+- the admin menu showed every item to every admin.
+- blog used `posts.create` for everything.
+- own profile edits needed no permission.
+- groups and permissions pages checked superadmin group membership.
 
 ## [3.0.0-beta.15] - 2026-10-23
 

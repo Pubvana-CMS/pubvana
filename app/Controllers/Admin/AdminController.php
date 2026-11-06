@@ -281,6 +281,19 @@ class AdminController
 
         $adext = $this->app->adext();
 
+        // Every menu entry names the permission behind its route. Hide what
+        // the viewer cannot open; a submenu entry without its own key uses
+        // its parent's. Superadmins pass every check inside can().
+        $maySee = static function (mixed $item, string $inherited = '') use ($user): bool {
+            if (!is_array($item)) {
+                return false;
+            }
+
+            $permission = (string) ($item['permission'] ?? $inherited);
+
+            return $permission !== '' && $user !== null && $user->can($permission);
+        };
+
         $topNav = (array) ($this->app->get('admin.topNav') ?? []);
         $nav = [];
 
@@ -294,7 +307,10 @@ class AdminController
 
             foreach ((array) ($navDef['subLabels'] ?? []) as $labelKey => $labelDef) {
                 $labelDef = is_array($labelDef) ? $labelDef : [];
-                $links = $adext->get('admin.menu', $navKey . '.' . $labelKey);
+                $links = array_values(array_filter(
+                    (array) $adext->get('admin.menu', $navKey . '.' . $labelKey),
+                    $maySee
+                ));
 
                 if (!empty($links)) {
                     $entries[] = [
@@ -307,10 +323,28 @@ class AdminController
             }
 
             foreach ($adext->get('admin.menu', (string) $navKey) as $item) {
+                if (!$maySee($item)) {
+                    continue;
+                }
+
+                $item = (array) $item;
+
+                if (!empty($item['submenu'])) {
+                    $parentPermission = (string) ($item['permission'] ?? '');
+                    $item['submenu'] = array_values(array_filter(
+                        (array) $item['submenu'],
+                        static fn (mixed $sub): bool => $maySee($sub, $parentPermission)
+                    ));
+                }
+
                 $entries[] = [
                     'type' => 'item',
                     'item' => $item,
                 ];
+            }
+
+            if ($entries === []) {
+                continue;
             }
 
             $nav[] = [

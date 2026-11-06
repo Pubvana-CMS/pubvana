@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pubvana\Plugins\Pages;
 
+use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 use Pubvana\Plugins\Pages\Controllers\PagesAdminController;
 use Pubvana\Plugins\Pages\Controllers\PagesPublicController;
 use Pubvana\Services\PluginInterface;
@@ -45,15 +46,17 @@ class Plugin implements PluginInterface
         $adext = $app->adext();
 
         // Admin routes
+        $managePerm = new PermissionMiddleware($app, 'pages.manage');
+
         $adext->addRoutes('admin', [
-            ['GET',    $prefix,                      [PagesAdminController::class, 'index'],    []],
-            ['GET',    $prefix . '/create',          [PagesAdminController::class, 'create'],   []],
-            ['POST',   $prefix . '/store',           [PagesAdminController::class, 'store'],    []],
-            ['GET',    $prefix . '/@id/edit',        [PagesAdminController::class, 'edit'],     []],
-            ['POST',   $prefix . '/@id/update',      [PagesAdminController::class, 'update'],   []],
-            ['POST',   $prefix . '/@id/delete',      [PagesAdminController::class, 'delete'],   []],
-            ['GET',    $prefix . '/@id/revisions',   [PagesAdminController::class, 'revisions'],[]],
-            ['POST',   $prefix . '/@id/restore/@revisionId', [PagesAdminController::class, 'restore'], []],
+            ['GET',    $prefix,                      [PagesAdminController::class, 'index'],    [$managePerm]],
+            ['GET',    $prefix . '/create',          [PagesAdminController::class, 'create'],   [$managePerm]],
+            ['POST',   $prefix . '/store',           [PagesAdminController::class, 'store'],    [$managePerm]],
+            ['GET',    $prefix . '/@id/edit',        [PagesAdminController::class, 'edit'],     [$managePerm]],
+            ['POST',   $prefix . '/@id/update',      [PagesAdminController::class, 'update'],   [$managePerm]],
+            ['POST',   $prefix . '/@id/delete',      [PagesAdminController::class, 'delete'],   [$managePerm]],
+            ['GET',    $prefix . '/@id/revisions',   [PagesAdminController::class, 'revisions'],[$managePerm]],
+            ['POST',   $prefix . '/@id/restore/@revisionId', [PagesAdminController::class, 'restore'], [$managePerm]],
         ], 'pubvana.pages');
 
         // Public routes

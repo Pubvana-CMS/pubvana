@@ -15,21 +15,25 @@
                     "url": "/blog",
                     "icon": "ti-article",
                     "priority": 10,
+                    "permission": "posts.create",
                     "submenu": {
                         "posts": {
                             "label": "Posts",
                             "url": "/blog",
-                            "priority": 10
+                            "priority": 10,
+                            "permission": "posts.create"
                         },
                         "categories": {
                             "label": "Categories",
                             "url": "/blog/categories",
-                            "priority": 20
+                            "priority": 20,
+                            "permission": "categories.manage"
                         },
                         "tags": {
                             "label": "Tags",
                             "url": "/blog/tags",
-                            "priority": 30
+                            "priority": 30,
+                            "permission": "tags.manage"
                         }
                     }
                 }

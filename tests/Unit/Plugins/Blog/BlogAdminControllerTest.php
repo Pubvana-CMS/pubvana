@@ -379,6 +379,11 @@ final class BlogAdminControllerTest extends TestCase
                         {
                             return ['admin'];
                         }
+
+                        public function can(string $permission): bool
+                        {
+                            return $permission === 'posts.edit.any';
+                        }
                     };
                 }
             },

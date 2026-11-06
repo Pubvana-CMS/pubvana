@@ -15,6 +15,7 @@
                     "url": "/forms",
                     "icon": "ti-forms",
                     "priority": 40,
+                    "permission": "forms.manage",
                     "submenu": {
                         "forms": {
                             "label": "Forms",

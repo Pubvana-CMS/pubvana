@@ -14,7 +14,8 @@
                     "label": "Media",
                     "url": "/media",
                     "icon": "ti-photo",
-                    "priority": 20
+                    "priority": 20,
+                    "permission": "media.manage"
                 }
             }
         },

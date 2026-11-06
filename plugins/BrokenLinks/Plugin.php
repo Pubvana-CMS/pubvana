@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pubvana\Plugins\BrokenLinks;
 
+use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 use Pubvana\Plugins\BrokenLinks\Controllers\BrokenLinksAdminController;
 use Pubvana\Plugins\BrokenLinks\Services\BrokenLinksService;
 use Pubvana\Services\PluginInterface;
@@ -38,11 +39,13 @@ class Plugin implements PluginInterface
 
         // ─── Admin Routes ──────────────────────────────────────────────
 
+        $managePerm = new PermissionMiddleware($app, 'brokenlinks.manage');
+
         $adext->addRoutes('admin', [
-            ['GET',  $prefix,                        [BrokenLinksAdminController::class, 'index'],   []],
-            ['POST', $prefix . '/scan',              [BrokenLinksAdminController::class, 'scan'],    []],
-            ['POST', $prefix . '/@id/recheck',       [BrokenLinksAdminController::class, 'recheck'], []],
-            ['POST', $prefix . '/@id/dismiss',       [BrokenLinksAdminController::class, 'dismiss'], []],
+            ['GET',  $prefix,                        [BrokenLinksAdminController::class, 'index'],   [$managePerm]],
+            ['POST', $prefix . '/scan',              [BrokenLinksAdminController::class, 'scan'],    [$managePerm]],
+            ['POST', $prefix . '/@id/recheck',       [BrokenLinksAdminController::class, 'recheck'], [$managePerm]],
+            ['POST', $prefix . '/@id/dismiss',       [BrokenLinksAdminController::class, 'dismiss'], [$managePerm]],
         ], 'pubvana.brokenlinks');
 
         // Core cron system (https://pubvanacms.com/docs/dev/v/3.0/services/cron): daily scan of all registered

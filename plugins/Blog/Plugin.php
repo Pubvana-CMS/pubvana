@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pubvana\Plugins\Blog;
 
+use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 use Pubvana\Plugins\Blog\Controllers\BlogPublicController;
 use Pubvana\Plugins\Blog\Controllers\BlogAdminController;
 use Pubvana\Services\PluginInterface;
@@ -35,31 +36,39 @@ class Plugin implements PluginInterface
         // ─── Admin Routes ──────────────────────────────────────────────
 
         // Posts
+        $postsCreate = new PermissionMiddleware($app, 'posts.create');
+        $postsEdit   = new PermissionMiddleware($app, 'posts.edit.own', 'posts.edit.any');
+        $postsDelete = new PermissionMiddleware($app, 'posts.delete');
+
         $adext->addRoutes('admin', [
-            ['GET',  $prefix,                              [BlogAdminController::class, 'index'],       []],
-            ['GET',  $prefix . '/create',                  [BlogAdminController::class, 'create'],      []],
-            ['POST', $prefix . '/store',                   [BlogAdminController::class, 'store'],       []],
-            ['GET',  $prefix . '/@id/edit',                [BlogAdminController::class, 'edit'],        []],
-            ['POST', $prefix . '/@id/update',              [BlogAdminController::class, 'update'],      []],
-            ['POST', $prefix . '/@id/delete',              [BlogAdminController::class, 'delete'],      []],
-            ['GET',  $prefix . '/@id/revisions',           [BlogAdminController::class, 'revisions'],   []],
-            ['POST', $prefix . '/@id/restore/@revisionId', [BlogAdminController::class, 'restore'],     []],
+            ['GET',  $prefix,                              [BlogAdminController::class, 'index'],       [$postsCreate]],
+            ['GET',  $prefix . '/create',                  [BlogAdminController::class, 'create'],      [$postsCreate]],
+            ['POST', $prefix . '/store',                   [BlogAdminController::class, 'store'],       [$postsCreate]],
+            ['GET',  $prefix . '/@id/edit',                [BlogAdminController::class, 'edit'],        [$postsEdit]],
+            ['POST', $prefix . '/@id/update',              [BlogAdminController::class, 'update'],      [$postsEdit]],
+            ['POST', $prefix . '/@id/delete',              [BlogAdminController::class, 'delete'],      [$postsDelete]],
+            ['GET',  $prefix . '/@id/revisions',           [BlogAdminController::class, 'revisions'],   [$postsEdit]],
+            ['POST', $prefix . '/@id/restore/@revisionId', [BlogAdminController::class, 'restore'],     [$postsEdit]],
         ], 'pubvana.blog');
 
         // Categories
+        $categoriesPerm = new PermissionMiddleware($app, 'categories.manage');
+
         $adext->addRoutes('admin', [
-            ['GET',  $prefix . '/categories',              [BlogAdminController::class, 'categories'],     []],
-            ['GET',  $prefix . '/categories/create',       [BlogAdminController::class, 'createCategory'], []],
-            ['POST', $prefix . '/categories/store',        [BlogAdminController::class, 'storeCategory'],  []],
-            ['GET',  $prefix . '/categories/@id/edit',     [BlogAdminController::class, 'editCategory'],   []],
-            ['POST', $prefix . '/categories/@id/update',   [BlogAdminController::class, 'updateCategory'], []],
-            ['POST', $prefix . '/categories/@id/delete',   [BlogAdminController::class, 'deleteCategory'], []],
+            ['GET',  $prefix . '/categories',              [BlogAdminController::class, 'categories'],     [$categoriesPerm]],
+            ['GET',  $prefix . '/categories/create',       [BlogAdminController::class, 'createCategory'], [$categoriesPerm]],
+            ['POST', $prefix . '/categories/store',        [BlogAdminController::class, 'storeCategory'],  [$categoriesPerm]],
+            ['GET',  $prefix . '/categories/@id/edit',     [BlogAdminController::class, 'editCategory'],   [$categoriesPerm]],
+            ['POST', $prefix . '/categories/@id/update',   [BlogAdminController::class, 'updateCategory'], [$categoriesPerm]],
+            ['POST', $prefix . '/categories/@id/delete',   [BlogAdminController::class, 'deleteCategory'], [$categoriesPerm]],
         ], 'pubvana.blog');
 
         // Tags
+        $tagsPerm = new PermissionMiddleware($app, 'tags.manage');
+
         $adext->addRoutes('admin', [
-            ['GET',  $prefix . '/tags',              [BlogAdminController::class, 'tags'],      []],
-            ['POST', $prefix . '/tags/@id/delete',   [BlogAdminController::class, 'deleteTag'], []],
+            ['GET',  $prefix . '/tags',              [BlogAdminController::class, 'tags'],      [$tagsPerm]],
+            ['POST', $prefix . '/tags/@id/delete',   [BlogAdminController::class, 'deleteTag'], [$tagsPerm]],
         ], 'pubvana.blog');
 
         // ─── Public Routes ──────────────────────────────────────────────

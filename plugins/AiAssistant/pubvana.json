@@ -15,6 +15,7 @@
                     "url": "/ai/manage",
                     "icon": "ti-robot",
                     "priority": 40,
+                    "permission": "ai.manage",
                     "submenu": {
                         "manage": {
                             "label": "Manage",

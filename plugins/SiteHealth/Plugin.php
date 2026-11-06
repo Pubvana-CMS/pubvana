@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pubvana\Plugins\SiteHealth;
 
+use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 use Pubvana\Plugins\SiteHealth\Controllers\HealthAdminController;
 use Pubvana\Plugins\SiteHealth\Services\HealthService;
 use Pubvana\Services\PluginInterface;
@@ -36,9 +37,11 @@ class Plugin implements PluginInterface
 
         // ─── Admin Routes ──────────────────────────────────────────────
 
+        $viewPerm = new PermissionMiddleware($app, 'sitehealth.view');
+
         $adext->addRoutes('admin', [
-            ['GET',  $prefix,              [HealthAdminController::class, 'index'], []],
-            ['POST', $prefix . '/rerun',   [HealthAdminController::class, 'rerun'], []],
+            ['GET',  $prefix,              [HealthAdminController::class, 'index'], [$viewPerm]],
+            ['POST', $prefix . '/rerun',   [HealthAdminController::class, 'rerun'], [$viewPerm]],
         ], 'pubvana.sitehealth');
 
         // ─── Dashboard ──────────────────────────────────────────────────

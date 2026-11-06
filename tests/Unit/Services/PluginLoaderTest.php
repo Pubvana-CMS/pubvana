@@ -344,7 +344,7 @@ final class PluginLoaderTest extends TestCase
             'semver'    => '1.2.3',
             'provides'  => [
                 'admin.menu' => [
-                    'content' => [['label' => 'Alpha', 'url' => '/alpha']],
+                    'content' => [['label' => 'Alpha', 'url' => '/alpha', 'permission' => 'alpha.view']],
                 ],
                 'public.css' => [
                     'main' => ['url' => '/plugins/alpha/assets/x.css'],

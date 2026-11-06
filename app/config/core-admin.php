@@ -29,7 +29,6 @@ use Pubvana\Controllers\Admin\CaptchaAdminController;
 
 use Pubvana\Controllers\Admin\PluginsController;
 
-use Enlivenapp\FlightShield\Middlewares\GroupMiddleware;
 use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 
 /** @var \flight\Engine $app */
@@ -153,62 +152,69 @@ $app->set('admin.topNav', $topNav);
 
 $adext->register('admin.menu', 'settings.general', [
     'pubvana.settings' => [
-        'label'    => 'General',
-        'icon'     => 'ti-settings',
-        'url'      => '/settings',
-        'priority' => 1,
-        'core'     => true,
+        'label'      => 'General',
+        'icon'       => 'ti-settings',
+        'url'        => '/settings',
+        'priority'   => 1,
+        'permission' => 'settings.manage',
+        'core'       => true,
     ],
 ]);
 
 $adext->register('admin.menu', 'settings.access', [
     'pubvana.login' => [
-        'label'    => 'Login',
-        'icon'     => 'ti-login',
-        'url'      => '/login-sec',
-        'priority' => 10,
-        'core'     => true,
+        'label'      => 'Login',
+        'icon'       => 'ti-login',
+        'url'        => '/login-sec',
+        'priority'   => 10,
+        'permission' => 'login.manage',
+        'core'       => true,
     ],
     'pubvana.users' => [
-        'label'    => 'Users',
-        'icon'     => 'ti-users',
-        'url'      => '/users',
-        'priority' => 20,
-        'core'     => true,
+        'label'      => 'Users',
+        'icon'       => 'ti-users',
+        'url'        => '/users',
+        'priority'   => 20,
+        'permission' => 'users.list',
+        'core'       => true,
     ],
     'pubvana.groups' => [
-        'label'    => 'Groups',
-        'icon'     => 'ti-users-group',
-        'url'      => '/groups',
-        'priority' => 30,
-        'core'     => true,
+        'label'      => 'Groups',
+        'icon'       => 'ti-users-group',
+        'url'        => '/groups',
+        'priority'   => 30,
+        'permission' => 'groups.manage',
+        'core'       => true,
     ],
     'pubvana.permissions' => [
-        'label'    => 'Permissions',
-        'icon'     => 'ti-lock',
-        'url'      => '/permissions',
-        'priority' => 40,
-        'core'     => true,
+        'label'      => 'Permissions',
+        'icon'       => 'ti-lock',
+        'url'        => '/permissions',
+        'priority'   => 40,
+        'permission' => 'permissions.manage',
+        'core'       => true,
     ],
 ]);
 
 $adext->register('admin.menu', 'settings.captcha', [
     'pubvana.captcha' => [
-        'label'    => 'Captcha',
-        'icon'     => 'ti-shield-check',
-        'url'      => '/captcha',
-        'priority' => 1,
-        'core'     => true,
+        'label'      => 'Captcha',
+        'icon'       => 'ti-shield-check',
+        'url'        => '/captcha',
+        'priority'   => 1,
+        'permission' => 'captcha.manage',
+        'core'       => true,
     ],
 ]);
 
 $adext->register('admin.menu', 'settings.email', [
     'pubvana.cms.mail' => [
-        'label'    => 'Email',
-        'icon'     => 'ti-mail',
-        'url'      => '/email',
-        'priority' => 1,
-        'core'     => true,
+        'label'      => 'Email',
+        'icon'       => 'ti-mail',
+        'url'        => '/email',
+        'priority'   => 1,
+        'permission' => 'mail.manage',
+        'core'       => true,
     ],
 ]);
 
@@ -221,11 +227,12 @@ $adext->register('admin.menu', 'settings.email', [
 | slot; the Manage item is the core management screen.
 */
 $adext->register('admin.menu', 'plugins', 'pubvana.plugins', [
-    'label'    => 'Manage',
-    'icon'     => 'ti-puzzle',
-    'url'      => '/plugins',
-    'priority' => 1,
-    'core'     => true,
+    'label'      => 'Manage',
+    'icon'       => 'ti-puzzle',
+    'url'        => '/plugins',
+    'priority'   => 1,
+    'permission' => 'plugins.manage',
+    'core'       => true,
 ]);
 
 
@@ -237,29 +244,33 @@ $adext->register('admin.menu', 'plugins', 'pubvana.plugins', [
 | Theme and region management lives under the Appearance menu slot.
 */
 $adext->register('admin.menu', 'appearance', 'pubvana.themes', [
-    'label'    => 'Themes',
-    'icon'     => 'ti-palette',
-    'url'      => '/themes',
-    'priority' => 2,
-    'submenu'  => [
+    'label'      => 'Themes',
+    'icon'       => 'ti-palette',
+    'url'        => '/themes',
+    'priority'   => 2,
+    'permission' => 'themes.manage',
+    'submenu'    => [
         'list' => [
-            'label'    => 'All Themes',
-            'url'      => '/themes',
-            'priority' => 10,
+            'label'      => 'All Themes',
+            'url'        => '/themes',
+            'priority'   => 10,
+            'permission' => 'themes.manage',
         ],
         'regions' => [
-            'label'    => 'Regions',
-            'url'      => '/themes/regions',
-            'priority' => 20,
+            'label'      => 'Regions',
+            'url'        => '/themes/regions',
+            'priority'   => 20,
+            'permission' => 'themes.manage',
         ],
     ],
 ]);
 
 $adext->register('admin.menu', 'appearance', 'pubvana.navigation', [
-    'label'    => 'Navigation',
-    'icon'     => 'ti-menu-2',
-    'url'      => '/navigation',
-    'priority' => 1,
+    'label'      => 'Navigation',
+    'icon'       => 'ti-menu-2',
+    'url'        => '/navigation',
+    'priority'   => 1,
+    'permission' => 'navigation.edit',
 ]);
 
 /*
@@ -305,27 +316,30 @@ $adext->addRoutes('admin', [
 ], 'pubvana.core', true);
 
 // Groups
-// Superadmin-only: groups are how permissions get granted, so a non-superadmin
-// admin must not create or edit one to hand themselves the finer permissions.
-$superadminOnly = new GroupMiddleware($app, 'superadmin');
+// Gated on groups.manage. Nothing holds it at install, so the screen is
+// superadmin-only until a superadmin grants it: groups are how permissions
+// get handed out, and a non-superadmin admin must not edit one to grant
+// themselves more.
+$groupsPerm = new PermissionMiddleware($app, 'groups.manage');
 
 $adext->addRoutes('admin', [
-    ['GET',    '/groups',             [GroupsController::class, 'index'],   [$superadminOnly]],
-    ['GET',    '/groups/create',      [GroupsController::class, 'create'],  [$superadminOnly]],
-    ['POST',   '/groups/store',       [GroupsController::class, 'store'],   [$superadminOnly]],
-    ['GET',    '/groups/@id/edit',    [GroupsController::class, 'edit'],    [$superadminOnly]],
-    ['POST',   '/groups/@id/update',  [GroupsController::class, 'update'],  [$superadminOnly]],
-    ['POST',   '/groups/@id/delete',  [GroupsController::class, 'delete'],  [$superadminOnly]],
+    ['GET',    '/groups',             [GroupsController::class, 'index'],   [$groupsPerm]],
+    ['GET',    '/groups/create',      [GroupsController::class, 'create'],  [$groupsPerm]],
+    ['POST',   '/groups/store',       [GroupsController::class, 'store'],   [$groupsPerm]],
+    ['GET',    '/groups/@id/edit',    [GroupsController::class, 'edit'],    [$groupsPerm]],
+    ['POST',   '/groups/@id/update',  [GroupsController::class, 'update'],  [$groupsPerm]],
+    ['POST',   '/groups/@id/delete',  [GroupsController::class, 'delete'],  [$groupsPerm]],
 ], 'pubvana.core', true);
 
 // Permissions
-// Superadmin-only, for the same reason as groups: defining a permission is
-// defining a capability, and only a superadmin should hand those out.
+// Gated on permissions.manage, superadmin-only at install for the same reason.
+$permissionsPerm = new PermissionMiddleware($app, 'permissions.manage');
+
 $adext->addRoutes('admin', [
-    ['GET',    '/permissions',              [PermissionsController::class, 'index'],   [$superadminOnly]],
-    ['GET',    '/permissions/create',       [PermissionsController::class, 'create'],  [$superadminOnly]],
-    ['POST',   '/permissions/store',        [PermissionsController::class, 'store'],   [$superadminOnly]],
-    ['POST',   '/permissions/@id/delete',   [PermissionsController::class, 'delete'],  [$superadminOnly]],
+    ['GET',    '/permissions',              [PermissionsController::class, 'index'],   [$permissionsPerm]],
+    ['GET',    '/permissions/create',       [PermissionsController::class, 'create'],  [$permissionsPerm]],
+    ['POST',   '/permissions/store',        [PermissionsController::class, 'store'],   [$permissionsPerm]],
+    ['POST',   '/permissions/@id/delete',   [PermissionsController::class, 'delete'],  [$permissionsPerm]],
 ], 'pubvana.core', true);
 
 // Themes & Regions

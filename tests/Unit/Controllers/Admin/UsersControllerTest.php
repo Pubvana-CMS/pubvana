@@ -420,6 +420,11 @@ final class UsersControllerTest extends TestCase
                             return $g === 'superadmin' && $this->sup;
                         }
 
+                        public function can(string $permission): bool
+                        {
+                            return $this->sup;
+                        }
+
                         /** @return list<string> */
                         public function getGroups(): array
                         {

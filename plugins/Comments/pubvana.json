@@ -15,6 +15,7 @@
                     "url": "/comments",
                     "icon": "ti-message-circle",
                     "priority": 30,
+                    "permission": "comments.moderate",
                     "submenu": {
                         "manage": {
                             "label": "Manage",

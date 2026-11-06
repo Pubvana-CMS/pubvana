@@ -14,7 +14,8 @@
                     "label": "Analytics",
                     "url": "/analytics",
                     "icon": "ti-report-analytics",
-                    "priority": 30
+                    "priority": 30,
+                    "permission": "analytics.view"
                 }
             }
         },

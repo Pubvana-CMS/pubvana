@@ -15,6 +15,7 @@
                     "icon": "ti-shopping-bag",
                     "url": "/marketplace",
                     "priority": 50,
+                    "permission": "marketplace.manage",
                     "submenu": {
                         "marketplace.catalog": { "label": "Catalog", "url": "/marketplace", "priority": 10 },
                         "marketplace.purchases": { "label": "Purchases", "url": "/marketplace/purchases", "priority": 20 }

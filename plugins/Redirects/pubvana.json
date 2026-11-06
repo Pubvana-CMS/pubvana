@@ -15,6 +15,7 @@
                     "url": "/redirects",
                     "icon": "ti-link",
                     "priority": 20,
+                    "permission": "redirects.manage",
                     "submenu": {
                         "redirects": {
                             "label": "Redirects",

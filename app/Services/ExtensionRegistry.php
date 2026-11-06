@@ -73,8 +73,13 @@ class ExtensionRegistry
             // (core-admin.php, e.g. 'tools' for standalone items) or a
             // dotted 'parent.label' slot registering a Link under a Label
             // declared in $topNav (e.g. 'tools.links'). Labels cannot nest.
+            //
+            // 'permission' is required: it names the permission the route
+            // behind the entry is gated on, and the admin menu hides the
+            // entry from anyone without it. Submenu entries may carry their
+            // own 'permission' and fall back to the parent's when absent.
             'slots'    => ['content', 'appearance', 'tools', 'settings', 'plugins'],
-            'required' => ['label', 'url'],
+            'required' => ['label', 'url', 'permission'],
             'optional' => ['icon', 'priority', 'submenu', 'route', 'middleware', 'core'],
         ],
         'admin.dashboard' => [
