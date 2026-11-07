@@ -5,6 +5,12 @@ All notable changes to the Media plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.5] - 2026-11-07
+
+### Fixed
+- Admin routes now require `media.manage`.
+- Viewers without `media.manage` no longer see the Media menu item.
+
 ## [0.2.4] - 2026-10-17
 
 ### Added

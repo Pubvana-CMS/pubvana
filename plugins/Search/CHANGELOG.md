@@ -5,6 +5,12 @@ All notable changes to the Search plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.4] - 2026-11-07
+
+### Fixed
+- Admin routes now require `search.manage`.
+- Viewers without `search.manage` no longer see the Search menu item.
+
 ## [0.2.3] - 2026-10-07
 
 ### Added

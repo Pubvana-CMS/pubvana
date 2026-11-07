@@ -5,6 +5,12 @@ All notable changes to the Redirects plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.1] - 2026-11-07
+
+### Fixed
+- Admin routes now require `redirects.manage`.
+- Viewers without `redirects.manage` no longer see the Redirects menu item.
+
 ## [0.3.0] - 2026-10-07
 
 ### Changed

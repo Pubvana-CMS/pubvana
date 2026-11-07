@@ -5,6 +5,11 @@ All notable changes to the AI Assistant plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.17] - 2026-11-07
+
+### Fixed
+- Viewers without `ai.manage` no longer see the AI menu item.
+
 ## [0.3.16] - 2026-10-17
 
 ### Added

@@ -5,7 +5,7 @@ Notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [3.0.0-beta.16] - 2026-11-07
 
 ### Added
 
@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - own profile edits needed no permission.
 - groups and permissions pages checked superadmin group membership.
 - Softaculous fixes and bring up to thier docs
+- update to Shield 0.7.0.  Magic links now have full URL
 
 ## [3.0.0-beta.15] - 2026-10-23
 

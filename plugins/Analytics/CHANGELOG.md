@@ -5,6 +5,12 @@ All notable changes to the Analytics plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.13] - 2026-11-07
+
+### Fixed
+- Admin routes now require `analytics.view`.
+- Viewers without `analytics.view` no longer see the Analytics menu item.
+
 ## [0.1.12] - 2026-10-05
 
 ### Fixed

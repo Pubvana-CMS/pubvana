@@ -5,6 +5,12 @@ All notable changes to the Broken Links plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.16] - 2026-11-07
+
+### Fixed
+- Admin routes now require `brokenlinks.manage`.
+- Viewers without `brokenlinks.manage` no longer see the Broken Links menu item.
+
 ## [0.1.15] - 2026-10-06
 
 ### Fixed

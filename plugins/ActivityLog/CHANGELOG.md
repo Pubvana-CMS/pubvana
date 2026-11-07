@@ -5,6 +5,12 @@ All notable changes to the Activity Log plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.11] - 2026-11-07
+
+### Fixed
+- The seed file lacked the `install` key, so the permission never seeded.
+- Viewers without `activity_log.view` no longer see the Activity Log menu item.
+
 ## [0.1.10] - 2026-10-17
 
 ### Added

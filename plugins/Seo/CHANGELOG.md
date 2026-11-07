@@ -5,6 +5,12 @@ All notable changes to the SEO plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.13] - 2026-11-07
+
+### Fixed
+- Admin routes now require `seo.manage`.
+- Viewers without `seo.manage` no longer see the SEO menu item.
+
 ## [0.1.12] - 2026-10-07
 
 ### Added

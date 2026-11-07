@@ -5,6 +5,11 @@ All notable changes to the Marketplace plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.3] - 2026-11-07
+
+### Fixed
+- Viewers without `marketplace.manage` no longer see the Marketplace menu item.
+
 ## [0.4.2] - 2026-10-23
 
 ### Added

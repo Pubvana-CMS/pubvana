@@ -5,6 +5,13 @@ All notable changes to the Blog plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.10] - 2026-11-07
+
+### Fixed
+- Admin routes now require `posts.create`, `posts.edit.own` or `posts.edit.any`, `posts.delete`, `categories.manage`, and `tags.manage`. Each one required `posts.create` before.
+- The controller checks post ownership on edit, update, revisions, and restore, so an author with `posts.edit.own` can no longer open another author's post by URL.
+- Viewers without `posts.create` no longer see the Blog menu item.
+
 ## [0.3.9] - 2026-10-07
 
 ### Fixed

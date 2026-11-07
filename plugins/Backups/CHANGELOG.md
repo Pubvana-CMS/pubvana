@@ -5,6 +5,12 @@ All notable changes to the Backups plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.14] - 2026-11-07
+
+### Fixed
+- Admin routes now require `backups.manage`.
+- Viewers without `backups.manage` no longer see the Backups menu item.
+
 ## [0.1.13] - 2026-10-05
 
 ### Changed

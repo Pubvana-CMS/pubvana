@@ -4,6 +4,12 @@ All notable changes to the Updates plugin will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
+## [0.5.2] - 2026-11-07
+
+### Fixed
+- The seed file lacked the `install` key, so the permission never seeded.
+- Viewers without `updates.manage` no longer see the Updates menu item.
+
 ## [0.5.1] - 2026-10-17
 
 ### Fixed

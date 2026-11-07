@@ -5,6 +5,12 @@ All notable changes to the Comments plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.14] - 2026-11-07
+
+### Fixed
+- Admin routes now require `comments.moderate`.
+- Viewers without `comments.moderate` no longer see the Comments menu item.
+
 ## [0.2.13] - 2026-10-17
 
 ### Added

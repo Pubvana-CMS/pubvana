@@ -10,17 +10,21 @@ use Pubvana\Tests\Support\TestCase;
 /**
  * shield.php + migrations.php config shape coverage.
  *
- * Both files are pure return-value configs with no Flight dependency,
- * so they load directly and assert on structure.
+ * migrations.php is a pure return-value config. shield.php reads `siteUrl`
+ * from the engine, so the test supplies one before the include.
  */
 #[CoversNothing]
 final class ShieldMigrationsConfigTest extends TestCase
 {
     public function testShieldConfigShape(): void
     {
+        $app = $this->app(['siteUrl' => 'http://localhost']);
+
         /** @var array<string, mixed> $config */
         $config = require PROJECT_ROOT . '/app/config/shield.php';
 
+        self::assertSame('Pubvana CMS v3 : http://localhost', $config['user_agent']);
+        self::assertSame('http://localhost', $config['base_url']);
         self::assertSame('auth', $config['routePrepend']);
         self::assertSame('session', $config['default_authenticator']);
         self::assertArrayHasKey('session', $config['authenticators']);

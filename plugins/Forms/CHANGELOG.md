@@ -5,6 +5,12 @@ All notable changes to the Forms plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.13] - 2026-11-07
+
+### Fixed
+- Admin routes now require `forms.manage`.
+- Viewers without `forms.manage` no longer see the Forms menu item.
+
 ## [0.2.12] - 2026-10-17
 
 ### Changed

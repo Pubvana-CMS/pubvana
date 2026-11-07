@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - A password change signs out other devices and revokes remember-me tokens.
 - Session rows record the signed-in user id, so the device list is populated.
 
+### Fixed
+- The public edit, update, and avatar routes now require `profile.edit`, and the controller checks the owner.
+- The Edit User page no longer shows a Profile button to admins without `profile.edit.any`.
+
 ### Removed
 - Username editing. The username is the account's stable identity.
 

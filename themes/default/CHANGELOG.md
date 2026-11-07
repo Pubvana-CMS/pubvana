@@ -5,7 +5,11 @@ All notable changes to the Default theme will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.4.35] - 2026-11-07
+
+### Added
+- The public profile edit page shows tabs. Profile and Security are core, and plugins add more with `profile.tab`.
+- The Security tab holds the email and password forms and the list of signed-in devices.
 
 ## [1.4.34] - 2026-10-23
 

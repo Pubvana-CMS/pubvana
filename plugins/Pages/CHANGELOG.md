@@ -5,6 +5,12 @@ All notable changes to the Pages plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.9] - 2026-11-07
+
+### Fixed
+- Admin routes now require `pages.manage`.
+- Viewers without `pages.manage` no longer see the Pages menu item.
+
 ## [0.3.8] - 2026-10-17
 
 ### Added
