@@ -17,6 +17,13 @@ return [
     // Default authenticator
     'default_authenticator' => 'session',
 
+    // User-Agent sent on outbound calls.
+    'user_agent' => 'Pubvana CMS v3 : ' . $app->get('siteUrl'),
+
+
+    // base url to sent for magic links, etc.
+    'base_url' => $app->get('siteUrl'),
+
     // Available authenticators
     'authenticators' => [
         'session' => \Enlivenapp\FlightShield\Authentication\Authenticators\Session::class,
