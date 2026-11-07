@@ -5,6 +5,13 @@ Notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [3.0.0-beta.17] - 2026-11-07
+
+### Fixed
+- cron is a file, not a folder.
+
+
+
 ## [3.0.0-beta.16] - 2026-11-07
 
 ### Added

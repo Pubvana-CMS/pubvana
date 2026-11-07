@@ -125,7 +125,7 @@ jobs:
           failed=0
 
           for path in \
-            app/ public/ vendor/ plugins/ themes/ cron/ \
+            app/ public/ vendor/ plugins/ themes/ cron \
             writable/cache/.gitkeep writable/logs/.gitkeep \
             writable/backups/.gitkeep writable/updates/.gitkeep \
             writable/tmp/.gitkeep \
