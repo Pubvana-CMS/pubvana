@@ -5,7 +5,7 @@ Notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [3.0.0-beta.18] - 2026-11-xx
+## [3.0.0-beta.18] - 2026-11-08
 
 ### Changed
 - site now respects SITE_URL .env setting, forwards to that setting if the domain is different.

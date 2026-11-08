@@ -163,7 +163,7 @@ Tests and static analysis: see [CODING-STANDARDS.md](CODING-STANDARDS.md).
 
 ## Configuration
 
-Deployment values live in `.env` and admin settings live in the database. See [Securing Your Site](https://pubvanacms.com/docs/user/v/3.0/getting-started/secure-site) and [Settings](https://pubvanacms.com/docs/user/v/3.0/managing-your-site/settings).
+Deployment values are set in `.env` and admin settings are in the database. See [Securing Your Site](https://pubvanacms.com/docs/user/v/3.0/getting-started/secure-site) and [Settings](https://pubvanacms.com/docs/user/v/3.0/managing-your-site/settings).
 
 ## Upgrading
 
@@ -179,7 +179,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) to report bugs, request features, or send
 
 ## Getting Help
 
-Use the [Issues Tracker](https://github.com/Pubvana-CMS/pubvana/issues) for questions and bug reports. Read the [docs](https://pubvanacms.com/docs). Plugins, themes, and the digital store live at [pubvanacms.com](https://pubvanacms.com).
+Use the [Issues Tracker](https://github.com/Pubvana-CMS/pubvana/issues) for questions and bug reports. Read the [docs](https://pubvanacms.com/docs) or contact us at [pubvanacms.com](https://pubvanacms.com/page/contact-us).
 
 ## License
 
