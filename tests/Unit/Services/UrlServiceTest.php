@@ -154,6 +154,142 @@ final class UrlServiceTest extends TestCase
         self::assertSame('https://example.com/', $service->absoluteUrl(''));
     }
 
+    public function testSiteUrlRedirectPassesTheRightDomain(): void
+    {
+        self::assertNull(UrlService::siteUrlRedirect('https://example.com', [
+            'HTTP_HOST'   => 'example.com',
+            'REQUEST_URI' => '/blog/post?x=1',
+        ], false));
+    }
+
+    public function testSiteUrlRedirectMovesAnotherDomainAndKeepsPathAndQuery(): void
+    {
+        self::assertSame(
+            'https://example.com/blog/post?x=1',
+            UrlService::siteUrlRedirect('https://example.com/', [
+                'HTTP_HOST'   => 'pubvana.net',
+                'REQUEST_URI' => '/blog/post?x=1',
+            ], false)
+        );
+    }
+
+    public function testSiteUrlRedirectIgnoresDomainCase(): void
+    {
+        self::assertNull(UrlService::siteUrlRedirect('https://example.com', [
+            'HTTP_HOST'   => 'EXAMPLE.com:443',
+            'REQUEST_URI' => '/',
+        ], false));
+
+        self::assertNull(UrlService::siteUrlRedirect('http://example.com', [
+            'HTTP_HOST'   => 'example.com:80',
+            'REQUEST_URI' => '/',
+        ], false));
+    }
+
+    public function testSiteUrlRedirectComparesTheDomainOnly(): void
+    {
+        self::assertNull(UrlService::siteUrlRedirect('http://localhost', [
+            'HTTP_HOST'   => 'localhost:8080',
+            'REQUEST_URI' => '/',
+        ], false));
+
+        self::assertSame(
+            'http://localhost/x',
+            UrlService::siteUrlRedirect('http://localhost', [
+                'HTTP_HOST'   => 'pubvana.net:8080',
+                'REQUEST_URI' => '/x',
+            ], false)
+        );
+    }
+
+    public function testSiteUrlRedirectForcesHttpsOnlyWhenOn(): void
+    {
+        $server = ['HTTP_HOST' => 'example.com', 'REQUEST_URI' => '/a?b=1'];
+
+        self::assertNull(UrlService::siteUrlRedirect('http://example.com', $server, false));
+
+        self::assertSame(
+            'https://example.com/a?b=1',
+            UrlService::siteUrlRedirect('http://example.com', $server, true)
+        );
+    }
+
+    public function testSiteUrlRedirectFixesDomainAndHttpsTogether(): void
+    {
+        self::assertSame(
+            'https://example.com/deep?q=1',
+            UrlService::siteUrlRedirect('https://example.com', [
+                'HTTP_HOST'   => 'pubvana.net',
+                'REQUEST_URI' => '/deep?q=1',
+            ], true)
+        );
+    }
+
+    public function testSiteUrlRedirectKeepsAPathCarriedBySiteUrl(): void
+    {
+        self::assertSame(
+            'https://example.com/sub/x',
+            UrlService::siteUrlRedirect('https://example.com/sub/', [
+                'HTTP_HOST'   => 'old.example.com',
+                'REQUEST_URI' => '/x',
+            ], false)
+        );
+    }
+
+    public function testSiteUrlRedirectWithoutSiteUrlDoesNothing(): void
+    {
+        self::assertNull(UrlService::siteUrlRedirect('', ['HTTP_HOST' => 'old.example.com'], false));
+        self::assertNull(UrlService::siteUrlRedirect('example.com', ['HTTP_HOST' => 'old.example.com'], false));
+    }
+
+    public function testSiteUrlRedirectTreatsAMissingHostHeaderAsWrong(): void
+    {
+        self::assertSame(
+            'https://example.com/',
+            UrlService::siteUrlRedirect('https://example.com', ['REQUEST_URI' => '/'], false)
+        );
+    }
+
+    public function testSiteUrlRedirectFallsBackToRootOnAControlCharacterInTheUri(): void
+    {
+        self::assertSame(
+            'https://example.com/',
+            UrlService::siteUrlRedirect('https://example.com', [
+                'HTTP_HOST'   => 'old.example.com',
+                'REQUEST_URI' => "/a\r\nSet-Cookie: x=1",
+            ], false)
+        );
+    }
+
+    public function testSiteUrlRedirectAddsAMissingLeadingSlashToTheUri(): void
+    {
+        self::assertSame(
+            'https://example.com/x',
+            UrlService::siteUrlRedirect('https://example.com', [
+                'HTTP_HOST'   => 'old.example.com',
+                'REQUEST_URI' => 'x',
+            ], false)
+        );
+    }
+
+    public function testHttpsRequestHonoursForwardedProto(): void
+    {
+        self::assertFalse(UrlService::isHttpsRequest([]));
+        self::assertTrue(UrlService::isHttpsRequest(['HTTPS' => 'on']));
+        self::assertTrue(UrlService::isHttpsRequest(['HTTPS' => '1']));
+        self::assertFalse(UrlService::isHttpsRequest(['HTTPS' => 'off']));
+        self::assertTrue(UrlService::isHttpsRequest(['HTTP_X_FORWARDED_PROTO' => 'https']));
+    }
+
+    public function testSiteUrlRedirectAcceptsAForwardedHttpsRequest(): void
+    {
+        self::assertNull(UrlService::siteUrlRedirect('https://example.com', [
+            'HTTP_HOST'              => 'example.com',
+            'REQUEST_URI'            => '/',
+            'HTTP_X_FORWARDED_PROTO' => 'https',
+        ], true));
+    }
+
     public function testEmptyOrNullIsASafeExternalUrl(): void
     {
         // Fields are optional; emptiness is the caller's call, not a scheme error.

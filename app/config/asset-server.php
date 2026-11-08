@@ -10,9 +10,10 @@ declare(strict_types=1);
  * resolves the URL to a file on disk and streams it with ETag and cache
  * headers, identical to the full-app route in app/config/routes.php.
  *
- * Reached from public/index.php before the framework bootstrap. The .env
- * file is read only for the HTTPS policy so insecure requests get the same
- * 308 upgrade the full boot applies.
+ * public/index.php loads this file before the framework bootstrap. From .env
+ * this file needs only SITE_URL and FORCE_HTTPS, so a request on another
+ * domain, or over HTTP while forcing HTTPS, gets the same 301 the full boot
+ * sends.
  *
  * @package Pubvana\Config
  */
@@ -46,26 +47,21 @@ if ($forceHttps !== null) {
     $forceHttps = false;
 }
 
-$isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-    || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+// Same rule as app/config/bootstrap.php: the request must arrive on the
+// SITE_URL domain, and over HTTPS when FORCE_HTTPS is on. Assets exit before
+// the framework boots, so the check runs here too. A real environment
+// variable beats .env, matching env-overrides.php. No usable SITE_URL means
+// no redirect: the site cannot boot without it anyway.
+$processSiteUrl = getenv('SITE_URL');
+$siteUrl = is_string($processSiteUrl) && $processSiteUrl !== ''
+    ? $processSiteUrl
+    : (string) ($assetEnv['SITE_URL'] ?? '');
 
-if ($forceHttps === true && !$isSecure) {
-    // The redirect target is SITE_URL, never the request's Host header
-    // (request input). A real environment variable beats .env, matching
-    // env-overrides.php. No usable SITE_URL means no redirect: the site
-    // cannot boot without it anyway.
-    $processSiteUrl = getenv('SITE_URL');
-    $siteUrl = is_string($processSiteUrl) && $processSiteUrl !== ''
-        ? $processSiteUrl
-        : (string) ($assetEnv['SITE_URL'] ?? '');
-    $siteUrl = rtrim($siteUrl, '/');
+$redirectTo = \Pubvana\Services\UrlService::siteUrlRedirect($siteUrl, $_SERVER, $forceHttps);
 
-    if (preg_match('#^https?://#i', $siteUrl) === 1) {
-        $uri = $_SERVER['REQUEST_URI'] ?? '/';
-        $location = (string) preg_replace('#^http://#i', 'https://', $siteUrl);
-        header('Location: ' . $location . $uri, true, 308);
-        exit;
-    }
+if ($redirectTo !== null) {
+    header('Location: ' . $redirectTo, true, 301);
+    exit;
 }
 
 // URL shape: /assets/{type}/{name}/{path...} (same as the full-app route).

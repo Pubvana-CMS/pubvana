@@ -16,6 +16,9 @@ use flight\Engine;
  * sameSite() before reaching location(). This keeps open-redirect defense
  * in one auditable place instead of per-plugin duplicates.
  *
+ * siteUrlRedirect() also sends a visitor to the SITE_URL domain when the
+ * request arrives on another domain, or over HTTP while FORCE_HTTPS is on.
+ *
  * @package Pubvana\Services
  */
 class UrlService
@@ -105,6 +108,111 @@ class UrlService
     public function absoluteUrl(string $path): string
     {
         return $this->siteOrigin() . '/' . ltrim(trim($path), '/');
+    }
+
+    /**
+     * True when the request arrived over HTTPS.
+     *
+     * The app trusts X-Forwarded-Proto as-is. A TLS proxy sets it, so keep
+     * the app reachable only through that proxy.
+     *
+     * @param array<string, mixed> $server Typically $_SERVER
+     */
+    public static function isHttpsRequest(array $server): bool
+    {
+        if (!empty($server['HTTPS']) && $server['HTTPS'] !== 'off') {
+            return true;
+        }
+
+        return ($server['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
+    }
+
+    /**
+     * The URL to send the visitor to, or null when they are already on it.
+     *
+     * Returns a redirect when the request domain is not the SITE_URL domain,
+     * or when FORCE_HTTPS is on and the request is not HTTPS. The app builds
+     * the target from SITE_URL and keeps the request path and query, so a
+     * deep link goes to the same page on the right domain.
+     *
+     * @param string               $siteUrl    The SITE_URL value
+     * @param array<string, mixed> $server     Typically $_SERVER
+     * @param bool                 $forceHttps Whether FORCE_HTTPS is on
+     */
+    public static function siteUrlRedirect(string $siteUrl, array $server, bool $forceHttps): ?string
+    {
+        $siteUrl = rtrim(trim($siteUrl), '/');
+        if ($siteUrl === '') {
+            return null;
+        }
+
+        $site = parse_url($siteUrl);
+        if (!is_array($site)) {
+            return null;
+        }
+
+        $siteScheme = strtolower((string) ($site['scheme'] ?? ''));
+        if ($siteScheme !== 'http' && $siteScheme !== 'https') {
+            return null;
+        }
+
+        $siteHost = strtolower(trim((string) ($site['host'] ?? '')));
+        if ($siteHost === '') {
+            return null;
+        }
+
+        $requestHost = self::domainFromHeader((string) ($server['HTTP_HOST'] ?? ''));
+        $needsHttps = $forceHttps && !self::isHttpsRequest($server);
+
+        if ($requestHost === $siteHost && !$needsHttps) {
+            return null;
+        }
+
+        // With FORCE_HTTPS on, https replaces http. Any path in SITE_URL stays.
+        $location = $needsHttps
+            ? (string) preg_replace('#^https?://#i', 'https://', $siteUrl, 1)
+            : $siteUrl;
+
+        return $location . self::requestPath($server);
+    }
+
+    /**
+     * Lowercases the domain from a Host header and drops the port. Returns
+     * an empty string when the header is missing or unreadable, which counts
+     * as a wrong domain.
+     */
+    private static function domainFromHeader(string $hostHeader): string
+    {
+        $hostHeader = trim($hostHeader);
+        if ($hostHeader === '') {
+            return '';
+        }
+
+        $parts = parse_url('http://' . $hostHeader);
+        if (!is_array($parts)) {
+            return '';
+        }
+
+        return strtolower((string) ($parts['host'] ?? ''));
+    }
+
+    /**
+     * The request path and query as a root-relative path.
+     *
+     * A control character in REQUEST_URI would split the Location header, so
+     * return "/" instead of repairing it.
+     *
+     * @param array<string, mixed> $server Typically $_SERVER
+     */
+    private static function requestPath(array $server): string
+    {
+        $uri = (string) ($server['REQUEST_URI'] ?? '/');
+
+        if ($uri === '' || preg_match('/[\x00-\x1f\x7f]/', $uri) === 1) {
+            return '/';
+        }
+
+        return $uri[0] === '/' ? $uri : '/' . $uri;
     }
 
     /**

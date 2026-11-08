@@ -178,12 +178,10 @@ $app->set(
 // flight.force_https only, so an HTTPS site with FORCE_HTTPS unset would
 // ship a non-Secure session cookie. Mark it Secure whenever the request
 // arrived over HTTPS. Left untouched on plain HTTP so a non-TLS install (and
-// the local dev server) keeps working.
+// the local dev server) keeps working. UrlService holds the check, so the
+// redirect and the cookie flag cannot drift apart.
 if (php_sapi_name() !== 'cli') {
-    $secureRequest = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
-
-    if ($secureRequest) {
+    if (\Pubvana\Services\UrlService::isHttpsRequest($_SERVER)) {
         $plugins = $app->get('plugins');
         if (is_array($plugins)) {
             $sessions = $plugins['enlivenapp/flight-sessions'] ?? [];

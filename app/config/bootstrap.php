@@ -33,21 +33,22 @@ $app = Flight::app();
 // SITE_URL, DB_* folds, and session encryption key.
 require(__DIR__ . $ds . 'env-overrides.php');
 
-// Enforce the HTTPS policy before services and plugins run. Shield throws a
-// SecurityException on insecure requests when force_https is true; visitors
-// get a clean 308 upgrade instead. Request::secure honours X-Forwarded-Proto.
-// The target is SITE_URL, never the request's Host header (request input).
-// No usable SITE_URL means no redirect, and Shield refuses the request.
-// redirect() does NOT halt execution (start() would dispatch over it), so
-// exit immediately after the response is sent.
-if (php_sapi_name() !== 'cli'
-    && $app->get('flight.force_https') === true
-    && !$app->request()->secure) {
-    $siteUrl = rtrim((string) ($app->get('siteUrl') ?? ''), '/');
+// Every request must arrive on the SITE_URL domain, and over HTTPS when
+// FORCE_HTTPS is on. Anything else gets one 301 to SITE_URL with the
+// original path and query, so a visitor on an old domain goes to the same
+// page of the correct one. The app builds the redirect from SITE_URL, never
+// from the request's Host header, so this cannot be pointed elsewhere or
+// loop. redirect() does NOT halt execution (start() would dispatch over
+// it), so exit right after sending the response.
+if (php_sapi_name() !== 'cli') {
+    $redirectTo = \Pubvana\Services\UrlService::siteUrlRedirect(
+        (string) ($app->get('siteUrl') ?? ''),
+        $_SERVER,
+        $app->get('flight.force_https') === true
+    );
 
-    if (preg_match('#^https?://#i', $siteUrl) === 1) {
-        $location = (string) preg_replace('#^http://#i', 'https://', $siteUrl);
-        $app->redirect($location . $app->request()->url, 308);
+    if ($redirectTo !== null) {
+        $app->redirect($redirectTo, 301);
         exit;
     }
 }
