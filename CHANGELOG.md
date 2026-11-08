@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [3.0.0-beta.16] - 2026-11-07
 
+#### Note: Failed workflow build. No release, not available for installation 
+
 ### Added
 
 - Profile pages are tabbed on the admin profile page and the public profile edit page. Core tabs are Profile and Security.
