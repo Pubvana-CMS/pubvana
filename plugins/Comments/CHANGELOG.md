@@ -5,6 +5,12 @@ All notable changes to the Comments plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.15] - 2026-11-08
+
+### Changed
+- Comment submission runs its own token check, so the form works on a cached
+  page, where no session exists.
+
 ## [0.2.14] - 2026-11-07
 
 ### Fixed

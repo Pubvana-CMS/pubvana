@@ -11,13 +11,20 @@ class WritableDirectoriesCheck implements CheckInterface
     /** @var array<string, string> */
     private array $directories;
 
-    public function __construct(string $projectRoot, string $publicPath)
+    public function __construct(string $projectRoot, string $publicPath, bool $pageCacheEnabled = false)
     {
         $this->directories = [
             'uploads' => $publicPath . '/uploads',
             'cache'   => $projectRoot . '/writable/cache',
             'logs'    => $projectRoot . '/writable/logs',
         ];
+
+        // The pages subdirectory appears on first write, so report it once it
+        // exists. The 'cache' entry above covers the parent.
+        $pageCachePath = $projectRoot . '/writable/cache/pages';
+        if ($pageCacheEnabled && is_dir($pageCachePath)) {
+            $this->directories['page cache'] = $pageCachePath;
+        }
     }
 
     public function run(): CheckResult

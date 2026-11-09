@@ -41,6 +41,23 @@ $app = $app ?? \Flight::app();
 // silent security-relevant default. Callers decide how null is handled.
 $toBool = static fn ($value): ?bool => filter_var($value, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
 
+// Strict integer parsing for numeric policies (cache lifetimes). Junk keeps
+// the documented default rather than turning into 0, which would switch a
+// lifetime off by accident.
+$toInt = static function ($value, int $default, int $min, string $label): int {
+    if ($value === null || $value === '') {
+        return $default;
+    }
+
+    $int = filter_var($value, FILTER_VALIDATE_INT);
+    if ($int === false) {
+        error_log('env-overrides: ignoring invalid ' . $label . ' value "' . $value . '"');
+        return $default;
+    }
+
+    return max($min, (int) $int);
+};
+
 // No config.php anymore: DB credentials come from .env / process env.
 // Seed a base array so the DB_* folds below can land on a valid shape
 // (services.php builds its DSN from every key here).
@@ -173,6 +190,34 @@ $app->set(
     'flight.force_https',
     $forceHttps ?? false
 );
+
+// Page cache: flat-file HTML cache for anonymous visitors. This is off
+// unless someone turns it on, so an upgrade does not change how a site
+// serves. Deployment values, read with $app->get(). Not settings rows, and
+// there is no admin screen.
+$pageCacheRaw = $resolveEnv('PAGE_CACHE');
+$pageCacheEnabled = $pageCacheRaw === null ? false : $toBool($pageCacheRaw);
+if ($pageCacheRaw !== null && $pageCacheEnabled === null) {
+    error_log('env-overrides: ignoring invalid PAGE_CACHE value "' . $pageCacheRaw . '"');
+}
+$app->set('pageCache.enabled', $pageCacheEnabled ?? false);
+$app->set(
+    'pageCache.ttl',
+    $toInt($resolveEnv('PAGE_CACHE_TTL'), 600, 0, 'PAGE_CACHE_TTL')
+);
+// 0 sends no s-maxage, so no CDN stores the page until the owner sets a
+// value and configures a purge.
+$app->set(
+    'pageCache.edgeTtl',
+    $toInt($resolveEnv('PAGE_CACHE_EDGE_TTL'), 0, 0, 'PAGE_CACHE_EDGE_TTL')
+);
+
+// Optional edge purge credentials. Set both or neither. With half of the
+// pair set, the edge expires pages at its s-maxage.
+$cloudflareZone = $resolveEnv('CLOUDFLARE_ZONE_ID');
+$cloudflareToken = $resolveEnv('CLOUDFLARE_API_TOKEN');
+$app->set('cloudflare.zoneId', $cloudflareZone === '' ? null : $cloudflareZone);
+$app->set('cloudflare.token', $cloudflareToken === '' ? null : $cloudflareToken);
 
 // Session cookie Secure flag. The flight-sessions default follows
 // flight.force_https only, so an HTTPS site with FORCE_HTTPS unset would

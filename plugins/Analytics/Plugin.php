@@ -57,6 +57,16 @@ class Plugin implements PluginInterface
             $app->analytics()->maybeRollup();
         });
 
+        // ─── Cached Page Views ─────────────────────────────────────────
+        // A hit never boots the app, so no route event runs. The read path
+        // writes one line per hit to a log and processPageCacheHits() reads it.
+
+        $adext->register('cron', '1m', 'pubvana.analytics.hits', [
+            'label'    => 'Record cached page views',
+            'priority' => 40,
+            'callable' => fn(): int => $app->analytics()->processPageCacheHits(),
+        ]);
+
         // ─── Dashboard ──────────────────────────────────────────────────
 
         $adext->register('admin.dashboard', 'cards', 'pubvana.analytics', [

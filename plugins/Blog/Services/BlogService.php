@@ -250,7 +250,17 @@ class BlogService
      */
     public function publishDuePosts(?string $now = null): int
     {
-        return $this->postModel->publishDue($now ?? date('Y-m-d H:i:s'));
+        $published = $this->postModel->publishDue($now ?? date('Y-m-d H:i:s'));
+
+        // Cron publishes without passing through the code that stores a page.
+        // Publishing here has to expire the cached pages, or readers get the
+        // copy from before the publish until the TTL runs out.
+        $pageCache = $this->app->get('pageCache.instance');
+        if ($published > 0 && $pageCache instanceof \Pubvana\Services\PageCacheService) {
+            $pageCache->invalidate();
+        }
+
+        return $published;
     }
 
     /**

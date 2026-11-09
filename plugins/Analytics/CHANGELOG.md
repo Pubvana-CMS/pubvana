@@ -5,6 +5,13 @@ All notable changes to the Analytics plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.14] - 2026-11-08
+
+### Added
+- The 1m cron task now counts cache hits. The read path writes a line per hit
+  to a log file, and the cron task applies the same bot and path checks as a
+  normal request.
+
 ## [0.1.13] - 2026-11-07
 
 ### Fixed

@@ -113,5 +113,36 @@ require(__DIR__ . $ds . 'routes.php');
 // Register all adext-stored routes with Flight's router (core + plugins)
 $app->adext()->registerRoutes($app);
 
+/*
+|--------------------------------------------------------------------------
+| Page Cache Write Path
+|--------------------------------------------------------------------------
+| A cacheable request that missed registered the service in services.php.
+| Flight calls the response callback before it sends headers, so the callback
+| can set the cache headers and write the finished body to disk. page-cache.php
+| sets the flag on a miss only, so the callback stores nothing when the
+| request cannot use the cache.
+*/
+$pageCache = $app->get('pageCache.instance');
+if (
+    $pageCache instanceof \Pubvana\Services\PageCacheService
+    && $app->get('pageCache.store') === true
+) {
+    $app->response()->addResponseBodyCallback(
+        static fn (string $body): string => $pageCache->captureResponse($app->response(), $body)
+    );
+}
+
 // Fire it up. Flight processes the matched route and sends the response
 $app->start();
+
+// Second expiry trigger. The content services call invalidate() directly.
+// This catches a successful write nobody has connected yet, so a publish
+// does not wait out a full TTL behind an expired page. Cache hits exit
+// earlier and never reach here.
+if (
+    $pageCache instanceof \Pubvana\Services\PageCacheService
+    && $pageCache->shouldInvalidateAfterRequest((int) http_response_code())
+) {
+    $pageCache->invalidate();
+}

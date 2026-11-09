@@ -68,6 +68,16 @@ class Plugin implements PluginInterface
 
         // ─── Public Routes ─────────────────────────────────────────────
 
+        // The core CSRF middleware validates session tokens only. A cached
+        // comment form has no session, so the token comes from a cookie and
+        // CommentsPublicController::store() runs the check. The GET and POST
+        // routes share this path, and the exemption matters for non-GET
+        // requests only.
+        $adext->register('csrf.exempt', 'default', 'pubvana.comments.post', [
+            'pattern' => '#^' . preg_quote($prefix, '#') . '/[a-z0-9_-]+/\d+$#i',
+            'label'   => 'Public comment submission',
+        ]);
+
         $adext->addRoutes('public', [
             ['GET',  $prefix . '/@type/@id', [CommentsPublicController::class, 'index'], []],
             ['POST', $prefix . '/@type/@id', [CommentsPublicController::class, 'store'], []],

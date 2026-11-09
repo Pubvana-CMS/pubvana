@@ -1,6 +1,17 @@
 {
     "releases": [
         {
+            "version": "3.0.0-beta.19",
+            "release_date": "2026-11-08",
+            "min_php_version": "8.2",
+            "breaking_changes": [],
+            "migration_notes": [
+                "NON-Breaking: Caching will default OFF if .env is not edited. -> On current, live installations, copy .env.example:40-61 to your live .env file. specifically PAGE_CACHE, PAGE_CACHE_TTL, PAGE_CACHE_EDGE_TTL, CLOUDFLARE_ZONE_ID, and CLOUDFLARE_API_TOKEN"
+            ],
+            "notices": [],
+            "download_url": "https://github.com/Pubvana-CMS/pubvana/releases/download/3.0.0-beta.19/release.zip"
+        },
+        {
             "version": "3.0.0-beta.18",
             "release_date": "2026-11-08",
             "min_php_version": "8.2",

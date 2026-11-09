@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Pubvana\Plugins\Comments\Controllers;
 
 use Pubvana\Controllers\Public\PublicController;
+use Pubvana\Services\PublicCsrf;
 
 /**
  * CommentsPublicController - Public comment submission and (optional) display.
@@ -40,6 +41,12 @@ class CommentsPublicController extends PublicController
      */
     public function store(string $type, string $id): void
     {
+        // The core middleware reads session tokens only, and a cached page
+        // has no session, so this route skips that middleware. Check here
+        // instead: the session token first, then the cookie the read path
+        // wrote into the page.
+        (new PublicCsrf($this->app))->verify();
+
         $referrer = $this->app->url()->sameSite($this->app->request()->referrer ?: '/');
         $service = $this->app->comments();
 

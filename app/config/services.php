@@ -509,6 +509,19 @@ $app->map('trustClient', function () use ($app) {
 
 /*
 |--------------------------------------------------------------------------
+| Page Cache
+|--------------------------------------------------------------------------
+| page-cache.php runs before the plugin loader, so a request that comes from
+| the cache starts no session and loads no plugin. On a miss it maps the
+| service and returns, and bootstrap writes the finished page after Flight
+| builds the response.
+|
+| @see app/config/page-cache.php
+*/
+require(__DIR__ . $ds . 'page-cache.php');
+
+/*
+|--------------------------------------------------------------------------
 | Plugin Loader
 |--------------------------------------------------------------------------
 | Scans plugin folders for pubvana.json, discovers what each plugin provides,
@@ -536,6 +549,16 @@ $pluginLoader->loadPlugins();
 // value via ConfigLoader, so disabled plugin migrations never run from the
 // command line either. Same set, web and CLI.
 $app->set('migrations', $pluginLoader->getMigrationConfig());
+
+/*
+|--------------------------------------------------------------------------
+| Cron Tasks Registered By Core
+|--------------------------------------------------------------------------
+| The cron script loads this file and never core-admin.php, so core's
+| scheduled work cannot live there alone. The file below is loaded by both
+| boot paths, and guards against a second registration.
+*/
+require(__DIR__ . $ds . 'core-cron.php');
 
 // CSRF middleware starts AFTER plugins: it reads/writes session data and
 // must use the DB-backed session service from enlivenapp/flight-sessions.

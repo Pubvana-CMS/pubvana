@@ -890,13 +890,6 @@ $adext->register('admin.dashboard', 'sections', 'pubvana.admin', [
     },
 ]);
 
-// Trust check (4h cron). The service self-throttles to one full batch per
-// 24h and honors home-site malicious findings on every tick, so the cron
-// cadence bounds discovery time without flooding pubvanacms.com.
-$adext->register('cron', '4h', 'pubvana.core', [
-    'label'    => 'Trust check against pubvanacms.com',
-    'priority' => 60,
-    'callable' => function () use ($app): void {
-        $app->trustClient()->checkIfDue();
-    },
-]);
+// Core cron tasks. Shared with services.php, which is the file the cron
+// script loads.
+require __DIR__ . '/core-cron.php';

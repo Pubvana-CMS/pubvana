@@ -247,7 +247,11 @@ class HealthService
 
             // Configuration
             new RequiredSettingsCheck($this->app),
-            new WritableDirectoriesCheck($projectRoot, $publicPath),
+            new WritableDirectoriesCheck(
+                $projectRoot,
+                $publicPath,
+                $this->app->get('pageCache.enabled') === true
+            ),
             new ConfigDefaultsCheck($projectRoot),
 
             // Plugins

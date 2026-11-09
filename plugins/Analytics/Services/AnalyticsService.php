@@ -488,10 +488,101 @@ class AnalyticsService
         }
     }
 
+    /**
+     * Record page views for cache hits, which never boot the app.
+     *
+     * A hit never runs flight.route.executed, so the Analytics listener above
+     * never runs for one. The read path writes one line per hit to
+     * writable/cache/, and this processes that file on the 1m cron tick with
+     * the same checks logView() uses.
+     *
+     * The method renames the file before it reads it, so a hit that arrives
+     * mid-process writes to a new file and the count stays accurate.
+     *
+     * @return int Rows recorded
+     */
+    public function processPageCacheHits(): int
+    {
+        if (php_sapi_name() === 'cli' && !$this->isTrackingEnabled()) {
+            return 0;
+        }
+
+        $log = $this->pageHitsFile();
+        if (!is_file($log)) {
+            return 0;
+        }
+
+        $processing = $log . '.processing';
+        if (!@rename($log, $processing)) {
+            return 0;
+        }
+
+        $handle = @fopen($processing, 'rb');
+        if ($handle === false) {
+            @unlink($processing);
+            return 0;
+        }
+
+        $recorded = 0;
+
+        while (($line = fgets($handle)) !== false) {
+            $hit = json_decode(trim($line), true);
+            if (!is_array($hit)) {
+                continue;
+            }
+
+            $path = (string) ($hit['path'] ?? '');
+            if ($path === '' || $this->shouldSkip($path)) {
+                continue;
+            }
+
+            if ($this->isBot((string) ($hit['agent'] ?? ''))) {
+                continue;
+            }
+
+            try {
+                $model = new PageView($this->pdo);
+                $model->page_path = $this->clip($path, 255) ?? '';
+                $model->page_group = $this->clip($this->groupForPath($path), 50) ?? '';
+                $model->referrer_domain = $this->clip(
+                    $this->referrerDomain((string) ($hit['referrer'] ?? '')),
+                    255
+                );
+                $model->viewed_at = date('Y-m-d H:i:s', (int) ($hit['time'] ?? time()));
+                $model->insert();
+                $recorded++;
+            } catch (\Throwable) {
+                // One bad line must not stop the processing.
+            }
+        }
+
+        fclose($handle);
+        @unlink($processing);
+
+        return $recorded;
+    }
+
+    /**
+     * Path of the cache hit log written by PageCacheService.
+     *
+     * The page cache decides this path, so ask the service for it. The
+     * fallback keeps the cron task working if the cache is not mapped.
+     */
+    private function pageHitsFile(): string
+    {
+        $pageCache = $this->app->get('pageCache.instance');
+        if ($pageCache instanceof \Pubvana\Services\PageCacheService) {
+            return $pageCache->hitLogPath();
+        }
+
+        $root = defined('PROJECT_ROOT') ? (string) PROJECT_ROOT : dirname(__DIR__, 3);
+
+        return $root . '/writable/cache/pages/' . \Pubvana\Services\PageCacheService::HIT_LOG;
+    }
+
     // -------------------------------------------------------------------------
     // Trend assembly
     // -------------------------------------------------------------------------
-
     /**
      * Raw group/bucket rows for the recent (hot) window.
      *

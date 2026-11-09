@@ -5,6 +5,51 @@ Notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [3.0.0-beta.19] - 2026-11-08
+
+### Added
+- Page cache for anonymous visitors. Finished HTML is stored in
+  `writable/cache/pages`.
+- `PublicCsrf` verifies comment and form submissions from cached pages, which have no session.
+- Analytics counts cache hits from a log file that the 1m cron task reads.
+
+### Changed
+- Scheduled posts expire the page cache when `publishDuePosts()` runs.
+- Site Health reports the page cache folder while the cache is on.
+- Core cron tasks moved to `app/config/core-cron.php`, loaded by both boot paths.
+
+---
+
+### Page cache benchmark 20261108-184028
+
+| Item | Value |
+| --- | --- |
+| CPU | Intel Core i7-8700T @ 2.40GHz, 12 threads |
+| RAM | 15,782 MB total |
+| OS | Ubuntu (Apache build string `Apache/2.4.58 (Ubuntu)`) |
+| Web server | Apache 2.4.58, prefork MPM, mod_php |
+| PHP | 8.3.6 (NTS), built 2026-10-19 |
+| OPcache | on for the Apache SAPI (`opcache.enable=1`) |
+| Apache workers | StartServers 5, MaxRequestWorkers 150 |
+| KeepAlive | On, 100 requests, 5s timeout |
+| Load tool | ApacheBench 2.3 |
+| Target | `http://localhost/` and `/blog`, loopback, no TLS |
+
+Load settings: 20 concurrent, 15 seconds per run, 3 rounds, production mode, gzip off.
+
+Medians over 3 runs. Cache on is a warm hit for every request.
+
+| URL | Cache | Req/s | Mean ms | p50 ms | p95 ms | p99 ms |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| / | off | 139.56 | 143.303 | 139 | 174 | 214 |
+| / | on | 3547.28 | 5.638 | 5 | 9 | 10 |
+| /blog | off | 142.01 | 140.836 | 137 | 169 | 195 |
+| /blog | on | 3641.71 | 5.492 | 5 | 8 | 10 |
+
+Note: The test machine is not server caliber. Take these results as a general idea of slow machine performance. 
+
+---
+
 ## [3.0.0-beta.18] - 2026-11-08
 
 ### Changed

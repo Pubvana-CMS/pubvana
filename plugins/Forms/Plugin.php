@@ -53,6 +53,14 @@ class Plugin implements PluginInterface
 
         // ─── Public Routes ──────────────────────────────────────────────
 
+        // The core CSRF middleware validates session tokens only. A cached
+        // contact form has no session, so the token comes from a cookie and
+        // FormsPublicController::submit() runs the check.
+        $adext->register('csrf.exempt', 'default', 'pubvana.forms.submit', [
+            'pattern' => '#^' . preg_quote($prefix, '#') . '/submit/\d+$#',
+            'label'   => 'Public form submissions',
+        ]);
+
         $adext->addRoutes('public', [
             ['POST', $prefix . '/submit/@id', [FormsPublicController::class, 'submit']],
         ], 'pubvana.forms');

@@ -5,6 +5,12 @@ All notable changes to the Site Health plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.14] - 2026-11-08
+
+### Changed
+- The writable folder check reports `writable/cache/pages` when the page cache
+  is on.
+
 ## [0.1.13] - 2026-11-07
 
 ### Fixed

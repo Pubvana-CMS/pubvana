@@ -5,6 +5,12 @@ All notable changes to the Blog plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.11] - 2026-11-08
+
+### Changed
+- `publishDuePosts()` expires the page cache after it publishes a scheduled
+  post.
+
 ## [0.3.10] - 2026-11-07
 
 ### Fixed
