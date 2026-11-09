@@ -70,6 +70,9 @@
                                 <div class="btn-list flex-nowrap">
                                     <a href="<?= $adminBase ?>/<?= (int) $p->id ?>/edit" class="btn btn-sm btn-outline-primary">Edit</a>
                                     <a href="<?= $adminBase ?>/<?= (int) $p->id ?>/revisions" class="btn btn-sm btn-outline-secondary">Revisions</a>
+                                    <?php if ($p->status !== 'published'): ?>
+                                        <a href="<?= $adminBase ?>/<?= (int) $p->id ?>/preview" target="_blank" class="btn btn-sm btn-outline-info">Preview</a>
+                                    <?php endif; ?>
                                     <form method="POST" action="<?= $adminBase ?>/<?= (int) $p->id ?>/delete"
                                           class="d-inline" onsubmit="return confirm('Delete this post?')">
                                         <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">

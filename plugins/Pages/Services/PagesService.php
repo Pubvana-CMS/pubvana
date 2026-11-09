@@ -71,6 +71,11 @@ class PagesService
         return $this->pageModel->findBySlug($slug);
     }
 
+    public function findPageByPreviewToken(string $token): ?Page
+    {
+        return $this->pageModel->findByPreviewToken($token);
+    }
+
     public function pageSlugExists(string $slug, ?int $excludeId = null): bool
     {
         return $this->pageModel->slugExists($slug, $excludeId);
@@ -100,6 +105,8 @@ class PagesService
         $this->revisionModel->createFromPage($page, $userId);
         $this->pruneRevisions((int) $page->id);
 
+        $page->generatePreviewToken();
+
         return $page;
     }
 
@@ -125,6 +132,8 @@ class PagesService
         $this->revisionModel->createFromPage($page, $userId);
         $this->pruneRevisions((int) $page->id);
 
+        $page->generatePreviewToken();
+
         return $page;
     }
 
@@ -140,6 +149,8 @@ class PagesService
 
         // Validated before the snapshot so a rejected update leaves no trace.
         $status = $this->validStatus((string) ($data['status'] ?? $page->status));
+
+        $wasPublished = $page->status === 'published';
 
         $authorId = $userId ?? (int) $page->created_by;
         $this->revisionModel->createFromPage($page, $authorId);
@@ -158,6 +169,11 @@ class PagesService
 
         $page->updatePage($fields);
         $this->pruneRevisions($id);
+
+        // Issue a new token at publish, so an old link no longer resolves.
+        if (!$wasPublished && $fields['status'] === 'published') {
+            $page->generatePreviewToken();
+        }
 
         return $page;
     }

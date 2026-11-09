@@ -72,6 +72,47 @@ class PagesPublicController extends PublicController
     }
 
     /**
+     * Preview a page by its preview token.
+     *
+     * Drafts render through the same theme template as the published page.
+     */
+    public function preview(string $token): void
+    {
+        $page = $this->app->pages()->findPageByPreviewToken($token);
+
+        if ($page === null) {
+            $this->app->halt(404, 'Preview not found');
+            return;
+        }
+
+        // The route checks only the token, so anyone who knows the URL can
+        // open the page. Set no-store so captureResponse() skips this page,
+        // and noindex so search engines do.
+        $this->app->response()->header('Cache-Control', 'private, no-store');
+        $this->app->response()->header('X-Robots-Tag', 'noindex');
+
+        $this->render('pubvana/pages/page', [
+            'title'          => $page->title . ' (Preview)',
+            'content'        => $page->content,
+            'featured_image' => null,
+            'ai_disclosure'  => $this->aiDisclosure((int) $page->ai_generated),
+            'commentable'    => ['type' => 'page', 'id' => (int) $page->id],
+            'allow_comments' => false,
+            'is_homepage'    => false,
+            'seo_context'    => [
+                'content_type' => 'page',
+                'content_id'   => (int) $page->id,
+                'title'        => $page->title . ' (Preview)',
+                'description'  => '',
+                'image'        => '',
+                'ai_generated' => !empty($page->ai_generated),
+                'updated_at'   => $page->updated_at,
+                'og_type'      => 'website',
+            ],
+        ]);
+    }
+
+    /**
      * Whether to show the visible AI-assistance disclosure for this page.
      */
     private function aiDisclosure(int|bool $aiGenerated): bool

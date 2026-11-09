@@ -233,11 +233,16 @@ final class BlogPublicControllerTest extends TestCase
     {
         $post = $this->blog->createPost(['title' => 'Draft', 'slug' => 'draft-p', 'status' => 'draft'], 1);
 
-        $this->controller($this->engine())->preview((string) $post->preview_token);
+        $app = $this->engine();
+        $this->controller($app)->preview((string) $post->preview_token);
         self::assertSame('pubvana/blog/post', $this->renders[0]['template']);
         self::assertSame('Draft (Preview)', $this->renders[0]['data']['title']);
         self::assertFalse($this->renders[0]['data']['allow_comments']);
         self::assertSame([['post_id' => (int) $post->id]], $this->regionsContexts);
+
+        // The preview controller sets no-store and noindex.
+        self::assertSame('private, no-store', $app->response()->getHeader('Cache-Control'));
+        self::assertSame('noindex', $app->response()->getHeader('X-Robots-Tag'));
 
         $this->renders = [];
         $this->halts = [];

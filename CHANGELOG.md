@@ -5,10 +5,12 @@ Notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## Unreleased - date
+
+### Added
+- new preview link to Pages and Blog bypassing Draft restrictions so select persons with the link can read the draft without admin access.
 
 ### Fixed
-
 - Admin -> Users -> Last Active wasn't tracking logged in users
 
 

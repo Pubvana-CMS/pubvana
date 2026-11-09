@@ -26,7 +26,7 @@ Blog is the content module of Pubvana. It provides posts, categories, tags, revi
 7. **Keep content purification enabled.** `purify_content` defaults to true (`Services/BlogService.php:77, 98`) and runs stored HTML through htmlpurifier when available (`Services/BlogService.php:589-596`). Reason: admin-authored HTML is trusted input, but purging keeps output consistent and defendable.
 8. **Filter every public/read query to `status = 'published' AND deleted_at IS NULL`.**
    Posts are soft-deleted (`Models/Post.php:362-366`) and carry statuses `draft`, `published`, `scheduled`; public listing, search, feed, nav, and comment-host queries must exclude drafts and tombstones (e.g. `Plugin.php:186`, `Models/Post.php:59-64`). Reason: only published, live posts reach the public surface.
-9. **Treat `preview_token` as a capability, not a secret you add to URLs.** It is a unique column (migration `000001`) and the `/preview/@token` route renders unpublished posts without auth (`Plugin.php:74`, `Controllers/BlogPublicController.php:201-226`). Reason: the token is the sole gate for draft review before publish.
+9. **Treat `preview_token` as a capability, not a secret you add to URLs.** It is a unique column (migration `000001`) and the `/preview/@token` route renders unpublished posts without auth (`Plugin.php:75`, `Controllers/BlogPublicController.php:194-235`). Reason: the token is the sole gate for draft review before publish. The preview controller sets `Cache-Control: private, no-store` and `X-Robots-Tag: noindex`. `captureResponse()` skips any response that carries `no-store`.
 10. **Taxonomy sync is delete-then-insert.** `syncForPost` drops existing join rows, then inserts the incoming set (`Models/PostCategory.php:46-58`, `Models/PostTag.php:46-58`). Reason: keeps join tables consistent on every save at small-cardinality cost, so only pass validated ID sets.
 11. **Build all slugs with `Flight::slugify()` / `$app->slugify()`.** Used for posts, categories (with server-side duplicates handling) and inline tags (`Controllers/BlogAdminController.php:58, 219, 261`; `Services/BlogService.php:271`). Reason: consistent, URL-safe slugs across all admin forms and the tag auto-create path.
 12. **Feed routes are root paths, not prefixed.** `/feed` and `/rss` serve RSS 2.0 and `/atom.xml` serves Atom, all registered at site root (`Plugin.php:79-83`). Reason: canonical feed URLs follow the existing conventions the Analytics plugin skips.
@@ -70,7 +70,7 @@ plugins/Blog/
 **Entry point.** `Plugin::register(Engine $app, Router $router, array $config = [])` (`Plugin.php:20`). It maps the `blog` singleton (`Services\BlogService`, built from `$app->db()` and the plugin config, `Plugin.php:22-28`), then increments nothing else via adext.
 
 **Extension points (adext registrations).**
-- Admin routes grouped under `pubvana.blog` (`Plugin.php:36-61`): post CRUD + revisions/restore, category CRUD, tag delete.
+- Admin routes grouped under `pubvana.blog` (`Plugin.php:36-62`): post CRUD + revisions/restore, post preview redirect, category CRUD, tag delete.
 - Public routes under the `pubvana/blog` route prefix (`Plugin.php:65-76`): listing, paginated listing, category and tag indexes/detail, preview, single post.
 - Feed routes at the site root (`Plugin.php:79-83`).
 - `public.head` feed auto-discovery link tags, priority 10 (`Plugin.php:87-91`).

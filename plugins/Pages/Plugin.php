@@ -53,6 +53,7 @@ class Plugin implements PluginInterface
             ['GET',    $prefix . '/create',          [PagesAdminController::class, 'create'],   [$managePerm]],
             ['POST',   $prefix . '/store',           [PagesAdminController::class, 'store'],    [$managePerm]],
             ['GET',    $prefix . '/@id/edit',        [PagesAdminController::class, 'edit'],     [$managePerm]],
+            ['GET',    $prefix . '/@id/preview',     [PagesAdminController::class, 'preview'],  [$managePerm]],
             ['POST',   $prefix . '/@id/update',      [PagesAdminController::class, 'update'],   [$managePerm]],
             ['POST',   $prefix . '/@id/delete',      [PagesAdminController::class, 'delete'],   [$managePerm]],
             ['GET',    $prefix . '/@id/revisions',   [PagesAdminController::class, 'revisions'],[$managePerm]],
@@ -62,6 +63,7 @@ class Plugin implements PluginInterface
         // Public routes
         $adext->addRoutes('public', [
             ['GET',    $prefix,             [PagesPublicController::class, 'index']],
+            ['GET',    $prefix . '/preview/@token', [PagesPublicController::class, 'preview']],
             ['GET',    $prefix . '/@slug',  [PagesPublicController::class, 'view']],
         ], 'pubvana.pages');
 

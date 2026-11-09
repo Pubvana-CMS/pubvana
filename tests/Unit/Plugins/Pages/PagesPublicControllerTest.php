@@ -113,6 +113,42 @@ final class PagesPublicControllerTest extends TestCase
         self::assertFalse($this->renders[0]['data']['ai_disclosure']);
     }
 
+    public function testPreviewRendersDraftByToken(): void
+    {
+        $page = $this->pages->createPage(['title' => 'Draft', 'content' => '<p>D</p>', 'status' => 'draft'], 2);
+        $token = (string) $page->preview_token;
+
+        self::assertNotSame('', $token);
+
+        $this->controller($this->engine())->preview($token);
+
+        self::assertSame('pubvana/pages/page', $this->renders[0]['template']);
+        $data = $this->renders[0]['data'];
+        self::assertSame('Draft (Preview)', $data['title']);
+        self::assertSame('<p>D</p>', $data['content']);
+        self::assertFalse($data['allow_comments']);
+        self::assertFalse($data['is_homepage']);
+        self::assertSame('Draft (Preview)', $data['seo_context']['title']);
+    }
+
+    public function testPreviewHaltsOnUnknownToken(): void
+    {
+        $this->controller($this->engine())->preview('nope');
+
+        self::assertSame([['code' => 404, 'msg' => 'Preview not found']], $this->halts);
+    }
+
+    public function testPreviewIsKeptOutOfThePageCache(): void
+    {
+        $page = $this->pages->createPage(['title' => 'Draft', 'status' => 'draft'], 2);
+        $app = $this->engine();
+
+        $this->controller($app)->preview((string) $page->preview_token);
+
+        self::assertSame('private, no-store', $app->response()->getHeader('Cache-Control'));
+        self::assertSame('noindex', $app->response()->getHeader('X-Robots-Tag'));
+    }
+
     private function controller(Engine $app): PagesPublicController
     {
         $test = $this;

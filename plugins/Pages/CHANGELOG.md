@@ -5,6 +5,13 @@ All notable changes to the Pages plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.10] - 2026-11-09
+
+### Added
+- Draft preview links. A Preview button in the page list and edit page opens the
+  draft in your theme. Anyone can open the link, and publishing replaces it.
+- Migration adds `preview_token` to `pages`.
+
 ## [0.3.9] - 2026-11-07
 
 ### Fixed

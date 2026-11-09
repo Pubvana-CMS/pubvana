@@ -474,6 +474,12 @@ final class PageCacheService
             return $body;
         }
 
+        // The caller sets no-store to keep a response out of the cache. Return
+        // early, before store() runs.
+        if (str_contains(strtolower((string) ($response->getHeader('Cache-Control') ?? '')), 'no-store')) {
+            return $body;
+        }
+
         $cacheControl = 'public, max-age=' . $this->ttl;
         if ($this->edgeTtl > 0) {
             $cacheControl .= ', s-maxage=' . $this->edgeTtl;

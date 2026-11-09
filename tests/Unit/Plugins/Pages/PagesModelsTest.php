@@ -79,6 +79,24 @@ final class PagesModelsTest extends TestCase
         self::assertTrue($model->slugExists('about'));
     }
 
+    public function testPreviewTokenRoundTrip(): void
+    {
+        $page = (new Page($this->pdo))->createPage('About', 'x', 1);
+
+        self::assertNull($page->preview_token);
+
+        $first = $page->generatePreviewToken();
+
+        self::assertNotSame('', $first);
+        self::assertSame($first, (new Page($this->pdo))->findByPreviewToken($first)?->preview_token);
+
+        $second = $page->generatePreviewToken();
+
+        self::assertNotSame($first, $second);
+        self::assertNull((new Page($this->pdo))->findByPreviewToken($first));
+        self::assertNotNull((new Page($this->pdo))->findByPreviewToken($second));
+    }
+
     public function testRecreatingAfterSoftDeleteBumpsTheSlug(): void
     {
         $model = new Page($this->pdo);

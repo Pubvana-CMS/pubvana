@@ -240,6 +240,21 @@ final class PageCacheServiceTest extends TestCase
         self::assertNull($response->getHeader('X-Pubvana-Cache'));
     }
 
+    public function testCaptureResponseLeavesAnOptedOutResponseAlone(): void
+    {
+        $service = $this->service();
+        $response = new Response();
+        $response->status(200);
+        $response->header('Cache-Control', 'private, no-store');
+
+        $service->captureResponse($response, '<html>draft</html>');
+
+        // With no-store set, captureResponse returns early.
+        self::assertSame('private, no-store', $response->getHeader('Cache-Control'));
+        self::assertNull($response->getHeader('X-Pubvana-Cache'));
+        self::assertNull($service->read($service->keyFor()));
+    }
+
     public function testPruneRemovesOldFiles(): void
     {
         $service = $this->service(['ttl' => 1]);

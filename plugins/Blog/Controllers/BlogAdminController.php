@@ -156,13 +156,44 @@ class BlogAdminController extends AdminController
         $this->render('pubvana/blog/admin/edit', [
             'pageTitle'    => 'Edit Post',
             'adminBase'    => $this->adminBase(),
-            'previewBase'  => $this->app->pluginLoader()->routePrefix('pubvana/blog'),
+            'publicBase'   => $this->app->pluginLoader()->routePrefix('pubvana/blog'),
             'post'         => $post,
             'categories'   => $categories,
             'selectedCats' => $selectedCats,
             'tagsRaw'      => $tagsRaw,
             'joditHtml'    => $joditHtml,
         ]);
+    }
+
+    /**
+     * Send the editor to the post's preview page.
+     *
+     * Posts created before preview tokens existed have none. The route issues
+     * one, so the button works without a write on the edit page's GET request.
+     */
+    public function preview(string $id): void
+    {
+        $post = $this->app->blog()->findPost((int) $id);
+
+        if ($post === null) {
+            $this->app->session()->flash('error', 'Post not found.');
+            $this->app->redirect($this->adminBase());
+            return;
+        }
+
+        if (!$this->mayEditPost($post)) {
+            $this->app->session()->flash('error', 'You can only preview your own posts.');
+            $this->app->redirect($this->adminBase());
+            return;
+        }
+
+        $token = (string) ($post->preview_token ?? '');
+        if ($token === '') {
+            $token = $post->generatePreviewToken();
+        }
+
+        $prefix = (string) $this->app->pluginLoader()->routePrefix('pubvana/blog');
+        $this->app->redirect($prefix . '/preview/' . $token);
     }
 
     public function update(string $id): void

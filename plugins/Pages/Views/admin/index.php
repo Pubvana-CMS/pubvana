@@ -59,7 +59,9 @@
                                     <a href="<?= $adminBase ?>/<?= (int) $p->id ?>/edit" class="btn btn-sm btn-outline-primary">Edit</a>
                                     <a href="<?= $adminBase ?>/<?= (int) $p->id ?>/revisions" class="btn btn-sm btn-outline-secondary">Revisions</a>
                                     <?php if ($p->status === 'published'): ?>
-                                    <a href="<?= $publicBase ?>/<?= htmlspecialchars($p->slug) ?>" class="btn btn-sm btn-outline-success" target="_blank">View</a>
+                                    <a href="<?= $publicBase ?>/<?= htmlspecialchars((string) $p->slug) ?>" class="btn btn-sm btn-outline-success" target="_blank">View</a>
+                                    <?php else: ?>
+                                    <a href="<?= $adminBase ?>/<?= (int) $p->id ?>/preview" class="btn btn-sm btn-outline-info" target="_blank">Preview</a>
                                     <?php endif; ?>
                                     <form method="POST" action="<?= $adminBase ?>/<?= (int) $p->id ?>/delete"
                                           class="d-inline" onsubmit="return confirm('Delete this page?')">

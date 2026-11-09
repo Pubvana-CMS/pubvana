@@ -25,6 +25,7 @@ use Pubvana\Services\PerceivedText;
  *   created_at        - Creation timestamp
  *   updated_at        - Last update timestamp
  *   deleted_at        - Soft-delete timestamp
+ *   preview_token     - Token for the public draft preview link
  *
  * @package Pubvana\Plugins\Pages\Models
  * @method self eq(string $field, mixed $value, string $operator = 'AND')
@@ -61,6 +62,7 @@ class Page extends \Pubvana\Models\AbstractModel
     public ?string $created_at = null;
     public ?string $updated_at = null;
     public ?string $deleted_at = null;
+    public ?string $preview_token = null;
 
     // -----------------------------------------------------------------
     // Finders
@@ -95,6 +97,19 @@ class Page extends \Pubvana\Models\AbstractModel
              ->eq('status', 'published')
              ->isNull('deleted_at')
              ->find();
+        return $query->isHydrated() ? $query : null;
+    }
+
+    /**
+     * Find a page by preview token, drafts included.
+     *
+     * @param string $token Preview token
+     * @return self|null Page or null if not found
+     */
+    public function findByPreviewToken(string $token): ?self
+    {
+        $query = new self($this->getDatabaseConnection());
+        $query->eq('preview_token', $token)->isNull('deleted_at')->find();
         return $query->isHydrated() ? $query : null;
     }
 
@@ -390,6 +405,22 @@ class Page extends \Pubvana\Models\AbstractModel
     {
         $this->deleted_at = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
         $this->save();
+    }
+
+    /**
+     * Create a preview token and store it.
+     *
+     * The new token replaces the old one, so an old link no longer resolves.
+     *
+     * @return string The new token
+     */
+    public function generatePreviewToken(): string
+    {
+        $token = bin2hex(random_bytes(32));
+        $this->preview_token = $token;
+        $this->save();
+
+        return $token;
     }
 
     // -----------------------------------------------------------------

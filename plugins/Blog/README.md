@@ -6,7 +6,7 @@ The content module for Pubvana. Write posts, organize them with categories and t
 
 - Posts with categories and tags
 - Revision history, so you can review and restore earlier versions
-- Preview links for drafts, so you can review before publishing
+- Preview links for drafts that you can share with anyone
 - RSS and Atom feeds
 - Search across posts
 - Blocks for recent posts, categories, tags, archive, and related posts

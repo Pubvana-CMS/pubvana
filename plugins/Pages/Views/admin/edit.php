@@ -13,7 +13,9 @@
     <a href="<?= $adminBase ?>" class="btn btn-outline-secondary">Back</a>
     <a href="<?= $adminBase ?>/<?= (int) $editPage->id ?>/revisions" class="btn btn-outline-secondary ms-2">Revisions</a>
     <?php if ($editPage->status === 'published'): ?>
-        <a href="<?= $publicBase ?>/<?= htmlspecialchars($editPage->slug) ?>" class="btn btn-outline-success ms-2" target="_blank">View</a>
+        <a href="<?= $publicBase ?>/<?= htmlspecialchars((string) $editPage->slug) ?>" class="btn btn-outline-success ms-2" target="_blank">View</a>
+    <?php else: ?>
+        <a href="<?= $adminBase ?>/<?= (int) $editPage->id ?>/preview" class="btn btn-outline-info ms-2" target="_blank">Preview</a>
     <?php endif; ?>
 </div>
 

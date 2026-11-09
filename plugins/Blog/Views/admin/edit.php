@@ -4,7 +4,7 @@
  *
  * @var string                                     $pageTitle
  * @var string                                     $adminBase
- * @var string                                     $previewBase
+ * @var string                                     $publicBase
  * @var \Pubvana\Plugins\Blog\Models\Post          $post
  * @var \Pubvana\Plugins\Blog\Models\Category[]    $categories
  * @var int[]                                       $selectedCats
@@ -14,8 +14,10 @@
 
 <div class="d-flex align-items-center justify-content-end mb-4">
     <div class="btn-list">
-        <?php if ($post->preview_token): ?>
-            <a href="<?= $previewBase ?>/preview/<?= htmlspecialchars($post->preview_token) ?>" target="_blank" class="btn btn-outline-info">Preview</a>
+        <?php if ($post->status === 'published'): ?>
+            <a href="<?= $publicBase ?>/<?= htmlspecialchars((string) $post->slug) ?>" target="_blank" class="btn btn-outline-success">View</a>
+        <?php else: ?>
+            <a href="<?= $adminBase ?>/<?= (int) $post->id ?>/preview" target="_blank" class="btn btn-outline-info">Preview</a>
         <?php endif; ?>
         <a href="<?= $adminBase ?>/<?= (int) $post->id ?>/revisions" class="btn btn-outline-secondary">Revisions</a>
         <a href="<?= $adminBase ?>" class="btn btn-outline-secondary">Back</a>

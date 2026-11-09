@@ -5,6 +5,16 @@ All notable changes to the Blog plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.12] - 2026-11-09
+
+### Added
+- Preview button in the post list and edit page, including posts created before
+  preview links existed.
+
+### Fixed
+- Preview pages set `Cache-Control: private, no-store` and
+  `X-Robots-Tag: noindex`.
+
 ## [0.3.11] - 2026-11-08
 
 ### Changed

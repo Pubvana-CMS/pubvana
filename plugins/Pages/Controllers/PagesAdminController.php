@@ -95,6 +95,30 @@ class PagesAdminController extends AdminController
         ]);
     }
 
+    /**
+     * Send the editor to the page's preview page.
+     *
+     * Pages created before preview tokens existed have none. The route issues
+     * one, so the button works without a write on the edit page's GET request.
+     */
+    public function preview(string $id): void
+    {
+        $page = $this->app->pages()->findPage((int) $id);
+
+        if ($page === null) {
+            $this->app->session()->flash('error', 'Page not found.');
+            $this->app->redirect($this->adminBase());
+            return;
+        }
+
+        $token = (string) ($page->preview_token ?? '');
+        if ($token === '') {
+            $token = $page->generatePreviewToken();
+        }
+
+        $this->app->redirect($this->publicBase() . '/preview/' . $token);
+    }
+
     public function update(string $id): void
     {
         $post = $this->app->request()->data->getData();

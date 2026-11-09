@@ -45,6 +45,7 @@ class Plugin implements PluginInterface
             ['GET',  $prefix . '/create',                  [BlogAdminController::class, 'create'],      [$postsCreate]],
             ['POST', $prefix . '/store',                   [BlogAdminController::class, 'store'],       [$postsCreate]],
             ['GET',  $prefix . '/@id/edit',                [BlogAdminController::class, 'edit'],        [$postsEdit]],
+            ['GET',  $prefix . '/@id/preview',             [BlogAdminController::class, 'preview'],     [$postsEdit]],
             ['POST', $prefix . '/@id/update',              [BlogAdminController::class, 'update'],      [$postsEdit]],
             ['POST', $prefix . '/@id/delete',              [BlogAdminController::class, 'delete'],      [$postsDelete]],
             ['GET',  $prefix . '/@id/revisions',           [BlogAdminController::class, 'revisions'],   [$postsEdit]],

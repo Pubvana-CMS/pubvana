@@ -81,6 +81,29 @@ final class BlogAdminControllerTest extends TestCase
         self::assertSame('/admin/blog', $this->fetches[0]['data']['adminBase']);
     }
 
+    public function testPreviewIssuesTokenAndRedirects(): void
+    {
+        $post = $this->blog->createPost(['title' => 'Draft', 'slug' => 'draft-p', 'status' => 'draft'], 9);
+
+        // Posts created before preview links have no token. The route issues one.
+        $post->preview_token = null;
+        $post->save();
+
+        (new BlogAdminController($this->engine()))->preview((string) $post->id);
+
+        $stored = $this->blog->findPost((int) $post->id);
+        self::assertNotNull($stored?->preview_token);
+        self::assertSame(['/blog/preview/' . $stored->preview_token], $this->redirects);
+    }
+
+    public function testPreviewRejectsUnknownPost(): void
+    {
+        (new BlogAdminController($this->engine()))->preview('999');
+
+        self::assertSame(['/admin/blog'], $this->redirects);
+        self::assertSame(['Post not found.'], $this->flashes['error']);
+    }
+
     public function testCreateRendersForm(): void
     {
         (new BlogAdminController($this->engine()))->create();
@@ -203,7 +226,7 @@ final class BlogAdminControllerTest extends TestCase
         (new BlogAdminController($this->engine()))->edit('1');
         self::assertSame('pubvana/blog/admin/edit', $this->fetches[0]['view']);
         self::assertSame('E', $this->fetches[0]['data']['post']->title);
-        self::assertSame('/blog', $this->fetches[0]['data']['previewBase']);
+        self::assertSame('/blog', $this->fetches[0]['data']['publicBase']);
     }
 
     public function testUpdateRejectsInvalidStatus(): void

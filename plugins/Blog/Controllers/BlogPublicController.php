@@ -202,6 +202,12 @@ class BlogPublicController extends PublicController
             return;
         }
 
+        // The route checks only the token, so anyone who knows the URL can
+        // open the page. Set no-store so captureResponse() skips this page,
+        // and noindex so search engines do.
+        $this->app->response()->header('Cache-Control', 'private, no-store');
+        $this->app->response()->header('X-Robots-Tag', 'noindex');
+
         // Give region blocks the current post id (e.g. Related Posts).
         $this->app->regions()->setContext(['post_id' => (int) $post->id]);
 

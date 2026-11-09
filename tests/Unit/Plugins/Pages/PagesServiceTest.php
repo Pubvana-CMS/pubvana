@@ -58,6 +58,22 @@ final class PagesServiceTest extends TestCase
         self::assertSame('Live One', $published[0]->title);
     }
 
+    public function testCreateIssuesAndPublishRetiresPreviewToken(): void
+    {
+        $page = $this->service->createPage(['title' => 'Draft', 'status' => 'draft'], 1);
+        $first = (string) $page->preview_token;
+
+        self::assertNotSame('', $first);
+
+        $this->service->updatePage((int) $page->id, ['status' => 'published'], 1);
+        $stored = $this->service->findPage((int) $page->id);
+        $second = (string) $stored?->preview_token;
+
+        self::assertNotSame($first, $second);
+        self::assertNull($this->service->findPageByPreviewToken($first));
+        self::assertNotNull($this->service->findPageByPreviewToken($second));
+    }
+
     public function testFindersAndSlugExists(): void
     {
         $page = $this->service->createPage(['title' => 'About', 'status' => 'published'], 1);
