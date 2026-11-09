@@ -93,6 +93,25 @@ if (php_sapi_name() !== 'cli' && $app->session()->isActive()) {
     );
 }
 
+/*
+|--------------------------------------------------------------------------
+| User Activity
+|--------------------------------------------------------------------------
+| Shield stamps users.last_active only from its own auth middlewares, and
+| this app guards routes with PermissionMiddleware instead, so nothing
+| wrote the column and the admin user list showed "Never" for everyone.
+| Loading the user first matters: the session authenticator's
+| recordActiveDate() reads its user property directly and returns early
+| when the user has not been resolved.
+*/
+if (php_sapi_name() !== 'cli' && $app->session()->isActive()) {
+    $activeUser = $app->auth()->user();
+
+    if ($activeUser !== null) {
+        $app->auth()->recordActiveDate();
+    }
+}
+
 // Core admin: registers users/groups/permissions via adext (menu items + routes)
 require(__DIR__ . $ds . 'core-admin.php');
 
