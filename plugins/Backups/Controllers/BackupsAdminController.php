@@ -148,23 +148,41 @@ class BackupsAdminController extends AdminController
 
         $size = filesize($path);
 
+        // The bar cannot attach to a streamed zip, and it would corrupt it.
+        if (class_exists(\Tracy\Debugger::class)) {
+            \Tracy\Debugger::$showBar = false;
+        }
+
         $response = $this->app->response();
         $response->header('Content-Type', 'application/zip');
         $response->header('Content-Disposition', 'attachment; filename="' . basename($path) . '"');
         $response->header('Content-Length', (string) ($size === false ? 0 : $size));
+        $response->sendHeaders();
 
-        // Stream in chunks: a multi-gigabyte zip must never sit in memory.
+        // Flight buffers route output. Drop the buffers so the file streams
+        // straight to the client instead of landing in memory.
+        while (ob_get_level() > 0) {
+            ob_end_flush();
+        }
+
         $handle = fopen($path, 'rb');
         if ($handle !== false) {
             try {
-                while (($chunk = fread($handle, 65536)) !== false && $chunk !== '') {
-                    $response->write($chunk);
+                while (!feof($handle)) {
+                    $chunk = fread($handle, 65536);
+                    if ($chunk === false || $chunk === '') {
+                        break;
+                    }
+
+                    echo $chunk;
+                    flush();
                 }
             } finally {
                 fclose($handle);
             }
         }
-        $response->send();
+
+        exit;
     }
 
     /**
