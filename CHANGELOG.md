@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Out-of-range blog pagination returns an empty 200 page
 - Registration collects a Username that is then ignored by Shield
 - Image editor returns 500 when the media file is missing
+- Backup download returns an empty file
 
 
 ## [3.0.0-beta.19] - 2026-11-08
