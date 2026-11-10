@@ -5,6 +5,11 @@ All notable changes to the Media plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.6] - 2026-11-09
+
+### Fixed
+- The image editor returned a 500 when the original file was missing from disk. It now shows a message and returns to the Media list.
+
 ## [0.2.5] - 2026-11-07
 
 ### Fixed

@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 - Preview pages set `Cache-Control: private, no-store` and
   `X-Robots-Tag: noindex`.
+- A page number past the last page returns 404 on the blog index, a category,
+  and a tag, instead of an empty 200.
 
 ## [0.3.11] - 2026-11-08
 

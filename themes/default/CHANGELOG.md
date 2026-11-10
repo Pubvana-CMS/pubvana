@@ -5,6 +5,12 @@ All notable changes to the Default theme will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.4.36] - 2026-11-09
+
+### Removed
+- The username field on the registration form. Shield derives the username from the
+  email address and ignores a posted one.
+
 ## [1.4.35] - 2026-11-07
 
 ### Added

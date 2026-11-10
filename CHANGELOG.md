@@ -5,7 +5,7 @@ Notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## Unreleased - date
+## [3.0.0-rc1] - 2026-11-09
 
 ### Added
 - new preview link to Pages and Blog bypassing Draft restrictions so select persons with the link can read the draft without admin access.
