@@ -376,6 +376,14 @@ class MediaService
     }
 
     /**
+     * Whether the stored file for a media path exists under the public root.
+     */
+    public function fileExists(string $path): bool
+    {
+        return $path !== '' && is_file($this->publicPath . '/' . ltrim($path, '/'));
+    }
+
+    /**
      * @return array<string, string>
     */
     public function getExifData(int $id): array

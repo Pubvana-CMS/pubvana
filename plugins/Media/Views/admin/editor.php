@@ -9,13 +9,16 @@
  * @var string[]                     $capabilities
  */
 
-$mediaId   = (int) $media->id;
-$mediaPath = $media->path;
-$sizeBytes = (int) $media->size;
-$sizeStr   = $sizeBytes < 1024 * 1024
+$mediaId    = (int) $media->id;
+$mediaPath  = $media->path;
+$sizeBytes  = (int) $media->size;
+$sizeStr    = $sizeBytes < 1024 * 1024
     ? round($sizeBytes / 1024) . ' KB'
     : round($sizeBytes / 1024 / 1024, 1) . ' MB';
-$formatStr = strtoupper(str_replace('image/', '', $info['mime']));
+$infoMime   = (string) ($info['mime'] ?? '');
+$infoWidth  = (int) ($info['width'] ?? 0);
+$infoHeight = (int) ($info['height'] ?? 0);
+$formatStr  = strtoupper(str_replace('image/', '', $infoMime)) ?: 'IMAGE';
 
 $has = fn(string $cap): bool => in_array($cap, $capabilities, true);
 $btn = fn(string $cap): string => $has($cap) ? '' : ' disabled';
@@ -36,8 +39,8 @@ $btn = fn(string $cap): string => $has($cap) ? '' : ' disabled';
                      style="position:relative; display:inline-block; max-width:100%;"
                      data-media-id="<?= $mediaId ?>"
                      data-media-path="<?= htmlspecialchars($mediaPath) ?>"
-                     data-natural-w="<?= $info['width'] ?>"
-                     data-natural-h="<?= $info['height'] ?>">
+                     data-natural-w="<?= $infoWidth ?>"
+                     data-natural-h="<?= $infoHeight ?>">
                     <img id="editor-image"
                          src="/<?= htmlspecialchars($mediaPath) ?>?t=<?= time() ?>"
                          alt=""
@@ -172,7 +175,7 @@ $btn = fn(string $cap): string => $has($cap) ? '' : ' disabled';
         <div class="card">
             <div class="card-body">
                 <div class="mb-2">
-                    <span id="info-dimensions"><?= $info['width'] ?> &times; <?= $info['height'] ?></span> px
+                    <span id="info-dimensions"><?= $infoWidth ?> &times; <?= $infoHeight ?></span> px
                 </div>
                 <div class="mb-2">
                     <span id="info-format"><?= htmlspecialchars($formatStr) ?></span>

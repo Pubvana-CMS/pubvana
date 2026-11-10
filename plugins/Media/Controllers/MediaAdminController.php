@@ -39,6 +39,7 @@ class MediaAdminController extends AdminController
             'page'       => $result['page'],
             'perPage'    => $result['per_page'],
             'typeFilter' => $type,
+            'flash'      => $this->app->session()->pullFlash('media_flash'),
         ]);
     }
 
@@ -55,7 +56,11 @@ class MediaAdminController extends AdminController
         $result = $this->service()->list($page, 24, $type);
 
         $items = array_map(function ($m) {
-            return $this->mediaToArray($m);
+            $row = $this->mediaToArray($m);
+            $row['file_missing'] = $m->type === 'image'
+                && !$this->service()->fileExists((string) $m->path);
+
+            return $row;
         }, $result['items']);
 
         $this->app->json([
@@ -186,7 +191,14 @@ class MediaAdminController extends AdminController
             return;
         }
 
-        $info         = $this->service()->getImageInfo((int) $id);
+        $info = $this->service()->getImageInfo((int) $id);
+
+        if ($info === null) {
+            $this->app->session()->flash('media_flash', 'That image file is missing from disk.');
+            $this->app->redirect($this->adminBase());
+            return;
+        }
+
         $capabilities = $this->service()->getCapabilities();
         $exifData     = $this->service()->getExifData((int) $id);
 

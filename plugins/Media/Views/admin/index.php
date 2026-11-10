@@ -9,8 +9,19 @@
  * @var int                            $page
  * @var int                            $perPage
  * @var string|null                    $typeFilter
+ * @var string|null                    $flash
  */
 ?>
+
+<?php if (!empty($flash)): ?>
+    <div class="alert alert-danger alert-dismissible" role="alert">
+        <div class="d-flex">
+            <div><i class="ti ti-alert-circle icon alert-icon"></i></div>
+            <div><?= htmlspecialchars((string) $flash) ?></div>
+        </div>
+        <a class="btn-close" data-bs-dismiss="alert" aria-label="Close"></a>
+    </div>
+<?php endif; ?>
 
 <div id="media-library">
 
@@ -230,7 +241,10 @@ document.addEventListener('DOMContentLoaded', function () {
             + '<div class="mb-3"><label class="form-label">Title</label>'
             + '<input type="text" class="form-control" id="detail-title" value="' + esc(media.title || '') + '"></div>'
             + '<div class="mb-3"><small class="text-secondary">' + esc(media.filename) + '</small></div>'
-            + (media.type === 'image'
+            + (media.type === 'image' && media.file_missing
+                ? '<div class="alert alert-warning mb-3">This file is missing from disk. Upload it again to edit it.</div>'
+                : '')
+            + (media.type === 'image' && !media.file_missing
                 ? '<div class="mb-3"><a href="' + adminBase + '/' + media.id + '/editor" class="btn btn-outline-primary w-100"><i class="ti ti-photo-edit"></i> Edit Image</a></div>'
                 : '')
             + (media.type === 'video'
