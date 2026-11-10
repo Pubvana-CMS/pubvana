@@ -142,7 +142,7 @@ return [
         'after_register'    => '/',
         'after_logout'      => '/auth/login',
         'force_reset'       => '/auth/reset-password',
-        'permission_denied' => '/auth/login',
-        'group_denied'      => '/auth/login',
+        'permission_denied' => '/',
+        'group_denied'      => '/',
     ],
 ];
