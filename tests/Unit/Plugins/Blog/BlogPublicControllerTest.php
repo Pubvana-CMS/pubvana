@@ -102,6 +102,36 @@ final class BlogPublicControllerTest extends TestCase
         self::assertNull($this->renders[0]['data']['pagination']);
     }
 
+    public function testOutOfRangePagesHalt404(): void
+    {
+        for ($i = 1; $i <= 12; $i++) {
+            $this->blog->createPost(['title' => "P{$i}", 'slug' => "p{$i}", 'status' => 'published'], 1);
+        }
+
+        // 12 posts, 10 per page: page 2 exists, page 3 does not.
+        $this->controller($this->engine())->index('2');
+        self::assertSame([], $this->halts);
+
+        $this->renders = [];
+        $this->controller($this->engine())->index('3');
+        self::assertSame([['code' => 404, 'msg' => 'Page not found']], $this->halts);
+
+        $cat = $this->blog->createCategory(['name' => 'News', 'slug' => 'news']);
+        $post = $this->blog->createPost(['title' => 'InCat', 'slug' => 'incat', 'status' => 'published'], 1);
+        $this->blog->syncPostCategories((int) $post->id, [(int) $cat->id]);
+        $this->blog->syncPostTags((int) $post->id, 'php');
+
+        $this->halts = [];
+        $this->renders = [];
+        $this->controller($this->engine())->category('news', '2');
+        self::assertSame([['code' => 404, 'msg' => 'Page not found']], $this->halts);
+
+        $this->halts = [];
+        $this->renders = [];
+        $this->controller($this->engine())->tag('php', '2');
+        self::assertSame([['code' => 404, 'msg' => 'Page not found']], $this->halts);
+    }
+
     public function testPaginationWindowsLargePageCounts(): void
     {
         for ($i = 1; $i <= 250; $i++) {

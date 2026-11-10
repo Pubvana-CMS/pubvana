@@ -34,6 +34,7 @@ class BlogPublicController extends PublicController
     {
         $pageNum = max(1, (int) ($page ?? $this->app->request()->query->page ?? 1));
         $result = $this->app->blog()->listPosts($pageNum, 10, 'published');
+        $this->haltIfPageOutOfRange($result, $pageNum);
 
         $maps = $this->taxonomyMapsFor($result['items']);
         $posts = array_map(fn($post) => $this->formatPost($post, $maps['categories'], $maps['tags'], $maps['authors']), $result['items']);
@@ -153,6 +154,7 @@ class BlogPublicController extends PublicController
         $prefix = $this->app->pluginLoader()->routePrefix('pubvana/blog');
         $pageNum = max(1, (int) ($page ?? $this->app->request()->query->page ?? 1));
         $result = $this->app->blog()->listPostsByCategory((int) $category->id, $pageNum, 10);
+        $this->haltIfPageOutOfRange($result, $pageNum);
 
         $maps = $this->taxonomyMapsFor($result['items']);
         $posts = array_map(fn($post) => $this->formatPost($post, $maps['categories'], $maps['tags'], $maps['authors']), $result['items']);
@@ -179,6 +181,7 @@ class BlogPublicController extends PublicController
         $prefix = $this->app->pluginLoader()->routePrefix('pubvana/blog');
         $pageNum = max(1, (int) ($page ?? $this->app->request()->query->page ?? 1));
         $result = $this->app->blog()->listPostsByTag((int) $tag->id, $pageNum, 10);
+        $this->haltIfPageOutOfRange($result, $pageNum);
 
         $maps = $this->taxonomyMapsFor($result['items']);
         $posts = array_map(fn($post) => $this->formatPost($post, $maps['categories'], $maps['tags'], $maps['authors']), $result['items']);
@@ -330,6 +333,21 @@ class BlogPublicController extends PublicController
         $prefix = $urlPrefix ?? $this->app->pluginLoader()->routePrefix('pubvana/blog');
 
         return $this->app->blog()->tagItemsForPostIds([$postId], $prefix)[$postId] ?? [];
+    }
+
+    /**
+     * A page number past the last page is a 404, not an empty listing.
+     *
+     * @param array<string, mixed> $result List result as returned by BlogService::listPosts()
+     */
+    private function haltIfPageOutOfRange(array $result, int $page): void
+    {
+        $perPage = max(1, (int) ($result['per_page'] ?? 10));
+        $lastPage = max(1, (int) ceil(((int) ($result['total'] ?? 0)) / $perPage));
+
+        if ($page > $lastPage) {
+            $this->app->halt(404, 'Page not found');
+        }
     }
 
     /**

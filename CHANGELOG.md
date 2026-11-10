@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Admin -> Users -> Last Active wasn't tracking logged in users
 - Logged-in user without admin rights is sent to the login page
 - SEO "Analyze Content" says the slug is missing on saved content
+- Out-of-range blog pagination returns an empty 200 page
 
 
 ## [3.0.0-beta.19] - 2026-11-08
