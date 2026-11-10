@@ -6,9 +6,6 @@
 
 Pubvana is a flexible, shared-host friendly CMS (Content Management System) for personal blogs, small to medium business websites, company intranets and more. v3 offers the flexibility of a CMF (Content Management Framework) to build your own custom plugins faster than starting from scratch. Version 3 has a new administration panel, plugin extensions, faster internals, and more features than you'd expect in a free, open source CMS.
 
-## Status
-
-Pubvana v3 is in beta. The codebase, the database schema, and the plugin API can change between releases. See [CHANGELOG.md](CHANGELOG.md) for what changed in each release.
 
 ## v3
 
@@ -41,6 +38,11 @@ Pubvana v3 is in beta. The codebase, the database schema, and the plugin API can
 [![Codeigniter 3](https://img.shields.io/badge/Codeigniter-3.x-orange.svg)](https://codeigniter.com)
 [![Codeigniter 2](https://img.shields.io/badge/Codeigniter-2.x-orange.svg)](https://codeigniter.com)
 
+---
+
+## Status
+
+Pubvana v3 is a release candidate. Please contribute, discuss findings, and test.
 
 ---
 
