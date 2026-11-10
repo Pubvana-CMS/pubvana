@@ -617,7 +617,8 @@ final class TrustClientServiceTest extends TestCase
     public function testCheckIfDueFailureStampsNothingAndKeepsProcessed(): void
     {
         $this->cachePut('plugin', 'blog', '1.0.0', 'pubvana', 'trusted');
-        $this->settings->store[TrustClientService::LAST_CHECK_KEY] = date('c', time() - 86400 * 2);
+        $expiredAt = date('c', time() - 86400 * 2);
+        $this->settings->store[TrustClientService::LAST_CHECK_KEY] = $expiredAt;
         $this->service->maliciousListWrite([['type' => 'plugin', 'slug' => 'blog']], []);
 
         // HTTP transport failures: honoring POST, then the TTL-expired batch
@@ -630,7 +631,7 @@ final class TrustClientServiceTest extends TestCase
         self::assertCount(2, $this->service->requests);
         // The TTL stamp must stay expired and processed must not advance
         self::assertSame(
-            date('c', time() - 86400 * 2),
+            $expiredAt,
             $this->settings->store[TrustClientService::LAST_CHECK_KEY]
         );
         $state = $this->service->maliciousListRead();
