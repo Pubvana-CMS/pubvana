@@ -27,12 +27,6 @@
     {% csrf_field %}
 
     <div class="auth-field">
-        <label class="auth-label" for="username">Username</label>
-        <input type="text" id="username" name="username" class="auth-input"
-               value="{{ old.username | default('') }}">
-    </div>
-
-    <div class="auth-field">
         <label class="auth-label" for="email">Email</label>
         <input type="email" id="email" name="email" class="auth-input" required
                value="{{ old.email | default('') }}">
