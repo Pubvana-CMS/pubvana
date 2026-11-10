@@ -21,6 +21,8 @@
 
 <form method="POST" action="<?= $adminBase ?>/<?= (int) $editPage->id ?>/update">
     <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
+    <?php // Pages have a fixed slug. The hidden field feeds the SEO analysis. ?>
+    <input type="hidden" name="slug" value="<?= htmlspecialchars($editPage->slug ?? '') ?>">
 
     <div class="row">
         <div class="col-lg-8">
