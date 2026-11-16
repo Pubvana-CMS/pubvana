@@ -21,11 +21,10 @@ class AnalyticsAdminController extends AdminController
         $range = $this->validRange($this->app->request()->query->range ?? null);
 
         $this->render('pubvana/analytics/admin/index', [
-            'pageTitle'       => 'Analytics',
-            'range'           => $range,
-            'report'          => $this->app->analytics()->dashboard($range),
-            'trackingEnabled' => $this->app->analytics()->isTrackingEnabled(),
-            'adminBase'       => $this->adminBase(),
+            'pageTitle' => 'Analytics',
+            'range'     => $range,
+            'report'    => $this->app->analytics()->dashboard($range),
+            'adminBase' => $this->adminBase(),
         ]);
     }
 
@@ -39,18 +38,55 @@ class AnalyticsAdminController extends AdminController
     }
 
     /**
-     * Toggle server-side page tracking on or off.
+     * Full list of content paths for the selected range.
      */
-    public function toggleTracking(): void
+    public function contentList(): void
     {
-        $enabled = (bool) ($this->app->request()->data->tracking_enabled ?? false);
-        $this->app->settings()->set('Analytics.tracking_enabled', $enabled);
+        $this->renderList('content');
+    }
 
-        $this->app->session()->flash(
-            'success',
-            $enabled ? 'Page tracking enabled.' : 'Page tracking disabled.'
-        );
-        $this->app->redirect($this->adminBase());
+    /**
+     * Full list of referrer domains for the selected range.
+     */
+    public function referrerList(): void
+    {
+        $this->renderList('referrers');
+    }
+
+    /**
+     * Render one paginated list page.
+     */
+    private function renderList(string $kind): void
+    {
+        $range = $this->validRange($this->app->request()->query->range ?? null);
+        $page = max(1, (int) ($this->app->request()->query->page ?? 1));
+        $perPage = 100;
+
+        $analytics = $this->app->analytics();
+        $data = $kind === 'content'
+            ? $analytics->contentPage($range, $page, $perPage)
+            : $analytics->referrersPage($range, $page, $perPage);
+
+        $base = $this->adminBase() . ($kind === 'content' ? '/content' : '/referrers');
+
+        $this->render('pubvana/analytics/admin/list', [
+            'pageTitle'  => $kind === 'content' ? 'All Content' : 'All Referrers',
+            'kind'       => $kind,
+            'range'      => $range,
+            'rows'       => $data['rows'],
+            'page'       => $page,
+            'perPage'    => $perPage,
+            'adminBase'  => $this->adminBase(),
+            'pagination' => $this->app->pagination()->build(
+                $page,
+                $data['total'],
+                $perPage,
+                static fn (int $number): string => $base . '?' . http_build_query([
+                    'range' => $range,
+                    'page'  => $number,
+                ])
+            ),
+        ]);
     }
 
     /**

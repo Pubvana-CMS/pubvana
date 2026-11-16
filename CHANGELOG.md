@@ -5,6 +5,28 @@ Notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [3.0.0-rc2] - 2026-11-14
+
+### Added
+- Analytics added 2 pages listing all content and all referrers
+- AI Assistant access to SEO settings and content scoring, split into read and manage permissions
+- One SEO settings path for the admin form and the API
+- AI Assistant write access to schema type and SEO score
+
+### Changed
+- Database connections moved to models from Analytics service
+
+### Removed
+- Page tracking switch and setting from Analytics
+
+### Fixed
+- Analytics didn't record robots
+- Top Referrers listed the site itself
+- A failed rollup counted the same views twice on the next run
+- SEO settings saved "0" as true
+- Duplicate and inconsistent colors used in Analytics.
+
+
 ## [3.0.0-rc1] - 2026-11-09
 
 ### Added

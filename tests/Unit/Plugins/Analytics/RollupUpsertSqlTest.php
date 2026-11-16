@@ -8,6 +8,10 @@ use flight\Engine;
 use PDO;
 use PDOStatement;
 use PHPUnit\Framework\TestCase;
+use Pubvana\Plugins\Analytics\Models\BotsDaily;
+use Pubvana\Plugins\Analytics\Models\PageView;
+use Pubvana\Plugins\Analytics\Models\ReferrersDaily;
+use Pubvana\Plugins\Analytics\Models\ViewsDaily;
 use Pubvana\Plugins\Analytics\Services\AnalyticsService;
 
 /**
@@ -20,10 +24,10 @@ final class RollupUpsertSqlTest extends TestCase
     public function testModernMysqlUsesRowAliasForm(): void
     {
         $pdo = $this->recordingPdo('8.0.36');
-        $service = new AnalyticsService($pdo, $this->engine());
+        $service = $this->service($pdo);
         $service->rollup();
 
-        self::assertCount(2, $pdo->upserts());
+        self::assertCount(3, $pdo->upserts());
         foreach ($pdo->upserts() as $sql) {
             // The alias has to wrap the aggregate in a derived table. Putting
             // AS new_row straight after GROUP BY is a syntax error on MySQL
@@ -37,7 +41,7 @@ final class RollupUpsertSqlTest extends TestCase
     public function testRollupRunsInOneTransaction(): void
     {
         $pdo = $this->recordingPdo('8.0.36');
-        $service = new AnalyticsService($pdo, $this->engine());
+        $service = $this->service($pdo);
         $service->rollup();
 
         // The two merges and the delete commit together, so a half-finished
@@ -50,7 +54,7 @@ final class RollupUpsertSqlTest extends TestCase
     public function testMariaDbKeepsValuesForm(): void
     {
         $pdo = $this->recordingPdo('10.6.14-MariaDB-1:10.6.14+maria~ubu2004');
-        $service = new AnalyticsService($pdo, $this->engine());
+        $service = $this->service($pdo);
         $service->rollup();
 
         foreach ($pdo->upserts() as $sql) {
@@ -62,7 +66,7 @@ final class RollupUpsertSqlTest extends TestCase
     public function testOldMysqlKeepsValuesForm(): void
     {
         $pdo = $this->recordingPdo('5.7.42');
-        $service = new AnalyticsService($pdo, $this->engine());
+        $service = $this->service($pdo);
         $service->rollup();
 
         foreach ($pdo->upserts() as $sql) {
@@ -74,18 +78,21 @@ final class RollupUpsertSqlTest extends TestCase
     public function testRowAliasSelectionIsCached(): void
     {
         $pdo = $this->recordingPdo('8.0.36');
-        $service = new AnalyticsService($pdo, $this->engine());
+        $service = $this->service($pdo);
+        $before = $pdo->versionProbes;
+
         $service->rollup();
         $service->rollup();
 
-        // One version probe per service lifetime, not per statement.
-        self::assertSame(1, $pdo->versionProbes);
+        // One version probe for the model, not one per rollup statement.
+        // The models probe the driver once when they are built.
+        self::assertSame(1, $pdo->versionProbes - $before);
     }
 
     public function testUpsertsMergeCountsOnConflict(): void
     {
         $pdo = $this->recordingPdo('8.0.36');
-        $service = new AnalyticsService($pdo, $this->engine());
+        $service = $this->service($pdo);
         $service->rollup();
 
         foreach ($pdo->upserts() as $sql) {
@@ -102,6 +109,17 @@ final class RollupUpsertSqlTest extends TestCase
     private function recordingPdo(string $serverVersion): RecordingPdo
     {
         return new RecordingPdo($serverVersion);
+    }
+
+    private function service(RecordingPdo $pdo): AnalyticsService
+    {
+        return new AnalyticsService(
+            new PageView($pdo),
+            new ViewsDaily($pdo),
+            new ReferrersDaily($pdo),
+            new BotsDaily($pdo),
+            $this->engine()
+        );
     }
 
     private function engine(): Engine

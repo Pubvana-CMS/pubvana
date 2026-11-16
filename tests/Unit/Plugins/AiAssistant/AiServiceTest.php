@@ -700,6 +700,38 @@ final class AiServiceTest extends TestCase
         self::assertSame([], $this->seoCalls);
     }
 
+    public function testSaveSeoWritesAllowedSchemaType(): void
+    {
+        $service = $this->serviceWithSeo();
+
+        $service->saveSeo('post', 50, ['seo' => ['schema_type' => 'NewsArticle']]);
+        self::assertSame('NewsArticle', $this->seoCalls[0][2]['schema_type']);
+
+        $service->saveSeo('post', 51, ['seo' => ['schema_type' => 'WebPage']]);
+        self::assertCount(1, $this->seoCalls);
+
+        $service->saveSeo('page', 52, ['seo' => ['schema_type' => '']]);
+        self::assertCount(2, $this->seoCalls);
+        self::assertArrayHasKey('schema_type', $this->seoCalls[1][2]);
+        self::assertNull($this->seoCalls[1][2]['schema_type']);
+    }
+
+    public function testSaveSeoKeepsScoreInRange(): void
+    {
+        $service = $this->serviceWithSeo();
+
+        $service->saveSeo('post', 60, ['seo' => ['seo_score' => 87]]);
+        self::assertSame(87, $this->seoCalls[0][2]['seo_score']);
+
+        $service->saveSeo('post', 61, ['seo' => ['seo_score' => '55']]);
+        self::assertSame(55, $this->seoCalls[1][2]['seo_score']);
+
+        $service->saveSeo('post', 62, ['seo' => ['seo_score' => 101]]);
+        $service->saveSeo('post', 63, ['seo' => ['seo_score' => -1]]);
+        $service->saveSeo('post', 64, ['seo' => ['seo_score' => 'high']]);
+        self::assertCount(2, $this->seoCalls);
+    }
+
     public function testFindPostForApiFindsEveryStatusExcludingDeleted(): void
     {
         $service = $this->service();
@@ -766,6 +798,16 @@ final class AiServiceTest extends TestCase
                 public function saveMeta(string $contentType, int $contentId, array $fields): void
                 {
                     $this->test->recordSeoCall($contentType, $contentId, $fields);
+                }
+
+                /**
+                 * @return list<string>
+                 */
+                public function allowedSchemaTypes(string $contentType): array
+                {
+                    return $contentType === 'post'
+                        ? ['BlogPosting', 'Article', 'NewsArticle', 'TechArticle']
+                        : ['WebPage', 'AboutPage', 'ContactPage', 'FAQPage'];
                 }
             },
         ]);

@@ -6,12 +6,14 @@ namespace Pubvana\Plugins\Seo;
 
 use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 use Pubvana\Plugins\Seo\Controllers\SeoAdminController;
+use Pubvana\Plugins\Seo\Controllers\SeoApiController;
 use Pubvana\Plugins\Seo\Controllers\SeoPublicController;
 use Pubvana\Plugins\Seo\Models\SeoMeta;
 use Pubvana\Plugins\Seo\Services\ContentAnalysisService;
 use Pubvana\Plugins\Seo\Services\LlmsTxtService;
 use Pubvana\Plugins\Seo\Services\RobotsTxtService;
 use Pubvana\Plugins\Seo\Services\SchemaService;
+use Pubvana\Plugins\Seo\Services\SeoSettingsService;
 use Pubvana\Plugins\Seo\Services\SeoService;
 use Pubvana\Plugins\Seo\Services\SitemapService;
 use Pubvana\Services\PluginInterface;
@@ -83,7 +85,41 @@ class Plugin implements PluginInterface
             return $instance;
         });
 
+        $app->map('seoSettings', function () use ($app) {
+            static $instance = null;
+            if ($instance === null) {
+                $instance = new SeoSettingsService($app);
+            }
+            return $instance;
+        });
+
         $adext = $app->adext();
+
+        // Base for the AI Assistant endpoints. Read from Config/Config.php so
+        // the grants and the routes can never drift apart.
+        $aiBase = rtrim((string) ($config['aiApiPrefix'] ?? '/api/ai/seo'), '/');
+
+        // ─── AI Assistant Grants ───────────────────────────────────────
+        // One registration puts these in /api/ai/help, the admin Help page,
+        // the per-key grant form, and the grant validation on save.
+
+        $adext->register('ai.grant', 'default', [
+            'seo.read' => [
+                'group'     => 'seo',
+                'label'     => 'View SEO settings',
+                'summary'   => 'Read the site SEO settings, see the AI crawler stances, and score a draft. Field guide: GET ' . $aiBase . '/help.',
+                'method'    => 'GET',
+                'path'      => $aiBase . '/settings',
+                'endpoints' => [$aiBase . '/help', $aiBase . '/settings', $aiBase . '/analyze'],
+            ],
+            'seo.manage' => [
+                'group'     => 'seo',
+                'label'     => 'Manage SEO settings',
+                'summary'   => 'Change the site SEO settings and turn AI crawlers on or off. Only the fields sent are written. Field guide: GET ' . $aiBase . '/help.',
+                'method'    => 'POST',
+                'path'      => $aiBase . '/settings',
+            ],
+        ]);
 
         // ─── Admin Routes ──────────────────────────────────────────────
 
@@ -102,6 +138,14 @@ class Plugin implements PluginInterface
             ['GET', '/sitemap.xml', [SeoPublicController::class, 'sitemap']],
             ['GET', '/robots.txt',  [SeoPublicController::class, 'robotsTxt']],
             ['GET', '/llms.txt',    [SeoPublicController::class, 'llmsTxt']],
+
+            // AI Assistant, sessionless and bearer-key auth. The CSRF
+            // exemption AI Assistant registers for its /api/ai/ prefix
+            // covers these too.
+            ['GET',  $aiBase . '/help',     [SeoApiController::class, 'help']],
+            ['GET',  $aiBase . '/settings', [SeoApiController::class, 'settings']],
+            ['POST', $aiBase . '/settings', [SeoApiController::class, 'saveSettings']],
+            ['POST', $aiBase . '/analyze',  [SeoApiController::class, 'analyze']],
         ], 'pubvana.seo');
 
         // ─── Dashboard ──────────────────────────────────────────────────

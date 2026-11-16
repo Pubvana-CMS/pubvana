@@ -5,51 +5,31 @@
  * @var string $pageTitle
  * @var string $range
  * @var array  $report  See AnalyticsService::dashboard()
- * @var bool   $trackingEnabled
  * @var string $adminBase
  */
 ?>
 <?php
 $totalViews = (int) ($report['totalViews'] ?? 0);
+$previousViews = $report['previousTotalViews'] ?? null;
 $topContent = $report['topContent'] ?? [];
 $referrers  = $report['referrers'] ?? [];
+
+$viewsChange = null;
+if ($previousViews !== null && (int) $previousViews > 0) {
+    $viewsChange = (($totalViews - (int) $previousViews) / (int) $previousViews) * 100;
+}
 ?>
 
-<div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
-    <h2 class="page-title mb-0">
-        <i class="ti ti-report-analytics me-2"></i>
-        Analytics
-    </h2>
-    <div class="d-flex align-items-center gap-3">
-        <div class="btn-group btn-group-sm" role="group" aria-label="Range filter" id="rangeFilter">
-            <button type="button" class="btn btn-outline-primary <?= $range === '7' ? 'active' : '' ?>" data-range="7">7d</button>
-            <button type="button" class="btn btn-outline-primary <?= $range === '30' ? 'active' : '' ?>" data-range="30">30d</button>
-            <button type="button" class="btn btn-outline-primary <?= $range === '90' ? 'active' : '' ?>" data-range="90">90d</button>
-            <button type="button" class="btn btn-outline-primary <?= $range === '180' ? 'active' : '' ?>" data-range="180">180d</button>
-            <button type="button" class="btn btn-outline-primary <?= $range === '365' ? 'active' : '' ?>" data-range="365">1y</button>
-            <button type="button" class="btn btn-outline-primary <?= $range === 'all' ? 'active' : '' ?>" data-range="all">All</button>
-        </div>
-        <form method="post" action="<?= $adminBase ?>/tracking" class="mb-0">
-            <input type="hidden" name="_csrf_token" value="<?= csrf_token() ?>">
-            <input type="hidden" name="tracking_enabled" id="trackingToggleField" value="0">
-            <label class="form-check form-switch mb-0">
-                <input class="form-check-input" type="checkbox" id="trackingToggle"
-                       <?= $trackingEnabled ? 'checked' : '' ?>
-                       onchange="document.getElementById('trackingToggleField').value = this.checked ? '1' : '0'; this.form.submit();">
-                <span class="form-check-label small">Track page views</span>
-            </label>
-        </form>
+<div class="d-flex align-items-center justify-content-end flex-wrap gap-3 mb-4">
+    <div class="btn-group btn-group-sm" role="group" aria-label="Range filter" id="rangeFilter">
+        <button type="button" class="btn btn-outline-primary <?= $range === '7' ? 'active' : '' ?>" data-range="7">7d</button>
+        <button type="button" class="btn btn-outline-primary <?= $range === '30' ? 'active' : '' ?>" data-range="30">30d</button>
+        <button type="button" class="btn btn-outline-primary <?= $range === '90' ? 'active' : '' ?>" data-range="90">90d</button>
+        <button type="button" class="btn btn-outline-primary <?= $range === '180' ? 'active' : '' ?>" data-range="180">180d</button>
+        <button type="button" class="btn btn-outline-primary <?= $range === '365' ? 'active' : '' ?>" data-range="365">1y</button>
+        <button type="button" class="btn btn-outline-primary <?= $range === 'all' ? 'active' : '' ?>" data-range="all">All</button>
     </div>
 </div>
-
-<?php if (!$trackingEnabled): ?>
-<div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
-    <i class="ti ti-alert-triangle me-2"></i>
-    <div>
-        Tracking is currently <strong>disabled</strong>, so no new views are recorded. Flip the switch above to start tracking.
-    </div>
-</div>
-<?php endif; ?>
 
 <!-- Total views stat card -->
 <div class="row mb-4">
@@ -58,6 +38,13 @@ $referrers  = $report['referrers'] ?? [];
             <div class="card-body">
                 <div class="subheader">Total Views</div>
                 <div class="h1 mb-0" id="totalViews"><?= number_format($totalViews) ?></div>
+                <div class="text-secondary small" id="viewsChange">
+                    <?php if ($viewsChange === null): ?>
+                        No earlier period to compare
+                    <?php else: ?>
+                        <?= $viewsChange >= 0 ? '+' : '' ?><?= number_format($viewsChange, 1) ?>% vs previous period
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </div>
@@ -66,7 +53,7 @@ $referrers  = $report['referrers'] ?? [];
 <!-- Views chart -->
 <div class="card mb-4">
     <div class="card-header">
-        <h3 class="card-title">Views over time</h3>
+        <h3 class="card-title">Views</h3>
     </div>
     <div class="card-body">
         <div id="chartEmpty" class="text-center text-secondary py-4" style="display:none;">
@@ -83,8 +70,11 @@ $referrers  = $report['referrers'] ?? [];
     <!-- Top content -->
     <div class="col-lg-7">
         <div class="card mb-4">
-            <div class="card-header">
-                <h3 class="card-title">Top Content</h3>
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <h3 class="card-title mb-0">Top Content</h3>
+                <a class="btn btn-sm btn-outline-secondary" id="contentViewAll"
+                   data-list-base="<?= htmlspecialchars($adminBase . '/content') ?>"
+                   href="<?= htmlspecialchars($adminBase . '/content?range=' . urlencode($range)) ?>">View all</a>
             </div>
             <div class="table-responsive">
                 <table class="table table-vcenter card-table" id="topContentTable">
@@ -124,8 +114,11 @@ $referrers  = $report['referrers'] ?? [];
     <!-- Top referrers -->
     <div class="col-lg-5">
         <div class="card mb-4">
-            <div class="card-header">
-                <h3 class="card-title">Top Referrers</h3>
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <h3 class="card-title mb-0">Top Referrers</h3>
+                <a class="btn btn-sm btn-outline-secondary" id="referrersViewAll"
+                   data-list-base="<?= htmlspecialchars($adminBase . '/referrers') ?>"
+                   href="<?= htmlspecialchars($adminBase . '/referrers?range=' . urlencode($range)) ?>">View all</a>
             </div>
             <div class="table-responsive">
                 <table class="table table-vcenter card-table" id="referrersTable">
@@ -161,6 +154,7 @@ window._analyticsRange = <?= json_encode($range, JSON_HEX_TAG | JSON_HEX_AMP | J
 window._analyticsReport = <?= json_encode($report, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_HEX_APOS) ?>;
 
 var chart = null;
+var currentRange = window._analyticsRange;
 
 var palette = [
     'rgba(32, 107, 196, 1)',
@@ -172,11 +166,78 @@ var palette = [
     'rgba(236, 72, 153, 1)',
     'rgba(22, 163, 74, 1)',
     'rgba(202, 138, 4, 1)',
-    'rgba(100, 116, 139, 1)'
+    'rgba(100, 116, 139, 1)',
+    'rgba(168, 85, 247, 1)',
+    'rgba(20, 184, 166, 1)',
+    'rgba(234, 88, 12, 1)',
+    'rgba(190, 24, 93, 1)',
+    'rgba(101, 163, 13, 1)',
+    'rgba(2, 132, 199, 1)',
+    'rgba(217, 119, 6, 1)',
+    'rgba(13, 148, 136, 1)',
+    'rgba(79, 70, 229, 1)',
+    'rgba(5, 150, 105, 1)'
 ];
 
-function fillColor(hex) {
-    return hex.replace(', 1)', ', 0.12)');
+// Golden-ratio hue step keeps generated colours maximally separated.
+var GOLDEN_ANGLE = 0.6180339887498949;
+
+// Colours are assigned per series label and remembered for the life of the
+// page, so a group keeps the same colour when the range filter re-renders
+// the chart and re-sorts the series.
+var colorRegistry = {};
+var usedColors = {};
+var generatedCount = 0;
+
+function hashLabel(label) {
+    var hash = 0;
+    for (var i = 0; i < label.length; i++) {
+        hash = ((hash << 5) - hash + label.charCodeAt(i)) | 0;
+    }
+    return Math.abs(hash);
+}
+
+function generatedColor(step) {
+    var hue = (step * GOLDEN_ANGLE % 1) * 360;
+    var lightness = 42 + (Math.floor(step / 8) % 3) * 9;
+
+    return 'hsla(' + hue.toFixed(1) + ', 70%, ' + lightness + '%, 1)';
+}
+
+// Every series gets its own colour. The label hash picks a starting point in
+// the palette, then probing skips colours already taken by another series;
+// past the palette the colour is generated instead of wrapping.
+function colorForLabel(rawLabel) {
+    var label = String(rawLabel);
+    if (Object.prototype.hasOwnProperty.call(colorRegistry, label)) {
+        return colorRegistry[label];
+    }
+
+    var color = null;
+    var start = hashLabel(label) % palette.length;
+
+    for (var i = 0; i < palette.length; i++) {
+        var candidate = palette[(start + i) % palette.length];
+        if (!usedColors[candidate]) {
+            color = candidate;
+            break;
+        }
+    }
+
+    if (color === null) {
+        do {
+            color = generatedColor(generatedCount++);
+        } while (usedColors[color]);
+    }
+
+    usedColors[color] = true;
+    colorRegistry[label] = color;
+
+    return color;
+}
+
+function fillColor(color) {
+    return color.replace(', 1)', ', 0.12)');
 }
 
 function initChart(data) {
@@ -190,8 +251,8 @@ function initChart(data) {
 
     emptyBox.style.display = hasData ? 'none' : 'block';
 
-    var datasets = series.map(function(entry, i) {
-        var color = palette[i % palette.length];
+    var datasets = series.map(function(entry) {
+        var color = colorForLabel(entry.label);
         return {
             label: entry.label,
             data: entry.values,
@@ -261,11 +322,29 @@ function renderReferrers(rows) {
     }).join('');
 }
 
+function renderChange(previous, current) {
+    var el = document.getElementById('viewsChange');
+    if (!el) return;
+
+    if (previous === null || previous === undefined || Number(previous) === 0) {
+        el.textContent = 'No earlier period to compare';
+        return;
+    }
+
+    var pct = ((Number(current) - Number(previous)) / Number(previous)) * 100;
+    el.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(1) + '% vs previous period';
+}
+
 function fetchData(range) {
+    document.querySelectorAll('[data-list-base]').forEach(function(link) {
+        link.href = link.dataset.listBase + '?range=' + encodeURIComponent(range);
+    });
+
     fetch(window._analyticsEndpoint + '?range=' + encodeURIComponent(range))
         .then(function(r) { return r.json(); })
         .then(function(data) {
             document.getElementById('totalViews').textContent = Number(data.totalViews || 0).toLocaleString();
+            renderChange(data.previousTotalViews, data.totalViews);
             initChart(data.trends || { labels: [], series: [] });
             renderTopContent(data.topContent || []);
             renderReferrers(data.referrers || []);
@@ -289,7 +368,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!btn) return;
         document.querySelectorAll('#rangeFilter .btn').forEach(function(b) { b.classList.remove('active'); });
         btn.classList.add('active');
-        fetchData(btn.dataset.range);
+        currentRange = btn.dataset.range;
+        fetchData(currentRange);
     });
 });
 </script>

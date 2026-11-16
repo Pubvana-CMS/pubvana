@@ -5,6 +5,11 @@ All notable changes to the AI Assistant plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.18] - 2026-11-13
+
+### Added
+- The nested `seo` block accepts `schema_type` (checked against the types the SEO plugin offers for that content type) and `seo_score` (0 to 100). Both were writable through `SeoService::saveMeta()` but unreachable from the API.
+
 ## [0.3.17] - 2026-11-07
 
 ### Fixed

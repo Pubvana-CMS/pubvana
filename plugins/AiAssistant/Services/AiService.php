@@ -1037,7 +1037,9 @@ class AiService
      * robots_directive is whitelisted. A value outside noindex, nofollow,
      * or noindex, nofollow is dropped, not written, so an existing valid
      * directive is never clobbered by a malformed one. A blank value still
-     * clears whatever sits there.
+     * clears whatever sits there. schema_type is checked against the types
+     * the SEO plugin offers for that content type, and seo_score is kept to
+     * the 0-100 range.
      *
      * @param array<string, mixed> $payload
      */
@@ -1068,6 +1070,25 @@ class AiService
         ] as $field) {
             if (array_key_exists($field, $block)) {
                 $fields[$field] = $this->nullableString($block[$field]);
+            }
+        }
+
+        if (array_key_exists('schema_type', $block)) {
+            $schemaType = $this->nullableString($block['schema_type']);
+            if ($schemaType === null || in_array($schemaType, $seo->allowedSchemaTypes($contentType), true)) {
+                $fields['schema_type'] = $schemaType;
+            }
+        }
+
+        if (array_key_exists('seo_score', $block)) {
+            $score = $block['seo_score'];
+            if ($score === null || $score === '') {
+                $fields['seo_score'] = null;
+            } elseif (is_numeric($score)) {
+                $score = (int) $score;
+                if ($score >= 0 && $score <= 100) {
+                    $fields['seo_score'] = $score;
+                }
             }
         }
 

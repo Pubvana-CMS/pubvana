@@ -6,6 +6,10 @@ namespace Pubvana\Plugins\Analytics;
 
 use Enlivenapp\FlightShield\Middlewares\PermissionMiddleware;
 use Pubvana\Plugins\Analytics\Controllers\AnalyticsAdminController;
+use Pubvana\Plugins\Analytics\Models\BotsDaily;
+use Pubvana\Plugins\Analytics\Models\PageView;
+use Pubvana\Plugins\Analytics\Models\ReferrersDaily;
+use Pubvana\Plugins\Analytics\Models\ViewsDaily;
 use Pubvana\Plugins\Analytics\Services\AnalyticsService;
 use Pubvana\Services\PluginInterface;
 use flight\Engine;
@@ -30,7 +34,15 @@ class Plugin implements PluginInterface
         $app->map('analytics', function () use ($app, $config) {
             static $instance = null;
             if ($instance === null) {
-                $instance = new AnalyticsService($app->db(), $app, $config);
+                $pdo = $app->db();
+                $instance = new AnalyticsService(
+                    new PageView($pdo),
+                    new ViewsDaily($pdo),
+                    new ReferrersDaily($pdo),
+                    new BotsDaily($pdo),
+                    $app,
+                    $config
+                );
             }
             return $instance;
         });
@@ -44,7 +56,8 @@ class Plugin implements PluginInterface
         $adext->addRoutes('admin', [
             ['GET',  $prefix,                [AnalyticsAdminController::class, 'index'],          [$viewPerm]],
             ['GET',  $prefix . '/data',      [AnalyticsAdminController::class, 'data'],           [$viewPerm]],
-            ['POST', $prefix . '/tracking',  [AnalyticsAdminController::class, 'toggleTracking'], [$viewPerm]],
+            ['GET',  $prefix . '/content',   [AnalyticsAdminController::class, 'contentList'],    [$viewPerm]],
+            ['GET',  $prefix . '/referrers', [AnalyticsAdminController::class, 'referrerList'],   [$viewPerm]],
         ], 'pubvana.analytics');
 
         // ─── Page View Tracking ────────────────────────────────────────

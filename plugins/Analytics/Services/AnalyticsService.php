@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Pubvana\Plugins\Analytics\Services;
 
+use Pubvana\Plugins\Analytics\Models\BotsDaily;
 use Pubvana\Plugins\Analytics\Models\PageView;
+use Pubvana\Plugins\Analytics\Models\ReferrersDaily;
+use Pubvana\Plugins\Analytics\Models\ViewsDaily;
 use flight\Engine;
 
 /**
@@ -24,18 +27,19 @@ use flight\Engine;
  */
 class AnalyticsService
 {
-    private \PDO $pdo;
+    private PageView $pageViews;
+
+    private ViewsDaily $viewsDaily;
+
+    private ReferrersDaily $referrersDaily;
+
+    private BotsDaily $botsDaily;
 
     /** @var Engine<object> */
     private Engine $app;
 
     /** @var array<string, mixed> */
     private array $config;
-
-    private ?bool $trackingEnabled = null;
-
-    /** Cached result of the server-version probe for the row-alias upsert. */
-    private ?bool $rowAliasSupport = null;
 
     private const BOT_KEYWORDS = [
         'bot', 'crawler', 'spider', 'slurp', 'curl', 'wget', 'python',
@@ -58,9 +62,18 @@ class AnalyticsService
      * @param Engine<object>       $app
      * @param array<string, mixed> $config
      */
-    public function __construct(\PDO $pdo, Engine $app, array $config = [])
-    {
-        $this->pdo = $pdo;
+    public function __construct(
+        PageView $pageViews,
+        ViewsDaily $viewsDaily,
+        ReferrersDaily $referrersDaily,
+        BotsDaily $botsDaily,
+        Engine $app,
+        array $config = []
+    ) {
+        $this->pageViews = $pageViews;
+        $this->viewsDaily = $viewsDaily;
+        $this->referrersDaily = $referrersDaily;
+        $this->botsDaily = $botsDaily;
         $this->app = $app;
         $this->config = $config;
     }
@@ -69,16 +82,21 @@ class AnalyticsService
      * Build the full report dataset for a period.
      *
      * @param string $range One of '7', '30', '90', '180', '365', 'all'
+     * @param int    $topContentLimit Rows to return for top content
+     * @param int    $referrerLimit   Rows to return for referrers
      * @return array<string, mixed>
      */
-    public function dashboard(string $range): array
+    public function dashboard(string $range, int $topContentLimit = 10, int $referrerLimit = 10): array
     {
+        $range = $this->normalizeRange($range);
+
         return [
-            'range'      => $this->normalizeRange($range),
-            'totalViews' => $this->totalViews($range),
-            'trends'     => $this->trend($range),
-            'topContent' => $this->topContent($range, 10),
-            'referrers'  => $this->referrers($range, 10),
+            'range'              => $range,
+            'totalViews'         => $this->totalViews($range),
+            'previousTotalViews' => $this->previousTotalViews($range),
+            'trends'             => $this->trend($range),
+            'topContent'         => $this->topContent($range, $topContentLimit),
+            'referrers'          => $this->referrers($range, $referrerLimit),
         ];
     }
 
@@ -131,11 +149,38 @@ class AnalyticsService
         $days = $this->rangeDays($range);
 
         if (!$this->usesDaily($range)) {
-            return $this->rawCount($this->cutoff($days ?? $this->hotDays()));
+            return $this->pageViews->visitorCountSince($this->cutoff($days ?? $this->hotDays()));
         }
 
-        return $this->rawCount($this->cutoff($this->hotDays()))
-            + $this->dailyTotal($this->dailyBoundary($range));
+        return $this->pageViews->visitorCountSince($this->cutoff($this->hotDays()))
+            + $this->viewsDaily->sumSince($this->dailyBoundary($range));
+    }
+
+    /**
+     * Visitor views in the equal-length period before the selected range.
+     *
+     * Null for 'all', which has no earlier period to compare against.
+     */
+    public function previousTotalViews(string $range): ?int
+    {
+        $days = $this->rangeDays($range);
+        if ($days === null) {
+            return null;
+        }
+
+        $end = strtotime("-{$days} days");
+        $start = strtotime('-' . ($days * 2) . ' days');
+        if ($end === false || $start === false) {
+            return null;
+        }
+
+        $raw = $this->pageViews->visitorCountBetween(
+            date('Y-m-d H:i:s', $start),
+            date('Y-m-d H:i:s', $end)
+        );
+        $daily = $this->viewsDaily->sumBetween(date('Y-m-d', $start), date('Y-m-d', $end));
+
+        return $raw + $daily;
     }
 
     /**
@@ -146,14 +191,26 @@ class AnalyticsService
     public function trend(string $range): array
     {
         $monthly = $this->rangeDays($range) === null;
+        $cutoff = $this->cutoff($this->rawCutoffDays($range));
+        $boundary = $this->usesDaily($range) ? $this->dailyBoundary($range) : null;
         $map = [];
+        $bots = [];
 
-        $this->accumulateTrend($map, $this->rawTrendRows($range, $monthly));
-        if ($this->usesDaily($range)) {
-            $this->accumulateTrend($map, $this->dailyTrendRows($range, $monthly));
+        $this->accumulateTrend($map, $this->pageViews->groupTrendSince($cutoff, $monthly));
+
+        foreach ($this->pageViews->botTrendSince($cutoff, $monthly) as $row) {
+            $bots[$row['bucket']] = ($bots[$row['bucket']] ?? 0) + $row['view_count'];
         }
 
-        return $this->assembleTrend($map, $range, $monthly);
+        if ($this->usesDaily($range)) {
+            $this->accumulateTrend($map, $this->viewsDaily->groupTrend($boundary, $monthly));
+
+            foreach ($this->botsDaily->trend($boundary, $monthly) as $row) {
+                $bots[$row['bucket']] = ($bots[$row['bucket']] ?? 0) + $row['view_count'];
+            }
+        }
+
+        return $this->assembleTrend($map, $bots, $range, $monthly);
     }
 
     /**
@@ -164,50 +221,22 @@ class AnalyticsService
     public function topContent(string $range, int $limit = 10): array
     {
         $limit = max(1, $limit);
-        $days = $this->rangeDays($range);
 
-        if (!$this->usesDaily($range)) {
-            $stmt = $this->pdo->prepare(
-                'SELECT page_path, page_group, COUNT(*) AS view_count
-                 FROM analytics_page_views
-                 WHERE viewed_at >= :cutoff
-                 GROUP BY page_path, page_group
-                 ORDER BY view_count DESC, page_path ASC
-                 LIMIT ' . $limit
+        $rows = $this->pageViews->topContentSince($this->cutoff($this->rawCutoffDays($range)), $limit);
+
+        if ($this->usesDaily($range)) {
+            $rows = $this->mergeTopContent(
+                $rows,
+                $this->viewsDaily->topContent($this->dailyBoundary($range), $limit)
             );
-            $stmt->bindValue(':cutoff', $this->cutoff($days ?? $this->hotDays()));
-        } else {
-            $stmt = $this->pdo->prepare(
-                'SELECT page_path, page_group, SUM(view_count) AS view_count
-                 FROM (
-                     SELECT page_path, page_group, COUNT(*) AS view_count
-                     FROM analytics_page_views
-                     WHERE viewed_at >= :cutoff
-                     GROUP BY page_path, page_group
-                     UNION ALL
-                     SELECT page_path, page_group, view_count
-                     FROM analytics_views_daily' . $this->dailyWhere($range) . '
-                 ) t
-                 GROUP BY page_path, page_group
-                 ORDER BY view_count DESC, page_path ASC
-                 LIMIT ' . $limit
-            );
-            $stmt->bindValue(':cutoff', $this->cutoff($this->hotDays()));
-            $this->bindDailyBoundary($stmt, $range);
         }
 
-        $stmt->execute();
+        usort($rows, static function (array $a, array $b): int {
+            return ($b['view_count'] <=> $a['view_count'])
+                ?: strcmp($a['page_path'], $b['page_path']);
+        });
 
-        $rows = [];
-        foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $row) {
-            $rows[] = [
-                'page_path'  => (string) $row['page_path'],
-                'page_group' => (string) $row['page_group'],
-                'view_count' => (int) $row['view_count'],
-            ];
-        }
-
-        return $rows;
+        return array_slice($rows, 0, $limit);
     }
 
     /**
@@ -218,53 +247,68 @@ class AnalyticsService
     public function referrers(string $range, int $limit = 10): array
     {
         $limit = max(1, $limit);
-        $days = $this->rangeDays($range);
 
-        if (!$this->usesDaily($range)) {
-            $stmt = $this->pdo->prepare(
-                'SELECT referrer_domain, COUNT(*) AS view_count
-                 FROM analytics_page_views
-                 WHERE viewed_at >= :cutoff
-                   AND referrer_domain IS NOT NULL
-                   AND referrer_domain <> \'\'
-                 GROUP BY referrer_domain
-                 ORDER BY view_count DESC, referrer_domain ASC
-                 LIMIT ' . $limit
+        $rows = $this->pageViews->referrerRowsSince($this->cutoff($this->rawCutoffDays($range)), $limit);
+
+        if ($this->usesDaily($range)) {
+            $rows = $this->mergeReferrers(
+                $rows,
+                $this->referrersDaily->rows($this->dailyBoundary($range), $limit)
             );
-            $stmt->bindValue(':cutoff', $this->cutoff($days ?? $this->hotDays()));
-        } else {
-            $stmt = $this->pdo->prepare(
-                'SELECT referrer_domain, SUM(view_count) AS view_count
-                 FROM (
-                     SELECT referrer_domain, COUNT(*) AS view_count
-                     FROM analytics_page_views
-                     WHERE viewed_at >= :cutoff
-                       AND referrer_domain IS NOT NULL
-                       AND referrer_domain <> \'\'
-                     GROUP BY referrer_domain
-                     UNION ALL
-                     SELECT referrer_domain, view_count
-                     FROM analytics_referrers_daily' . $this->dailyWhere($range) . '
-                 ) t
-                 GROUP BY referrer_domain
-                 ORDER BY view_count DESC, referrer_domain ASC
-                 LIMIT ' . $limit
-            );
-            $stmt->bindValue(':cutoff', $this->cutoff($this->hotDays()));
-            $this->bindDailyBoundary($stmt, $range);
         }
 
-        $stmt->execute();
+        usort($rows, static function (array $a, array $b): int {
+            return ($b['view_count'] <=> $a['view_count'])
+                ?: strcmp($a['referrer_domain'], $b['referrer_domain']);
+        });
 
-        $rows = [];
-        foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $row) {
-            $rows[] = [
-                'referrer_domain' => (string) $row['referrer_domain'],
-                'view_count'      => (int) $row['view_count'],
-            ];
-        }
+        $rows = array_slice($rows, 0, $limit);
 
-        return $rows;
+        return array_map(static fn (array $row): array => [
+            'referrer_domain' => $row['referrer_domain'] === '' ? 'Direct' : $row['referrer_domain'],
+            'view_count'      => $row['view_count'],
+        ], $rows);
+    }
+
+    /**
+     * One page of the full top content list for a range.
+     *
+     * @return array{rows: array<int, array{page_path:string, page_group:string, view_count:int}>, total:int}
+     */
+    public function contentPage(string $range, int $page, int $perPage): array
+    {
+        $cutoff = $this->cutoff($this->rawCutoffDays($range));
+        $boundary = $this->usesDaily($range) ? $this->dailyBoundary($range) : null;
+        $page = max(1, $page);
+        $perPage = max(1, $perPage);
+
+        return [
+            'rows'  => $this->pageViews->topContentPage($cutoff, $boundary, $perPage, ($page - 1) * $perPage),
+            'total' => $this->pageViews->topContentCount($cutoff, $boundary),
+        ];
+    }
+
+    /**
+     * One page of the full referrer list for a range, with Direct folded in.
+     *
+     * @return array{rows: array<int, array{referrer_domain:string, view_count:int}>, total:int}
+     */
+    public function referrersPage(string $range, int $page, int $perPage): array
+    {
+        $cutoff = $this->cutoff($this->rawCutoffDays($range));
+        $boundary = $this->usesDaily($range) ? $this->dailyBoundary($range) : null;
+        $page = max(1, $page);
+        $perPage = max(1, $perPage);
+
+        $rows = $this->pageViews->referrerPage($cutoff, $boundary, $perPage, ($page - 1) * $perPage);
+
+        return [
+            'rows'  => array_map(static fn (array $row): array => [
+                'referrer_domain' => $row['referrer_domain'] === '' ? 'Direct' : $row['referrer_domain'],
+                'view_count'      => $row['view_count'],
+            ], $rows),
+            'total' => $this->pageViews->referrerCount($cutoff, $boundary),
+        ];
     }
 
     /**
@@ -276,111 +320,13 @@ class AnalyticsService
      */
     public function rollup(): int
     {
-        $cutoff = $this->cutoff($this->hotDays());
-        $rowAlias = $this->supportsInsertSelectRowAlias();
-
-        // One transaction: the two merges and the delete either all land or
-        // none do. A merge that committed without the delete would leave the
-        // raw rows in place, and the next run would add their counts again.
-        $this->pdo->beginTransaction();
-        try {
-            $views = $this->pdo->prepare($this->viewsRollupSql($rowAlias));
-            $views->bindValue(':cutoff', $cutoff);
-            $views->execute();
-
-            $referrers = $this->pdo->prepare($this->referrersRollupSql($rowAlias));
-            $referrers->bindValue(':cutoff', $cutoff);
-            $referrers->execute();
-
-            $removed = 0;
-            $delete = $this->pdo->prepare(
-                'DELETE FROM analytics_page_views WHERE viewed_at < :cutoff LIMIT 5000'
-            );
-            $delete->bindValue(':cutoff', $cutoff);
-
-            do {
-                $delete->execute();
-                $count = $delete->rowCount();
-                $removed += $count;
-            } while ($count > 0);
-
-            $this->pdo->commit();
-        } catch (\Throwable $e) {
-            $this->pdo->rollBack();
-            throw $e;
-        }
-
-        return $removed;
+        return $this->pageViews->rollupOlderThan(
+            $this->cutoff($this->hotDays()),
+            $this->viewsDaily,
+            $this->referrersDaily,
+            $this->botsDaily
+        );
     }
-
-    /**
-     * The views-rollup statement. MySQL 8.0.19+ takes the row-alias form
-     * (VALUES() in ON DUPLICATE KEY UPDATE is deprecated there); MySQL below
-     * that and MariaDB still need the VALUES() form.
-     */
-    private function viewsRollupSql(bool $rowAlias): string
-    {
-        if ($rowAlias) {
-            return 'INSERT INTO analytics_views_daily (day, page_group, page_path, view_count)'
-                . ' SELECT * FROM ('
-                . ' SELECT DATE(viewed_at) AS day, page_group, page_path, COUNT(*) AS view_count'
-                . ' FROM analytics_page_views'
-                . ' WHERE viewed_at < :cutoff'
-                . ' GROUP BY DATE(viewed_at), page_group, page_path'
-                . ' ) AS new_row'
-                . ' ON DUPLICATE KEY UPDATE view_count = analytics_views_daily.view_count + new_row.view_count';
-        }
-        return 'INSERT INTO analytics_views_daily (day, page_group, page_path, view_count)'
-            . ' SELECT DATE(viewed_at), page_group, page_path, COUNT(*)'
-            . ' FROM analytics_page_views'
-            . ' WHERE viewed_at < :cutoff'
-            . ' GROUP BY DATE(viewed_at), page_group, page_path'
-            . ' ON DUPLICATE KEY UPDATE view_count = analytics_views_daily.view_count + VALUES(view_count)';
-    }
-
-    /**
-     * The referrers-rollup statement, same version split as viewsRollupSql().
-     */
-    private function referrersRollupSql(bool $rowAlias): string
-    {
-        if ($rowAlias) {
-            return 'INSERT INTO analytics_referrers_daily (day, referrer_domain, view_count)'
-                . ' SELECT * FROM ('
-                . ' SELECT DATE(viewed_at) AS day, referrer_domain, COUNT(*) AS view_count'
-                . ' FROM analytics_page_views'
-                . ' WHERE viewed_at < :cutoff'
-                . " AND referrer_domain IS NOT NULL"
-                . " AND referrer_domain <> ''"
-                . ' GROUP BY DATE(viewed_at), referrer_domain'
-                . ' ) AS new_row'
-                . ' ON DUPLICATE KEY UPDATE view_count = analytics_referrers_daily.view_count + new_row.view_count';
-        }
-        return 'INSERT INTO analytics_referrers_daily (day, referrer_domain, view_count)'
-            . ' SELECT DATE(viewed_at), referrer_domain, COUNT(*)'
-            . ' FROM analytics_page_views'
-            . ' WHERE viewed_at < :cutoff'
-            . " AND referrer_domain IS NOT NULL"
-            . " AND referrer_domain <> ''"
-            . ' GROUP BY DATE(viewed_at), referrer_domain'
-            . ' ON DUPLICATE KEY UPDATE view_count = analytics_referrers_daily.view_count + VALUES(view_count)';
-    }
-
-    /**
-     * Whether the server accepts the INSERT ... SELECT row-alias form that
-     * replaces the deprecated VALUES() upsert (MySQL 8.0.19+; MariaDB does
-     * not support it). Cached after the first server version probe.
-     */
-    private function supportsInsertSelectRowAlias(): bool
-    {
-        if ($this->rowAliasSupport === null) {
-            $version = (string) $this->pdo->getAttribute(\PDO::ATTR_SERVER_VERSION);
-            $isMariaDb = stripos($version, 'mariadb') !== false;
-            $clean = (string) preg_replace('/[^0-9.].*/', '', $version);
-            $this->rowAliasSupport = !$isMariaDb && version_compare($clean, '8.0.19', '>=');
-        }
-        return $this->rowAliasSupport;
-    }
-
     /**
      * Run the rollup at most once per day, guarded by a cache flag and lock.
      *
@@ -428,18 +374,6 @@ class AnalyticsService
     }
 
     /**
-     * Initial server-side tracking toggle resolved once per request cycle.
-     */
-    public function isTrackingEnabled(): bool
-    {
-        if ($this->trackingEnabled === null) {
-            $this->trackingEnabled = (bool) $this->app->settings()->get('Analytics.tracking_enabled', true);
-        }
-
-        return $this->trackingEnabled;
-    }
-
-    /**
      * Record the current request as a page view.
      *
      * Designed to be safe everywhere: failures are swallowed so tracking
@@ -453,10 +387,6 @@ class AnalyticsService
     {
         try {
             if (php_sapi_name() === 'cli') {
-                return;
-            }
-
-            if (!$this->isTrackingEnabled()) {
                 return;
             }
 
@@ -475,7 +405,7 @@ class AnalyticsService
                 return;
             }
 
-            $model = new PageView($this->pdo);
+            $model = $this->pageViews->newRow();
             $model->page_path = $this->clip($path, 255) ?? '';
             $model->page_group = $this->clip($this->groupForPath($path), 50) ?? '';
             $model->referrer_domain = $this->clip($this->referrerDomain((string) ($_SERVER['HTTP_REFERER'] ?? '')), 255);
@@ -503,10 +433,6 @@ class AnalyticsService
      */
     public function processPageCacheHits(): int
     {
-        if (php_sapi_name() === 'cli' && !$this->isTrackingEnabled()) {
-            return 0;
-        }
-
         $log = $this->pageHitsFile();
         if (!is_file($log)) {
             return 0;
@@ -541,7 +467,7 @@ class AnalyticsService
             }
 
             try {
-                $model = new PageView($this->pdo);
+                $model = $this->pageViews->newRow();
                 $model->page_path = $this->clip($path, 255) ?? '';
                 $model->page_group = $this->clip($this->groupForPath($path), 50) ?? '';
                 $model->referrer_domain = $this->clip(
@@ -583,63 +509,6 @@ class AnalyticsService
     // -------------------------------------------------------------------------
     // Trend assembly
     // -------------------------------------------------------------------------
-    /**
-     * Raw group/bucket rows for the recent (hot) window.
-     *
-     * @return array<int, array{page_group:string, bucket:string, view_count:int}>
-     */
-    private function rawTrendRows(string $range, bool $monthly): array
-    {
-        $bucketExpr = $monthly ? "DATE_FORMAT(viewed_at, '%Y-%m')" : 'DATE(viewed_at)';
-        $stmt = $this->pdo->prepare(
-            "SELECT page_group, {$bucketExpr} AS bucket, COUNT(*) AS view_count
-             FROM analytics_page_views
-             WHERE viewed_at >= :cutoff
-             GROUP BY page_group, bucket
-             ORDER BY bucket ASC"
-        );
-        $stmt->bindValue(':cutoff', $this->cutoff($this->rangeDays($range) ?? $this->hotDays()));
-        $stmt->execute();
-
-        return $this->trendRows($stmt);
-    }
-
-    /**
-     * Rolled group/bucket rows for the historical window.
-     *
-     * @return array<int, array{page_group:string, bucket:string, view_count:int}>
-     */
-    private function dailyTrendRows(string $range, bool $monthly): array
-    {
-        $bucketExpr = $monthly ? 'SUBSTRING(day, 1, 7)' : 'day';
-        $sql = "SELECT page_group, {$bucketExpr} AS bucket, SUM(view_count) AS view_count
-                FROM analytics_views_daily" . $this->dailyWhere($range) . '
-                GROUP BY page_group, bucket
-                ORDER BY bucket ASC';
-
-        $stmt = $this->pdo->prepare($sql);
-        $this->bindDailyBoundary($stmt, $range);
-        $stmt->execute();
-
-        return $this->trendRows($stmt);
-    }
-
-    /**
-     * @return array<int, array{page_group:string, bucket:string, view_count:int}>
-     */
-    private function trendRows(\PDOStatement $stmt): array
-    {
-        $rows = [];
-        foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $row) {
-            $rows[] = [
-                'page_group' => (string) $row['page_group'],
-                'bucket'     => (string) $row['bucket'],
-                'view_count' => (int) $row['view_count'],
-            ];
-        }
-
-        return $rows;
-    }
 
     /**
      * @param array<string, array<string, int>> $map group => bucket => count
@@ -655,11 +524,17 @@ class AnalyticsService
 
     /**
      * @param array<string, array<string, int>> $map group => bucket => count
+     * @param array<string, int> $bots bucket => count
      * @return array{granularity:string, labels:array<int,string>, series:array<int,array{label:string, values:array<int,int>}>}
      */
-    private function assembleTrend(array $map, string $range, bool $monthly): array
+    private function assembleTrend(array $map, array $bots, string $range, bool $monthly): array
     {
-        $buckets = $this->buildAxis($map, $range, $monthly);
+        $axisSource = $map;
+        if ($bots !== []) {
+            $axisSource[''] = $bots;
+        }
+
+        $buckets = $this->buildAxis($axisSource, $range, $monthly);
 
         if (empty($buckets)) {
             return [
@@ -676,6 +551,23 @@ class AnalyticsService
         });
 
         $series = [];
+
+        if ($map !== [] || $bots !== []) {
+            $visitors = [];
+            $robots = [];
+            foreach ($buckets as $bucket) {
+                $total = 0;
+                foreach ($map as $groupBuckets) {
+                    $total += $groupBuckets[$bucket] ?? 0;
+                }
+                $visitors[] = $total;
+                $robots[] = $bots[$bucket] ?? 0;
+            }
+
+            $series[] = ['label' => 'Visitors', 'values' => $visitors];
+            $series[] = ['label' => 'Robots', 'values' => $robots];
+        }
+
         foreach ($groups as $group) {
             $values = [];
             foreach ($buckets as $bucket) {
@@ -736,40 +628,70 @@ class AnalyticsService
     }
 
     // -------------------------------------------------------------------------
-    // SQL helpers
+    // Report helpers
     // -------------------------------------------------------------------------
 
     /**
-     * Count raw rows at or after a datetime cutoff.
+     * Days of raw rows a range reads. Past the hot window the older days
+     * come from the daily tables.
      */
-    private function rawCount(string $cutoff): int
+    private function rawCutoffDays(string $range): int
     {
-        $stmt = $this->pdo->prepare(
-            'SELECT COUNT(*) AS total FROM analytics_page_views WHERE viewed_at >= :cutoff'
-        );
-        $stmt->bindValue(':cutoff', $cutoff);
-        $stmt->execute();
+        if ($this->usesDaily($range)) {
+            return $this->hotDays();
+        }
 
-        return (int) ($stmt->fetch(\PDO::FETCH_ASSOC)['total'] ?? 0);
+        return $this->rangeDays($range) ?? $this->hotDays();
     }
 
     /**
-     * Sum daily view counts, optionally bounded below.
+     * Sum matching paths from the raw and rolled rows.
+     *
+     * @param array<int, array{page_path:string, page_group:string, view_count:int}> $raw
+     * @param array<int, array{page_path:string, page_group:string, view_count:int}> $daily
+     * @return array<int, array{page_path:string, page_group:string, view_count:int}>
      */
-    private function dailyTotal(?string $boundary): int
+    private function mergeTopContent(array $raw, array $daily): array
     {
-        $sql = 'SELECT SUM(view_count) AS total FROM analytics_views_daily';
-        if ($boundary !== null) {
-            $sql .= ' WHERE day >= :day';
+        $merged = [];
+
+        foreach (array_merge($raw, $daily) as $row) {
+            $key = $row['page_path'] . '|' . $row['page_group'];
+
+            if (isset($merged[$key])) {
+                $merged[$key]['view_count'] += $row['view_count'];
+                continue;
+            }
+
+            $merged[$key] = $row;
         }
 
-        $stmt = $this->pdo->prepare($sql);
-        if ($boundary !== null) {
-            $stmt->bindValue(':day', $boundary);
-        }
-        $stmt->execute();
+        return array_values($merged);
+    }
 
-        return (int) ($stmt->fetch(\PDO::FETCH_ASSOC)['total'] ?? 0);
+    /**
+     * Sum matching domains from the raw and rolled rows.
+     *
+     * @param array<int, array{referrer_domain:string, view_count:int}> $raw
+     * @param array<int, array{referrer_domain:string, view_count:int}> $daily
+     * @return array<int, array{referrer_domain:string, view_count:int}>
+     */
+    private function mergeReferrers(array $raw, array $daily): array
+    {
+        $merged = [];
+
+        foreach (array_merge($raw, $daily) as $row) {
+            $domain = $row['referrer_domain'];
+
+            if (isset($merged[$domain])) {
+                $merged[$domain]['view_count'] += $row['view_count'];
+                continue;
+            }
+
+            $merged[$domain] = $row;
+        }
+
+        return array_values($merged);
     }
 
     /**
@@ -783,26 +705,6 @@ class AnalyticsService
         }
         $ts = strtotime("-{$days} days");
         return $ts === false ? date('Y-m-d') : date('Y-m-d', $ts);
-    }
-
-    /**
-     * WHERE clause for the daily tables (leading space), or empty for all-time.
-     */
-    private function dailyWhere(string $range): string
-    {
-        $boundary = $this->dailyBoundary($range);
-        return $boundary === null ? '' : ' WHERE day >= :day';
-    }
-
-    /**
-     * Bind :day when a daily boundary applies.
-     */
-    private function bindDailyBoundary(\PDOStatement $stmt, string $range): void
-    {
-        $boundary = $this->dailyBoundary($range);
-        if ($boundary !== null) {
-            $stmt->bindValue(':day', $boundary);
-        }
     }
 
     private function cutoff(int $days): string
@@ -913,7 +815,26 @@ class AnalyticsService
             return null;
         }
 
-        return strtolower($host);
+        $host = strtolower($host);
+
+        // An internal click sends this site as the referrer.
+        $siteUrl = (string) ($this->app->get('siteUrl') ?? '');
+        if ($siteUrl !== '') {
+            $self = strtolower((string) parse_url($siteUrl, PHP_URL_HOST));
+            if ($this->bareHost($host) === $this->bareHost($self)) {
+                return null;
+            }
+        }
+
+        return $host;
+    }
+
+    /**
+     * Host without a leading www., so both forms compare equal.
+     */
+    private function bareHost(string $host): string
+    {
+        return str_starts_with($host, 'www.') ? substr($host, 4) : $host;
     }
 
     private function now(): string

@@ -113,6 +113,7 @@ namespace flight {
      * @phpstan-method \Pubvana\Plugins\Seo\Services\RobotsTxtService seoRobots()
      * @phpstan-method \Pubvana\Plugins\Seo\Services\LlmsTxtService seoLlmsTxt()
      * @phpstan-method \Pubvana\Plugins\Seo\Services\ContentAnalysisService seoAnalysis()
+     * @phpstan-method \Pubvana\Plugins\Seo\Services\SeoSettingsService seoSettings()
      * @phpstan-method \Pubvana\Plugins\Comments\Services\CommentService comments()
      * @phpstan-method \Pubvana\Plugins\Blog\Services\BlogService blog()
      * @phpstan-method \Pubvana\Plugins\Search\Services\SearchService search()
@@ -322,6 +323,10 @@ namespace Pubvana\Plugins\Seo\Services {
     }
 
     class ContentAnalysisService
+    {
+    }
+
+    class SeoSettingsService
     {
     }
 }

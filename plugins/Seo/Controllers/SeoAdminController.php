@@ -16,35 +16,15 @@ class SeoAdminController extends AdminController
      */
     public function settings(): void
     {
-        $settings = $this->app->settings();
-        $robots = $this->app->seoRobots();
+        $settingsData = $this->app->seoSettings()->all();
         $media = $this->app->media();
-
-        $settingsData = [
-            'title_separator'        => $settings->get('Seo.title_separator', '|'),
-            'title_template'         => $settings->get('Seo.title_template', '{title} {sep} {site_name}'),
-            'default_og_image'       => $settings->get('Seo.default_og_image', ''),
-            'default_language'       => $settings->get('Seo.default_language', 'en'),
-            'organization_name'      => $settings->get('Seo.organization_name', ''),
-            'organization_logo'      => $settings->get('Seo.organization_logo', ''),
-            'social_profiles'        => $settings->get('Seo.social_profiles', []),
-            'verification_google'    => $settings->get('Seo.verification_google', ''),
-            'verification_bing'      => $settings->get('Seo.verification_bing', ''),
-            'robots_txt_custom'      => $settings->get('Seo.robots_txt_custom', ''),
-            'sitemap_include_pages'  => $settings->get('Seo.sitemap_include_pages', true),
-            'sitemap_include_posts'  => $settings->get('Seo.sitemap_include_posts', true),
-            'sitemap_include_archives' => $settings->get('Seo.sitemap_include_archives', true),
-            'llms_txt_include_pages' => $settings->get('Seo.llms_txt_include_pages', true),
-            'llms_txt_include_posts' => $settings->get('Seo.llms_txt_include_posts', true),
-            'ai_disclosure_enabled'  => $settings->get('Seo.ai_disclosure_enabled', true),
-        ];
 
         $this->render('pubvana/seo/admin/settings', [
             'pageTitle'              => 'SEO Settings',
             'settings'               => $settingsData,
             'defaultOgImagePicker'   => $media->picker('default_og_image', $settingsData['default_og_image']),
             'organizationLogoPicker' => $media->picker('organization_logo', $settingsData['organization_logo']),
-            'aiCrawlers'             => $robots->getAiCrawlerList(),
+            'aiCrawlers'             => $this->app->seoRobots()->getAiCrawlerList(),
         ]);
     }
 
@@ -56,45 +36,7 @@ class SeoAdminController extends AdminController
         $post = $this->app->request()->data->getData();
         unset($post['_csrf_token']);
 
-        $settings = $this->app->settings();
-
-        // Simple string/boolean settings
-        $stringKeys = [
-            'title_separator', 'title_template', 'default_og_image',
-            'default_language', 'organization_name', 'organization_logo',
-            'verification_google', 'verification_bing', 'robots_txt_custom',
-        ];
-
-        foreach ($stringKeys as $key) {
-            if (array_key_exists($key, $post)) {
-                $settings->set('Seo.' . $key, $post[$key]);
-            }
-        }
-
-        // Boolean settings
-        $boolKeys = [
-            'sitemap_include_pages', 'sitemap_include_posts', 'sitemap_include_archives',
-            'llms_txt_include_pages', 'llms_txt_include_posts',
-            'ai_disclosure_enabled',
-        ];
-
-        foreach ($boolKeys as $key) {
-            $settings->set('Seo.' . $key, isset($post[$key]) ? true : false);
-        }
-
-        // Social profiles (textarea, one URL per line)
-        if (isset($post['social_profiles'])) {
-            $profiles = array_filter(array_map('trim', explode("\n", $post['social_profiles'])));
-            $settings->set('Seo.social_profiles', array_values($profiles));
-        }
-
-        // AI crawler settings
-        if (isset($post['ai_crawlers']) && is_array($post['ai_crawlers'])) {
-            foreach ($post['ai_crawlers'] as $bot => $stance) {
-                $settingKey = 'Seo.ai_crawler_' . strtolower(str_replace(['-', ' '], '_', $bot));
-                $settings->set($settingKey, $stance === 'allow' ? 'allow' : 'block');
-            }
-        }
+        $this->app->seoSettings()->saveAdminForm($post);
 
         $this->app->session()->flash('success', 'SEO settings saved.');
         $this->app->redirect('/admin/seo');

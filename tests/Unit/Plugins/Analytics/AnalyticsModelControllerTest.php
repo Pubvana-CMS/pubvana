@@ -80,45 +80,23 @@ final class AnalyticsModelControllerTest extends TestCase
 
     public function testIndexRendersReport(): void
     {
-        $controller = new AnalyticsAdminControllerHarness($this->controllerApp('7', true, ['range' => '7']));
+        $controller = new AnalyticsAdminControllerHarness($this->controllerApp('7', ['range' => '7']));
 
         $controller->index();
 
         self::assertSame('pubvana/analytics/admin/index', $controller->renderedView);
         self::assertSame('7', $controller->renderedData['range']);
         self::assertSame('Analytics', $controller->renderedData['pageTitle']);
-        self::assertTrue($controller->renderedData['trackingEnabled']);
         self::assertSame('/admin/analytics', $controller->renderedData['adminBase']);
     }
 
     public function testDataOutputsJson(): void
     {
-        $controller = new AnalyticsAdminControllerHarness($this->controllerApp('all', false, ['range' => 'x']));
+        $controller = new AnalyticsAdminControllerHarness($this->controllerApp('all', ['range' => 'x']));
 
         $controller->data();
 
         self::assertSame(['range' => '30'], $this->jsonPayload);
-    }
-
-    public function testToggleTracking(): void
-    {
-        $controller = new AnalyticsAdminControllerHarness($this->controllerApp('30', false, [], ['tracking_enabled' => '1']));
-
-        $controller->toggleTracking();
-
-        self::assertSame(['Analytics.tracking_enabled' => true], $this->savedSettings);
-        self::assertSame(['success' => 'Page tracking enabled.'], $this->flashes);
-        self::assertSame('/admin/analytics', $this->redirectTarget);
-
-        $this->savedSettings = [];
-        $this->flashes = [];
-        $this->redirectTarget = null;
-        $controller = new AnalyticsAdminControllerHarness($this->controllerApp('30', false, [], []));
-
-        $controller->toggleTracking();
-
-        self::assertSame(['Analytics.tracking_enabled' => false], $this->savedSettings);
-        self::assertSame(['success' => 'Page tracking disabled.'], $this->flashes);
     }
 
     public function testFindByIdRunsOnFreshInstance(): void
@@ -153,7 +131,6 @@ final class AnalyticsModelControllerTest extends TestCase
      */
     private function controllerApp(
         string $range,
-        bool $tracking = false,
         array $query = [],
         array $data = []
     ): \flight\Engine {
@@ -173,11 +150,7 @@ final class AnalyticsModelControllerTest extends TestCase
                     $this->data = new Collection($data);
                 }
             },
-            'analytics' => static fn (): object => new class ($tracking) {
-                public function __construct(private bool $tracking)
-                {
-                }
-
+            'analytics' => static fn (): object => new class () {
                 public function normalizeRange(string $raw): string
                 {
                     $raw = strtolower(trim($raw));
@@ -192,31 +165,6 @@ final class AnalyticsModelControllerTest extends TestCase
                 {
                     return ['range' => $range];
                 }
-
-                public function isTrackingEnabled(): bool
-                {
-                    return $this->tracking;
-                }
-            },
-            'settings' => static fn (): object => new class ($test) {
-                public function __construct(private AnalyticsModelControllerTest $test)
-                {
-                }
-
-                public function set(string $key, mixed $value): void
-                {
-                    $this->test->savedSettings[$key] = $value;
-                }
-            },
-            'session' => static fn (): object => new class ($test) {
-                public function __construct(private AnalyticsModelControllerTest $test)
-                {
-                }
-
-                public function flash(string $key, string $message): void
-                {
-                    $this->test->flashes[$key] = $message;
-                }
             },
             'pluginLoader' => static fn (): object => new class {
                 public function routePrefix(string $plugin): string
@@ -226,23 +174,12 @@ final class AnalyticsModelControllerTest extends TestCase
             },
         ]);
 
-        $app->map('redirect', function (string $target) use ($test): void {
-            $test->redirectTarget = $target;
-        });
         $app->map('json', function (mixed $payload) use ($test): void {
             $test->jsonPayload = $payload;
         });
 
         return $app;
     }
-
-    /** @var array<string, mixed> */
-    public array $savedSettings = [];
-
-    /** @var array<string, string> */
-    public array $flashes = [];
-
-    public ?string $redirectTarget = null;
 
     public mixed $jsonPayload = null;
 }

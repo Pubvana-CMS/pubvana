@@ -6,6 +6,10 @@ namespace Pubvana\Tests\Unit\Plugins\Analytics;
 
 use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
+use Pubvana\Plugins\Analytics\Models\BotsDaily;
+use Pubvana\Plugins\Analytics\Models\PageView;
+use Pubvana\Plugins\Analytics\Models\ReferrersDaily;
+use Pubvana\Plugins\Analytics\Models\ViewsDaily;
 use Pubvana\Plugins\Analytics\Services\AnalyticsService;
 use Pubvana\Tests\Support\Sqlite;
 use Pubvana\Tests\Support\TestCase;
@@ -22,15 +26,11 @@ final class AnalyticsServiceTest extends TestCase
 {
     private PDO $pdo;
 
-    /** @var array<string, mixed> */
-    private array $settingsData = [];
-
     protected function setUp(): void
     {
         parent::setUp();
         $this->pdo = Sqlite::recreate();
         $this->createTables($this->pdo);
-        $this->settingsData = [];
     }
 
     private function createTables(PDO $pdo): void
@@ -41,6 +41,7 @@ final class AnalyticsServiceTest extends TestCase
                 page_path       TEXT NOT NULL,
                 page_group      TEXT NOT NULL,
                 referrer_domain TEXT,
+                is_bot          INTEGER NOT NULL DEFAULT 0,
                 viewed_at       TEXT NOT NULL
             )'
         );
@@ -61,63 +62,52 @@ final class AnalyticsServiceTest extends TestCase
                 view_count      INTEGER NOT NULL DEFAULT 0
             )'
         );
+        $pdo->exec(
+            'CREATE TABLE analytics_bots_daily (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                day        TEXT NOT NULL,
+                view_count INTEGER NOT NULL DEFAULT 0
+            )'
+        );
     }
 
     /**
      * @param array<string, mixed> $config
      * @return AnalyticsService
      */
-    private function service(array $config = []): AnalyticsService
+    private function service(array $config = [], string $siteUrl = ''): AnalyticsService
     {
-        $test = $this;
-        $app = $this->app([
-            'settings' => static fn (): object => new class ($test) {
-                public function __construct(private AnalyticsServiceTest $test)
-                {
-                }
+        $app = $this->app();
+        $app->set('siteUrl', $siteUrl);
 
-                public function get(string $key, mixed $default = null): mixed
-                {
-                    return $this->test->settingsGet($key, $default);
-                }
-
-                public function set(string $key, mixed $value): void
-                {
-                    $this->test->settingsSet($key, $value);
-                }
-            },
-        ]);
-
-        return new AnalyticsService($this->pdo, $app, array_merge([
-            'tracking' => [
-                'skip_prefixes' => ['/admin', '/api', '/assets'],
-                'skip_paths' => ['/feed', '/rss', '/sitemap.xml', '/robots.txt'],
-            ],
-            'rollup' => ['hot_days' => 30],
-        ], $config));
+        return new AnalyticsService(
+            new PageView($this->pdo),
+            new ViewsDaily($this->pdo),
+            new ReferrersDaily($this->pdo),
+            new BotsDaily($this->pdo),
+            $app,
+            array_merge([
+                'tracking' => [
+                    'skip_prefixes' => ['/admin', '/api', '/assets'],
+                    'skip_paths' => ['/feed', '/rss', '/sitemap.xml', '/robots.txt'],
+                ],
+                'rollup' => ['hot_days' => 30],
+            ], $config)
+        );
     }
 
-    public function settingsGet(string $key, mixed $default = null): mixed
-    {
-        return $this->settingsData[$key] ?? $default;
-    }
-
-    public function settingsSet(string $key, mixed $value): void
-    {
-        $this->settingsData[$key] = $value;
-    }
-
-    private function insertView(string $path, string $group, string $viewedAt, ?string $referrer = null): void
+    private function insertView(string $path, string $group, string $viewedAt, ?string $referrer = null, int $isBot = 0): void
     {
         $stmt = $this->pdo->prepare(
-            'INSERT INTO analytics_page_views (page_path, page_group, referrer_domain, viewed_at)
-             VALUES (:path, :group, :referrer, :viewed)'
+            'INSERT INTO analytics_page_views (page_path, page_group, referrer_domain, is_bot, viewed_at)
+             VALUES (:path, :group, :referrer, :is_bot, :viewed)'
         );
         self::assertNotFalse($stmt);
         $stmt->execute([
             ':path' => $path,
             ':group' => $group,
             ':referrer' => $referrer,
+            ':is_bot' => $isBot,
             ':viewed' => $viewedAt,
         ]);
     }
@@ -149,19 +139,6 @@ final class AnalyticsServiceTest extends TestCase
         self::assertSame('blog', $service->groupForPath('/blog/hello'));
         self::assertSame('blog', $service->groupForPath('/Blog/hello'));
         self::assertSame('page', $service->groupForPath('/page/about'));
-    }
-
-    public function testIsTrackingEnabledCaches(): void
-    {
-        $service = $this->service();
-
-        self::assertTrue($service->isTrackingEnabled());
-
-        $this->settingsData['Analytics.tracking_enabled'] = false;
-        // Cached true from the first read.
-        self::assertTrue($service->isTrackingEnabled());
-
-        self::assertFalse($this->service()->isTrackingEnabled());
     }
 
     public function testNormalizePath(): void
@@ -209,6 +186,15 @@ final class AnalyticsServiceTest extends TestCase
         self::assertNull($this->invoke($service, 'referrerDomain', ['not-a-url']));
         self::assertSame('example.com', $this->invoke($service, 'referrerDomain', ['https://Example.COM/page']));
         self::assertSame('example.com', $this->invoke($service, 'referrerDomain', ['http://example.com:8080/x']));
+    }
+
+    public function testReferrerDomainDropsOwnHost(): void
+    {
+        $service = $this->service([], 'https://mysite.test');
+
+        self::assertNull($this->invoke($service, 'referrerDomain', ['https://mysite.test/blog']));
+        self::assertNull($this->invoke($service, 'referrerDomain', ['https://www.mysite.test/blog']));
+        self::assertSame('other.test', $this->invoke($service, 'referrerDomain', ['https://other.test/x']));
     }
 
     public function testClipAndLabels(): void
@@ -259,7 +245,7 @@ final class AnalyticsServiceTest extends TestCase
         self::assertCount(1, $limited);
     }
 
-    public function testReferrersExcludesBlanks(): void
+    public function testReferrersGroupsBlanksAsDirect(): void
     {
         $service = $this->service();
 
@@ -270,10 +256,56 @@ final class AnalyticsServiceTest extends TestCase
         $this->insertView('/e', 'blog', $this->now(), '');
 
         $refs = $service->referrers('7', 10);
-        self::assertCount(2, $refs);
-        self::assertSame('example.com', $refs[0]['referrer_domain']);
-        self::assertSame(2, $refs[0]['view_count']);
-        self::assertSame('other.test', $refs[1]['referrer_domain']);
+        self::assertCount(3, $refs);
+
+        $byDomain = [];
+        foreach ($refs as $row) {
+            $byDomain[$row['referrer_domain']] = $row['view_count'];
+        }
+
+        self::assertSame(2, $byDomain['example.com'] ?? null);
+        self::assertSame(2, $byDomain['Direct'] ?? null);
+        self::assertSame(1, $byDomain['other.test'] ?? null);
+    }
+
+    public function testBotsStayOutOfVisitorTotals(): void
+    {
+        $service = $this->service();
+
+        $this->insertView('/a', 'blog', $this->now());
+        $this->insertView('/a', 'blog', $this->now(), null, 1);
+
+        self::assertSame(1, $service->totalViews('7'));
+        self::assertCount(1, $service->topContent('7'));
+    }
+
+    public function testTrendAddsVisitorsAndRobotsSeries(): void
+    {
+        $service = $this->service();
+
+        $this->insertView('/blog/a', 'blog', $this->now());
+        $this->insertView('/blog/a', 'blog', $this->now());
+        $this->insertView('/blog/a', 'blog', $this->now(), null, 1);
+
+        $trend = $service->trend('7');
+        $labels = array_column($trend['series'], 'label');
+
+        self::assertSame('Visitors', $labels[0]);
+        self::assertSame('Robots', $labels[1]);
+        self::assertSame('blog', $labels[2]);
+        self::assertSame(2, $trend['series'][0]['values'][6]);
+        self::assertSame(1, $trend['series'][1]['values'][6]);
+    }
+
+    public function testPreviousTotalViewsComparesEqualPeriod(): void
+    {
+        $service = $this->service();
+
+        $this->insertView('/a', 'blog', $this->now());
+        $this->insertView('/a', 'blog', date('Y-m-d H:i:s', strtotime('-10 days')));
+
+        self::assertSame(1, $service->previousTotalViews('7'));
+        self::assertNull($service->previousTotalViews('all'));
     }
 
     public function testTrendZeroFillsAndOrdersGroups(): void
@@ -290,13 +322,15 @@ final class AnalyticsServiceTest extends TestCase
         $trend = $service->trend('7');
         self::assertSame('day', $trend['granularity']);
         self::assertCount(7, $trend['labels']);
-        self::assertCount(2, $trend['series']);
-        // Busiest group first.
-        self::assertSame('blog', $trend['series'][0]['label']);
-        self::assertCount(7, $trend['series'][0]['values']);
-        self::assertSame(4, array_sum($trend['series'][0]['values']) + array_sum($trend['series'][1]['values']));
+        self::assertCount(4, $trend['series']);
+        // Visitors and Robots come first, then the busiest group.
+        self::assertSame('Visitors', $trend['series'][0]['label']);
+        self::assertSame('Robots', $trend['series'][1]['label']);
+        self::assertSame('blog', $trend['series'][2]['label']);
+        self::assertCount(7, $trend['series'][2]['values']);
+        self::assertSame(4, array_sum($trend['series'][2]['values']) + array_sum($trend['series'][3]['values']));
         // Today is the last bucket.
-        self::assertSame(3, $trend['series'][0]['values'][6]);
+        self::assertSame(3, $trend['series'][2]['values'][6]);
     }
 
     public function testTrendEmpty(): void
@@ -321,6 +355,38 @@ final class AnalyticsServiceTest extends TestCase
         self::assertArrayHasKey('granularity', $report['trends']);
         self::assertCount(1, $report['topContent']);
         self::assertCount(1, $report['referrers']);
+    }
+
+    public function testContentPagePaginates(): void
+    {
+        $service = $this->service();
+
+        $this->insertView('/a', 'blog', $this->now());
+        $this->insertView('/b', 'blog', $this->now());
+        $this->insertView('/b', 'blog', $this->now());
+
+        $first = $service->contentPage('7', 1, 1);
+        self::assertSame(2, $first['total']);
+        self::assertCount(1, $first['rows']);
+        self::assertSame('/b', $first['rows'][0]['page_path']);
+
+        $second = $service->contentPage('7', 2, 1);
+        self::assertSame('/a', $second['rows'][0]['page_path']);
+    }
+
+    public function testReferrersPageFoldsDirect(): void
+    {
+        $service = $this->service();
+
+        $this->insertView('/a', 'blog', $this->now());
+        $this->insertView('/b', 'blog', $this->now(), 'example.com');
+        $this->insertView('/c', 'blog', $this->now(), 'example.com');
+
+        $page = $service->referrersPage('7', 1, 10);
+        self::assertSame(2, $page['total']);
+        self::assertSame('example.com', $page['rows'][0]['referrer_domain']);
+        self::assertSame(2, $page['rows'][0]['view_count']);
+        self::assertSame('Direct', $page['rows'][1]['referrer_domain']);
     }
 
     public function testLogViewAndMaybeRollupNoopOnCli(): void

@@ -5,6 +5,34 @@ All notable changes to the Analytics plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.15] - 2026-11-14
+
+### Added
+- All Content and All Referrers pages, opened by View all on the report cards,
+  100 rows per page.
+- Robot hits are stored with `is_bot` set, charted as a Robots line and left out
+  of every visitor total. The migration adds the column and the
+  `analytics_bots_daily` table.
+- The Total Views card shows the change against the period of equal length
+  before the selected range.
+- A view with no referrer shows as Direct in the referrer list.
+
+### Changed
+- Database work moved from `AnalyticsService` into `Models/`: `PageView`,
+  `ViewsDaily`, `ReferrersDaily`, and `BotsDaily`.
+
+### Removed
+- The page tracking switch, the `Analytics.tracking_enabled` setting, and the
+  `POST /admin/analytics/tracking` route. Tracking runs while the plugin is
+  enabled.
+
+### Fixed
+- Top referrers no longer lists the site itself. A click on a link inside the
+  site sends the site as the referrer, and that is now recorded with no
+  referrer.
+- A failed rollup no longer counts the same views twice on the next run. The
+  merges and the deletes commit together.
+
 ## [0.1.14] - 2026-11-08
 
 ### Added

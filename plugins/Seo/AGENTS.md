@@ -4,14 +4,14 @@ Guidance for AI agents contributing to this plugin, which is part of the main Pu
 
 ## Overview
 
-Seo manages on-page SEO for Pubvana: head meta tags with per-content overrides, Open Graph and Twitter cards, a connected JSON-LD graph, an XML sitemap, robots.txt with per-bot AI crawler directives, llms.txt for AI/GEO, and an in-editor content analysis panel.
+Seo manages on-page SEO for Pubvana: head meta tags with per-content overrides, Open Graph and Twitter cards, a connected JSON-LD graph, an XML sitemap, robots.txt with per-bot AI crawler directives, llms.txt for AI/GEO, and an in-editor content analysis panel. It also carries an AI Assistant API (`/api/ai/seo/*`) that lets a granted key read and change the site SEO settings and score a draft.
 
 - **Package:** `pubvana/seo` (`pubvana.json:2`), semver `0.1.0`, category `tools`
 - **License:** MIT, matching the main project (repo `composer.json` declares `"license": "MIT"`)
 - **PHP floor:** not declared in the plugin; the main project requires PHP `^8.2` (repo `composer.json`), and the code stays within that floor (`str_contains` at `Models/SeoMeta.php:94, 102`)
 - **Namespace:** `Pubvana\Plugins\Seo` (`Plugin.php:5`), with `Controllers`, `Services`, `Models`, `Database\Migrations`, and `Views` sub-trees
 - **Runtime dependencies (declared at the app level, not in the plugin):** `flightphp/active-record` (model base), `enlivenapp/migrations` (migration base), `enlivenapp/flight-shield` (author lookup at `Services/SeoService.php:544`); plugin hosts Blog, Pages, Profiles, Media (image pickers); core services `$app->settings()`, `adext()`, `request()`, `db()`, `media()`, `pages()`, `blog()`, `profiles()`, `url()` (site origin for emitted URLs), plus `view()->fetch()` and the `halt`/`json`/`header` helpers
-- **Config:** `Config/Config.php`: `routePrepend` (empty string, so the public files live at root level)
+- **Config:** `Config/Config.php`: `routePrepend` (empty string, so the public files live at root level) and `aiApiPrefix` (`/api/ai/seo`, the base for the AI Assistant grants and routes)
 - **Docs:** `README.md`
 
 ## Project guidelines
@@ -29,14 +29,17 @@ Seo manages on-page SEO for Pubvana: head meta tags with per-content overrides, 
 11. **Match each AI crawler against its stance.** Training bots default to `block`, retrieval/citation bots to `allow`; only `block` emits a `User-agent`/`Disallow` pair (`Services/RobotsTxtService.php:24-37, 84-101`). Adding a bot means updating the const map, its description, and the settings-key normalization. Reason: an unknown bot must never silently default to `allow`.
 12. **Keep the read-model light and per-request.** `getMetaField()` caches the meta record statically per content context for the life of the request (`Services/SeoService.php:480-503`). Reason: renderHead calls it many times; the cache keeps one query per content item.
 13. **Every emitted URL builds on the configured site origin, never the request Host header.** All five services get their base from `UrlService::siteOrigin()` (the `SITE_URL` deployment value; unconfigured falls back to the constant `http://localhost`) and `getCurrentUrl()` contributes the request path only (`Services/SeoService.php`, `Services/SchemaService.php`, `Services/SitemapService.php`, `Services/RobotsTxtService.php`, `Services/LlmsTxtService.php`). Reason: the `Host` header is attacker-controlled and would otherwise poison canonical, `og:url`, JSON-LD `@id`, sitemap, robots.txt, and llms.txt URLs (AUDIT M4, same rule as the password-reset link in H5). Do not re-derive scheme/host from the request.
+14. **`SeoSettingsService` is the single read and write path for `Seo.*` settings.** `all()` serves the admin screen and the API. `saveAdminForm()` keeps the settings form's behavior (raw strings, every boolean written, any crawler name posted), and `saveApi()` normalizes and caps input for the AI Assistant. Both use the same field lists, so a new setting goes there first, then the admin view. The API path limits crawler names to `getAiCrawlerList()` and stances to `allow`/`block`, so an API call cannot invent settings keys.
+15. **The AI grants and the AI routes share `aiApiPrefix`.** `Plugin::register()` reads the config once and builds both from it, so a grant can never point at a route that does not exist. `SeoApiController` extends `AiApiController` for auth, grants, the audit log, and the response envelope, and returns 503 when the AI Assistant plugin is not loaded.
 
 ## Repository layout
 
 ```
 plugins/Seo/
-├── Config/Config.php                     routePrepend (empty -> root-level files)
+├── Config/Config.php                     routePrepend (empty -> root-level files), aiApiPrefix
 ├── Controllers/
 │   ├── SeoAdminController.php            Settings page, save meta (AJAX), analyze (AJAX)
+│   ├── SeoApiController.php              /api/ai/seo/* for the AI Assistant (help, settings, analyze)
 │   └── SeoPublicController.php           /sitemap.xml, /robots.txt, /llms.txt
 ├── Database/
 │   └── Migrations/2026-09-17-105237_CreateSeoMetaTable.php
@@ -49,7 +52,8 @@ plugins/Seo/
 │   ├── RobotsTxtService.php              $app->seoRobots(): default rules + AI crawler directives
 │   ├── LlmsTxtService.php                $app->seoLlmsTxt(): llmstxt.org format for AI discoverability
 │   └── ContentAnalysisService.php        $app->seoAnalysis(): 15 pass/fail/warning checks, score 0-100
-├── Plugin.php                            Entry point; six facades, routes, dashboard, content.edit.panel
+│   └── SeoSettingsService.php            $app->seoSettings(): settings reads, admin form write, normalized API write
+├── Plugin.php                            Entry point; seven facades, routes, ai.grant registrations, dashboard, content.edit.panel
 ├── pubvana.json                          Manifest; admin.menu (SEO under settings), admin.dashboard
 ├── Views/admin/
 │   ├── settings.php                      Global SEO settings incl. AI crawler toggles
@@ -93,6 +97,11 @@ The plugin has no `composer.json` (it is in-tree), but it has a test suite under
   - [ ] `analyze` returns a score and the checklist; saving the panel persists `seo_score` and the meta fields; a second save updates the same `(content_type, content_id)` row
   - [ ] Dashboard Coverage/Avg Score math matches published content with/without meta
   - [ ] Disabling Blog or Pages empties their sitemap/llms sections instead of failing
+  - [ ] `GET /api/ai/seo/help` answers with any valid key, granted or not, and lists both grants and every field
+  - [ ] `GET /api/ai/seo/settings` needs `seo.read`; `POST` needs `seo.manage`; a missing token gets 401 and a missing grant 403
+  - [ ] `POST /api/ai/seo/settings` writes only the keys sent, ignores unknown names, and refuses an empty body with 422
+  - [ ] `POST /api/ai/seo/analyze` returns a score and checks, and refuses a body with no title and no content with 422
+  - [ ] With the AI Assistant plugin off, the SEO API answers 503 instead of crashing
 
 Coverage: the suite covers the service, the meta model, the content analysis service, the fetch-file services, the controller, host-header safety, and schema XSS escaping.
 
@@ -121,6 +130,8 @@ Coverage: the suite covers the service, the meta model, the content analysis ser
 |------|---------------|
 | Add a per-content meta field | `saveMeta()` whitelist + `2026-09-17-105237` migration + `content-panel.php` + `build*()` consumer |
 | Change world defaults | Settings view + the matching `build*()` default in the service |
+| Add or change a setting | `SeoSettingsService` field list + `all()`/`describe()` + `SeoAdminController` key lists + settings view + the `build*()` consumer |
+| Add an AI Assistant endpoint | `SeoApiController` action + route in `Plugin.php` + `ai.grant` entry + `SeoPluginTest` |
 | Adjust AI crawler set or stances | `AI_CRAWLERS` const + `getAiCrawlerList()` descriptions + settings view |
 | Add a public fetch file | Public controller route (`Plugin.php`) that always responds; inclusion toggles are the only knob |
 | Exclude content from crawl surfaces | Set its `robots_directive` to a `noindex` value; sitemap/llms honor it |

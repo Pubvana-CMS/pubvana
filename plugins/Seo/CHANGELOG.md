@@ -5,6 +5,17 @@ All notable changes to the SEO plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.14] - 2026-11-14
+
+### Added
+- AI Assistant API at `/api/ai/seo`. `seo.read` reads settings and crawler stances and scores a draft. `seo.manage` changes settings.
+- `GET /api/ai/seo/help` returns the field guide and the crawler names.
+- `SeoSettingsService` as the settings read and write path shared by the admin form and the API.
+- `SeoService::allowedSchemaTypes()` lists the schema types offered per content type.
+
+### Fixed
+- A settings form value of `"0"` is stored as false instead of true.
+
 ## [0.1.13] - 2026-11-07
 
 ### Fixed

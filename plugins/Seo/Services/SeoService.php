@@ -192,9 +192,20 @@ class SeoService
     }
 
     /**
-     * Save or update SEO meta for a content item.
+     * Schema types a content item may select in its editor panel.
+     *
+     * @return list<string>
      */
+    public function allowedSchemaTypes(string $contentType): array
+    {
+        return $contentType === 'post'
+            ? ['BlogPosting', 'Article', 'NewsArticle', 'TechArticle']
+            : ['WebPage', 'AboutPage', 'ContactPage', 'FAQPage'];
+    }
+
     /**
+     * Save or update SEO meta for a content item.
+     *
      * @param array<string, mixed> $data
      */
     public function saveMeta(string $contentType, int $contentId, array $data): SeoMeta

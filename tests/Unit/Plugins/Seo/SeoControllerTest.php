@@ -8,6 +8,7 @@ use flight\util\Collection;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Pubvana\Plugins\Seo\Controllers\SeoAdminController;
 use Pubvana\Plugins\Seo\Controllers\SeoPublicController;
+use Pubvana\Plugins\Seo\Services\SeoSettingsService;
 use Pubvana\Tests\Support\TestCase;
 
 /**
@@ -150,6 +151,7 @@ final class SeoControllerTest extends TestCase
         $app->map('redirect', function (string $target) use ($test): void {
             $test->redirectTarget = $target;
         });
+        $app->map('seoSettings', static fn (): SeoSettingsService => new SeoSettingsService($app));
         $app->map('json', function (mixed $data, int $code = 200) use ($test): void {
             $test->jsons[] = ['data' => $data, 'code' => $code];
         });

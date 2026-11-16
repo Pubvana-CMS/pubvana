@@ -227,6 +227,8 @@ Posts and pages accept a nested `seo` object on create and update. Only included
 | `og_type` | string | e.g. `article`, `website` |
 | `twitter_card` | string | `summary`, `summary_large_image` |
 | `hreflang` | string | e.g. `en`, `en-US` |
+| `schema_type` | string | `BlogPosting`, `Article`, `NewsArticle`, `TechArticle` for posts, `WebPage`, `AboutPage`, `ContactPage`, `FAQPage` for pages, or blank. A value outside the list for that content type is ignored |
+| `seo_score` | integer | 0 to 100. Out-of-range or non-numeric values are ignored |
 
 ## Development and testing
 
