@@ -190,6 +190,7 @@ MIT. [LICENSE](LICENSE)
 ## Contributors
 
 - Enliven Applications
+- @preko69 - [issue 12](https://github.com/Pubvana-CMS/pubvana/issues/12) - [Profile](https://github.com/preko69)
 - Your Name Here
 
 - [FlightPHP](https://github.com/flightphp):  While the good folks over at flightPHP haven't contributed code to this project directly, they have provided the basis of the project with `core`, `active record` and others. Consider using FlightPHP for your next project! 
