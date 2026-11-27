@@ -5,12 +5,15 @@ Notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [3.0.0] - 2026-11-27
+## [3.0.0-rc3] - 2026-11-27
 
-First full release. 
+### Added
+- dependabot.yml
+- security.yml
 
 ### Changed
 - SEO/GEO/AEO updates and expansion
+- psalm workflow
 
 
 ## [3.0.0-rc2] - 2026-11-14

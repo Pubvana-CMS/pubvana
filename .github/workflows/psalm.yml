@@ -9,6 +9,10 @@ on:
 jobs:
   psalm:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
 
     steps:
       - uses: actions/checkout@v5
@@ -22,4 +26,11 @@ jobs:
         run: composer install --no-progress --prefer-dist
 
       - name: Run Psalm (taint analysis)
-        run: vendor/bin/psalm --no-progress --taint-analysis
+        run: vendor/bin/psalm --no-progress --taint-analysis --report=psalm.sarif
+
+      - name: Upload SARIF
+        if: always() && hashFiles('psalm.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: psalm.sarif
+          category: psalm
