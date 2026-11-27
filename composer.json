@@ -44,7 +44,7 @@
         "flightphp/tracy-extensions": "^0.3.0",
         "tracy/tracy": "^2.10",
         "phpstan/phpstan": "^2.2",
-        "vimeo/psalm": "6.4.0",
+        "vimeo/psalm": "7.18.0",
         "phpunit/phpunit": "^11.0"
     }
 }
