@@ -24,8 +24,32 @@ class GdProcessor implements ImageProcessorInterface
         return $this->image;
     }
 
+    /**
+     * Resolve a local image path, rejecting remote streams.
+     *
+     * getimagesize() and the imagecreatefrom* functions accept URLs, so a
+     * tainted path would be an SSRF sink. realpath() and is_file() keep the
+     * call on a local file.
+     *
+     * @psalm-taint-escape ssrf
+     */
+    private function localImagePath(string $path): string
+    {
+        if (preg_match('#^[a-z][a-z0-9+.-]*://#i', $path) === 1) {
+            throw new \InvalidArgumentException('Remote image URLs are not accepted.');
+        }
+
+        $real = realpath($path);
+        if ($real === false || !is_file($real)) {
+            throw new \InvalidArgumentException("Unable to read image: {$path}");
+        }
+
+        return $real;
+    }
+
     public function load(string $path): static
     {
+        $path = $this->localImagePath($path);
         $info = getimagesize($path);
         if ($info === false) {
             throw new \InvalidArgumentException("Unable to read image: {$path}");

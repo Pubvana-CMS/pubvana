@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <psalm
-    errorLevel="8"
+    errorLevel="5"
     resolveFromConfigFile="true"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns="https://getpsalm.org/schema/config"
@@ -25,6 +25,6 @@
     <issueHandlers>
         <!-- PHPStan owns general type/code checking at level 8. Psalm here is
              focused on taint/security analysis (XSS, SQLi, shell, SSRF, etc.).
-             Error level is lenient so type noise does not bury taint findings. -->
+             Error level 5 keeps type noise down without hiding most real issues. -->
     </issueHandlers>
 </psalm>

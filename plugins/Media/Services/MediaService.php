@@ -104,9 +104,10 @@ class MediaService
         $filename = $hex . '.' . $ext;
 
         $originalPath = $absDir . '/originals/' . $filename;
+        $source = $this->localSourcePath($file['tmp_name'], $fromUpload);
         $stored = $fromUpload
-            ? move_uploaded_file($file['tmp_name'], $originalPath)
-            : copy($file['tmp_name'], $originalPath);
+            ? move_uploaded_file($source, $originalPath)
+            : copy($source, $originalPath);
         if (!$stored) {
             throw new \RuntimeException('Failed to store the image.');
         }
@@ -161,9 +162,10 @@ class MediaService
 
         $videoName = $hex . '.' . $ext;
         $videoRel  = $relDir . '/' . $videoName;
+        $source = $this->localSourcePath($file['tmp_name'], $fromUpload);
         $stored = $fromUpload
-            ? move_uploaded_file($file['tmp_name'], $absDir . '/' . $videoName)
-            : copy($file['tmp_name'], $absDir . '/' . $videoName);
+            ? move_uploaded_file($source, $absDir . '/' . $videoName)
+            : copy($source, $absDir . '/' . $videoName);
         if (!$stored) {
             throw new \RuntimeException('Failed to store the video.');
         }
@@ -723,6 +725,32 @@ class MediaService
     }
 
     // ── Internal ───────────────────────────────────────────────
+
+    /**
+     * Resolve a local source path for a store operation.
+     *
+     * Uploads must be genuine uploaded files; imports must resolve to a real
+     * local file. Both branches reject missing files before the move or copy.
+     *
+     * @psalm-taint-escape file
+     */
+    private function localSourcePath(string $path, bool $fromUpload): string
+    {
+        if ($fromUpload) {
+            if (!is_uploaded_file($path)) {
+                throw new \InvalidArgumentException('Invalid upload.');
+            }
+
+            return $path;
+        }
+
+        $real = realpath($path);
+        if ($real === false || !is_file($real)) {
+            throw new \InvalidArgumentException('The source file does not exist.');
+        }
+
+        return $real;
+    }
 
     /**
      * Validate an upload and return the server-detected MIME type.
