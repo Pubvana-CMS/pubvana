@@ -5,12 +5,15 @@ SEO management for Pubvana: meta tags, structured data, sitemaps, robots.txt, Op
 ## Features
 
 - Meta tags with per-content overrides
+- Meta descriptions from page body text when one is not set
 - Open Graph and Twitter cards
-- Structured data (JSON-LD)
+- Structured data (JSON-LD) with authors, page creators, word counts, sections, and keywords
+- Organization description and contact email for structured data
 - XML sitemap at `/sitemap.xml`
-- robots.txt with per-crawler AI directives
-- LLMs.txt for AI discoverability
-- In-editor content analysis panel
+- robots.txt with per-crawler AI directives for discovery, retrieval, training, and link preview
+- LLMs.txt and LLMs-full.txt for AI discoverability
+- In-editor SEO and AI readiness analysis with separate scores
+- Visible updated dates on posts and pages when content changes
 - Canonical, Open Graph, and JSON-LD URLs built from the configured site URL
 
 ## Usage

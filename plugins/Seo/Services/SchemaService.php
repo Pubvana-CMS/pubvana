@@ -76,14 +76,14 @@ class SchemaService
 
         // WebSite, homepage only.
         if ($this->isHomepage($context)) {
-            $graph[] = $this->buildWebSiteNode($siteUrl . '#website');
+            $graph[] = $this->buildWebSiteNode($siteUrl . '#website', $orgId);
         }
 
         $canonical = $context['url'] ?? $this->getCurrentUrl();
 
-        // Author Person node (posts).
+        // Author Person node (posts and pages).
         $authorId = null;
-        if ($contentType === 'post') {
+        if ($contentType === 'post' || $contentType === 'page') {
             $author = $context['author'] ?? null;
             if (is_array($author) && !empty($author['name'])) {
                 $authorId = !empty($author['url']) ? $author['url'] . '#person' : $siteUrl . '#author';
@@ -104,7 +104,7 @@ class SchemaService
             $graph[] = $this->buildArticleNode($context, $articleType, $canonical . '#article', $authorId, $orgId);
         } elseif ($contentType === 'page') {
             $pageType = $this->resolveSchemaType($context, self::PAGE_TYPES, 'WebPage');
-            $graph[] = $this->buildWebPageNode($context, $pageType, $canonical . '#webpage', $orgId);
+            $graph[] = $this->buildWebPageNode($context, $pageType, $canonical . '#webpage', $orgId, $authorId);
         }
 
         if ($graph === []) {
@@ -147,6 +147,21 @@ class SchemaService
             'name'  => $orgName,
             'url'   => $this->getSiteUrl(),
         ];
+
+        $description = trim((string) ($settings->get('Seo.organization_description')
+            ?: $settings->get('CMS.siteByline')));
+        if ($description !== '') {
+            $node['description'] = $description;
+        }
+
+        $contactEmail = trim((string) $settings->get('Seo.organization_contact_email'));
+        if ($contactEmail !== '' && filter_var($contactEmail, FILTER_VALIDATE_EMAIL) !== false) {
+            $node['contactPoint'] = [
+                '@type'       => 'ContactPoint',
+                'email'       => $contactEmail,
+                'contactType' => 'customer support',
+            ];
+        }
 
         $logo = $settings->get('Seo.organization_logo');
         if (!empty($logo)) {
@@ -202,16 +217,18 @@ class SchemaService
     /**
      * @return array<string, mixed>
     */
-    protected function buildWebSiteNode(string $id): array
+    protected function buildWebSiteNode(string $id, string $orgId): array
     {
         $siteName = $this->app->settings()->get('CMS.siteName');
         $siteUrl = $this->getSiteUrl();
 
         return [
-            '@type' => 'WebSite',
-            '@id'   => $id,
-            'name'  => $siteName,
-            'url'   => $siteUrl,
+            '@type'      => 'WebSite',
+            '@id'        => $id,
+            'name'       => $siteName,
+            'url'        => $siteUrl,
+            'inLanguage' => $this->language(),
+            'publisher'  => ['@id' => $orgId],
             'potentialAction' => [
                 '@type'       => 'SearchAction',
                 'target'      => $siteUrl . '/search?q={search_term_string}',
@@ -258,11 +275,15 @@ class SchemaService
     */
     protected function buildArticleNode(array $context, string $type, string $id, ?string $authorId, string $orgId): array
     {
+        $url = (string) ($context['url'] ?? $this->getCurrentUrl());
+
         $node = [
-            '@type'     => $type,
-            '@id'       => $id,
-            'url'       => $context['url'] ?? $this->getCurrentUrl(),
-            'publisher' => ['@id' => $orgId],
+            '@type'            => $type,
+            '@id'              => $id,
+            'url'              => $url,
+            'mainEntityOfPage' => ['@type' => 'WebPage', '@id' => $url],
+            'inLanguage'       => $this->language(),
+            'publisher'        => ['@id' => $orgId],
         ];
 
         $headline = (string) ($context['title'] ?? '');
@@ -294,6 +315,21 @@ class SchemaService
             $node['image'] = $this->resolveImageUrl((string) $context['image']);
         }
 
+        $wordCount = $this->wordCountFromContext($context);
+        if ($wordCount !== null) {
+            $node['wordCount'] = $wordCount;
+        }
+
+        $section = $this->articleSectionFromContext($context);
+        if ($section !== null) {
+            $node['articleSection'] = $section;
+        }
+
+        $keywords = $this->keywordsFromContext($context);
+        if ($keywords !== null) {
+            $node['keywords'] = $keywords;
+        }
+
         if (!empty($context['ai_generated']) && $this->aiDisclosureEnabled()) {
             $node['digitalSourceType'] = self::DIGITAL_SOURCE_TYPE_AI;
         }
@@ -305,14 +341,19 @@ class SchemaService
      * @param array<string, mixed> $context
      * @return array<string, mixed>
     */
-    protected function buildWebPageNode(array $context, string $type, string $id, string $orgId): array
+    protected function buildWebPageNode(array $context, string $type, string $id, string $orgId, ?string $authorId = null): array
     {
         $node = [
-            '@type'     => $type,
-            '@id'       => $id,
-            'url'       => $context['url'] ?? $this->getCurrentUrl(),
-            'publisher' => ['@id' => $orgId],
+            '@type'      => $type,
+            '@id'        => $id,
+            'url'        => $context['url'] ?? $this->getCurrentUrl(),
+            'inLanguage' => $this->language(),
+            'publisher'  => ['@id' => $orgId],
         ];
+
+        if ($authorId !== null) {
+            $node['author'] = ['@id' => $authorId];
+        }
 
         $name = (string) ($context['title'] ?? '');
         if ($name !== '') {
@@ -326,6 +367,16 @@ class SchemaService
 
         if (!empty($context['description'])) {
             $node['description'] = mb_substr((string) $context['description'], 0, 160);
+        }
+
+        $wordCount = $this->wordCountFromContext($context);
+        if ($wordCount !== null) {
+            $node['wordCount'] = $wordCount;
+        }
+
+        $keywords = $this->keywordsFromContext($context);
+        if ($keywords !== null) {
+            $node['keywords'] = $keywords;
         }
 
         if (!empty($context['ai_generated']) && $this->aiDisclosureEnabled()) {
@@ -422,6 +473,84 @@ class SchemaService
 
         $trimmed = trim($value);
         return $trimmed === '' ? null : $trimmed;
+    }
+
+    /**
+     * Site language for schema inLanguage fields.
+     */
+    protected function language(): string
+    {
+        $language = trim((string) $this->app->settings()->get('Seo.default_language', 'en'));
+
+        return $language !== '' ? $language : 'en';
+    }
+
+    /**
+     * Word count from the content the controller passed in.
+     *
+     * @param array<string, mixed> $context
+     */
+    protected function wordCountFromContext(array $context): ?int
+    {
+        $content = $context['content'] ?? null;
+        if (!is_string($content) || trim($content) === '') {
+            return null;
+        }
+
+        $count = str_word_count(strip_tags($content));
+
+        return $count > 0 ? $count : null;
+    }
+
+    /**
+     * Category and tag names as one comma-separated keywords value.
+     *
+     * @param array<string, mixed> $context
+     */
+    protected function keywordsFromContext(array $context): ?string
+    {
+        $keywords = [];
+
+        foreach (['categories', 'tags'] as $key) {
+            $values = $context[$key] ?? [];
+            if (!is_array($values)) {
+                continue;
+            }
+
+            foreach ($values as $value) {
+                if (!is_string($value)) {
+                    continue;
+                }
+
+                $value = trim($value);
+                if ($value !== '') {
+                    $keywords[$value] = true;
+                }
+            }
+        }
+
+        return $keywords === [] ? null : implode(', ', array_keys($keywords));
+    }
+
+    /**
+     * Primary category name for articleSection.
+     *
+     * @param array<string, mixed> $context
+     */
+    protected function articleSectionFromContext(array $context): ?string
+    {
+        $categories = $context['categories'] ?? [];
+        if (!is_array($categories)) {
+            return null;
+        }
+
+        foreach ($categories as $category) {
+            if (is_string($category) && trim($category) !== '') {
+                return trim($category);
+            }
+        }
+
+        return null;
     }
 
     protected function aiDisclosureEnabled(): bool

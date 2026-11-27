@@ -16,8 +16,9 @@ class ContentAnalysisService
      * Analyze content for SEO quality.
      *
      * @param array<string, mixed> $data Keys: title, content, meta_title, meta_description,
-     *                                    focus_keywords (array), slug, has_images, image_alts (array)
-     * @return array{score: int, checks: array<int, array<string, string>>}
+     *                                    focus_keywords (array), slug, has_images, image_alts (array),
+     *                                    author, updated_at
+     * @return array{score: int, checks: array<int, array<string, string>>, ai_score: int, ai_checks: array<int, array<string, string>>}
      */
     public function analyze(array $data): array
     {
@@ -30,6 +31,8 @@ class ContentAnalysisService
         $slug = $data['slug'] ?? '';
         $hasImages = $data['has_images'] ?? false;
         $imageAlts = $data['image_alts'] ?? [];
+        $author = (string) ($data['author'] ?? '');
+        $updatedAt = (string) ($data['updated_at'] ?? '');
 
         $primaryKeyword = $focusKeywords[0] ?? '';
         $contentPlain = strip_tags($content);
@@ -67,9 +70,26 @@ class ContentAnalysisService
         $total = count($checks);
         $score = (int) round(($passed / $total) * 100);
 
+        // AI readiness checks: extraction and citation signals that answer
+        // engines reward, kept separate from the classic SEO score.
+        $aiChecks = [
+            $this->checkAnswerFirstParagraph($content),
+            $this->checkQuestionHeadings($content),
+            $this->checkFaqBlock($content),
+            $this->checkCitedSources($content),
+            $this->checkStatistics($contentPlain),
+            $this->checkStructuredBlocks($content),
+            $this->checkFreshness($updatedAt),
+            $this->checkAuthor($author),
+        ];
+        $aiPassed = count(array_filter($aiChecks, fn($c) => $c['status'] === 'pass'));
+        $aiScore = (int) round(($aiPassed / count($aiChecks)) * 100);
+
         return [
-            'score'  => $score,
-            'checks' => $checks,
+            'score'     => $score,
+            'checks'    => $checks,
+            'ai_score'  => $aiScore,
+            'ai_checks' => $aiChecks,
         ];
     }
 
@@ -365,5 +385,156 @@ class ContentAnalysisService
             return ['id' => 'sentence_length', 'status' => 'warning', 'message' => 'Some sentences are long. Consider shortening for readability.'];
         }
         return ['id' => 'sentence_length', 'status' => 'fail', 'message' => 'Too many long sentences. Break them up for better readability.'];
+    }
+
+    // -----------------------------------------------------------------
+    // AI readiness checks
+    // -----------------------------------------------------------------
+
+    /**
+     * @return array{id: string, status: string, message: string}
+     */
+    protected function checkAnswerFirstParagraph(string $content): array
+    {
+        if (preg_match('/<p[^>]*>(.*?)<\/p>/is', $content, $match)) {
+            $text = strip_tags($match[1]);
+        } else {
+            $text = strip_tags($content);
+        }
+
+        $words = str_word_count(trim($text));
+        if ($words === 0) {
+            return ['id' => 'aeo_answer_first', 'status' => 'fail', 'message' => 'No opening paragraph to answer the question.'];
+        }
+        if ($words >= 40 && $words <= 80) {
+            return ['id' => 'aeo_answer_first', 'status' => 'pass', 'message' => "The opening paragraph answers in {$words} words."];
+        }
+
+        return ['id' => 'aeo_answer_first', 'status' => 'warning', 'message' => "The opening paragraph is {$words} words. Aim for 40–80 for a self-contained answer."];
+    }
+
+    /**
+     * @return array{id: string, status: string, message: string}
+     */
+    protected function checkQuestionHeadings(string $content): array
+    {
+        if (!preg_match_all('/<h[2-3][^>]*>(.*?)<\/h[2-3]>/is', $content, $matches)) {
+            return ['id' => 'aeo_question_headings', 'status' => 'fail', 'message' => 'No H2 or H3 headings to match questions.'];
+        }
+
+        foreach ($matches[1] as $heading) {
+            $text = trim(strip_tags($heading));
+            if ($text === '') {
+                continue;
+            }
+
+            if (str_ends_with($text, '?') || preg_match('/^(who|what|when|where|why|how|can|do|does|is|are)\b/i', $text)) {
+                return ['id' => 'aeo_question_headings', 'status' => 'pass', 'message' => 'Content uses question-style headings.'];
+            }
+        }
+
+        return ['id' => 'aeo_question_headings', 'status' => 'warning', 'message' => 'No question-style headings. Phrase some H2s as the questions people ask.'];
+    }
+
+    /**
+     * @return array{id: string, status: string, message: string}
+     */
+    protected function checkFaqBlock(string $content): array
+    {
+        if (preg_match('/<details\b[^>]*>.*?<summary\b[^>]*>.*?<\/summary>/is', $content)) {
+            return ['id' => 'aeo_faq_block', 'status' => 'pass', 'message' => 'Content has an FAQ block built from details and summary.'];
+        }
+
+        if (preg_match('/<h[2-3][^>]*>\s*(FAQ|Frequently Asked Questions)\s*<\/h[2-3]>/i', $content)) {
+            return ['id' => 'aeo_faq_block', 'status' => 'pass', 'message' => 'Content has an FAQ section.'];
+        }
+
+        return ['id' => 'aeo_faq_block', 'status' => 'warning', 'message' => 'No FAQ block. Add details and summary Q&A for answer engines.'];
+    }
+
+    /**
+     * @return array{id: string, status: string, message: string}
+     */
+    protected function checkCitedSources(string $content): array
+    {
+        $external = preg_match_all('/<a\s[^>]*href\s*=\s*["\']https?:\/\/[^"\']+["\'][^>]*>/i', $content);
+        $cites = preg_match_all('/<cite\b[^>]*>/i', $content);
+        $count = (int) $external + (int) $cites;
+
+        if ($count >= 2) {
+            return ['id' => 'aeo_citations', 'status' => 'pass', 'message' => "Content cites {$count} external sources."];
+        }
+        if ($count === 1) {
+            return ['id' => 'aeo_citations', 'status' => 'warning', 'message' => 'Only 1 external source. Add more named, linked sources.'];
+        }
+
+        return ['id' => 'aeo_citations', 'status' => 'fail', 'message' => 'No external sources. Link the evidence behind your claims.'];
+    }
+
+    /**
+     * @return array{id: string, status: string, message: string}
+     */
+    protected function checkStatistics(string $plainText): array
+    {
+        $count = preg_match_all('/\d+(?:\.\d+)?\s?%|\baccording to\b/i', $plainText);
+
+        if ($count >= 2) {
+            return ['id' => 'aeo_statistics', 'status' => 'pass', 'message' => "Content includes {$count} statistics or sourcing phrases."];
+        }
+        if ($count === 1) {
+            return ['id' => 'aeo_statistics', 'status' => 'warning', 'message' => 'Only 1 statistic. Add numbers with dates and sources.'];
+        }
+
+        return ['id' => 'aeo_statistics', 'status' => 'fail', 'message' => 'No statistics. Add specific numbers with sources.'];
+    }
+
+    /**
+     * @return array{id: string, status: string, message: string}
+     */
+    protected function checkStructuredBlocks(string $content): array
+    {
+        if (preg_match('/<(ul|ol|table)\b/i', $content)) {
+            return ['id' => 'aeo_structured_blocks', 'status' => 'pass', 'message' => 'Content uses a list or table.'];
+        }
+
+        return ['id' => 'aeo_structured_blocks', 'status' => 'warning', 'message' => 'No list or table. Use one for steps or comparisons.'];
+    }
+
+    /**
+     * @return array{id: string, status: string, message: string}
+     */
+    protected function checkFreshness(string $updatedAt): array
+    {
+        $updated = trim($updatedAt);
+        if ($updated === '') {
+            return ['id' => 'aeo_freshness', 'status' => 'fail', 'message' => 'No updated date.'];
+        }
+
+        $timestamp = strtotime($updated);
+        if ($timestamp === false) {
+            return ['id' => 'aeo_freshness', 'status' => 'fail', 'message' => 'The updated date could not be read.'];
+        }
+
+        $days = (time() - $timestamp) / 86400;
+        if ($days <= 183) {
+            return ['id' => 'aeo_freshness', 'status' => 'pass', 'message' => 'Updated within the last six months.'];
+        }
+        if ($days <= 365) {
+            return ['id' => 'aeo_freshness', 'status' => 'warning', 'message' => 'Updated within the last year. Refresh within six months for competitive topics.'];
+        }
+
+        return ['id' => 'aeo_freshness', 'status' => 'fail', 'message' => 'Last updated more than a year ago. Refresh the content.'];
+    }
+
+    /**
+     * @return array{id: string, status: string, message: string}
+     */
+    protected function checkAuthor(string $author): array
+    {
+        if (trim($author) !== '') {
+            return ['id' => 'aeo_author', 'status' => 'pass', 'message' => 'Author byline is set.'];
+        }
+
+        return ['id' => 'aeo_author', 'status' => 'warning', 'message' => 'No author byline. Name the author for E-E-A-T.'];
     }
 }

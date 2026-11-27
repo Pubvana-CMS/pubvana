@@ -88,7 +88,10 @@ final class SeoSettingsServiceTest extends TestCase
         self::assertSame('|', $settings['title_separator']);
         self::assertSame('{title} {sep} {site_name}', $settings['title_template']);
         self::assertSame('en', $settings['default_language']);
+        self::assertSame('', $settings['organization_description']);
+        self::assertSame('', $settings['organization_contact_email']);
         self::assertTrue($settings['sitemap_include_pages']);
+        self::assertTrue($settings['llms_txt_include_categories']);
         self::assertTrue($settings['ai_disclosure_enabled']);
         self::assertSame([], $settings['social_profiles']);
     }
@@ -174,6 +177,7 @@ final class SeoSettingsServiceTest extends TestCase
             'sitemap_include_archives' => true,
             'llms_txt_include_pages'   => 'yes',
             'llms_txt_include_posts'   => 'no',
+            'llms_txt_include_categories' => '1',
             'ai_disclosure_enabled'    => 1,
         ]);
 
@@ -182,6 +186,7 @@ final class SeoSettingsServiceTest extends TestCase
         self::assertTrue($this->stored['Seo.sitemap_include_archives']);
         self::assertTrue($this->stored['Seo.llms_txt_include_pages']);
         self::assertFalse($this->stored['Seo.llms_txt_include_posts']);
+        self::assertTrue($this->stored['Seo.llms_txt_include_categories']);
         self::assertTrue($this->stored['Seo.ai_disclosure_enabled']);
     }
 

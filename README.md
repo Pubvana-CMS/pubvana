@@ -9,7 +9,7 @@ Pubvana is a flexible, shared-host friendly CMS (Content Management System) for 
 
 ## v3
 
-[![v3](https://img.shields.io/badge/v3-In%20Beta-blue)](https://github.com/Pubvana-CMS/pubvana)
+[![v3](https://img.shields.io/badge/v3-Release-Candidate-blue)](https://github.com/Pubvana-CMS/pubvana)
 [![Latest Release](https://img.shields.io/github/v/release/Pubvana-CMS/pubvana)](https://github.com/Pubvana-CMS/pubvana/releases)
 [![PHP](https://img.shields.io/badge/PHP-8.2%2B-blue.svg)](https://www.php.net)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)

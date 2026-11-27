@@ -18,23 +18,110 @@ class RobotsTxtService
     protected Engine $app;
 
     /**
-     * Known AI crawlers with their default stance.
-     * 'block' = training bots (default block)
-     * 'allow' = retrieval/citation bots (default allow)
+     * Known AI crawlers with their default stance, purpose, and description.
+     *
+     * Discovery bots feed an answer engine's search index. Retrieval bots
+     * fetch a page at a user's request. Training bots collect content for
+     * model development. Search and training are separate decisions.
+     *
+     * @var array<string, array{stance: string, purpose: string, description: string}>
      */
     protected const AI_CRAWLERS = [
-        'GPTBot'             => 'block',
-        'ChatGPT-User'       => 'allow',
-        'Google-Extended'    => 'block',
-        'ClaudeBot'          => 'block',
-        'Claude-SearchBot'   => 'allow',
-        'CCBot'              => 'block',
-        'PerplexityBot'      => 'allow',
-        'Bytespider'         => 'block',
-        'Applebot-Extended'  => 'block',
-        'FacebookBot'        => 'block',
-        'anthropic-ai'       => 'block',
-        'cohere-ai'          => 'block',
+        'OAI-SearchBot' => [
+            'stance'      => 'allow',
+            'purpose'     => 'discovery',
+            'description' => 'OpenAI search index for ChatGPT search results',
+        ],
+        'PerplexityBot' => [
+            'stance'      => 'allow',
+            'purpose'     => 'discovery',
+            'description' => 'Perplexity search index for cited answers',
+        ],
+        'Claude-SearchBot' => [
+            'stance'      => 'allow',
+            'purpose'     => 'discovery',
+            'description' => 'Anthropic search index for Claude web answers',
+        ],
+        'meta-webindexer' => [
+            'stance'      => 'allow',
+            'purpose'     => 'discovery',
+            'description' => 'Meta AI search index for cited answers',
+        ],
+        'DuckAssistBot' => [
+            'stance'      => 'allow',
+            'purpose'     => 'discovery',
+            'description' => 'DuckDuckGo crawler for AI-assisted answers',
+        ],
+        'ChatGPT-User' => [
+            'stance'      => 'allow',
+            'purpose'     => 'retrieval',
+            'description' => 'Fetches a page when a ChatGPT user asks about it',
+        ],
+        'Claude-User' => [
+            'stance'      => 'allow',
+            'purpose'     => 'retrieval',
+            'description' => 'Fetches a page when a Claude user asks about it',
+        ],
+        'Perplexity-User' => [
+            'stance'      => 'allow',
+            'purpose'     => 'retrieval',
+            'description' => 'Fetches a page when a Perplexity user asks about it',
+        ],
+        'meta-externalfetcher' => [
+            'stance'      => 'allow',
+            'purpose'     => 'retrieval',
+            'description' => 'Fetches a page when a Meta AI user asks about it',
+        ],
+        'MistralAI-User' => [
+            'stance'      => 'allow',
+            'purpose'     => 'retrieval',
+            'description' => 'Fetches a page when a Mistral user asks about it',
+        ],
+        'facebookexternalhit' => [
+            'stance'      => 'allow',
+            'purpose'     => 'preview',
+            'description' => 'Builds link previews when a URL is shared on Meta apps',
+        ],
+        'GPTBot' => [
+            'stance'      => 'block',
+            'purpose'     => 'training',
+            'description' => 'OpenAI model training',
+        ],
+        'ClaudeBot' => [
+            'stance'      => 'block',
+            'purpose'     => 'training',
+            'description' => 'Anthropic model training',
+        ],
+        'Google-Extended' => [
+            'stance'      => 'block',
+            'purpose'     => 'training',
+            'description' => 'Gemini training and grounding; does not affect Google Search',
+        ],
+        'CCBot' => [
+            'stance'      => 'block',
+            'purpose'     => 'training',
+            'description' => 'Common Crawl dataset used by many model trainers',
+        ],
+        'Bytespider' => [
+            'stance'      => 'block',
+            'purpose'     => 'training',
+            'description' => 'ByteDance and TikTok model training',
+        ],
+        'Applebot-Extended' => [
+            'stance'      => 'block',
+            'purpose'     => 'training',
+            'description' => 'Apple model training',
+        ],
+        'meta-externalagent' => [
+            'stance'      => 'block',
+            'purpose'     => 'training',
+            'description' => 'Meta model training',
+        ],
+        'AI2Bot' => [
+            'stance'      => 'block',
+            'purpose'     => 'training',
+            'description' => 'Allen Institute for AI model training',
+        ],
     ];
 
     /**
@@ -93,9 +180,9 @@ class RobotsTxtService
         $settings = $this->app->settings();
         $lines = [];
 
-        foreach (self::AI_CRAWLERS as $bot => $defaultStance) {
+        foreach (self::AI_CRAWLERS as $bot => $info) {
             $settingKey = 'Seo.ai_crawler_' . $this->botToSettingKey($bot);
-            $stance = $settings->get($settingKey) ?? $defaultStance;
+            $stance = $settings->get($settingKey) ?? $info['stance'];
 
             if ($stance === 'block') {
                 $lines[] = 'User-agent: ' . $bot;
@@ -110,35 +197,22 @@ class RobotsTxtService
     /**
      * Get the list of known AI crawlers with their current stance.
      *
-     * @return array<string, array{bot: string, default: string, current: string, description: string}>
+     * @return array<string, array{bot: string, default: string, current: string, purpose: string, description: string}>
      */
     public function getAiCrawlerList(): array
     {
         $settings = $this->app->settings();
-        $descriptions = [
-            'GPTBot'            => 'OpenAI uses your content to train their AI models',
-            'ChatGPT-User'     => 'ChatGPT shows your content in answers when users ask questions',
-            'Google-Extended'   => 'Google uses your content to train Gemini AI',
-            'ClaudeBot'         => 'Anthropic uses your content to train Claude AI',
-            'Claude-SearchBot'  => 'Claude shows your content in answers when users ask questions',
-            'CCBot'             => 'Common Crawl collects web data used by many AI companies for training',
-            'PerplexityBot'     => 'Perplexity shows your content in search answers',
-            'Bytespider'        => 'ByteDance/TikTok uses your content to train their AI',
-            'Applebot-Extended' => 'Apple uses your content to train Apple AI',
-            'FacebookBot'       => 'Meta uses your content to train their AI models',
-            'anthropic-ai'      => 'Older Anthropic training crawler (replaced by ClaudeBot)',
-            'cohere-ai'         => 'Cohere uses your content to train their AI models',
-        ];
-
         $list = [];
-        foreach (self::AI_CRAWLERS as $bot => $defaultStance) {
+
+        foreach (self::AI_CRAWLERS as $bot => $info) {
             $settingKey = 'Seo.ai_crawler_' . $this->botToSettingKey($bot);
-            $current = $settings->get($settingKey) ?? $defaultStance;
+            $current = $settings->get($settingKey) ?? $info['stance'];
             $list[$bot] = [
                 'bot'         => $bot,
-                'default'     => $defaultStance,
+                'default'     => $info['stance'],
                 'current'     => $current,
-                'description' => $descriptions[$bot],
+                'purpose'     => $info['purpose'],
+                'description' => $info['description'],
             ];
         }
 

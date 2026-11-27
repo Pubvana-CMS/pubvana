@@ -27,6 +27,8 @@ class SeoSettingsService
         'default_og_image'    => 2048,
         'default_language'    => 20,
         'organization_name'   => 255,
+        'organization_description' => 500,
+        'organization_contact_email' => 255,
         'organization_logo'   => 2048,
         'verification_google' => 255,
         'verification_bing'   => 255,
@@ -44,6 +46,7 @@ class SeoSettingsService
         'sitemap_include_archives' => true,
         'llms_txt_include_pages'   => true,
         'llms_txt_include_posts'   => true,
+        'llms_txt_include_categories' => true,
         'ai_disclosure_enabled'    => true,
     ];
 
@@ -58,6 +61,8 @@ class SeoSettingsService
         'default_og_image'    => '',
         'default_language'    => 'en',
         'organization_name'   => '',
+        'organization_description' => '',
+        'organization_contact_email' => '',
         'organization_logo'   => '',
         'verification_google' => '',
         'verification_bing'   => '',

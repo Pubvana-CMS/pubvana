@@ -5,6 +5,14 @@ Notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [3.0.0] - 2026-11-27
+
+First full release. 
+
+### Changed
+- SEO/GEO/AEO updates and expansion
+
+
 ## [3.0.0-rc2] - 2026-11-14
 
 ### Added

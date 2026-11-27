@@ -5,6 +5,25 @@ All notable changes to the SEO plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- Post and page contexts now pass the author, body content, categories, and tags into the JSON-LD context.
+- `SeoService::authorContext()` exposes the structured author resolver to content controllers.
+- Article and WebPage nodes now carry `mainEntityOfPage`, `inLanguage`, `wordCount`, `articleSection`, and `keywords` when the context provides them.
+- Organization nodes now carry a description and contact point. WebSite nodes carry publisher and language.
+- New settings: `organization_description` and `organization_contact_email`.
+- `/llms-full.txt` serves the full text of published pages and posts.
+- `llms.txt` now adds an `## Optional` section with the homepage and the full-content link, and falls back to excerpts and body text when no meta description exists.
+- AI crawler list now covers current discovery, retrieval, training, and link-preview agents, with a purpose label in the settings table.
+- The editor panel now shows a separate AI readiness score with answer-first, question-heading, FAQ, citation, statistics, list, freshness, and author checks.
+- Post and page templates show an updated date when it differs from the published date (posts) or when present (pages).
+- The analyze endpoint accepts `author` and `updated_at`.
+
+### Fixed
+- Pages without a meta description now derive one from the page body.
+- Post pages now emit the author Person node in the JSON-LD graph.
+
 ## [0.1.14] - 2026-11-14
 
 ### Added

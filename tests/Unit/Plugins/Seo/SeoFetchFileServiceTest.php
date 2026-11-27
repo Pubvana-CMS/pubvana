@@ -131,14 +131,21 @@ final class SeoFetchFileServiceTest extends TestCase
         return $app;
     }
 
-    private function page(int $id, string $slug): object
+    private function page(int $id, string $slug, string $content = ''): object
     {
-        return (object) ['id' => $id, 'title' => 'Page ' . $id, 'slug' => $slug, 'updated_at' => '2026-01-02 00:00:00'];
+        return (object) [
+            'id' => $id, 'title' => 'Page ' . $id, 'slug' => $slug,
+            'content' => $content, 'updated_at' => '2026-01-02 00:00:00',
+        ];
     }
 
-    private function post(int $id, string $slug): object
+    private function post(int $id, string $slug, string $excerpt = '', string $content = ''): object
     {
-        return (object) ['id' => $id, 'title' => 'Post ' . $id, 'slug' => $slug, 'updated_at' => '2026-01-03 00:00:00'];
+        return (object) [
+            'id' => $id, 'title' => 'Post ' . $id, 'slug' => $slug,
+            'excerpt' => $excerpt, 'content' => $content,
+            'published_at' => '2026-01-03 00:00:00', 'updated_at' => '2026-01-03 00:00:00',
+        ];
     }
 
     private function noindex(string $type, int $id): void
@@ -159,8 +166,12 @@ final class SeoFetchFileServiceTest extends TestCase
         self::assertStringContainsString('Sitemap: https://example.com/sitemap.xml', $txt);
         // Training bots blocked by default.
         self::assertStringContainsString('User-agent: GPTBot', $txt);
-        // Retrieval bots allowed by default: no block lines.
+        self::assertStringContainsString('User-agent: meta-externalagent', $txt);
+        // Retrieval and discovery bots allowed by default: no block lines.
         self::assertStringNotContainsString('User-agent: ChatGPT-User', $txt);
+        self::assertStringNotContainsString('User-agent: OAI-SearchBot', $txt);
+        self::assertStringNotContainsString('User-agent: meta-webindexer', $txt);
+        self::assertStringNotContainsString('User-agent: DuckAssistBot', $txt);
     }
 
     public function testRobotsCustomBodyAndStanceOverride(): void
@@ -182,7 +193,15 @@ final class SeoFetchFileServiceTest extends TestCase
 
         $list = $service->getAiCrawlerList();
         self::assertArrayHasKey('GPTBot', $list);
+        self::assertArrayHasKey('OAI-SearchBot', $list);
+        self::assertArrayHasKey('meta-webindexer', $list);
+        self::assertArrayHasKey('meta-externalagent', $list);
+        self::assertArrayHasKey('Claude-User', $list);
+        self::assertArrayHasKey('Perplexity-User', $list);
         self::assertSame('block', $list['GPTBot']['default']);
+        self::assertSame('training', $list['GPTBot']['purpose']);
+        self::assertSame('discovery', $list['OAI-SearchBot']['purpose']);
+        self::assertSame('retrieval', $list['ChatGPT-User']['purpose']);
         self::assertSame('allow', $list['Applebot-Extended']['current']);
         self::assertNotSame('', $list['GPTBot']['description']);
 
@@ -285,20 +304,81 @@ final class SeoFetchFileServiceTest extends TestCase
         self::assertStringContainsString('[Post 5](https://example.com/blog/hello)', $txt);
         self::assertStringContainsString('## Topics', $txt);
         self::assertStringContainsString('[News](https://example.com/blog/category/news)', $txt);
+        self::assertStringContainsString('## Optional', $txt);
+        self::assertStringContainsString('[Home](https://example.com)', $txt);
+        self::assertStringContainsString('[Full content](https://example.com/llms-full.txt)', $txt);
     }
 
     public function testLlmsSkipsNoindexAndRespectsToggles(): void
     {
         $this->noindex('page', 1);
         $app = $this->makeEngine(
-            ['Seo.llms_txt_include_pages' => false, 'Seo.llms_txt_include_posts' => true],
-            ['pages' => [$this->page(1, 'about')], 'posts' => ['items' => [$this->post(5, 'hello')]]],
+            [
+                'Seo.llms_txt_include_pages' => false,
+                'Seo.llms_txt_include_posts' => true,
+                'Seo.llms_txt_include_categories' => false,
+            ],
+            [
+                'pages' => [$this->page(1, 'about')],
+                'posts' => ['items' => [$this->post(5, 'hello')]],
+                'categories' => [(object) ['name' => 'News', 'slug' => 'news']],
+            ],
         );
 
         $txt = (new LlmsTxtService($this->pdo, $app))->generate();
 
         self::assertStringNotContainsString('## Pages', $txt);
         self::assertStringContainsString('## Blog', $txt);
+        self::assertStringNotContainsString('## Topics', $txt);
+    }
+
+    public function testLlmsUsesExcerptAndContentFallback(): void
+    {
+        $app = $this->makeEngine([], [
+            'pages' => [$this->page(1, 'about', '<p>Page body text.</p>')],
+            'posts' => ['items' => [$this->post(5, 'hello', 'Post excerpt.', '<p>Post body.</p>')]],
+        ]);
+
+        $txt = (new LlmsTxtService($this->pdo, $app))->generate();
+
+        self::assertStringContainsString(
+            '[Page 1](https://example.com/page/about): Page body text.',
+            $txt
+        );
+        self::assertStringContainsString(
+            '[Post 5](https://example.com/blog/hello): Post excerpt.',
+            $txt
+        );
+    }
+
+    public function testLlmsFullIncludesContentAndSkipsNoindex(): void
+    {
+        $app = $this->makeEngine([], [
+            'pages' => [
+                $this->page(1, 'about', '<p>About body.</p>'),
+                $this->page(2, 'hidden', '<p>Hidden body.</p>'),
+            ],
+            'posts' => ['items' => [
+                $this->post(5, 'hello', '', '<p>Post body.</p>'),
+                $this->post(6, 'secret', '', '<p>Secret body.</p>'),
+            ]],
+        ]);
+        $this->noindex('page', 2);
+        $this->noindex('post', 6);
+
+        $txt = (new LlmsTxtService($this->pdo, $app))->generateFull();
+
+        self::assertStringContainsString('## Pages', $txt);
+        self::assertStringContainsString('### Page 1', $txt);
+        self::assertStringContainsString('URL: https://example.com/page/about', $txt);
+        self::assertStringContainsString('About body.', $txt);
+        self::assertStringNotContainsString('Page 2', $txt);
+        self::assertStringNotContainsString('Hidden body.', $txt);
+        self::assertStringContainsString('## Blog', $txt);
+        self::assertStringContainsString('### Post 5', $txt);
+        self::assertStringContainsString('Post body.', $txt);
+        self::assertStringNotContainsString('Post 6', $txt);
+        self::assertStringNotContainsString('Secret body.', $txt);
     }
 
     public function testLlmsCapsAtFifty(): void

@@ -76,6 +76,9 @@ final class PagesPublicControllerTest extends TestCase
         self::assertSame('page', $data['seo_context']['content_type']);
         self::assertSame((int) $page->id, $data['seo_context']['content_id']);
         self::assertSame('website', $data['seo_context']['og_type']);
+        self::assertSame('<p>Hi</p>', $data['seo_context']['content']);
+        self::assertSame(4, $data['seo_context']['author_id']);
+        self::assertNull($data['seo_context']['author']);
     }
 
     public function testViewHomepageFlag(): void

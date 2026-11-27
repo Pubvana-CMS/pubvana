@@ -73,6 +73,7 @@ final class SeoPluginTest extends TestCase
         self::assertContains('GET /sitemap.xml', $routes);
         self::assertContains('GET /robots.txt', $routes);
         self::assertContains('GET /llms.txt', $routes);
+        self::assertContains('GET /llms-full.txt', $routes);
     }
 
     public function testAiBaseComesFromTheConfig(): void

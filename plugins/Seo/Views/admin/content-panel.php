@@ -8,6 +8,8 @@
  * @var string $content_url_base    Base URL prefix for the content type
  * @var mixed  $seo_meta            Current SEO meta values (SeoMeta or array)
  * @var string $ogImagePicker       Rendered media picker for the OG image field
+ * @var string $analysis_author     Author display name for the AI readiness check
+ * @var string $analysis_updated_at Last edit timestamp for the freshness check
  */
 
 if ($seo_meta instanceof \Pubvana\Plugins\Seo\Models\SeoMeta) {
@@ -181,6 +183,8 @@ $schemaType = $seo_meta['schema_type'] ?? '';
     <input type="hidden" id="seo-content-url-base" value="<?= htmlspecialchars($content_url_base ?? '') ?>">
     <input type="hidden" id="seo-content-type" value="<?= htmlspecialchars($content_type ?? '') ?>">
     <input type="hidden" id="seo-content-id" value="<?= (int) ($content_id ?? 0) ?>">
+    <input type="hidden" id="seo-analysis-author" value="<?= htmlspecialchars($analysis_author ?? '') ?>">
+    <input type="hidden" id="seo-analysis-updated-at" value="<?= htmlspecialchars($analysis_updated_at ?? '') ?>">
     <input type="hidden" name="seo[seo_score]" id="seo-score-hidden" value="<?= (int) ($seo_meta['seo_score'] ?? 0) ?>">
 </div>
 
@@ -271,6 +275,8 @@ $schemaType = $seo_meta['schema_type'] ?? '';
 
         const focusKeywords = document.getElementById('seo-focus-keywords');
         const slug = document.querySelector('input[name="slug"]');
+        const analysisAuthor = document.getElementById('seo-analysis-author');
+        const analysisUpdatedAt = document.getElementById('seo-analysis-updated-at');
 
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = content;
@@ -285,6 +291,8 @@ $schemaType = $seo_meta['schema_type'] ?? '';
         formData.append('focus_keywords', focusKeywords ? focusKeywords.value : '');
         formData.append('slug', slug ? slug.value : '');
         formData.append('has_images', images.length > 0 ? '1' : '0');
+        formData.append('author', analysisAuthor ? analysisAuthor.value : '');
+        formData.append('updated_at', analysisUpdatedAt ? analysisUpdatedAt.value : '');
         imageAlts.forEach(function (alt, i) {
             formData.append('image_alts[' + i + ']', alt);
         });
@@ -320,9 +328,26 @@ $schemaType = $seo_meta['schema_type'] ?? '';
         autoSave('seo_score', String(score));
 
         const scoreTone = score >= 70 ? 'success-lt' : (score >= 40 ? 'warning-lt' : 'danger-lt');
-        scoreBadge.innerHTML = '<span class="badge bg-' + scoreTone + '">Score: ' + score + '/100</span>';
+        let badges = '<span class="badge bg-' + scoreTone + '">SEO: ' + score + '/100</span>';
 
-        let html = '<div class="list-group list-group-flush">';
+        const aiScore = typeof data.ai_score === 'number' ? data.ai_score : null;
+        if (aiScore !== null) {
+            const aiTone = aiScore >= 70 ? 'success-lt' : (aiScore >= 40 ? 'warning-lt' : 'danger-lt');
+            badges += ' <span class="badge bg-' + aiTone + '">AI: ' + aiScore + '/100</span>';
+        }
+        scoreBadge.innerHTML = badges;
+
+        let html = '';
+        if (Array.isArray(data.ai_checks) && data.ai_checks.length) {
+            html += '<h4 class="mt-3 mb-2">AI readiness</h4>';
+            html += renderChecks(data.ai_checks);
+            html += '<h4 class="mt-4 mb-2">SEO checks</h4>';
+        }
+        html += renderChecks(data.checks || []);
+        analysisResults.innerHTML = html;
+    }
+
+    function renderChecks(checks) {
         const statusIcons = {
             pass: '<i class="ti ti-circle-check text-success me-2"></i>',
             warning: '<i class="ti ti-alert-triangle text-warning me-2"></i>',
@@ -330,16 +355,17 @@ $schemaType = $seo_meta['schema_type'] ?? '';
         };
 
         const order = { fail: 0, warning: 1, pass: 2 };
-        data.checks.sort((a, b) => (order[a.status] || 2) - (order[b.status] || 2));
+        checks.sort((a, b) => (order[a.status] || 2) - (order[b.status] || 2));
 
-        data.checks.forEach(function (check) {
+        let html = '<div class="list-group list-group-flush">';
+        checks.forEach(function (check) {
             html += '<div class="list-group-item px-0 py-2 border-0">';
             html += (statusIcons[check.status] || '') + '<span>' + escapeHtml(check.message) + '</span>';
             html += '</div>';
         });
-
         html += '</div>';
-        analysisResults.innerHTML = html;
+
+        return html;
     }
 
     function escapeHtml(str) {

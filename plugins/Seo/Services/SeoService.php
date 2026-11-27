@@ -68,9 +68,11 @@ class SeoService
                         'content_id'   => (int) $post->id,
                         'title'        => $post->title,
                         'description'  => $post->excerpt ?? '',
+                        'content'      => (string) ($post->content ?? ''),
                         'url'          => $this->getCurrentUrl(),
                         'image'        => $this->resolveImageUrl($post->featured_image ?? ''),
                         'author'       => $author,
+                        'author_id'    => (int) $post->author_id,
                         'ai_generated' => !empty($post->ai_generated),
                         'published_at' => $post->published_at,
                         'updated_at'   => $post->updated_at,
@@ -117,13 +119,17 @@ class SeoService
             try {
                 $page = $this->app->pages()->findPageBySlug($m[1]);
                 if ($page && $page->status === 'published') {
+                    $authorId = (int) $page->created_by;
                     $this->context = [
                         'content_type' => 'page',
                         'content_id'   => (int) $page->id,
                         'title'        => $page->title,
                         'description'  => '',
+                        'content'      => (string) ($page->content ?? ''),
                         'url'          => $this->getCurrentUrl(),
                         'image'        => '',
+                        'author'       => $this->resolveAuthor($authorId),
+                        'author_id'    => $authorId,
                         'ai_generated' => !empty($page->ai_generated),
                         'updated_at'   => $page->updated_at,
                         'og_type'      => 'website',
@@ -297,8 +303,13 @@ class SeoService
             return $metaDesc;
         }
 
-        // Fallback to context description (excerpt, page content snippet, etc.)
-        $desc = $this->context['description'] ?? '';
+        $desc = (string) ($this->context['description'] ?? '');
+
+        // Pages have no excerpt column, so a page with no meta description
+        // falls back to the opening text of its body.
+        if ($desc === '' && !empty($this->context['content'])) {
+            $desc = $this->plainTextExcerpt((string) $this->context['content']);
+        }
 
         // Truncate to 160 chars
         if (mb_strlen($desc) > 160) {
@@ -306,6 +317,20 @@ class SeoService
         }
 
         return $desc;
+    }
+
+    /**
+     * Plain text from an HTML body, for description fallbacks.
+     *
+     * Collapses whitespace so a multi-line body becomes one snippet.
+     */
+    protected function plainTextExcerpt(string $html): string
+    {
+        $text = strip_tags($html);
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = preg_replace('/\s+/u', ' ', $text) ?? '';
+
+        return trim($text);
     }
 
     /**
@@ -549,6 +574,20 @@ class SeoService
         $uri = strtok($uri, '?');
 
         return $this->app->url()->siteOrigin() . $uri;
+    }
+
+    /**
+     * Structured author context for an account id.
+     *
+     * Public wrapper around resolveAuthor(), so content controllers can build
+     * the same Person data the URL detector uses without duplicating the
+     * profile lookup.
+     *
+     * @return array{name: string, username: string, url: string, sameAs: string[], jobTitle: ?string, worksFor: ?string}|null
+     */
+    public function authorContext(int $userId): ?array
+    {
+        return $this->resolveAuthor($userId);
     }
 
     /**

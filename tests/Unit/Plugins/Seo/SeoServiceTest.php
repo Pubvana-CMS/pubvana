@@ -164,6 +164,7 @@ final class SeoServiceTest extends TestCase
         $merged = array_merge([
             'CMS.siteName'            => 'Test Site',
             'Seo.organization_name'   => '',
+            'Seo.default_language'    => 'en',
         ], $settings);
 
         return $this->app([
@@ -256,6 +257,39 @@ final class SeoServiceTest extends TestCase
         $service->saveMeta('post', 11, ['meta_description' => 'Meta wins']);
         $service->setContext(['content_type' => 'post', 'content_id' => 11, 'description' => 'ctx']);
         self::assertSame('Meta wins', $service->buildDescription());
+    }
+
+    public function testBuildDescriptionFallsBackToContent(): void
+    {
+        $service = $this->service();
+        $service->setContext([
+            'description' => '',
+            'content' => "<p>Hello <strong>world</strong>.</p>\n<p>Second.</p>",
+        ]);
+
+        self::assertSame('Hello world. Second.', $service->buildDescription());
+    }
+
+    public function testAuthorContextFromProfile(): void
+    {
+        $profile = (object) [
+            'display_name' => 'Ada Lovelace',
+            'website'      => 'https://ada.example',
+            'twitter'      => 'https://twitter.com/ada',
+            'facebook'     => '',
+            'linkedin'     => '',
+            'job_title'    => 'Editor',
+            'works_for'    => 'Acme',
+        ];
+
+        $author = $this->service([], ['profile' => $profile])->authorContext(7);
+
+        self::assertNotNull($author);
+        self::assertSame('Ada Lovelace', $author['name']);
+        self::assertSame('Editor', $author['jobTitle']);
+        self::assertSame('Acme', $author['worksFor']);
+        self::assertSame(['https://ada.example', 'https://twitter.com/ada'], $author['sameAs']);
+        self::assertSame('https://example.com/profile/7', $author['url']);
     }
 
     public function testBuildCanonicalRobotsHreflang(): void
@@ -443,7 +477,10 @@ final class SeoServiceTest extends TestCase
         $service->detectContent();
         self::assertSame('archive', $service->getContext()['content_type']);
 
-        $page = (object) ['id' => 3, 'title' => 'About', 'status' => 'published', 'ai_generated' => 0, 'updated_at' => '2026-01-02'];
+        $page = (object) [
+            'id' => 3, 'title' => 'About', 'status' => 'published', 'ai_generated' => 0,
+            'updated_at' => '2026-01-02', 'created_by' => 0, 'content' => '<p>About</p>',
+        ];
         $this->requestUrl = '/page/about';
         $service = $this->service([], ['page' => $page]);
         $service->detectContent();
@@ -478,10 +515,62 @@ final class SeoServiceTest extends TestCase
             'content_type' => 'page',
             'title' => 'About',
             'url' => 'https://example.com/page/about',
+            'author' => ['name' => 'Grace', 'url' => 'https://example.com/profile/grace'],
         ]);
         self::assertStringContainsString('WebPage', $page);
+        self::assertStringContainsString('Person', $page);
+        self::assertStringContainsString('"author"', $page);
 
         self::assertSame('', $schema->render(['content_type' => 'unknown', 'url' => 'https://example.com/x']));
+    }
+
+    public function testSchemaArticleCompleteness(): void
+    {
+        $schema = new SchemaService($this->schemaApp(['Seo.default_language' => 'en-GB']));
+
+        $output = $schema->render([
+            'content_type' => 'post',
+            'title'        => 'Hello',
+            'url'          => 'https://example.com/blog/hello',
+            'content'      => '<p>One two three four five.</p>',
+            'categories'   => ['News'],
+            'tags'         => ['PHP', 'SEO'],
+            'published_at' => '2026-01-01',
+            'updated_at'   => '2026-01-02',
+        ]);
+
+        self::assertStringContainsString('"mainEntityOfPage"', $output);
+        self::assertStringContainsString('"inLanguage": "en-GB"', $output);
+        self::assertStringContainsString('"wordCount": 5', $output);
+        self::assertStringContainsString('"articleSection": "News"', $output);
+        self::assertStringContainsString('"keywords": "News, PHP, SEO"', $output);
+    }
+
+    public function testSchemaOrganizationIdentityFields(): void
+    {
+        $schema = new SchemaService($this->schemaApp([
+            'Seo.organization_description'   => 'We publish research.',
+            'Seo.organization_contact_email' => 'hello@example.com',
+        ]));
+
+        $output = $schema->render(['content_type' => 'home', 'url' => 'https://example.com/']);
+
+        self::assertStringContainsString('"description": "We publish research."', $output);
+        self::assertStringContainsString('"contactType": "customer support"', $output);
+        self::assertStringContainsString('"email": "hello@example.com"', $output);
+        self::assertStringContainsString('"publisher"', $output);
+        self::assertStringContainsString('"inLanguage": "en"', $output);
+    }
+
+    public function testSchemaSkipsInvalidContactEmail(): void
+    {
+        $schema = new SchemaService($this->schemaApp([
+            'Seo.organization_contact_email' => 'not-an-email',
+        ]));
+
+        $output = $schema->render(['content_type' => 'home', 'url' => 'https://example.com/']);
+
+        self::assertStringNotContainsString('"contactPoint"', $output);
     }
 
     public function testSchemaTypeOverride(): void

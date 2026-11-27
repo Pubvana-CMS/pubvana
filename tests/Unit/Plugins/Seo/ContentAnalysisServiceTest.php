@@ -41,9 +41,82 @@ final class ContentAnalysisServiceTest extends TestCase
 
         self::assertArrayHasKey('score', $result);
         self::assertArrayHasKey('checks', $result);
+        self::assertArrayHasKey('ai_score', $result);
+        self::assertArrayHasKey('ai_checks', $result);
         self::assertCount(15, $result['checks']);
+        self::assertCount(8, $result['ai_checks']);
         self::assertGreaterThanOrEqual(0, $result['score']);
         self::assertLessThanOrEqual(100, $result['score']);
+        self::assertGreaterThanOrEqual(0, $result['ai_score']);
+        self::assertLessThanOrEqual(100, $result['ai_score']);
+    }
+
+    public function testAiReadinessChecksPassOnExtractableContent(): void
+    {
+        $content = '<p>' . str_repeat('This direct answer explains the topic in plain language. ', 7) . '</p>'
+            . '<h2>What is the topic?</h2>'
+            . '<details><summary>How does it work?</summary><p>It works this way.</p></details>'
+            . '<p>Usage reached <a href="https://a.test/report">42% according to a.test</a> and '
+            . '<a href="https://b.test/data">30% according to b.test</a>.</p>'
+            . '<ul><li>One</li><li>Two</li></ul>';
+
+        $result = (new ContentAnalysisService())->analyze([
+            'title'      => 'Topic',
+            'content'    => $content,
+            'author'     => 'Ada Lovelace',
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        self::assertGreaterThanOrEqual(75, $result['ai_score']);
+
+        $byId = [];
+        foreach ($result['ai_checks'] as $check) {
+            $byId[$check['id']] = $check['status'];
+        }
+
+        self::assertSame('pass', $byId['aeo_answer_first']);
+        self::assertSame('pass', $byId['aeo_question_headings']);
+        self::assertSame('pass', $byId['aeo_faq_block']);
+        self::assertSame('pass', $byId['aeo_citations']);
+        self::assertSame('pass', $byId['aeo_statistics']);
+        self::assertSame('pass', $byId['aeo_structured_blocks']);
+        self::assertSame('pass', $byId['aeo_freshness']);
+        self::assertSame('pass', $byId['aeo_author']);
+    }
+
+    public function testAiReadinessBranches(): void
+    {
+        $service = new ContentAnalysisService();
+
+        self::assertSame('fail', $this->invoke($service, 'checkAnswerFirstParagraph', [''])['status']);
+        self::assertSame('warning', $this->invoke($service, 'checkAnswerFirstParagraph', ['<p>Short answer.</p>'])['status']);
+        self::assertSame('pass', $this->invoke($service, 'checkAnswerFirstParagraph', ['<p>' . str_repeat('word ', 50) . '</p>'])['status']);
+
+        self::assertSame('fail', $this->invoke($service, 'checkQuestionHeadings', ['<p>x</p>'])['status']);
+        self::assertSame('warning', $this->invoke($service, 'checkQuestionHeadings', ['<h2>Plain heading</h2>'])['status']);
+        self::assertSame('pass', $this->invoke($service, 'checkQuestionHeadings', ['<h2>How does it work?</h2>'])['status']);
+
+        self::assertSame('warning', $this->invoke($service, 'checkFaqBlock', ['<p>x</p>'])['status']);
+        self::assertSame('pass', $this->invoke($service, 'checkFaqBlock', ['<details><summary>Q</summary><p>A</p></details>'])['status']);
+
+        self::assertSame('fail', $this->invoke($service, 'checkCitedSources', ['<p>x</p>'])['status']);
+        self::assertSame('warning', $this->invoke($service, 'checkCitedSources', ['<a href="https://a.test">a</a>'])['status']);
+        self::assertSame('pass', $this->invoke($service, 'checkCitedSources', ['<a href="https://a.test">a</a><a href="https://b.test">b</a>'])['status']);
+
+        self::assertSame('fail', $this->invoke($service, 'checkStatistics', ['no numbers'])['status']);
+        self::assertSame('warning', $this->invoke($service, 'checkStatistics', ['42%'])['status']);
+        self::assertSame('pass', $this->invoke($service, 'checkStatistics', ['42% according to a.test'])['status']);
+
+        self::assertSame('warning', $this->invoke($service, 'checkStructuredBlocks', ['<p>x</p>'])['status']);
+        self::assertSame('pass', $this->invoke($service, 'checkStructuredBlocks', ['<ul><li>x</li></ul>'])['status']);
+
+        self::assertSame('fail', $this->invoke($service, 'checkFreshness', [''])['status']);
+        self::assertSame('fail', $this->invoke($service, 'checkFreshness', ['2000-01-01'])['status']);
+        self::assertSame('warning', $this->invoke($service, 'checkFreshness', [date('Y-m-d', strtotime('-9 months'))])['status']);
+        self::assertSame('pass', $this->invoke($service, 'checkFreshness', [date('Y-m-d')])['status']);
+
+        self::assertSame('warning', $this->invoke($service, 'checkAuthor', [''])['status']);
+        self::assertSame('pass', $this->invoke($service, 'checkAuthor', ['Ada'])['status']);
     }
 
     public function testGoodContentScoresHigh(): void

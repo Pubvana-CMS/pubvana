@@ -50,6 +50,8 @@ class PagesPublicController extends PublicController
             return;
         }
 
+        $author = $this->authorContext((int) $page->created_by);
+
         $this->render('pubvana/pages/page', [
             'title'          => $page->title,
             'content'        => $page->content,
@@ -58,12 +60,16 @@ class PagesPublicController extends PublicController
             'commentable'    => ['type' => 'page', 'id' => (int) $page->id],
             'allow_comments' => (bool) $page->allow_comments,
             'is_homepage'    => $isHomepage,
+            'updated_at'     => $page->updated_at,
             'seo_context'    => [
                 'content_type' => 'page',
                 'content_id'   => (int) $page->id,
                 'title'        => $page->title,
                 'description'  => '',
+                'content'      => (string) ($page->content ?? ''),
                 'image'        => '',
+                'author'       => $author,
+                'author_id'    => (int) $page->created_by,
                 'ai_generated' => !empty($page->ai_generated),
                 'updated_at'   => $page->updated_at,
                 'og_type'      => 'website',
@@ -91,6 +97,8 @@ class PagesPublicController extends PublicController
         $this->app->response()->header('Cache-Control', 'private, no-store');
         $this->app->response()->header('X-Robots-Tag', 'noindex');
 
+        $author = $this->authorContext((int) $page->created_by);
+
         $this->render('pubvana/pages/page', [
             'title'          => $page->title . ' (Preview)',
             'content'        => $page->content,
@@ -99,17 +107,42 @@ class PagesPublicController extends PublicController
             'commentable'    => ['type' => 'page', 'id' => (int) $page->id],
             'allow_comments' => false,
             'is_homepage'    => false,
+            'updated_at'     => $page->updated_at,
             'seo_context'    => [
                 'content_type' => 'page',
                 'content_id'   => (int) $page->id,
                 'title'        => $page->title . ' (Preview)',
                 'description'  => '',
+                'content'      => (string) ($page->content ?? ''),
                 'image'        => '',
+                'author'       => $author,
+                'author_id'    => (int) $page->created_by,
                 'ai_generated' => !empty($page->ai_generated),
                 'updated_at'   => $page->updated_at,
                 'og_type'      => 'website',
             ],
         ]);
+    }
+
+    /**
+     * Author context for the page creator, or null when SEO is off.
+     *
+     * Pages has no hard dependency on the SEO plugin, so a missing facade
+     * returns null instead of breaking the page.
+     *
+     * @return array{name: string, username: string, url: string, sameAs: string[], jobTitle: ?string, worksFor: ?string}|null
+     */
+    private function authorContext(int $userId): ?array
+    {
+        if ($userId <= 0) {
+            return null;
+        }
+
+        try {
+            return $this->app->seo()->authorContext($userId);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**

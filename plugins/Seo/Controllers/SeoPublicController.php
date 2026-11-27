@@ -49,7 +49,7 @@ class SeoPublicController
     }
 
     /**
-     * Serve llms.txt for AI crawlers.
+     * Serve llms-full.txt for AI crawlers.
      *
      * Always served; there is no on/off switch for the fetch files.
      */
@@ -59,5 +59,16 @@ class SeoPublicController
 
         $this->app->response()->header('Content-Type', 'text/plain; charset=UTF-8');
         $this->app->halt(200, $llms->generate());
+    }
+
+    /**
+     * Serve llms-full.txt, the full text of the published site.
+     */
+    public function llmsFullTxt(): void
+    {
+        $llms = $this->app->seoLlmsTxt();
+
+        $this->app->response()->header('Content-Type', 'text/plain; charset=UTF-8');
+        $this->app->halt(200, $llms->generateFull());
     }
 }

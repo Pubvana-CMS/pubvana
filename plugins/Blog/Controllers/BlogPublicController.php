@@ -110,6 +110,7 @@ class BlogPublicController extends PublicController
 
         $categories = $this->getPostCategories((int) $post->id);
         $tags = $this->getPostTags((int) $post->id);
+        $author = $this->getAuthor($post);
 
         $data = [
             'title'          => $post->title,
@@ -117,7 +118,8 @@ class BlogPublicController extends PublicController
             'excerpt'        => $post->excerpt,
             'featured_image' => $this->publicAssetUrl($post->featured_image),
             'published_at'   => $post->published_at,
-            'author'         => $this->getAuthor($post),
+            'updated_at'     => $post->updated_at,
+            'author'         => $author,
             'ai_disclosure'  => $this->aiDisclosure((int) ($post->ai_generated ?? 0)),
             'categories'     => $categories,
             'tags'           => $tags,
@@ -128,7 +130,12 @@ class BlogPublicController extends PublicController
                 'content_id'   => (int) $post->id,
                 'title'        => $post->title,
                 'description'  => $post->excerpt ?? '',
+                'content'      => (string) ($post->content ?? ''),
                 'image'        => (string) ($post->featured_image ?? ''),
+                'author'       => $author,
+                'author_id'    => (int) $post->author_id,
+                'categories'   => $this->taxonomyNames($categories),
+                'tags'         => $this->taxonomyNames($tags),
                 'ai_generated' => !empty($post->ai_generated),
                 'published_at' => $post->published_at,
                 'updated_at'   => $post->updated_at,
@@ -223,6 +230,7 @@ class BlogPublicController extends PublicController
             'excerpt'        => $post->excerpt,
             'featured_image' => $this->publicAssetUrl($post->featured_image),
             'published_at'   => $post->published_at ?? $post->created_at,
+            'updated_at'     => $post->updated_at,
             'author'         => $this->getAuthor($post),
             'ai_disclosure'  => $this->aiDisclosure((int) ($post->ai_generated ?? 0)),
             'categories'     => $categories,
@@ -333,6 +341,26 @@ class BlogPublicController extends PublicController
         $prefix = $urlPrefix ?? $this->app->pluginLoader()->routePrefix('pubvana/blog');
 
         return $this->app->blog()->tagItemsForPostIds([$postId], $prefix)[$postId] ?? [];
+    }
+
+    /**
+     * Names from a category or tag item list, for schema keywords.
+     *
+     * @param array<int, array<string, mixed>> $items
+     * @return list<string>
+     */
+    private function taxonomyNames(array $items): array
+    {
+        $names = [];
+
+        foreach ($items as $item) {
+            $name = trim((string) ($item['name'] ?? ''));
+            if ($name !== '') {
+                $names[] = $name;
+            }
+        }
+
+        return $names;
     }
 
     /**

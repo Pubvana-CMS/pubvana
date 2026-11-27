@@ -201,6 +201,11 @@ final class SeoControllerTest extends TestCase
                 {
                     return "# Site\n";
                 }
+
+                public function generateFull(): string
+                {
+                    return "# Full Site\n";
+                }
             },
         ]);
 
@@ -349,5 +354,23 @@ final class SeoControllerTest extends TestCase
         self::assertNotEmpty($this->halts);
         self::assertSame(200, $this->halts[0]['code']);
         self::assertStringContainsString('# Site', $this->halts[0]['body']);
+    }
+
+    public function testLlmsFullIsAlwaysServed(): void
+    {
+        $controller = new class ($this->publicApp()) extends SeoPublicController {
+            public function response(): object
+            {
+                return new class {
+                    public function header(string $name, string $value): void
+                    {
+                    }
+                };
+            }
+        };
+        $controller->llmsFullTxt();
+        self::assertNotEmpty($this->halts);
+        self::assertSame(200, $this->halts[0]['code']);
+        self::assertStringContainsString('# Full Site', $this->halts[0]['body']);
     }
 }

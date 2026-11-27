@@ -88,6 +88,8 @@ class SeoAdminController extends AdminController
             'slug'             => $request->data->slug ?? '',
             'has_images'       => (bool) ($request->data->has_images ?? false),
             'image_alts'       => $request->data->image_alts ?? [],
+            'author'           => (string) ($request->data->author ?? ''),
+            'updated_at'       => (string) ($request->data->updated_at ?? ''),
         ];
 
         // Parse focus_keywords if it comes as comma-separated string

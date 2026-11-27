@@ -189,6 +189,11 @@ final class BlogPublicControllerTest extends TestCase
         self::assertTrue($data['allow_comments']);
         self::assertSame('post', $data['seo_context']['content_type']);
         self::assertSame('alice', $data['author']['name']);
+        self::assertSame('alice', $data['seo_context']['author']['name']);
+        self::assertSame($uid, $data['seo_context']['author_id']);
+        self::assertSame('body', $data['seo_context']['content']);
+        self::assertSame([], $data['seo_context']['categories']);
+        self::assertSame([], $data['seo_context']['tags']);
 
         // View counted.
         $fresh = $this->blog->findPost((int) $post->id);

@@ -72,6 +72,21 @@
                     <?= $organizationLogoPicker ?>
                 </div>
             </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Organization Description</label>
+                    <textarea name="organization_description" class="form-control" rows="3"
+                              placeholder="Defaults to the site byline"><?= htmlspecialchars($settings['organization_description']) ?></textarea>
+                    <small class="form-hint">Used by Organization structured data.</small>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Contact Email</label>
+                    <input type="email" name="organization_contact_email" class="form-control"
+                           value="<?= htmlspecialchars($settings['organization_contact_email']) ?>"
+                           placeholder="hello@example.com">
+                    <small class="form-hint">Added as a ContactPoint when valid.</small>
+                </div>
+            </div>
             <div class="mb-3">
                 <label class="form-label">Social Profiles</label>
                 <textarea name="social_profiles" class="form-control" rows="4"
@@ -147,20 +162,30 @@
         <div class="card-body">
             <p class="text-secondary mb-3">Provides AI crawlers with a curated content map at <code>/llms.txt</code>. Always served.</p>
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-check">
                         <input type="checkbox" name="llms_txt_include_pages" class="form-check-input"
                                <?= $settings['llms_txt_include_pages'] ? 'checked' : '' ?>>
                         <span class="form-check-label">Include Pages</span>
                     </label>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-check">
                         <input type="checkbox" name="llms_txt_include_posts" class="form-check-input"
                                <?= $settings['llms_txt_include_posts'] ? 'checked' : '' ?>>
                         <span class="form-check-label">Include Blog Posts</span>
                     </label>
                 </div>
+                <div class="col-md-4">
+                    <label class="form-check">
+                        <input type="checkbox" name="llms_txt_include_categories" class="form-check-input"
+                               <?= $settings['llms_txt_include_categories'] ? 'checked' : '' ?>>
+                        <span class="form-check-label">Include Topics</span>
+                    </label>
+                </div>
+            </div>
+            <div class="mt-3">
+                <small class="form-hint">Full text is also served at <code>/llms-full.txt</code>.</small>
             </div>
         </div>
     </div>
@@ -194,14 +219,25 @@
                     <thead>
                         <tr>
                             <th>Bot</th>
+                            <th>Type</th>
                             <th>Purpose</th>
                             <th>Access</th>
                         </tr>
                     </thead>
                     <tbody>
+                        <?php
+                        $purposeLabels = [
+                            'discovery' => ['Discovery', 'success'],
+                            'retrieval' => ['Retrieval', 'info'],
+                            'training'  => ['Training', 'warning'],
+                            'preview'   => ['Link preview', 'secondary'],
+                        ];
+                        ?>
                         <?php foreach ($aiCrawlers as $bot => $info): ?>
+                            <?php $purpose = $purposeLabels[$info['purpose']] ?? [$info['purpose'], 'secondary']; ?>
                             <tr>
                                 <td><code><?= htmlspecialchars($bot) ?></code></td>
+                                <td><span class="badge bg-<?= $purpose[1] ?>-lt"><?= htmlspecialchars($purpose[0]) ?></span></td>
                                 <td class="text-secondary"><?= htmlspecialchars($info['description']) ?></td>
                                 <td>
                                     <select name="ai_crawlers[<?= htmlspecialchars($bot) ?>]" class="form-select form-select-sm" style="width: auto;">

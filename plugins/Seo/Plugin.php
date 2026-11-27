@@ -138,6 +138,7 @@ class Plugin implements PluginInterface
             ['GET', '/sitemap.xml', [SeoPublicController::class, 'sitemap']],
             ['GET', '/robots.txt',  [SeoPublicController::class, 'robotsTxt']],
             ['GET', '/llms.txt',    [SeoPublicController::class, 'llmsTxt']],
+            ['GET', '/llms-full.txt', [SeoPublicController::class, 'llmsFullTxt']],
 
             // AI Assistant, sessionless and bearer-key auth. The CSRF
             // exemption AI Assistant registers for its /api/ai/ prefix
@@ -171,6 +172,29 @@ class Plugin implements PluginInterface
                     return $app->view()->fetch('pubvana/seo/admin/create-notice');
                 }
 
+                $analysisUpdatedAt = '';
+                $analysisAuthor = '';
+
+                if ($contentType === 'post') {
+                    try {
+                        $post = $app->blog()->findPost($contentId);
+                        if ($post !== null) {
+                            $analysisUpdatedAt = (string) $post->updated_at;
+                            $analysisAuthor = $this->analysisAuthorName($app, (int) $post->author_id);
+                        }
+                    } catch (\Throwable) {
+                    }
+                } elseif ($contentType === 'page') {
+                    try {
+                        $page = $app->pages()->findPage($contentId);
+                        if ($page !== null) {
+                            $analysisUpdatedAt = (string) $page->updated_at;
+                            $analysisAuthor = $this->analysisAuthorName($app, (int) $page->created_by);
+                        }
+                    } catch (\Throwable) {
+                    }
+                }
+
                 // Configured site origin; the Host header is never trusted (AUDIT M4).
                 $siteUrl = $app->url()->siteOrigin();
 
@@ -187,6 +211,8 @@ class Plugin implements PluginInterface
                     'content_url_base' => $siteUrl . $routePrefix,
                     'seo_meta'         => $meta,
                     'ogImagePicker'    => $app->media()->picker('seo[og_image]', $ogImage),
+                    'analysis_updated_at' => $analysisUpdatedAt,
+                    'analysis_author'  => $analysisAuthor,
                 ]);
             },
         ]);
@@ -257,6 +283,26 @@ class Plugin implements PluginInterface
                 'description' => 'Average content optimization score.',
             ],
         ];
+    }
+
+    /**
+     * Author display name for the content analysis call, or empty.
+     *
+     * @param Engine<object> $app
+     */
+    private function analysisAuthorName(Engine $app, int $userId): string
+    {
+        if ($userId <= 0) {
+            return '';
+        }
+
+        try {
+            $author = $app->seo()->authorContext($userId);
+
+            return is_array($author) ? (string) $author['name'] : '';
+        } catch (\Throwable) {
+            return '';
+        }
     }
 
     /**

@@ -89,7 +89,7 @@ class SeoApiController extends AiApiController
                 'Settings writes are partial. Omit a key to leave it alone.',
                 'Booleans accept true/false, 1/0, "true"/"false", "yes"/"no", "on"/"off".',
                 'ai_crawlers is a map of crawler name to allow or block. Unknown names and other values are ignored.',
-                'analyze needs title or content. focus_keywords may be an array or a comma separated string.',
+                'analyze needs title or content. focus_keywords may be an array or a comma separated string. author and updated_at feed the AI readiness checks.',
                 'Per-content SEO (meta title, description, canonical, robots, social, focus keywords) stays on the posts and pages endpoints, in the nested seo object.',
             ],
         ]);
@@ -171,6 +171,8 @@ class SeoApiController extends AiApiController
         $data['focus_keywords'] = $this->keywordList($data['focus_keywords'] ?? []);
         $data['image_alts'] = $this->stringList($data['image_alts'] ?? []);
         $data['has_images'] = filter_var($data['has_images'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $data['author'] = is_scalar($data['author'] ?? null) ? trim((string) $data['author']) : '';
+        $data['updated_at'] = is_scalar($data['updated_at'] ?? null) ? trim((string) $data['updated_at']) : '';
 
         $result = $this->app->seoAnalysis()->analyze($data);
 

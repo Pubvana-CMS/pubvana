@@ -9,6 +9,9 @@
     <p class="text-muted">
         {# Filter: date() formats the timestamp. Missing values pass through unchanged. #}
         {{ published_at | date('F j, Y') }}
+        {% if updated_at and updated_at != published_at %}
+        &middot; Updated {{ updated_at | date('F j, Y') }}
+        {% endif %}
         {# Conditional: author is optional. #}
         {% if author %}
         &middot; {% if author.url %}<a href="{{ author.url }}">{{ author.name }}</a>{% else %}{{ author.name }}{% endif %}

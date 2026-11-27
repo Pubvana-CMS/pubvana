@@ -6,6 +6,10 @@
     <h1>{{ title }}</h1>
     {% endif %}
 
+    {% if updated_at %}
+    <p class="text-muted">Updated {{ updated_at | date('F j, Y') }}</p>
+    {% endif %}
+
     {# Conditional: AI-assistance disclosure line. #}
     {% if ai_disclosure %}
     <p class="small text-secondary"><em>This content was created with AI assistance and reviewed for accuracy.</em></p>
