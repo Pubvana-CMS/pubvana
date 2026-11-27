@@ -11,6 +11,8 @@ on:
 permissions:
   contents: read
 
+# CodeQL has no PHP language support. Psalm taint analysis in psalm.yml is
+# the SAST job for this repo.
 jobs:
   dependencies:
     name: Dependency audit
@@ -28,24 +30,3 @@ jobs:
 
       - name: Audit locked dependencies
         run: composer audit --locked
-
-  codeql:
-    name: CodeQL
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    permissions:
-      actions: read
-      contents: read
-      packages: read
-      security-events: write
-
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: php
-
-      - name: Analyze
-        uses: github/codeql-action/analyze@v3
