@@ -5,16 +5,9 @@ Notable changes to Pubvana will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [3.0.0-rc3] - 2026-11-27
+## [3.0.0] - 2026-11-27
 
-### Added
-- dependabot.yml
-- security.yml
-
-### Changed
-- SEO/GEO/AEO updates and expansion
-- psalm workflow
-
+General release for version 3
 
 ## [3.0.0-rc2] - 2026-11-14
 
@@ -23,9 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - AI Assistant access to SEO settings and content scoring, split into read and manage permissions
 - One SEO settings path for the admin form and the API
 - AI Assistant write access to schema type and SEO score
+- dependabot.yml
+- security.yml
 
 ### Changed
 - Database connections moved to models from Analytics service
+- SEO/GEO/AEO updates and expansion
+- psalm workflow
 
 ### Removed
 - Page tracking switch and setting from Analytics
@@ -36,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - A failed rollup counted the same views twice on the next run
 - SEO settings saved "0" as true
 - Duplicate and inconsistent colors used in Analytics.
+- An operator whose group grants admin.access and users.edit or users.create, but not groups.manage, and who is not a superadmin. The actor can add admin to their own account because viewerMayManageUser allows self-management (app/Controllers/Admin/UsersController.php:51-53).
+- A holder of an enabled AI API key with posts.read or pages.read, while fact checking is switched on (plugins/AiAssistant/Controllers/AiFactCheckApiController.php:129-138). The report content comes from the external AI assistant, so a prompt-injected or compromised assistant supplies the URL.
+- Someone who already holds a session or remember-me token for the target account, such as a stolen laptop. The administrator resets the password to evict them, and the token keeps working.
+
 
 
 ## [3.0.0-rc1] - 2026-11-09

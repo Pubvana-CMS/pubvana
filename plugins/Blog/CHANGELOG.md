@@ -5,6 +5,12 @@ All notable changes to the Blog plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.13] - 2026-11-27
+
+### Changed
+- Post and preview templates receive `updated_at`.
+- The SEO schema context for a post carries the body, author, categories, and tags.
+
 ## [0.3.12] - 2026-11-09
 
 ### Added

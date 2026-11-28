@@ -5,6 +5,11 @@ All notable changes to the Default theme will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.4.37] - 2026-11-27
+
+### Added
+- Posts show an "Updated" date when it differs from the published date. Pages show an "Updated" date when one is set.
+
 ## [1.4.36] - 2026-11-09
 
 ### Removed

@@ -549,23 +549,24 @@ final class SeoServiceTest extends TestCase
     public function testSchemaOrganizationIdentityFields(): void
     {
         $schema = new SchemaService($this->schemaApp([
-            'Seo.organization_description'   => 'We publish research.',
-            'Seo.organization_contact_email' => 'hello@example.com',
+            'Seo.organization_description' => 'We publish research.',
+            'Seo.organization_contact_url' => 'https://example.com/contact',
         ]));
 
         $output = $schema->render(['content_type' => 'home', 'url' => 'https://example.com/']);
 
         self::assertStringContainsString('"description": "We publish research."', $output);
         self::assertStringContainsString('"contactType": "customer support"', $output);
-        self::assertStringContainsString('"email": "hello@example.com"', $output);
+        self::assertStringContainsString('"url": "https://example.com/contact"', $output);
+        self::assertStringNotContainsString('"email"', $output);
         self::assertStringContainsString('"publisher"', $output);
         self::assertStringContainsString('"inLanguage": "en"', $output);
     }
 
-    public function testSchemaSkipsInvalidContactEmail(): void
+    public function testSchemaSkipsInvalidContactUrl(): void
     {
         $schema = new SchemaService($this->schemaApp([
-            'Seo.organization_contact_email' => 'not-an-email',
+            'Seo.organization_contact_url' => 'not-a-url',
         ]));
 
         $output = $schema->render(['content_type' => 'home', 'url' => 'https://example.com/']);

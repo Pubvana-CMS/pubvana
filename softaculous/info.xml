@@ -6,7 +6,7 @@
 	<ratings>{{ratings}}</ratings>
 	<space>7224637</space>
 	<support>{{support}}</support>
-	<version>3.0.0-rc2</version>
+	<version>3.0.0</version>
 	<softversion>4.0.6</softversion>
 	<languages>
 		<language>

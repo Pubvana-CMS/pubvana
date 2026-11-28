@@ -80,11 +80,11 @@
                     <small class="form-hint">Used by Organization structured data.</small>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Contact Email</label>
-                    <input type="email" name="organization_contact_email" class="form-control"
-                           value="<?= htmlspecialchars($settings['organization_contact_email']) ?>"
-                           placeholder="hello@example.com">
-                    <small class="form-hint">Added as a ContactPoint when valid.</small>
+                    <label class="form-label">Contact Page URL</label>
+                    <input type="url" name="organization_contact_url" class="form-control"
+                           value="<?= htmlspecialchars($settings['organization_contact_url']) ?>"
+                           placeholder="https://example.com/contact">
+                    <small class="form-hint">Linked as a ContactPoint. Put the address on the page.</small>
                 </div>
             </div>
             <div class="mb-3">

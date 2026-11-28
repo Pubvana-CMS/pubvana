@@ -154,11 +154,13 @@ class SchemaService
             $node['description'] = $description;
         }
 
-        $contactEmail = trim((string) $settings->get('Seo.organization_contact_email'));
-        if ($contactEmail !== '' && filter_var($contactEmail, FILTER_VALIDATE_EMAIL) !== false) {
+        // A URL, not an email: structured data is scraped, and a printed
+        // address is harvested for spam. The contact page carries the address.
+        $contactUrl = trim((string) $settings->get('Seo.organization_contact_url'));
+        if ($contactUrl !== '' && filter_var($contactUrl, FILTER_VALIDATE_URL) !== false) {
             $node['contactPoint'] = [
                 '@type'       => 'ContactPoint',
-                'email'       => $contactEmail,
+                'url'         => $contactUrl,
                 'contactType' => 'customer support',
             ];
         }

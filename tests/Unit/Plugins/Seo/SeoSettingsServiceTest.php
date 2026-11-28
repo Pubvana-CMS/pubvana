@@ -89,7 +89,7 @@ final class SeoSettingsServiceTest extends TestCase
         self::assertSame('{title} {sep} {site_name}', $settings['title_template']);
         self::assertSame('en', $settings['default_language']);
         self::assertSame('', $settings['organization_description']);
-        self::assertSame('', $settings['organization_contact_email']);
+        self::assertSame('', $settings['organization_contact_url']);
         self::assertTrue($settings['sitemap_include_pages']);
         self::assertTrue($settings['llms_txt_include_categories']);
         self::assertTrue($settings['ai_disclosure_enabled']);
