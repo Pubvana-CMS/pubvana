@@ -247,6 +247,8 @@ final class FactCheckServiceTest extends TestCase
             'claim-verdict' => ['claims' => [['text' => 'x', 'kind' => 'fact', 'verdict' => 'maybe']]],
             'claim-kind'    => ['claims' => [['text' => 'x', 'kind' => 'hunch']]],
             'claim-sources' => ['claims' => [['text' => 'x', 'verdict' => 'supported', 'sources' => 'https://x.com']]],
+            'claim-source-scheme' => ['claims' => [['text' => 'x', 'kind' => 'fact', 'verdict' => 'supported', 'sources' => ['javascript:alert(1)']]]],
+            'claim-source-relative' => ['claims' => [['text' => 'x', 'kind' => 'fact', 'verdict' => 'supported', 'sources' => ['//example.com/a']]]],
         ];
 
         foreach ($cases as $case => $override) {

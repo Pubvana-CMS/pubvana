@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Pubvana\Services;
 
+use Enlivenapp\FlightShield\Models\AuthGroupPermission;
 use Enlivenapp\FlightShield\Models\GroupUser;
+use Enlivenapp\FlightShield\Models\RememberToken;
 use Enlivenapp\FlightShield\Models\User;
 use Enlivenapp\FlightShield\Models\UserIdentity;
 use Enlivenapp\FlightShield\Result;
 use flight\Engine;
+use Pubvana\Models\Session;
 
 /**
  * UserAdminService - Account administration rules Shield's UserManagement
@@ -82,13 +85,20 @@ class UserAdminService
     }
 
     /**
-     * Create a user through Shield. Assigning the superadmin group is
-     * reserved for superadmins; anyone else is refused.
+     * Create a user through Shield. Assigning any group above the base group
+     * is a groups.manage action: a users.create holder must not be able to
+     * mint an admin account.
      */
     public function createUser(string $username, string $email, string $password, ?string $group): Result
     {
-        if ($group !== null && strtolower($group) === 'superadmin' && ! $this->isSuperadminActor()) {
+        $alias = $group !== null ? strtolower(trim($group)) : '';
+
+        if ($alias === 'superadmin' && ! $this->isSuperadminActor()) {
             return $this->deny('Only a superadmin can assign the superadmin group.');
+        }
+
+        if ($alias !== '' && ! $this->actorMayAssignGroup($alias)) {
+            return $this->deny('Only a holder of groups.manage can assign that group.');
         }
 
         return $this->app->auth()->users()->create($username, $email, $password, $group);
@@ -124,9 +134,59 @@ class UserAdminService
             return $this->deny('The last superadmin cannot be demoted.');
         }
 
+        // A users.edit holder could otherwise grant the admin group to
+        // themselves or to a new account. Each newly added group must be one
+        // the actor already holds or one whose permissions the actor already
+        // has, so a narrower custom role cannot escalate.
+        $current = array_values(array_unique(array_map('strval', $user->getGroups())));
+
+        foreach (array_diff($groups, $current) as $group) {
+            if (! $this->actorMayAssignGroup($group)) {
+                return $this->deny('Only a holder of groups.manage can assign that group.');
+            }
+        }
+
         $user->syncGroups($groups);
 
         return (new Result())->setSuccess(true);
+    }
+
+    /**
+     * Update a user's username, email, and password.
+     *
+     * A password write revokes the credentials issued under the old one:
+     * remember tokens and sessions are deleted, matching the self-service
+     * flow. Without this, an administrator resetting a password leaves any
+     * stolen session signed in.
+     *
+     * @param array<string, mixed> $data
+     */
+    public function updateProfile(User $user, array $data): Result
+    {
+        $result = $this->app->auth()->users()->updateProfile($user, $data);
+
+        $hasPassword = isset($data['password']) && (string) $data['password'] !== '';
+
+        if (! $result->isOK() || ! $hasPassword) {
+            return $result;
+        }
+
+        (new UserIdentity($this->app->db()))->forcePasswordReset($user, false);
+        (new RememberToken($this->app->db()))->deleteByUser((int) $user->id);
+
+        // Keep the acting admin's own session when they change their own
+        // password, the same way the profile screen does.
+        $actor = $this->app->auth()->user();
+        $keep  = null;
+
+        if ($actor !== null && (string) $actor->id === (string) $user->id) {
+            $sessionId = $this->app->session()->id();
+            $keep      = is_string($sessionId) && $sessionId !== '' ? $sessionId : null;
+        }
+
+        (new Session($this->app->db()))->deleteForUser((int) $user->id, $keep);
+
+        return $result;
     }
 
     /**
@@ -179,6 +239,57 @@ class UserAdminService
     protected function isSuperadminActor(): bool
     {
         return (bool) ($this->app->auth()->user()?->inGroup('superadmin') ?? false);
+    }
+
+    /**
+     * Whether the current user may grant a group.
+     *
+     * A superadmin or a groups.manage holder may grant any group. Anyone else
+     * may grant a group they already belong to, or one whose permissions they
+     * already hold. That keeps a users.edit holder from granting the admin
+     * group while still letting an admin assign the groups they already have.
+     */
+    protected function actorMayAssignGroup(string $group): bool
+    {
+        $actor = $this->app->auth()->user();
+
+        if ($actor === null) {
+            return false;
+        }
+
+        if ($actor->inGroup('superadmin') || $actor->can('groups.manage')) {
+            return true;
+        }
+
+        if ($actor->inGroup($group)) {
+            return true;
+        }
+
+        foreach ($this->groupPermissions($group) as $permission) {
+            if (! $actor->can($permission)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Permission aliases granted by one group.
+     *
+     * @return list<string>
+     */
+    protected function groupPermissions(string $group): array
+    {
+        /** @var array<int, AuthGroupPermission> $records */
+        $records = (new AuthGroupPermission($this->app->db()))
+            ->eq('group_alias', $group)
+            ->findAll();
+
+        return array_values(array_map(
+            static fn (AuthGroupPermission $record): string => (string) $record->permission_alias,
+            $records
+        ));
     }
 
     /**

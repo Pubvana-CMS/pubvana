@@ -208,7 +208,7 @@ final class UsersControllerTest extends TestCase
 
         self::assertSame(['/admin/users/5/edit'], $this->redirects);
         self::assertSame('denied', $this->flashes['error'][0]);
-        self::assertFalse($this->usersSvc->profileUpdated);
+        self::assertFalse($this->userAdminFake->profileUpdated);
     }
 
     public function testUpdateSuccessFiltersGroups(): void
@@ -219,7 +219,7 @@ final class UsersControllerTest extends TestCase
         $this->controller($app)->update('5');
 
         self::assertSame(['user', 123, 'admin'], $this->userAdminFake->lastSync);
-        self::assertArrayNotHasKey('password', $this->usersSvc->lastProfile);
+        self::assertArrayNotHasKey('password', $this->userAdminFake->lastProfile);
         self::assertSame(['/admin/users/5/edit'], $this->redirects);
         self::assertSame('User updated.', $this->flashes['success'][0]);
     }
@@ -228,7 +228,7 @@ final class UsersControllerTest extends TestCase
     {
         $this->usersSvc->findResult = new FakeUser(5);
         $this->userAdminFake->syncResult = (new Result())->setSuccess(true);
-        $this->usersSvc->profileResult = (new Result())
+        $this->userAdminFake->profileResult = (new Result())
             ->setSuccess(false)
             ->setReason('Password does not meet requirements.');
         $app = $this->engine(data: ['groups' => ['user'], 'password' => 'weak']);
@@ -658,6 +658,10 @@ final class FakeUserAdmin extends \Pubvana\Services\UserAdminService
     public ?object $lastUnban = null;
     /** @var array{0: object, 1: bool}|null */
     public ?array $lastForceReset = null;
+    /** @var array<string, mixed> */
+    public array $lastProfile = [];
+    public bool $profileUpdated = false;
+    public Result $profileResult;
 
     public function __construct()
     {
@@ -666,6 +670,7 @@ final class FakeUserAdmin extends \Pubvana\Services\UserAdminService
         $this->syncResult = $ok;
         $this->deleteResult = $ok;
         $this->activeResult = $ok;
+        $this->profileResult = $ok;
     }
 
     public function createUser(string $u, string $e, string $p, ?string $g): Result
@@ -708,5 +713,14 @@ final class FakeUserAdmin extends \Pubvana\Services\UserAdminService
     public function forceReset(object $user, bool $f): void
     {
         $this->lastForceReset = [$user, $f];
+    }
+
+    /** @param array<string, mixed> $data */
+    public function updateProfile(object $user, array $data): Result
+    {
+        $this->lastProfile = $data;
+        $this->profileUpdated = true;
+
+        return $this->profileResult;
     }
 }

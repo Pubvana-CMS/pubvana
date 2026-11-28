@@ -484,6 +484,17 @@ class FactCheckService
             if ($source === '') {
                 continue;
             }
+
+            // Sources render as links on the admin report page. Only web
+            // URLs belong there: a javascript: value runs script in the
+            // admin origin when a viewer clicks it.
+            $scheme = strtolower((string) parse_url($source, PHP_URL_SCHEME));
+            $host   = (string) parse_url($source, PHP_URL_HOST);
+
+            if (! in_array($scheme, ['http', 'https'], true) || $host === '') {
+                return "claims[{$index}].sources must be http or https URLs.";
+            }
+
             $sources[] = mb_substr($source, 0, self::MAX_SOURCE_LENGTH);
             if (count($sources) > self::MAX_SOURCES) {
                 return "claims[{$index}].sources must contain at most " . self::MAX_SOURCES . ' URLs.';

@@ -147,6 +147,44 @@ final class UserAdminServiceTest extends TestCase
     }
 
     // -----------------------------------------------------------------
+    // updateProfile
+    // -----------------------------------------------------------------
+
+    public function testUpdateProfilePasswordRevokesSessionsAndRememberTokens(): void
+    {
+        $target = $this->seedUser('reset-target', ['user']);
+        $this->auth->actor = $this->seedUser('operator', ['admin']);
+
+        $this->pdo
+            ->prepare('INSERT INTO sessions (session_id, user_id, last_activity) VALUES (?, ?, ?)')
+            ->execute(['old-session', (int) $target->id, time()]);
+        $this->pdo
+            ->prepare('INSERT INTO auth_remember_tokens (selector, hashed_validator, user_id, expires) VALUES (?, ?, ?, ?)')
+            ->execute(['selector-1', 'hash', (int) $target->id, '2099-01-01 00:00:00']);
+
+        $result = $this->service->updateProfile($target, ['password' => 'Strong-Pass-123']);
+
+        self::assertTrue($result->isOK(), (string) $result->reason());
+        self::assertSame(0, (int) $this->pdo->query('SELECT COUNT(*) c FROM sessions')->fetch()['c']);
+        self::assertSame(0, (int) $this->pdo->query('SELECT COUNT(*) c FROM auth_remember_tokens')->fetch()['c']);
+    }
+
+    public function testUpdateProfileWithoutPasswordKeepsSessions(): void
+    {
+        $target = $this->seedUser('rename-target', ['user']);
+        $this->auth->actor = $this->seedUser('operator', ['admin']);
+
+        $this->pdo
+            ->prepare('INSERT INTO sessions (session_id, user_id, last_activity) VALUES (?, ?, ?)')
+            ->execute(['live-session', (int) $target->id, time()]);
+
+        $result = $this->service->updateProfile($target, ['username' => 'renamed']);
+
+        self::assertTrue($result->isOK(), (string) $result->reason());
+        self::assertSame(1, (int) $this->pdo->query('SELECT COUNT(*) c FROM sessions')->fetch()['c']);
+    }
+
+    // -----------------------------------------------------------------
     // createUser
     // -----------------------------------------------------------------
 
@@ -183,6 +221,19 @@ final class UserAdminServiceTest extends TestCase
         $result = $this->service->createUser('recruit', 'recruit@example.com', 'Strong-Pass-123', 'admin');
 
         self::assertTrue($result->isOK());
+    }
+
+    public function testCreateByCustomRoleCannotAssignAdminGroup(): void
+    {
+        $this->seedGroup('admin');
+        $this->seedGroup('staff');
+        $this->seedGroupPermission('admin', 'settings.manage');
+        $this->auth->actor = $this->seedUser('limited', ['staff']);
+
+        $result = $this->service->createUser('recruit', 'recruit@example.com', 'Strong-Pass-123', 'admin');
+
+        self::assertFalse($result->isOK());
+        self::assertNull((new User($this->pdo))->findByCredentials(['username' => 'recruit']));
     }
 
     // -----------------------------------------------------------------
@@ -246,6 +297,32 @@ final class UserAdminServiceTest extends TestCase
 
         self::assertTrue($result->isOK());
         self::assertSame([UserAdminService::BASE_GROUP], $target->getGroups());
+    }
+
+    public function testSyncGroupsByCustomRoleCannotAddAdmin(): void
+    {
+        $this->seedGroup('admin');
+        $this->seedGroup('staff');
+        $this->seedGroupPermission('admin', 'settings.manage');
+        $this->auth->actor = $this->seedUser('limited', ['staff']);
+        $target = $this->seedUser('target', ['user']);
+
+        $result = $this->service->syncGroups($target, ['user', 'admin']);
+
+        self::assertFalse($result->isOK());
+        self::assertSame(['user'], $target->getGroups());
+    }
+
+    public function testSyncGroupsBySameRoleCanAddThatRole(): void
+    {
+        $this->seedGroup('admin');
+        $this->auth->actor = $this->seedUser('editor-admin', ['admin']);
+        $target = $this->seedUser('target', ['user']);
+
+        $result = $this->service->syncGroups($target, ['user', 'admin']);
+
+        self::assertTrue($result->isOK());
+        self::assertTrue($target->inGroup('admin'));
     }
 
     // -----------------------------------------------------------------
@@ -410,6 +487,13 @@ final class UserAdminServiceTest extends TestCase
         $group->created_at = $now;
         $group->updated_at = $now;
         $group->insert();
+    }
+
+    private function seedGroupPermission(string $group, string $permission): void
+    {
+        $this->pdo
+            ->prepare('INSERT INTO auth_group_permissions (group_alias, permission_alias) VALUES (?, ?)')
+            ->execute([$group, $permission]);
     }
 
     private function freshUser(int $id): ?User

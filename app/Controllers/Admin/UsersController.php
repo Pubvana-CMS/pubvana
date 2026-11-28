@@ -321,7 +321,7 @@ class UsersController extends AdminController
         // is written in that case, but the group sync above has already been
         // saved, so the failure must be reported instead of flashing success
         // over a partially applied update.
-        $result = $this->app->auth()->users()->updateProfile($user, $data);
+        $result = $this->userAdmin()->updateProfile($user, $data);
         if (!$result->isOK()) {
             $this->app->session()->flash('error', $result->reason() ?: 'User could not be updated.');
             $this->app->redirect('/admin/users/' . $id . '/edit');
